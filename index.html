@@ -579,14 +579,14 @@
                         <span>Thêm nhanh Học sinh vào lớp này &amp; Tùy chọn số tiền học phí:</span>
                       </span>
                       <div class="flex flex-wrap items-center gap-1 text-[11px]">
-                        <span class="text-slate-500 font-semibold">Chọn nhanh tiền:</span>
-                        <button type="button" onclick="setClassbookQuickFee(500000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">500k</button>
-                        <button type="button" onclick="setClassbookQuickFee(600000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">600k</button>
-                        <button type="button" onclick="setClassbookQuickFee(700000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">700k</button>
-                        <button type="button" onclick="setClassbookQuickFee(800000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">800k</button>
-                        <button type="button" onclick="setClassbookQuickFee(1000000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1.000k</button>
-                        <button type="button" onclick="setClassbookQuickFee(1200000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1.200k</button>
-                        <button type="button" onclick="setClassbookQuickFee(1500000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1.500k</button>
+                        <span class="text-slate-500 font-semibold">Chọn nhanh (đã rút gọn 000):</span>
+                        <button type="button" onclick="setClassbookQuickFee(500)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">500</button>
+                        <button type="button" onclick="setClassbookQuickFee(600)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">600</button>
+                        <button type="button" onclick="setClassbookQuickFee(700)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">700</button>
+                        <button type="button" onclick="setClassbookQuickFee(800)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">800</button>
+                        <button type="button" onclick="setClassbookQuickFee(1000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1000</button>
+                        <button type="button" onclick="setClassbookQuickFee(1200)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1200</button>
+                        <button type="button" onclick="setClassbookQuickFee(1500)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1500</button>
                       </div>
                     </div>
 
@@ -604,13 +604,18 @@
                         placeholder="SĐT (Không bắt buộc)"
                         class="sm:col-span-3 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <input
-                        id="cb-quick-fee"
-                        type="number"
-                        value="600000"
-                        placeholder="Số tiền học phí (VNĐ)"
-                        class="sm:col-span-3 px-2.5 py-1.5 rounded-lg border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+                      <div class="sm:col-span-3 relative flex items-center">
+                        <input
+                          id="cb-quick-fee"
+                          type="number"
+                          value="600"
+                          oninput="autoShortenMoneyInput(this)"
+                          placeholder="VD: 600"
+                          title="Nhập số tiền đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)"
+                          class="w-full pl-2.5 pr-12 py-1.5 rounded-lg border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span class="absolute right-2.5 text-[11px] font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
+                      </div>
                       <button
                         type="submit"
                         class="sm:col-span-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
@@ -1624,12 +1629,17 @@
               />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền đã chuyển (VNĐ)</label>
-              <input
-                id="pay-form-amount"
-                type="number"
-                class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền đã chuyển (Đã rút gọn 000)</label>
+              <div class="relative flex items-center">
+                <input
+                  id="pay-form-amount"
+                  type="number"
+                  oninput="autoShortenMoneyInput(this)"
+                  placeholder="VD: 600"
+                  class="w-full pl-3.5 pr-12 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
+              </div>
             </div>
           </div>
 
@@ -1775,21 +1785,25 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Mức học phí (VNĐ)</label>
-            <input
-              id="stu-form-fee"
-              type="number"
-              placeholder="600000"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-700"
-            />
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mức học phí (Rút gọn 000 - VD: 600 = 600.000₫)</label>
+            <div class="relative flex items-center">
+              <input
+                id="stu-form-fee"
+                type="number"
+                oninput="autoShortenMoneyInput(this)"
+                placeholder="VD: 600"
+                class="w-full pl-3 pr-12 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-700"
+              />
+              <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
+            </div>
             <div class="flex flex-wrap gap-1 mt-1.5 text-[11px]">
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=500000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">500k</button>
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=600000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">600k</button>
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=700000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">700k</button>
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=800000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">800k</button>
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=1000000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1.000k</button>
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=1200000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1.200k</button>
-              <button type="button" onclick="document.getElementById('stu-form-fee').value=1500000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1.500k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=500" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">500</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=600" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">600</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=700" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">700</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=800" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">800</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=1000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1000</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=1200" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1200</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=1500" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1500</button>
             </div>
           </div>
           <div>
@@ -1921,14 +1935,18 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền (VNĐ) *</label>
-            <input
-              id="trans-form-amount"
-              type="number"
-              required
-              placeholder="500000"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
-            />
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền (Rút gọn 000 - VD: 500 = 500.000₫) *</label>
+            <div class="relative flex items-center">
+              <input
+                id="trans-form-amount"
+                type="number"
+                required
+                oninput="autoShortenMoneyInput(this)"
+                placeholder="VD: 500"
+                class="w-full pl-3 pr-12 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+              />
+              <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
+            </div>
           </div>
         </div>
 
