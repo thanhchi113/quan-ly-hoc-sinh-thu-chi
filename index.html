@@ -201,9 +201,18 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-2 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
           <div class="flex flex-wrap items-center gap-1">
             <button
+              onclick="switchAdminTab('classbook')"
+              id="tab-btn-classbook"
+              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"
+            >
+              <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+              <span>Sổ Theo Dõi Lớp & Lịch Dạy</span>
+            </button>
+
+            <button
               onclick="switchAdminTab('dashboard')"
               id="tab-btn-dashboard"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"
+              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
             >
               <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
               <span>Tổng quan & Duyệt CK</span>
@@ -216,7 +225,7 @@
               class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
             >
               <i data-lucide="graduation-cap" class="w-4 h-4"></i>
-              <span>Học sinh & Học phí</span>
+              <span>Tất cả Học sinh</span>
             </button>
 
             <button
@@ -272,9 +281,230 @@
         </div>
 
         <!-- =============================================================== -->
+        <!-- TAB 0: SỔ THEO DÕI LỚP HỌC & LỊCH DẠY CHUẨN MẪU (GIỐNG ẢNH)    -->
+        <!-- =============================================================== -->
+        <div id="admin-tab-classbook" class="space-y-4">
+          <!-- Top Control Bar: Select Class, Add Class, Edit Schedule, Add Student -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Chọn Lớp:</span>
+              <div id="classbook-class-pills" class="flex flex-wrap items-center gap-1.5">
+                <!-- Rendered by JS -->
+              </div>
+              <button
+                onclick="openClassScheduleModal(true)"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
+              >
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>+ Tạo Lớp Mới</span>
+              </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                onclick="openClassScheduleModal(false)"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition cursor-pointer"
+              >
+                <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                <span>Cài đặt Lịch học (Từ ngày &rarr; Đến ngày / Tháng)</span>
+              </button>
+              <button
+                onclick="openStudentModalForCurrentClass()"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer"
+              >
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                <span>+ Thêm Học Sinh Vào Lớp</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- SỔ THEO DÕI LỚP HỌC & QUẢN LÝ HỌC PHÍ - CHUẨN MẪU -->
+          <div class="bg-white rounded-xl border-2 border-[#1f3d6e] shadow-md overflow-hidden">
+            <!-- Navy Title Banner -->
+            <div class="sheet-navy-header py-3 px-4 text-center font-extrabold text-base sm:text-lg tracking-wide uppercase">
+              SỔ THEO DÕI LỚP HỌC &amp; QUẢN LÝ HỌC PHÍ - CHUẨN MẪU
+            </div>
+
+            <!-- Class Metadata Sub-bar -->
+            <div class="sheet-sub-bar px-4 py-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs sm:text-sm font-bold text-slate-800">
+              <div>
+                Lớp học: <span id="cb-meta-classname" class="text-[#1f3d6e]">12 2K8</span>
+              </div>
+              <div>
+                Môn học: <span id="cb-meta-subject" class="text-[#1f3d6e]">Toán</span>
+              </div>
+              <div>
+                Kỳ học: <span id="cb-meta-period" class="text-[#1f3d6e]">Tháng 10-11/2026</span>
+                <span id="cb-meta-daterange" class="text-[11px] font-medium text-slate-500 block sm:inline"></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Trạng thái: <span id="cb-meta-status" class="text-emerald-700">Đang diễn ra</span></span>
+                <button
+                  onclick="openClassScheduleModal(false)"
+                  title="Sửa thông tin lớp & lịch học"
+                  class="text-blue-600 hover:underline text-xs font-semibold cursor-pointer"
+                >
+                  [Sửa]
+                </button>
+              </div>
+            </div>
+
+            <!-- 4 KPI Summary Boxes & Color Brush Bar -->
+            <div class="p-4 space-y-4">
+              <div class="grid grid-cols-2 lg:grid-cols-4 border border-slate-300 rounded-lg overflow-hidden">
+                <!-- Sĩ số lớp -->
+                <div class="border-r border-b lg:border-b-0 border-slate-300 text-center">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    SĨ SỐ LỚP
+                  </div>
+                  <div id="cb-kpi-total-students" class="py-3 text-2xl sm:text-3xl font-extrabold text-blue-600">
+                    0
+                  </div>
+                </div>
+
+                <!-- Tỷ lệ đã nộp -->
+                <div class="border-b lg:border-b-0 lg:border-r border-slate-300 text-center">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    TỶ LỆ ĐÃ NỘP
+                  </div>
+                  <div id="cb-kpi-paid-rate" class="py-3 text-2xl sm:text-3xl font-extrabold text-slate-900">
+                    0%
+                  </div>
+                </div>
+
+                <!-- Tổng thực thu -->
+                <div class="border-r border-slate-300 text-center ring-2 ring-blue-500 ring-inset">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    TỔNG THỰC THU
+                  </div>
+                  <div id="cb-kpi-collected" class="py-3 text-xl sm:text-2xl font-extrabold text-emerald-600">
+                    0 ₫
+                  </div>
+                </div>
+
+                <!-- Khoản còn thiếu -->
+                <div class="text-center">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    KHOẢN CÒN THIẾU
+                  </div>
+                  <div id="cb-kpi-missing" class="py-3 text-xl sm:text-2xl font-extrabold text-rose-600">
+                    0 ₫
+                  </div>
+                </div>
+              </div>
+
+              <!-- Legend & Brush Picker for Session Calendar -->
+              <div class="bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2 font-semibold text-slate-700">
+                  <i data-lucide="paintbrush" class="w-4 h-4 text-blue-600"></i>
+                  <span>Chế độ bấm tô màu lịch dạy (Bấm vào ô ngày bên phải để đánh dấu):</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    id="brush-btn-cycle"
+                    onclick="setCalendarBrush('cycle')"
+                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-slate-900 text-white border-slate-900"
+                  >
+                    🔄 Bấm đổi màu tuần tự
+                  </button>
+                  <button
+                    type="button"
+                    id="brush-btn-1"
+                    onclick="setCalendarBrush(1)"
+                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-emerald-500 text-white border-emerald-600 opacity-80 hover:opacity-100"
+                  >
+                    ✓ Đã dạy (Màu Xanh lá)
+                  </button>
+                  <button
+                    type="button"
+                    id="brush-btn-2"
+                    onclick="setCalendarBrush(2)"
+                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-amber-500 text-white border-amber-600 opacity-80 hover:opacity-100"
+                  >
+                    ★ Đã xác nhận (Màu Cam)
+                  </button>
+                  <button
+                    type="button"
+                    id="brush-btn-3"
+                    onclick="setCalendarBrush(3)"
+                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-rose-200 text-rose-900 border-rose-300 opacity-80 hover:opacity-100"
+                  >
+                    ✕ Nghỉ / Bù (Màu Đỏ)
+                  </button>
+                  <button
+                    type="button"
+                    id="brush-btn-0"
+                    onclick="setCalendarBrush(0)"
+                    class="px-2.5 py-1 rounded-lg border text-xs font-semibold transition cursor-pointer bg-white text-slate-700 border-slate-300 opacity-80 hover:opacity-100"
+                  >
+                    ⬜ Xóa màu
+                  </button>
+                </div>
+              </div>
+
+              <!-- SIDE-BY-SIDE TABLES: LEFT (STUDENTS & TUITION) | RIGHT (SCHEDULE CALENDAR) -->
+              <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+
+                <!-- LEFT TABLE (7 cols): DANH SÁCH HỌC SINH & HỌC PHÍ TRONG LỚP -->
+                <div class="xl:col-span-7 overflow-x-auto">
+                  <table class="sheet-table text-xs sm:text-sm">
+                    <thead>
+                      <tr class="sheet-navy-header text-center font-bold text-xs">
+                        <th class="py-2.5 px-2 w-10">STT</th>
+                        <th class="py-2.5 px-3 text-left">Họ và tên</th>
+                        <th class="py-2.5 px-2.5 text-right">Học phí</th>
+                        <th class="py-2.5 px-2 w-24">Đã thanh toán</th>
+                        <th class="py-2.5 px-2.5 w-32">Tình trạng</th>
+                        <th class="py-2.5 px-2.5 text-left">Ghi chú</th>
+                        <th class="py-2.5 px-2 w-16">Sửa</th>
+                      </tr>
+                      <!-- Dòng TỔNG CỘNG giống hệt mẫu -->
+                      <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
+                        <td colspan="2" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
+                          TỔNG CỘNG
+                        </td>
+                        <td id="cb-sum-expected" class="py-2 px-2.5 text-right text-slate-900">
+                          0 ₫
+                        </td>
+                        <td id="cb-sum-paid-count" class="py-2 px-2 text-center text-slate-900">
+                          0 em
+                        </td>
+                        <td id="cb-sum-collected" class="py-2 px-2.5 text-right text-emerald-700">
+                          0 ₫
+                        </td>
+                        <td id="cb-sum-missing" colspan="2" class="py-2 px-2.5 text-right text-rose-600">
+                          0 ₫
+                        </td>
+                      </tr>
+                    </thead>
+                    <tbody id="cb-students-tbody">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- RIGHT TABLE (5 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU -->
+                <div class="xl:col-span-5 overflow-x-auto">
+                  <table class="sheet-table text-xs sm:text-sm text-center">
+                    <thead id="cb-schedule-thead">
+                      <!-- Rendered by JS -->
+                    </thead>
+                    <tbody id="cb-schedule-tbody">
+                      <!-- Rendered by JS -->
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
         <!-- TAB 1: DASHBOARD & DUYỆT XÁC NHẬN CHUYỂN KHOẢN                  -->
         <!-- =============================================================== -->
-        <div id="admin-tab-dashboard" class="space-y-6">
+        <div id="admin-tab-dashboard" class="hidden space-y-6">
           <!-- KPI Summary Cards -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Total Income -->
@@ -1389,6 +1619,149 @@
           Mở ảnh gốc trong tab mới &rarr;
         </a>
       </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 6: CÀI ĐẶT THÔNG TIN LỚP HỌC & LỊCH DẠY (TỪ NGÀY -> ĐẾN NGÀY)   -->
+  <!-- ===================================================================== -->
+  <div id="class-schedule-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in my-8">
+      <div class="px-6 py-4 bg-[#1f3d6e] text-white flex items-center justify-between">
+        <h3 id="cs-modal-title" class="font-bold text-base">Cài Đặt Lớp Học &amp; Lịch Các Buổi Dạy</h3>
+        <button onclick="closeClassScheduleModal()" class="text-white/80 hover:text-white cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveClassScheduleForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="cs-form-is-new" value="false" />
+        <input type="hidden" id="cs-form-old-name" value="" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tên Lớp học *</label>
+            <input
+              id="cs-form-classname"
+              type="text"
+              required
+              placeholder="VD: 12 2K8"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-900"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Môn học *</label>
+            <input
+              id="cs-form-subject"
+              type="text"
+              required
+              placeholder="VD: Toán"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ học (Tháng) *</label>
+            <input
+              id="cs-form-period"
+              type="text"
+              required
+              placeholder="VD: Tháng 10-11/2026"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Đợt thu học phí *</label>
+            <input
+              id="cs-form-batch"
+              type="text"
+              required
+              placeholder="VD: ĐỢT SỐ 5"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm uppercase font-semibold"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Trạng thái lớp</label>
+            <select id="cs-form-status" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+              <option value="Đang diễn ra">Đang diễn ra</option>
+              <option value="Đã kết thúc">Đã kết thúc</option>
+              <option value="Sắp khai giảng">Sắp khai giảng</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 space-y-3">
+          <div class="text-xs font-bold text-blue-900 uppercase tracking-wider">
+            Khoảng thời gian lịch dạy (Từ ngày mấy &rarr; Đến ngày mấy)
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Từ ngày *</label>
+              <input
+                id="cs-form-start-date"
+                type="date"
+                required
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Đến ngày *</label>
+              <input
+                id="cs-form-end-date"
+                type="date"
+                required
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+              Các Thứ học trong tuần của lớp (Tích chọn để tạo cột lịch):
+            </label>
+            <div class="grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-xs">
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="1" checked /> T2
+              </label>
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="2" /> T3
+              </label>
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="3" checked /> T4
+              </label>
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="4" /> T5
+              </label>
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="5" checked /> T6
+              </label>
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="6" /> T7
+              </label>
+              <label class="flex items-center justify-center gap-1 p-2 rounded-lg bg-white border border-slate-300 cursor-pointer font-semibold">
+                <input type="checkbox" class="cs-day-checkbox" value="0" checked /> CN
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            id="btn-delete-class-schedule"
+            onclick="deleteCurrentClassSchedule()"
+            class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
+          >
+            Xóa lớp này
+          </button>
+          <div class="flex gap-2">
+            <button type="button" onclick="closeClassScheduleModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
+            <button type="submit" class="px-5 py-2 rounded-xl bg-[#1f3d6e] hover:bg-blue-900 text-white text-sm font-semibold cursor-pointer">Lưu &amp; Tạo Bảng Lịch</button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 
