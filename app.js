@@ -3072,6 +3072,13 @@ function getInitialDemoState() {
 
 // Biến trạng thái toàn cục
 let appState = loadStateFromLocal();
+let lastCommittedStateJson = JSON.stringify(appState);
+let actionUndoStack = [];
+let actionRedoStack = [];
+let isRestoringUndoRedo = false;
+let isSilentServerSync = false;
+const MAX_UNDO_HISTORY = 30;
+
 let currentMode = 'parent'; // 'parent' | 'admin'
 let currentAdminTab = 'classbook';
 let selectedClassbookClass = '';
@@ -3100,7 +3107,7 @@ if (document.readyState === 'loading') {
   bootstrapApp();
 }
 
-// Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, chọn chữ và chuột phải trong ô nhập liệu
+// Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
 function enableSourceProtection() {
   document.addEventListener('contextmenu', e => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
@@ -3113,6 +3120,22 @@ function enableSourceProtection() {
 
   document.addEventListener('keydown', e => {
     const key = (e.key || '').toUpperCase();
+    // Hỗ trợ phím tắt Ctrl + Z (Quay lại thao tác trước) và Ctrl + Y (Làm lại) khi đang ở trang Quản lý
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+    const isTypingInField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable);
+    if (!isTypingInField && currentMode === 'admin' && sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true') {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'Z') {
+        e.preventDefault();
+        undoLastAction();
+        return false;
+      }
+      if ((e.ctrlKey || e.metaKey) && (key === 'Y' || (e.shiftKey && key === 'Z'))) {
+        e.preventDefault();
+        redoLastAction();
+        return false;
+      }
+    }
+
     // Chỉ chặn F12, Ctrl+U (View Source), Ctrl+Shift+I/J (DevTools)
     if (
       e.key === 'F12' ||
@@ -3168,8 +3191,172 @@ function loadStateFromLocal() {
   return initial;
 }
 
+function detectActionDescription(prevJson, nextJson) {
+  try {
+    const prev = JSON.parse(prevJson);
+    const next = JSON.parse(nextJson);
+    const prevSt = prev.students || [];
+    const nextSt = next.students || [];
+
+    if (nextSt.length > prevSt.length) {
+      return `Thêm học sinh (${prevSt.length} → ${nextSt.length} HS)`;
+    }
+    if (nextSt.length < prevSt.length) {
+      return `Xóa học sinh (${prevSt.length} → ${nextSt.length} HS)`;
+    }
+    for (let i = 0; i < nextSt.length; i++) {
+      const a = prevSt[i];
+      const b = nextSt[i];
+      if (!a || !b) continue;
+      if (a.status !== b.status) {
+        return `Đổi trạng thái ${b.fullName}: ${a.status} → ${b.status}`;
+      }
+      if (Number(a.tuitionFee) !== Number(b.tuitionFee)) {
+        return `Đổi học phí ${b.fullName}: ${formatCurrency(a.tuitionFee)} → ${formatCurrency(b.tuitionFee)}`;
+      }
+      if ((a.note || '') !== (b.note || '')) {
+        return `Sửa ghi chú học sinh ${b.fullName}`;
+      }
+      if (a.fullName !== b.fullName || a.className !== b.className) {
+        return `Cập nhật thông tin học sinh ${b.fullName}`;
+      }
+    }
+    if (prev.settings?.classSchedulesJson !== next.settings?.classSchedulesJson) {
+      return 'Tích buổi dạy / Cập nhật lịch học';
+    }
+    if (prev.settings?.studentMetaJson !== next.settings?.studentMetaJson) {
+      return 'Cập nhật ngày bắt đầu học / số đợt đóng';
+    }
+    if ((prev.transactions || []).length !== (next.transactions || []).length) {
+      return 'Cập nhật Sổ Thu - Chi';
+    }
+  } catch (e) {}
+  return 'Thao tác vừa thực hiện';
+}
+
+function updateUndoRedoButtonsUI() {
+  const undoCount = actionUndoStack.length;
+  const redoCount = actionRedoStack.length;
+  const topUndo = undoCount > 0 ? actionUndoStack[undoCount - 1] : null;
+  const topRedo = redoCount > 0 ? actionRedoStack[redoCount - 1] : null;
+
+  const undoBtnIds = ['btn-global-undo', 'btn-classbook-undo', 'btn-students-undo'];
+  undoBtnIds.forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = undoCount === 0;
+    btn.title = topUndo
+      ? `Quay lại thao tác trước (${topUndo.time}): ${topUndo.desc} [Phím tắt: Ctrl + Z]`
+      : 'Chưa có thao tác nào trước đó để quay lại (Ctrl + Z)';
+  });
+
+  const badgeEl = document.getElementById('badge-undo-count');
+  if (badgeEl) {
+    if (undoCount > 0) {
+      badgeEl.textContent = String(undoCount);
+      badgeEl.classList.remove('hidden');
+    } else {
+      badgeEl.classList.add('hidden');
+    }
+  }
+
+  const redoBtn = document.getElementById('btn-global-redo');
+  if (redoBtn) {
+    redoBtn.disabled = redoCount === 0;
+    redoBtn.title = topRedo
+      ? `Làm lại thao tác vừa hoàn tác (${topRedo.time}): ${topRedo.desc} [Phím tắt: Ctrl + Y]`
+      : 'Không có thao tác nào để làm lại (Ctrl + Y)';
+  }
+}
+
+async function undoLastAction() {
+  if (actionUndoStack.length === 0) {
+    showToast('Chưa có thao tác nào trước đó để quay lại!', 'info');
+    return;
+  }
+
+  const prevSnapshot = actionUndoStack.pop();
+  const currentJson = JSON.stringify(appState);
+  actionRedoStack.push({
+    stateJson: currentJson,
+    desc: prevSnapshot.desc || 'Thao tác trước đó',
+    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  });
+
+  try {
+    isRestoringUndoRedo = true;
+    appState = JSON.parse(prevSnapshot.stateJson);
+    lastCommittedStateJson = prevSnapshot.stateJson;
+    saveStateToLocal();
+  } finally {
+    isRestoringUndoRedo = false;
+  }
+
+  updateUndoRedoButtonsUI();
+  showToast(
+    `↩️ Đã quay lại thao tác trước: "${prevSnapshot.desc}"! (Còn ${actionUndoStack.length} bước có thể quay lại)`,
+    'warning'
+  );
+
+  const gasUrl = getGasUrl();
+  if (gasUrl && isAutoSyncEnabled()) {
+    await syncAllToGoogleSheet(false);
+  }
+}
+
+async function redoLastAction() {
+  if (actionRedoStack.length === 0) {
+    showToast('Không có thao tác nào để làm lại!', 'info');
+    return;
+  }
+
+  const nextSnapshot = actionRedoStack.pop();
+  const currentJson = JSON.stringify(appState);
+  actionUndoStack.push({
+    stateJson: currentJson,
+    desc: nextSnapshot.desc || 'Thao tác làm lại',
+    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  });
+
+  try {
+    isRestoringUndoRedo = true;
+    appState = JSON.parse(nextSnapshot.stateJson);
+    lastCommittedStateJson = nextSnapshot.stateJson;
+    saveStateToLocal();
+  } finally {
+    isRestoringUndoRedo = false;
+  }
+
+  updateUndoRedoButtonsUI();
+  showToast(`↪️ Đã làm lại thao tác: "${nextSnapshot.desc}"!`, 'info');
+
+  const gasUrl = getGasUrl();
+  if (gasUrl && isAutoSyncEnabled()) {
+    await syncAllToGoogleSheet(false);
+  }
+}
+
 function saveStateToLocal() {
-  localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(appState));
+  const currentJson = JSON.stringify(appState);
+  if (
+    lastCommittedStateJson &&
+    currentJson !== lastCommittedStateJson &&
+    !isRestoringUndoRedo &&
+    !isSilentServerSync
+  ) {
+    actionUndoStack.push({
+      stateJson: lastCommittedStateJson,
+      desc: detectActionDescription(lastCommittedStateJson, currentJson),
+      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      createdAtMs: Date.now()
+    });
+    if (actionUndoStack.length > MAX_UNDO_HISTORY) {
+      actionUndoStack.shift();
+    }
+    actionRedoStack = [];
+  }
+  lastCommittedStateJson = currentJson;
+  localStorage.setItem(STORAGE_KEYS.STATE, currentJson);
   refreshAllViews();
 }
 
@@ -3228,6 +3415,7 @@ function refreshAllViews() {
   populateStudentFilterDropdowns();
 
   // Render Thanh Số Dư Ngân Hàng SePay, Sổ Theo Dõi Lớp Học, Lịch Sử, Dashboard, Bảng Học sinh, Bảng Thu Chi
+  updateUndoRedoButtonsUI();
   renderSepayBalanceBanner();
   renderAdminClassbook();
   renderAdminHistory();
@@ -5969,7 +6157,12 @@ async function syncFromGoogleSheet(showUserToast = true) {
         }
       } else {
         appState = mergeServerData(sheetData);
-        saveStateToLocal();
+        try {
+          if (!showUserToast) isSilentServerSync = true;
+          saveStateToLocal();
+        } finally {
+          isSilentServerSync = false;
+        }
         if (showUserToast) {
           showToast('Đã tải dữ liệu mới nhất từ Google Sheet về App!', 'success');
         }
@@ -6029,6 +6222,13 @@ async function syncAllToGoogleSheet(showUserToast = true) {
 }
 
 async function triggerAutoSyncIfNeeded(toastMessage) {
+  if (toastMessage && actionUndoStack.length > 0) {
+    const topItem = actionUndoStack[actionUndoStack.length - 1];
+    if (topItem && Date.now() - (topItem.createdAtMs || 0) < 1500) {
+      topItem.desc = String(toastMessage).replace(/^[✅💰🔔🎨🌙☀️\s]+/, '').replace(/!$/, '');
+      updateUndoRedoButtonsUI();
+    }
+  }
   showToast(toastMessage, 'success');
   const gasUrl = getGasUrl();
   if (gasUrl && isAutoSyncEnabled()) {
