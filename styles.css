@@ -127,20 +127,26 @@ body {
 
 /* Trạng thái tô màu các buổi dạy trên lịch */
 .session-cell {
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, filter 0.15s ease;
   user-select: none;
   cursor: pointer;
+  height: 42px;
+  vertical-align: middle;
+  font-weight: 600;
 }
 
 .session-cell:hover {
-  filter: brightness(0.95);
-  transform: scale(1.02);
+  filter: brightness(0.94);
 }
 
 /* 0: Chưa dạy (Trắng) */
 .session-state-0 {
   background-color: #ffffff;
   color: #1e293b;
+}
+
+.session-state-0:hover {
+  background-color: #f1f5f9;
 }
 
 /* 1: Đã dạy (Tô màu Xanh lá) */
@@ -150,7 +156,7 @@ body {
   font-weight: 700;
 }
 
-/* 2: Đã xác nhận / Chốt (Tô màu Vàng Cam / Xanh Dương nổi bật) */
+/* 2: Đã xác nhận / Chốt (Tô màu Vàng Cam nổi bật) */
 .session-state-2 {
   background-color: #f59e0b !important;
   color: #ffffff !important;
@@ -162,6 +168,6 @@ body {
   background-color: #fecdd3 !important;
   color: #9f1239 !important;
   text-decoration: line-through;
-  font-weight: 600;
+  font-weight: 700;
 }
 
