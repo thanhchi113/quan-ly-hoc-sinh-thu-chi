@@ -345,18 +345,24 @@ function refreshAllViews() {
     tabBadge.classList.add('hidden');
   }
 
-  // Đếm tổng số học sinh trên nút Tab "Tất cả Học sinh"
+  // Đếm tổng số học sinh trên nút Tab "Tất cả Học sinh" & số đợt Lịch sử
   const totalStudentsBadge = document.getElementById('tab-all-students-count');
   if (totalStudentsBadge) {
     totalStudentsBadge.textContent = `${(appState.students || []).length} HS`;
+  }
+  const historyBadge = document.getElementById('tab-history-count');
+  if (historyBadge) {
+    const histList = getClassHistoryList();
+    historyBadge.textContent = `${histList.length}`;
   }
 
   // Cập nhật các bộ lọc Lớp và Kỳ học phí
   populateStudentFilterDropdowns();
 
-  // Render Thanh Số Dư Ngân Hàng SePay, Sổ Theo Dõi Lớp Học, Dashboard, Bảng Học sinh, Bảng Thu Chi
+  // Render Thanh Số Dư Ngân Hàng SePay, Sổ Theo Dõi Lớp Học, Lịch Sử, Dashboard, Bảng Học sinh, Bảng Thu Chi
   renderSepayBalanceBanner();
   renderAdminClassbook();
+  renderAdminHistory();
   renderAdminDashboard();
   renderAdminStudents();
   renderAdminTransactions();
@@ -434,7 +440,7 @@ function handleAdminLogout() {
 
 function switchAdminTab(tabName) {
   currentAdminTab = tabName;
-  const tabs = ['classbook', 'dashboard', 'students', 'finance', 'settings'];
+  const tabs = ['classbook', 'history', 'dashboard', 'students', 'finance', 'settings'];
   tabs.forEach(t => {
     const contentEl = document.getElementById('admin-tab-' + t);
     const btnEl = document.getElementById('tab-btn-' + t);
@@ -450,6 +456,8 @@ function switchAdminTab(tabName) {
 
   if (tabName === 'classbook') {
     renderAdminClassbook();
+  } else if (tabName === 'history') {
+    renderAdminHistory();
   } else if (tabName === 'dashboard') {
     renderAdminDashboard();
   } else if (tabName === 'settings') {
@@ -3129,6 +3137,519 @@ function formatShortDateVN(isoDate) {
   const parts = String(isoDate).split('-');
   if (parts.length !== 3) return isoDate;
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+// ============================================================================
+// LƯU LỊCH SỬ CÁC ĐỢT / THÁNG CŨ & CHUYỂN SANG ĐỢT TIẾP THEO (ROLLOVER & ARCHIVE)
+// ============================================================================
+function getClassHistoryList() {
+  try {
+    if (appState.settings && appState.settings.classHistoryJson) {
+      const parsed = JSON.parse(appState.settings.classHistoryJson);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function saveClassHistoryList(list, syncMsg = '') {
+  if (!appState.settings) appState.settings = {};
+  appState.settings.classHistoryJson = JSON.stringify(list || []);
+  saveStateToLocal();
+  if (syncMsg) {
+    triggerAutoSyncIfNeeded(syncMsg);
+  }
+}
+
+function countCheckedSessionsInConfig(cfg) {
+  if (!cfg) return 0;
+  const { weeks } = generateScheduleWeeks(cfg.startDate, cfg.endDate, cfg.daysOfWeek);
+  const states = cfg.sessionStates || {};
+  let checked = 0;
+  weeks.forEach(row => {
+    row.forEach(cell => {
+      if (cell.inRange && cell.dateKey) {
+        const st = Number(states[cell.dateKey] || 0);
+        if (st === 1 || st === 2) checked++;
+      }
+    });
+  });
+  return checked;
+}
+
+function openRolloverBatchModal() {
+  const modal = document.getElementById('rollover-batch-modal');
+  if (!modal) return;
+
+  const map = getClassSchedulesMap();
+  const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+  const paidCount = classStudents.filter(s => s.status === 'Đã hoàn thành').length;
+  const checkedSessions = countCheckedSessionsInConfig(cfg);
+
+  const summaryEl = document.getElementById('rollover-old-summary');
+  if (summaryEl) {
+    summaryEl.textContent = `Lớp ${targetClass} • ${cfg.periodLabel || 'Tháng hiện tại'} (${
+      cfg.batchLabel || 'ĐỢT HIỆN TẠI'
+    }) • Đã tích dạy: ${checkedSessions} buổi • Sĩ số: ${classStudents.length} HS (Đã đóng: ${paidCount}/${
+      classStudents.length
+    } HS)`;
+  }
+
+  // Tự động gợi ý tên Đợt tiếp theo (VD: ĐỢT SỐ 5 -> ĐỢT SỐ 6)
+  let nextBatch = 'ĐỢT SỐ 2';
+  const batchMatch = String(cfg.batchLabel || '').match(/(\d+)/);
+  if (batchMatch) {
+    const nextNum = parseInt(batchMatch[1], 10) + 1;
+    nextBatch = String(cfg.batchLabel).replace(/\d+/, String(nextNum));
+  }
+
+  // Tự động gợi ý ngày bắt đầu và kết thúc cho đợt tiếp theo
+  let nextStartStr = new Date().toISOString().slice(0, 10);
+  let nextEndStr = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  if (cfg.endDate) {
+    const oldEnd = new Date(cfg.endDate + 'T00:00:00');
+    if (!isNaN(oldEnd.getTime())) {
+      const nStart = new Date(oldEnd);
+      nStart.setDate(oldEnd.getDate() + 1);
+      const nEnd = new Date(nStart);
+      nEnd.setDate(nStart.getDate() + 35); // Khoảng 5 tuần (~12-15 buổi)
+      nextStartStr = nStart.toISOString().slice(0, 10);
+      nextEndStr = nEnd.toISOString().slice(0, 10);
+    }
+  }
+
+  const nextStartDateObj = new Date(nextStartStr + 'T00:00:00');
+  const suggestedPeriod = !isNaN(nextStartDateObj.getTime())
+    ? `Tháng ${nextStartDateObj.getMonth() + 1}/${nextStartDateObj.getFullYear()} (${nextBatch})`
+    : `Đợt mới (${nextBatch})`;
+
+  document.getElementById('rollover-new-period').value = suggestedPeriod;
+  document.getElementById('rollover-new-batch').value = nextBatch;
+  document.getElementById('rollover-new-start').value = nextStartStr;
+  document.getElementById('rollover-new-end').value = nextEndStr;
+
+  modal.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeRolloverBatchModal() {
+  const modal = document.getElementById('rollover-batch-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function confirmRolloverClassBatch(event) {
+  event.preventDefault();
+  const newPeriod = document.getElementById('rollover-new-period').value.trim();
+  const newBatch = document.getElementById('rollover-new-batch').value.trim();
+  const newStart = document.getElementById('rollover-new-start').value;
+  const newEnd = document.getElementById('rollover-new-end').value;
+
+  if (!newPeriod || !newBatch) {
+    showToast('Vui lòng nhập Kỳ học / Tháng mới và Nhãn Đợt mới!', 'warning');
+    return;
+  }
+
+  const map = getClassSchedulesMap();
+  const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  const oldCfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+
+  const totalExpected = classStudents.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
+  const paidStudents = classStudents.filter(item => item.status === 'Đã hoàn thành');
+  const totalCollected = paidStudents.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
+  const totalMissing = Math.max(0, totalExpected - totalCollected);
+  const checkedSessions = countCheckedSessionsInConfig(oldCfg);
+  const nowStr = getCurrentDateTimeString();
+
+  // 1. Tạo bản ghi lưu trữ toàn bộ đợt cũ vào Lịch sử
+  const archiveRecord = {
+    id: 'HIST_' + Date.now(),
+    archivedAt: nowStr,
+    className: targetClass,
+    subject: oldCfg.subject || 'Toán',
+    periodLabel: oldCfg.periodLabel || 'Đợt trước',
+    batchLabel: oldCfg.batchLabel || 'ĐỢT CŨ',
+    startDate: oldCfg.startDate,
+    endDate: oldCfg.endDate,
+    daysOfWeek: Array.isArray(oldCfg.daysOfWeek) ? [...oldCfg.daysOfWeek] : [1, 3, 5, 0],
+    sessionStates: { ...(oldCfg.sessionStates || {}) },
+    checkedSessions,
+    totalStudents: classStudents.length,
+    paidCount: paidStudents.length,
+    totalExpected,
+    totalCollected,
+    totalMissing,
+    studentsSnapshot: classStudents.map(st => ({ ...st }))
+  };
+
+  const historyList = getClassHistoryList();
+  historyList.unshift(archiveRecord);
+  if (!appState.settings) appState.settings = {};
+  appState.settings.classHistoryJson = JSON.stringify(historyList);
+
+  // 2. Cập nhật cấu hình lớp sang Đợt / Tháng mới (xóa màu lịch cũ để bắt đầu tích chọn buổi mới)
+  map[targetClass] = {
+    ...oldCfg,
+    periodLabel: newPeriod,
+    batchLabel: newBatch,
+    startDate: newStart,
+    endDate: newEnd,
+    sessionStates: {}
+  };
+  appState.settings.classSchedulesJson = JSON.stringify(map);
+
+  // 3. Giữ nguyên toàn bộ Học sinh & Số tiền học phí của lớp, đặt lại trạng thái đóng học phí cho Đợt mới
+  (appState.students || []).forEach(st => {
+    if (st.className === targetClass) {
+      st.period = newPeriod;
+      st.status = 'Chưa đóng';
+      st.note = '';
+      st.receiptUrl = '';
+      st.updatedAt = nowStr;
+    }
+  });
+
+  closeRolloverBatchModal();
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(
+    `✅ Đã lưu "${oldCfg.periodLabel} (${oldCfg.batchLabel})" vào mục Lịch Sử và chuyển lớp ${targetClass} sang "${newPeriod}" (giữ nguyên ${classStudents.length} học sinh & mức học phí)!`
+  );
+}
+
+function openHistoryForCurrentClass() {
+  switchAdminTab('history');
+  const filterEl = document.getElementById('history-filter-class');
+  if (filterEl && selectedClassbookClass) {
+    const histList = getClassHistoryList();
+    const hasClass = histList.some(h => h.className === selectedClassbookClass);
+    filterEl.value = hasClass ? selectedClassbookClass : 'ALL';
+    renderAdminHistory();
+  }
+}
+
+function renderAdminHistory() {
+  const container = document.getElementById('history-batches-container');
+  const filterSelect = document.getElementById('history-filter-class');
+  if (!container) return;
+
+  const historyList = getClassHistoryList();
+
+  // Cập nhật dropdown lọc theo lớp trong mục Lịch sử
+  if (filterSelect) {
+    const curVal = filterSelect.value || 'ALL';
+    const classes = Array.from(new Set(historyList.map(h => h.className).filter(Boolean)));
+    filterSelect.innerHTML =
+      `<option value="ALL">Tất cả các lớp (${historyList.length} đợt đã lưu)</option>` +
+      classes
+        .map(c => {
+          const cnt = historyList.filter(h => h.className === c).length;
+          return `<option value="${escapeAttr(c)}">Lớp ${escapeHtml(c)} (${cnt} đợt)</option>`;
+        })
+        .join('');
+    if (classes.includes(curVal)) {
+      filterSelect.value = curVal;
+    }
+  }
+
+  const activeClassFilter = filterSelect ? filterSelect.value : 'ALL';
+  const filteredHistory =
+    activeClassFilter === 'ALL'
+      ? historyList
+      : historyList.filter(h => h.className === activeClassFilter);
+
+  if (filteredHistory.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-2 shadow-2xs">
+        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto">
+          <i data-lucide="archive" class="w-6 h-6"></i>
+        </div>
+        <h4 class="font-bold text-slate-800 text-base">Chưa có đợt học cũ nào trong mục Lịch Sử</h4>
+        <p class="text-xs text-slate-500 max-w-lg mx-auto">
+          Khi một lớp học xong đủ số buổi (VD: hết 12 buổi), bạn chỉ cần bấm nút <strong>"⏭️ Sang Đợt / Tháng Tiếp Theo (Lưu Lịch Sử)"</strong> ở mục Sổ Theo Dõi Lớp Học. Toàn bộ đợt cũ sẽ được lưu trữ tại đây và lớp sẽ sang đợt mới (giữ nguyên danh sách học sinh &amp; số tiền).
+        </p>
+      </div>
+    `;
+    lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = filteredHistory
+    .map(hist => {
+      const students = hist.studentsSnapshot || [];
+      const totalCount = students.length;
+      const paidStudents = students.filter(s => s.status === 'Đã hoàn thành');
+      const paidCount = paidStudents.length;
+      const paidRate = totalCount > 0 ? ((paidCount / totalCount) * 100).toFixed(1).replace('.', ',') + '%' : '0%';
+      const totalExpected = students.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
+      const totalCollected = paidStudents.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
+      const totalMissing = Math.max(0, totalExpected - totalCollected);
+
+      // Tạo bảng lịch của đợt cũ
+      const { orderedCols, weeks } = generateScheduleWeeks(hist.startDate, hist.endDate, hist.daysOfWeek);
+      const states = hist.sessionStates || {};
+      const colCount = Math.max(1, orderedCols.length);
+      const checkedSessions = countCheckedSessionsInConfig(hist);
+
+      const scheduleRowsHtml = weeks
+        .map(row => {
+          let weekDone = 0;
+          const cells = row
+            .map(cell => {
+              if (!cell.inRange) return `<td class="py-2 px-1.5 bg-slate-50 text-slate-300">-</td>`;
+              const st = Number(states[cell.dateKey] || 0);
+              if (st === 1 || st === 2) weekDone++;
+              const prefix = st === 1 ? '✓ ' : st === 2 ? '★ ' : st === 3 ? '✕ ' : '';
+              return `<td class="py-2 px-1.5 session-state-${st} text-xs">${prefix}${cell.label}</td>`;
+            })
+            .join('');
+          return `
+            <tr>
+              ${cells}
+              <td class="py-2 px-1.5 text-xs font-bold text-blue-700 bg-slate-50/40">
+                ${weekDone > 0 ? `${weekDone} buổi` : ''}
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      const studentRowsHtml =
+        students.length === 0
+          ? `<tr><td colspan="6" class="py-6 text-center text-slate-400 text-xs">Không có học sinh trong đợt lưu trữ này.</td></tr>`
+          : students
+              .map((s, idx) => {
+                const isPaid = s.status === 'Đã hoàn thành';
+                return `
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2 px-2 text-center font-semibold text-slate-600">${idx + 1}</td>
+                    <td class="py-2 px-3">
+                      <div class="font-bold text-slate-900">${escapeHtml(s.fullName)}</div>
+                      <div class="text-[11px] text-slate-400 font-mono">${escapeHtml(s.studentCode)} • SĐT: ${escapeHtml(
+                  s.parentPhone || '---'
+                )}</div>
+                    </td>
+                    <td class="py-2 px-2.5 text-right font-bold text-slate-800">${formatCurrency(s.tuitionFee)}</td>
+                    <td class="py-2 px-2 text-center">
+                      <input
+                        type="checkbox"
+                        ${isPaid ? 'checked' : ''}
+                        onchange="toggleHistoryStudentPaid('${hist.id}', ${idx}, this.checked)"
+                        title="Tích chọn nếu học sinh đóng bù học phí của đợt cũ này"
+                        class="w-4 h-4 rounded text-emerald-600 cursor-pointer"
+                      />
+                    </td>
+                    <td class="py-2 px-2 text-center font-bold text-xs ${
+                      isPaid ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-50 text-rose-700'
+                    }">
+                      ${escapeHtml(s.status)}
+                    </td>
+                    <td class="py-2 px-2.5 text-xs text-slate-600">${escapeHtml(s.note || '')}</td>
+                  </tr>
+                `;
+              })
+              .join('');
+
+      return `
+        <div class="bg-white rounded-2xl border-2 border-purple-900/80 shadow-md overflow-hidden">
+          <!-- Banner Đợt Lịch Sử -->
+          <div class="bg-gradient-to-r from-[#1f3d6e] to-purple-900 text-white py-3 px-4 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase">
+                ${escapeHtml(hist.batchLabel || 'ĐỢT CŨ')}
+              </span>
+              <span class="font-extrabold text-sm sm:text-base uppercase">
+                LỚP ${escapeHtml(hist.className)} — ${escapeHtml(hist.periodLabel)}
+              </span>
+              <span class="text-xs text-purple-200">
+                (Lưu lúc: ${escapeHtml(hist.archivedAt)})
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                onclick="restoreHistoryBatch('${hist.id}')"
+                class="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                title="Khôi phục lại đợt này làm đợt đang học hiện tại của lớp"
+              >
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Khôi phục đợt này</span>
+              </button>
+              <button
+                type="button"
+                onclick="deleteHistoryBatch('${hist.id}')"
+                class="px-2.5 py-1 rounded-lg bg-rose-500/30 hover:bg-rose-600 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                title="Xóa bản lưu lịch sử này"
+              >
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Xóa</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Đợt Cũ -->
+          <div class="p-4 space-y-4">
+            <div class="grid grid-cols-2 lg:grid-cols-4 border border-slate-300 rounded-lg overflow-hidden text-center">
+              <div class="border-r border-b lg:border-b-0 border-slate-300">
+                <div class="sheet-kpi-label py-1.5 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">SĨ SỐ LỚP</div>
+                <div class="py-2.5 text-xl font-extrabold text-blue-600">${totalCount}</div>
+              </div>
+              <div class="border-b lg:border-b-0 lg:border-r border-slate-300">
+                <div class="sheet-kpi-label py-1.5 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">TỶ LỆ ĐÃ NỘP</div>
+                <div class="py-2.5 text-xl font-extrabold text-slate-900">${paidRate}</div>
+              </div>
+              <div class="border-r border-slate-300">
+                <div class="sheet-kpi-label py-1.5 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">TỔNG THỰC THU</div>
+                <div class="py-2.5 text-xl font-extrabold text-emerald-700">${formatCurrency(totalCollected)}</div>
+              </div>
+              <div>
+                <div class="sheet-kpi-label py-1.5 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">KHOẢN CÒN THIẾU</div>
+                <div class="py-2.5 text-xl font-extrabold text-rose-600">${formatCurrency(totalMissing)}</div>
+              </div>
+            </div>
+
+            <!-- 2 Bảng Học sinh & Lịch dạy của Đợt Cũ -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+              <div class="xl:col-span-7 overflow-x-auto">
+                <table class="sheet-table text-xs sm:text-sm">
+                  <thead>
+                    <tr class="sheet-navy-header text-center font-bold text-xs">
+                      <th class="py-2 px-2 w-10">STT</th>
+                      <th class="py-2 px-3 text-left">Họ và tên</th>
+                      <th class="py-2 px-2.5 text-right">Học phí</th>
+                      <th class="py-2 px-2 w-24">Đã thanh toán</th>
+                      <th class="py-2 px-2.5 w-32">Tình trạng</th>
+                      <th class="py-2 px-2.5 text-left">Ghi chú</th>
+                    </tr>
+                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
+                      <td colspan="2" class="py-2 px-3 text-center uppercase">TỔNG CỘNG ĐỢT CŨ</td>
+                      <td class="py-2 px-2.5 text-right">${formatCurrency(totalExpected)}</td>
+                      <td class="py-2 px-2 text-center">${paidCount} em</td>
+                      <td class="py-2 px-2.5 text-right text-emerald-700">${formatCurrency(totalCollected)}</td>
+                      <td class="py-2 px-2.5 text-right text-rose-600">${formatCurrency(totalMissing)}</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${studentRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="xl:col-span-5 overflow-x-auto">
+                <table class="sheet-table text-xs sm:text-sm text-center">
+                  <thead>
+                    <tr class="sheet-navy-header font-bold text-xs uppercase">
+                      <th colspan="${colCount}" class="py-2 px-2">SỐ BUỔI HỌC CỦA ${escapeHtml(hist.periodLabel)}</th>
+                      <th class="py-2 px-2 w-24">${escapeHtml(hist.batchLabel)}</th>
+                    </tr>
+                    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
+                      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
+                      <th class="py-2 px-1.5">TỔNG SỐ BUỔI</th>
+                    </tr>
+                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
+                      <td colspan="${colCount}" class="py-2 px-2 text-center uppercase text-slate-800">TỔNG CỘNG SỐ BUỔI DẠY</td>
+                      <td class="py-2 px-2 text-center text-blue-700 font-extrabold">${checkedSessions} buổi</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${scheduleRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  lucide.createIcons();
+}
+
+async function toggleHistoryStudentPaid(histId, studentIdx, isChecked) {
+  const historyList = getClassHistoryList();
+  const hist = historyList.find(h => h.id === histId);
+  if (!hist || !hist.studentsSnapshot || !hist.studentsSnapshot[studentIdx]) return;
+
+  const st = hist.studentsSnapshot[studentIdx];
+  st.status = isChecked ? 'Đã hoàn thành' : 'Chưa đóng';
+  if (isChecked && !st.note) {
+    st.note = 'Đã đóng bù đợt cũ';
+    // Tự động ghi phiếu thu vào Sổ Thu - Chi
+    appState.transactions.unshift({
+      id: 'GD_HIST_' + Date.now(),
+      date: new Date().toISOString().slice(0, 10),
+      type: 'Thu',
+      category: 'Thu học phí',
+      amount: Number(st.tuitionFee) || 0,
+      description: `Thu học phí đợt cũ (${hist.periodLabel} - ${hist.batchLabel}) - ${st.studentCode} ${st.fullName}`,
+      studentCode: st.studentCode,
+      method: 'Chuyển khoản',
+      receiptUrl: '',
+      createdBy: 'Quản lý (Lịch sử)'
+    });
+  }
+
+  saveClassHistoryList(historyList, `Đã cập nhật học phí đợt cũ của học sinh ${st.fullName}!`);
+}
+
+async function restoreHistoryBatch(histId) {
+  const historyList = getClassHistoryList();
+  const idx = historyList.findIndex(h => h.id === histId);
+  if (idx === -1) return;
+  const hist = historyList[idx];
+
+  if (
+    !confirm(
+      `Bạn có muốn khôi phục lại đợt "${hist.periodLabel} (${hist.batchLabel})" của lớp ${hist.className} về lại Sổ Theo Dõi Lớp Học hiện tại không?`
+    )
+  ) {
+    return;
+  }
+
+  const map = getClassSchedulesMap();
+  map[hist.className] = {
+    className: hist.className,
+    subject: hist.subject || 'Toán',
+    periodLabel: hist.periodLabel,
+    batchLabel: hist.batchLabel,
+    status: 'Đang diễn ra',
+    startDate: hist.startDate,
+    endDate: hist.endDate,
+    daysOfWeek: hist.daysOfWeek || [1, 3, 5, 0],
+    sessionStates: hist.sessionStates || {}
+  };
+
+  // Khôi phục trạng thái học sinh của lớp này theo bản lưu
+  const otherStudents = (appState.students || []).filter(s => s.className !== hist.className);
+  appState.students = [...otherStudents, ...(hist.studentsSnapshot || [])];
+
+  // Xóa bản lưu vừa khôi phục khỏi danh sách lịch sử
+  historyList.splice(idx, 1);
+  if (!appState.settings) appState.settings = {};
+  appState.settings.classSchedulesJson = JSON.stringify(map);
+  appState.settings.classHistoryJson = JSON.stringify(historyList);
+
+  selectedClassbookClass = hist.className;
+  switchAdminTab('classbook');
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(`Đã khôi phục đợt "${hist.periodLabel}" của lớp ${hist.className}!`);
+}
+
+async function deleteHistoryBatch(histId) {
+  const historyList = getClassHistoryList();
+  const idx = historyList.findIndex(h => h.id === histId);
+  if (idx === -1) return;
+  const hist = historyList[idx];
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa bản lưu lịch sử "${hist.periodLabel} (${hist.batchLabel})" của lớp ${hist.className}?`)) {
+    return;
+  }
+
+  historyList.splice(idx, 1);
+  saveClassHistoryList(historyList, 'Đã xóa bản lưu lịch sử đợt học.');
 }
 
 // ============================================================================
