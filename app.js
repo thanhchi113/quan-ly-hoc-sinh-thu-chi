@@ -3225,34 +3225,51 @@ function renderClassbookScheduleTable(cfg) {
 
   const colCount = Math.max(1, orderedCols.length);
   const checkedSessions = taughtCount + confirmedCount;
+  const leftSpan = colCount > 1 ? colCount - 1 : 1;
 
-  thead.innerHTML = `
+  thead.innerHTML =
+    colCount > 1
+      ? `
     <tr class="sheet-navy-header font-bold text-xs uppercase">
-      <th colspan="${colCount}" class="py-2.5 px-2">
+      <th colspan="${leftSpan}" class="py-2.5 px-2">
         SỐ BUỔI HỌC CỦA ${escapeHtml(cfg.periodLabel || 'THÁNG 10-11/2026')}
       </th>
-      <th class="py-2.5 px-2 w-24">
+      <th class="py-2.5 px-2">
         ${escapeHtml(cfg.batchLabel || 'ĐỢT SỐ 5')}
       </th>
     </tr>
-    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
-      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
-      <th class="py-2 px-1.5">TỔNG SỐ BUỔI</th>
-    </tr>
     <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
-      <td colspan="${colCount}" class="py-2 px-2 text-center uppercase text-slate-800">
+      <td colspan="${leftSpan}" class="py-2 px-2 text-center uppercase text-slate-800">
         TỔNG CỘNG SỐ BUỔI DẠY
       </td>
       <td class="py-2 px-2 text-center text-blue-700 font-extrabold">
         ${checkedSessions} buổi
       </td>
     </tr>
+    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
+      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
+    </tr>
+  `
+      : `
+    <tr class="sheet-navy-header font-bold text-xs uppercase">
+      <th class="py-2.5 px-2">
+        SỐ BUỔI HỌC CỦA ${escapeHtml(cfg.periodLabel || 'THÁNG 10-11/2026')} (${escapeHtml(cfg.batchLabel || 'ĐỢT SỐ 5')})
+      </th>
+    </tr>
+    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
+      <td class="py-2 px-2 text-center uppercase text-slate-800">
+        TỔNG CỘNG SỐ BUỔI DẠY: <span class="text-blue-700 font-extrabold">${checkedSessions} buổi</span>
+      </td>
+    </tr>
+    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
+      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
+    </tr>
   `;
 
   if (weeks.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="${colCount + 1}" class="py-8 text-center text-slate-400 text-xs">
+        <td colspan="${colCount}" class="py-8 text-center text-slate-400 text-xs">
           Chưa có ngày học trong khoảng đã chọn. Hãy bấm <strong>"Cài đặt Lịch học"</strong> để chọn Từ ngày &rarr; Đến ngày.
         </td>
       </tr>
@@ -3261,16 +3278,13 @@ function renderClassbookScheduleTable(cfg) {
   }
 
   tbody.innerHTML = weeks
-    .map((row, wIdx) => {
-      // Đếm số buổi đã dạy trong tuần này
-      let weekDone = 0;
+    .map(row => {
       const cellsHtml = row
         .map(cell => {
           if (!cell.inRange) {
             return `<td class="py-2 px-1.5 bg-slate-50 text-slate-300">-</td>`;
           }
           const st = Number(states[cell.dateKey] || 0);
-          if (st === 1 || st === 2) weekDone++;
           const prefix = st === 1 ? '✓ ' : st === 2 ? '★ ' : st === 3 ? '✕ ' : '';
           const titleTip =
             st === 1
@@ -3296,9 +3310,6 @@ function renderClassbookScheduleTable(cfg) {
       return `
         <tr>
           ${cellsHtml}
-          <td class="py-2 px-1.5 text-xs font-bold text-blue-700 bg-slate-50/40">
-            ${weekDone > 0 ? `${weekDone} buổi` : ''}
-          </td>
         </tr>
       `;
     })
@@ -3780,16 +3791,15 @@ function renderAdminHistory() {
       const { orderedCols, weeks } = generateScheduleWeeks(hist.startDate, hist.endDate, hist.daysOfWeek);
       const states = hist.sessionStates || {};
       const colCount = Math.max(1, orderedCols.length);
+      const leftSpan = colCount > 1 ? colCount - 1 : 1;
       const checkedSessions = countCheckedSessionsInConfig(hist);
 
       const scheduleRowsHtml = weeks
         .map(row => {
-          let weekDone = 0;
           const cells = row
             .map(cell => {
               if (!cell.inRange) return `<td class="py-2 px-1.5 bg-slate-50 text-slate-300">-</td>`;
               const st = Number(states[cell.dateKey] || 0);
-              if (st === 1 || st === 2) weekDone++;
               const prefix = st === 1 ? '✓ ' : st === 2 ? '★ ' : st === 3 ? '✕ ' : '';
               return `<td class="py-2 px-1.5 session-state-${st} text-xs">${prefix}${cell.label}</td>`;
             })
@@ -3797,9 +3807,6 @@ function renderAdminHistory() {
           return `
             <tr>
               ${cells}
-              <td class="py-2 px-1.5 text-xs font-bold text-blue-700 bg-slate-50/40">
-                ${weekDone > 0 ? `${weekDone} buổi` : ''}
-              </td>
             </tr>
           `;
         })
@@ -3939,16 +3946,15 @@ function renderAdminHistory() {
                 <table class="sheet-table text-xs sm:text-sm text-center">
                   <thead>
                     <tr class="sheet-navy-header font-bold text-xs uppercase">
-                      <th colspan="${colCount}" class="py-2 px-2">SỐ BUỔI HỌC CỦA ${escapeHtml(hist.periodLabel)}</th>
-                      <th class="py-2 px-2 w-24">${escapeHtml(hist.batchLabel)}</th>
+                      <th colspan="${leftSpan}" class="py-2 px-2">SỐ BUỔI HỌC CỦA ${escapeHtml(hist.periodLabel)}</th>
+                      <th class="py-2 px-2">${escapeHtml(hist.batchLabel)}</th>
+                    </tr>
+                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
+                      <td colspan="${leftSpan}" class="py-2 px-2 text-center uppercase text-slate-800">TỔNG CỘNG SỐ BUỔI DẠY</td>
+                      <td class="py-2 px-2 text-center text-blue-700 font-extrabold">${checkedSessions} buổi</td>
                     </tr>
                     <tr class="sheet-navy-header font-bold text-[11px] uppercase">
                       ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
-                      <th class="py-2 px-1.5">TỔNG SỐ BUỔI</th>
-                    </tr>
-                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
-                      <td colspan="${colCount}" class="py-2 px-2 text-center uppercase text-slate-800">TỔNG CỘNG SỐ BUỔI DẠY</td>
-                      <td class="py-2 px-2 text-center text-blue-700 font-extrabold">${checkedSessions} buổi</td>
                     </tr>
                   </thead>
                   <tbody>
