@@ -3225,44 +3225,42 @@ function renderClassbookScheduleTable(cfg) {
 
   const colCount = Math.max(1, orderedCols.length);
   const checkedSessions = taughtCount + confirmedCount;
-  const leftSpan = colCount > 1 ? colCount - 1 : 1;
+  const colWidthPct = (100 / colCount).toFixed(2) + '%';
+  const batchText = (cfg.batchLabel || 'ĐỢT SỐ 5').trim();
+  const cleanPeriod =
+    String(cfg.periodLabel || 'THÁNG 10-11/2026')
+      .replace(/\(\s*ĐỢT[^)]*\)/gi, '')
+      .trim() || 'THÁNG HIỆN TẠI';
 
-  thead.innerHTML =
-    colCount > 1
-      ? `
-    <tr class="sheet-navy-header font-bold text-xs uppercase">
-      <th colspan="${leftSpan}" class="py-2.5 px-2">
-        SỐ BUỔI HỌC CỦA ${escapeHtml(cfg.periodLabel || 'THÁNG 10-11/2026')}
-      </th>
-      <th class="py-2.5 px-2">
-        ${escapeHtml(cfg.batchLabel || 'ĐỢT SỐ 5')}
-      </th>
-    </tr>
-    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
-      <td colspan="${leftSpan}" class="py-2 px-2 text-center uppercase text-slate-800">
-        TỔNG CỘNG SỐ BUỔI DẠY
-      </td>
-      <td class="py-2 px-2 text-center text-blue-700 font-extrabold">
-        ${checkedSessions} buổi
-      </td>
-    </tr>
-    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
-      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
-    </tr>
-  `
-      : `
-    <tr class="sheet-navy-header font-bold text-xs uppercase">
-      <th class="py-2.5 px-2">
-        SỐ BUỔI HỌC CỦA ${escapeHtml(cfg.periodLabel || 'THÁNG 10-11/2026')} (${escapeHtml(cfg.batchLabel || 'ĐỢT SỐ 5')})
+  thead.innerHTML = `
+    <tr class="sheet-navy-header">
+      <th colspan="${colCount}" class="py-2.5 px-3.5 border-b border-blue-900/60">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide text-left">
+            SỐ BUỔI HỌC CỦA ${escapeHtml(cleanPeriod)}
+          </span>
+          <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase shrink-0 shadow-2xs">
+            ${escapeHtml(batchText)}
+          </span>
+        </div>
       </th>
     </tr>
-    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
-      <td class="py-2 px-2 text-center uppercase text-slate-800">
-        TỔNG CỘNG SỐ BUỔI DẠY: <span class="text-blue-700 font-extrabold">${checkedSessions} buổi</span>
+    <tr class="bg-slate-100 border-b-2 border-slate-300">
+      <td colspan="${colCount}" class="py-2 px-3.5">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+            TỔNG CỘNG SỐ BUỔI DẠY
+          </span>
+          <span class="px-3 py-0.5 rounded-full bg-blue-600 text-white font-extrabold text-xs shadow-2xs">
+            ${checkedSessions} buổi
+          </span>
+        </div>
       </td>
     </tr>
-    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
-      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
+    <tr class="bg-[#25477d] text-white font-extrabold text-xs uppercase tracking-wider">
+      ${orderedCols
+        .map(d => `<th style="width: ${colWidthPct}" class="py-2.5 px-1.5 border border-slate-300/40">${DAY_LABELS[d]}</th>`)
+        .join('')}
     </tr>
   `;
 
@@ -3282,7 +3280,7 @@ function renderClassbookScheduleTable(cfg) {
       const cellsHtml = row
         .map(cell => {
           if (!cell.inRange) {
-            return `<td class="py-2 px-1.5 bg-slate-50 text-slate-300">-</td>`;
+            return `<td style="width: ${colWidthPct}" class="py-2.5 px-1.5 bg-slate-50/80 text-slate-300 font-medium select-none h-[42px]">–</td>`;
           }
           const st = Number(states[cell.dateKey] || 0);
           const prefix = st === 1 ? '✓ ' : st === 2 ? '★ ' : st === 3 ? '✕ ' : '';
@@ -3297,9 +3295,10 @@ function renderClassbookScheduleTable(cfg) {
 
           return `
             <td
+              style="width: ${colWidthPct}"
               onclick="toggleSessionDateState('${escapeAttr(cfg.className)}', '${cell.dateKey}')"
               title="${titleTip}"
-              class="py-2.5 px-1.5 session-cell session-state-${st} text-xs"
+              class="py-2.5 px-1.5 session-cell session-state-${st} text-xs sm:text-sm"
             >
               ${prefix}${cell.label}
             </td>
@@ -3554,8 +3553,8 @@ function openRolloverBatchModal() {
 
   const nextStartDateObj = new Date(nextStartStr + 'T00:00:00');
   const suggestedPeriod = !isNaN(nextStartDateObj.getTime())
-    ? `Tháng ${nextStartDateObj.getMonth() + 1}/${nextStartDateObj.getFullYear()} (${nextBatch})`
-    : `Đợt mới (${nextBatch})`;
+    ? `Tháng ${nextStartDateObj.getMonth() + 1}/${nextStartDateObj.getFullYear()}`
+    : `Đợt mới`;
 
   document.getElementById('rollover-new-period').value = suggestedPeriod;
   document.getElementById('rollover-new-batch').value = nextBatch;
@@ -3791,17 +3790,21 @@ function renderAdminHistory() {
       const { orderedCols, weeks } = generateScheduleWeeks(hist.startDate, hist.endDate, hist.daysOfWeek);
       const states = hist.sessionStates || {};
       const colCount = Math.max(1, orderedCols.length);
-      const leftSpan = colCount > 1 ? colCount - 1 : 1;
+      const colWidthPct = (100 / colCount).toFixed(2) + '%';
       const checkedSessions = countCheckedSessionsInConfig(hist);
+      const histCleanPeriod =
+        String(hist.periodLabel || 'THÁNG CŨ')
+          .replace(/\(\s*ĐỢT[^)]*\)/gi, '')
+          .trim() || 'ĐỢT CŨ';
 
       const scheduleRowsHtml = weeks
         .map(row => {
           const cells = row
             .map(cell => {
-              if (!cell.inRange) return `<td class="py-2 px-1.5 bg-slate-50 text-slate-300">-</td>`;
+              if (!cell.inRange) return `<td style="width: ${colWidthPct}" class="py-2.5 px-1.5 bg-slate-50/80 text-slate-300 h-[40px]">–</td>`;
               const st = Number(states[cell.dateKey] || 0);
               const prefix = st === 1 ? '✓ ' : st === 2 ? '★ ' : st === 3 ? '✕ ' : '';
-              return `<td class="py-2 px-1.5 session-state-${st} text-xs">${prefix}${cell.label}</td>`;
+              return `<td style="width: ${colWidthPct}" class="py-2.5 px-1.5 session-state-${st} text-xs sm:text-sm h-[40px] font-semibold">${prefix}${cell.label}</td>`;
             })
             .join('');
           return `
@@ -3942,25 +3945,45 @@ function renderAdminHistory() {
                 </table>
               </div>
 
-              <div class="xl:col-span-5 overflow-x-auto">
-                <table class="sheet-table text-xs sm:text-sm text-center">
-                  <thead>
-                    <tr class="sheet-navy-header font-bold text-xs uppercase">
-                      <th colspan="${leftSpan}" class="py-2 px-2">SỐ BUỔI HỌC CỦA ${escapeHtml(hist.periodLabel)}</th>
-                      <th class="py-2 px-2">${escapeHtml(hist.batchLabel)}</th>
-                    </tr>
-                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
-                      <td colspan="${leftSpan}" class="py-2 px-2 text-center uppercase text-slate-800">TỔNG CỘNG SỐ BUỔI DẠY</td>
-                      <td class="py-2 px-2 text-center text-blue-700 font-extrabold">${checkedSessions} buổi</td>
-                    </tr>
-                    <tr class="sheet-navy-header font-bold text-[11px] uppercase">
-                      ${orderedCols.map(d => `<th class="py-2 px-1.5">${DAY_LABELS[d]}</th>`).join('')}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${scheduleRowsHtml}
-                  </tbody>
-                </table>
+              <div class="xl:col-span-5">
+                <div class="rounded-xl overflow-hidden border-2 border-[#1f3d6e] shadow-xs bg-white">
+                  <table class="sheet-table table-fixed w-full text-xs sm:text-sm text-center">
+                    <thead>
+                      <tr class="sheet-navy-header">
+                        <th colspan="${colCount}" class="py-2.5 px-3.5 border-b border-blue-900/60">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide text-left">
+                              SỐ BUỔI HỌC CỦA ${escapeHtml(histCleanPeriod)}
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase shrink-0">
+                              ${escapeHtml(hist.batchLabel)}
+                            </span>
+                          </div>
+                        </th>
+                      </tr>
+                      <tr class="bg-slate-100 border-b-2 border-slate-300">
+                        <td colspan="${colCount}" class="py-2 px-3.5">
+                          <div class="flex items-center justify-between gap-2">
+                            <span class="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+                              TỔNG CỘNG SỐ BUỔI DẠY
+                            </span>
+                            <span class="px-3 py-0.5 rounded-full bg-blue-600 text-white font-extrabold text-xs">
+                              ${checkedSessions} buổi
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="bg-[#25477d] text-white font-extrabold text-xs uppercase tracking-wider">
+                        ${orderedCols
+                          .map(d => `<th style="width: ${colWidthPct}" class="py-2.5 px-1.5 border border-slate-300/40">${DAY_LABELS[d]}</th>`)
+                          .join('')}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${scheduleRowsHtml}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
