@@ -20,7 +20,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
       <!-- Brand -->
       <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-200 shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0">
           <i data-lucide="graduation-cap" class="w-6 h-6"></i>
         </div>
         <div class="truncate">
@@ -34,13 +34,38 @@
         </div>
       </div>
 
-      <!-- Mode Switcher & Quick Sync -->
-      <div class="flex items-center gap-2 shrink-0">
+      <!-- Mode Switcher, Theme Customizer & Quick Sync -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Nút chuyển nhanh Sáng / Tối -->
+        <button
+          id="btn-darkmode-toggle"
+          type="button"
+          onclick="toggleDarkModeQuick()"
+          title="Chuyển đổi nhanh Chế độ Sáng / Tối (Light / Dark Mode)"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
+        >
+          <span id="darkmode-toggle-icon">🌙</span>
+          <span id="darkmode-toggle-label" class="hidden md:inline">Tối</span>
+        </button>
+
+        <!-- Nút Cài Đặt Màu Sắc & Giao Diện Web -->
+        <button
+          id="btn-open-theme-modal"
+          type="button"
+          onclick="openThemeCustomizerModal()"
+          title="Tùy chỉnh màu sắc giao diện & chế độ Sáng / Tối"
+          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer"
+        >
+          <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Màu sắc</span>
+          <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#1f3d6e] border border-white shadow-2xs"></span>
+        </button>
+
         <button
           id="btn-quick-sync"
           onclick="syncFromGoogleSheet(true)"
           title="Lấy dữ liệu mới nhất từ Google Sheet về ứng dụng"
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition"
+          class="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
         >
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="icon-quick-sync"></i>
           <span>Đồng bộ Sheet</span>
@@ -51,7 +76,7 @@
           <button
             id="btn-mode-parent"
             onclick="switchAppMode('parent')"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-blue-600 shadow-xs"
+            class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-blue-600 shadow-xs cursor-pointer"
           >
             <i data-lucide="users" class="w-4 h-4"></i>
             <span>Phụ huynh / HS</span>
@@ -59,7 +84,7 @@
           <button
             id="btn-mode-admin"
             onclick="switchAppMode('admin')"
-            class="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900"
+            class="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 cursor-pointer"
           >
             <i data-lucide="shield-check" class="w-4 h-4"></i>
             <span>Quản lý</span>
@@ -81,7 +106,7 @@
     <!-- =================================================================== -->
     <section id="parent-view" class="animate-fade-in space-y-6">
       <!-- Hero Search Box -->
-      <div class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg">
+      <div class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 theme-hero-banner rounded-2xl p-6 sm:p-8 text-white shadow-lg">
         <div class="max-w-2xl mx-auto text-center space-y-3">
           <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 text-blue-100 backdrop-blur-xs">
             <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
@@ -304,83 +329,86 @@
         </div>
 
         <!-- =============================================================== -->
-        <!-- SEPAY LIVE BANK BALANCE & REALTIME NOTIFICATION BAR             -->
+        <!-- SEPAY LIVE BANK BALANCE & REALTIME NOTIFICATION BAR (BALANCED)  -->
         <!-- =============================================================== -->
-        <div class="bg-gradient-to-r from-[#0f294a] via-[#173b6c] to-[#1e4b85] text-white rounded-2xl p-4 shadow-md border border-blue-800/80 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <!-- Left: Live Bank Account Balance -->
-          <div class="flex flex-wrap items-center gap-4">
+        <div class="sepay-live-banner text-white rounded-2xl p-4 sm:px-5 sm:py-4 shadow-md grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <!-- Left (4 cols): Live Bank Account Balance -->
+          <div class="lg:col-span-4 flex items-center gap-3.5 min-w-0">
             <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
               <i data-lucide="wallet" class="w-6 h-6 text-emerald-300"></i>
             </div>
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-blue-200">
-                  Số Dư Ngân Hàng (SePay Live):
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-100 whitespace-nowrap">
+                  Số Dư Ngân Hàng (SePay):
                 </span>
-                <span id="sepay-bank-badge" class="px-2 py-0.5 rounded-md bg-white/15 text-[11px] font-mono font-bold text-amber-300">
+                <span id="sepay-bank-badge" class="px-2 py-0.5 rounded-md bg-white/15 text-[11px] font-mono font-bold text-amber-300 whitespace-nowrap">
                   BIDV • 8601774789
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-bold text-emerald-300">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Tự động báo số dư
-                </span>
               </div>
-              <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
-                <span id="sepay-live-balance" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              <div class="flex flex-wrap items-center gap-2.5 mt-1">
+                <span id="sepay-live-balance" class="text-2xl sm:text-3xl font-black tracking-tight text-white whitespace-nowrap leading-none">
                   0 ₫
                 </span>
                 <button
                   type="button"
                   onclick="promptEditSepayBalance()"
                   title="Chỉnh sửa số dư gốc ban đầu cho khớp với tài khoản BIDV hiện tại của bạn"
-                  class="text-[11px] font-semibold text-blue-200 hover:text-white underline cursor-pointer"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-semibold text-blue-100 hover:text-white transition cursor-pointer whitespace-nowrap"
                 >
-                  (Cập nhật số dư gốc)
+                  <i data-lucide="edit-2" class="w-3 h-3"></i>
+                  <span>Sửa số dư</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Middle: Latest Balance Fluctuation Notification -->
-          <div id="sepay-last-alert-box" class="flex-1 w-full lg:w-auto bg-white/10 backdrop-blur-xs rounded-xl px-3.5 py-2.5 border border-white/15">
-            <div class="flex items-center justify-between gap-2 text-[11px] text-blue-200 font-semibold">
-              <span class="flex items-center gap-1.5">
-                <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300"></i>
-                <span>Biến động số dư gần nhất (SePay Webhook):</span>
+          <!-- Middle (5 cols): Latest Balance Fluctuation Notification -->
+          <div id="sepay-last-alert-box" class="lg:col-span-5 bg-white/10 backdrop-blur-xs rounded-xl px-4 py-2.5 border border-white/15 min-w-0">
+            <div class="flex items-center justify-between gap-2 text-[11px] text-blue-100 font-semibold">
+              <span class="flex items-center gap-1.5 truncate">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+                <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
+                <span class="truncate">Biến động số dư gần nhất (SePay Webhook):</span>
               </span>
-              <span id="sepay-last-alert-time" class="font-mono text-[10px] text-blue-200/90">Chưa có GD mới</span>
+              <span id="sepay-last-alert-time" class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 font-mono text-[10px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
+                Sẵn sàng 24/7
+              </span>
             </div>
-            <p id="sepay-last-alert-text" class="text-xs sm:text-sm font-bold text-emerald-300 mt-0.5 truncate">
+            <p id="sepay-last-alert-text" class="text-xs sm:text-sm font-bold text-emerald-300 mt-1 truncate">
               Đang chờ thông báo biến động số dư từ SePay.vn...
             </p>
           </div>
 
-          <!-- Right: Actions (Sound Alert, Test, Setup Guide) -->
-          <div class="flex flex-wrap items-center gap-2 shrink-0 w-full lg:w-auto justify-end">
-            <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold cursor-pointer select-none">
+          <!-- Right (3 cols): Actions (Sound Alert, Test, Setup Guide) -->
+          <div class="lg:col-span-3 flex flex-wrap items-center justify-start lg:justify-end gap-2">
+            <label
+              title="Bật/tắt âm báo Ting-Ting khi có học phí chuyển vào tài khoản"
+              class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold cursor-pointer select-none whitespace-nowrap"
+            >
               <input
                 id="sepay-sound-toggle"
                 type="checkbox"
                 checked
                 class="w-3.5 h-3.5 rounded text-emerald-500"
               />
-              <span>🔔 Âm báo Ting-Ting</span>
+              <span>🔔 Âm báo</span>
             </label>
             <button
               type="button"
               onclick="quickTestSepayAlert()"
-              class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
             >
               <i data-lucide="zap" class="w-3.5 h-3.5"></i>
-              <span>Test Báo Số Dư</span>
+              <span>Test Số Dư</span>
             </button>
             <button
               type="button"
               onclick="openSepayGuideModal()"
-              class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
             >
               <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
-              <span>Hướng Dẫn Nối SePay</span>
+              <span>Nối SePay</span>
             </button>
           </div>
         </div>
@@ -389,27 +417,36 @@
         <!-- TAB 0: SỔ THEO DÕI LỚP HỌC & LỊCH DẠY CHUẨN MẪU (GIỐNG ẢNH)    -->
         <!-- =============================================================== -->
         <div id="admin-tab-classbook" class="space-y-4">
-          <!-- KHUNG 1 (TÁCH RIÊNG): CHỌN LỚP ĐỂ XEM HIỆN TẠI -->
-          <div class="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-white p-4 rounded-2xl border-2 border-blue-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-3">
-              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1f3d6e] text-white text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
-                <i data-lucide="school" class="w-4 h-4 text-amber-300"></i>
-                <span>Chọn Lớp Đang Xem:</span>
+          <!-- KHUNG 1 (CÂN ĐỐI 100% CHIỀU RỘNG): CHỌN LỚP ĐỂ XEM HIỆN TẠI -->
+          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3.5">
+            <!-- Hàng 1: Tiêu đề + Lọc nhanh theo Khối + Dropdown Chuyển nhanh -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
+                  <i data-lucide="school" class="w-4 h-4 text-amber-300"></i>
+                  <span>Chọn Lớp Đang Xem</span>
+                </div>
+                <!-- Các nút lọc nhanh theo Khối lớp (Tất cả / Khối 12 / 11 / 10 / 9 / 6-8) -->
+                <div id="classbook-grade-filters" class="flex flex-wrap items-center gap-1.5">
+                  <!-- Rendered by JS -->
+                </div>
               </div>
-              <div id="classbook-class-pills" class="flex flex-wrap items-center gap-2">
-                <!-- Rendered by JS -->
+
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
+                <select
+                  id="classbook-class-dropdown"
+                  onchange="selectClassbookClass(this.value)"
+                  class="px-3.5 py-2 rounded-xl border-2 border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[230px]"
+                >
+                  <!-- Rendered by JS -->
+                </select>
               </div>
             </div>
 
-            <div class="flex items-center gap-2 shrink-0">
-              <span class="text-xs font-semibold text-slate-500 hidden md:inline">Chuyển nhanh:</span>
-              <select
-                id="classbook-class-dropdown"
-                onchange="selectClassbookClass(this.value)"
-                class="px-3.5 py-2 rounded-xl border-2 border-[#1f3d6e]/30 bg-white text-xs sm:text-sm font-extrabold text-[#1f3d6e] focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
-              >
-                <!-- Rendered by JS -->
-              </select>
+            <!-- Hàng 2: Lưới danh sách các Lớp cân đối đều 4 cột trên toàn bộ chiều ngang -->
+            <div id="classbook-class-pills" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
+              <!-- Rendered by JS -->
             </div>
           </div>
 
@@ -1982,11 +2019,11 @@
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-600">
-                  <th class="py-2.5 px-3 text-center w-12">STT</th>
+                  <th class="py-2.5 px-3 text-center w-12 whitespace-nowrap">STT</th>
                   <th class="py-2.5 px-3">Đợt / Kỳ học</th>
-                  <th class="py-2.5 px-3 text-center">Thời gian đợt</th>
-                  <th class="py-2.5 px-3 text-right">Học phí</th>
-                  <th class="py-2.5 px-3 text-center">Trạng thái</th>
+                  <th class="py-2.5 px-3 text-center whitespace-nowrap">Thời gian đợt</th>
+                  <th class="py-2.5 px-3 text-right whitespace-nowrap">Học phí</th>
+                  <th class="py-2.5 px-3 text-center whitespace-nowrap">Trạng thái</th>
                 </tr>
               </thead>
               <tbody id="stu-detail-batches-tbody" class="divide-y divide-slate-100">
@@ -2564,6 +2601,127 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 9: CÀI ĐẶT GIAO DIỆN, MÀU SẮC CHỦ ĐẠO & CHẾ ĐỘ SÁNG / TỐI       -->
+  <!-- ===================================================================== -->
+  <div
+    id="theme-customizer-modal"
+    onclick="closeThemeCustomizerModal()"
+    class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
+    >
+      <!-- Header -->
+      <div class="sheet-navy-header px-6 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i data-lucide="palette" class="w-5 h-5 text-amber-300"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base sm:text-lg text-white">Cài Đặt Giao Diện &amp; Màu Sắc Web</h3>
+            <p class="text-xs text-blue-100">Tùy chỉnh tông màu chủ đạo và chế độ Sáng / Tối theo sở thích</p>
+          </div>
+        </div>
+        <button onclick="closeThemeCustomizerModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 sm:p-6 space-y-5">
+        <!-- 1. Chế độ Sáng / Tối -->
+        <div class="space-y-2.5">
+          <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-600">
+            1. Chế độ hiển thị (Sáng / Tối)
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              id="theme-mode-light-btn"
+              onclick="setDarkMode(false)"
+              class="p-3.5 rounded-2xl border-2 flex items-center gap-3 text-left transition cursor-pointer"
+            >
+              <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                ☀️
+              </div>
+              <div>
+                <div class="font-extrabold text-sm text-slate-900">Chế độ Sáng</div>
+                <div class="text-[11px] text-slate-500">Nền trắng thanh lịch</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              id="theme-mode-dark-btn"
+              onclick="setDarkMode(true)"
+              class="p-3.5 rounded-2xl border-2 flex items-center gap-3 text-left transition cursor-pointer"
+            >
+              <div class="w-10 h-10 rounded-xl bg-slate-800 text-amber-300 flex items-center justify-center text-lg shrink-0">
+                🌙
+              </div>
+              <div>
+                <div class="font-extrabold text-sm text-slate-900">Chế độ Tối</div>
+                <div class="text-[11px] text-slate-500">Dịu mắt ban đêm</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Chọn Tông Màu Chủ Đạo -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-extrabold uppercase tracking-wider text-slate-600">
+              2. Tông màu chủ đạo của trang web
+            </label>
+            <span id="theme-current-label" class="text-xs font-bold text-blue-600">Xanh Navy Chuẩn</span>
+          </div>
+
+          <div id="theme-preset-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- 3. Tùy chọn mã màu tự do -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="font-bold text-xs sm:text-sm text-slate-800">Tự pha màu theo ý thích</div>
+            <div class="text-[11px] text-slate-500">Bấm vào ô màu bên phải để chọn bất kỳ màu nào</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <input
+              type="color"
+              id="theme-custom-color-picker"
+              value="#2563eb"
+              oninput="applyCustomHexTheme(this.value)"
+              class="w-10 h-10 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white"
+              title="Chọn màu tùy thích"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onclick="resetDefaultTheme()"
+          class="px-3.5 py-2 rounded-xl bg-slate-200/80 hover:bg-slate-300/80 text-slate-700 text-xs font-bold cursor-pointer transition"
+        >
+          Khôi phục mặc định
+        </button>
+        <button
+          type="button"
+          onclick="closeThemeCustomizerModal()"
+          class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold cursor-pointer transition shadow-xs"
+        >
+          Hoàn tất
+        </button>
+      </div>
     </div>
   </div>
 
