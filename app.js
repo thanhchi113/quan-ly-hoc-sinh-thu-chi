@@ -654,7 +654,8 @@ function openPaymentModal(studentRecordId = '') {
   document.getElementById('pay-modal-bank').textContent = stg.bankBin || 'BIDV';
   document.getElementById('pay-modal-owner').textContent = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
   document.getElementById('pay-modal-acc').textContent = stg.bankAccountNo || '8601774789';
-  document.getElementById('pay-modal-amount-text').textContent = formatCurrency(feeAmount);
+  document.getElementById('pay-modal-amount-text').textContent =
+    student && student.tuitionFee > 0 ? formatCurrency(student.tuitionFee) : 'Tự nhập trên App Ngân hàng';
   document.getElementById('pay-modal-memo').textContent = memo;
 
   const infoBanner = document.getElementById('pay-student-info-banner');
@@ -737,9 +738,9 @@ function buildVietQrUrl(bankBin, accountNo, accountName, amount, addInfo) {
   const bin = encodeURIComponent((bankBin || 'BIDV').trim());
   const acc = encodeURIComponent((accountNo || '8601774789').trim());
   const name = encodeURIComponent((accountName || 'HKD TRUNG TAM HUYNH THANH CHI').trim());
-  const amt = Number(amount) || 0;
   const info = encodeURIComponent((addInfo || 'HOC PHI').trim());
-  return `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?amount=${amt}&addInfo=${info}&accountName=${name}`;
+  // Không gắn cố định amount trên mã QR để người chuyển tự nhập số tiền
+  return `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?addInfo=${info}&accountName=${name}`;
 }
 
 // Xử lý kéo thả & chọn ảnh biên lai bên Phụ huynh
