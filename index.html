@@ -903,8 +903,8 @@
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 class="font-bold text-slate-900 text-base">Thống Kê Tất Cả Học Sinh (Ngày Bắt Đầu Học &amp; Số Đợt Đã Đóng)</h3>
-                <p class="text-xs text-slate-500">Theo dõi từng học sinh bắt đầu học từ khi nào, đã đóng bao nhiêu đợt (tự động cộng dồn từ Lịch sử các đợt) và trạng thái đợt hiện tại.</p>
+                <h3 class="font-bold text-slate-900 text-base">Thống Kê Tất Cả Học Sinh (Ngày Bắt Đầu Học &amp; Số Đợt Đã Đóng Theo Hệ Thống)</h3>
+                <p class="text-xs text-slate-500">Số đợt đã đóng của mỗi học sinh được <strong>hệ thống tự động đếm</strong> dựa trên dữ liệu đã đóng tiền (Đợt hiện tại + Lịch sử các đợt + Giao dịch chuyển khoản vào STK).</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button
@@ -988,7 +988,7 @@
                     <th class="py-3.5 px-3">Mã HS</th>
                     <th class="py-3.5 px-4">Họ tên Học sinh &amp; Lớp</th>
                     <th class="py-3.5 px-3 text-center">Bắt đầu học từ</th>
-                    <th class="py-3.5 px-3 text-center">Đã đóng bao nhiêu đợt</th>
+                    <th class="py-3.5 px-3 text-center">Đã đóng bao nhiêu đợt (Hệ thống)</th>
                     <th class="py-3.5 px-3">Đợt hiện tại</th>
                     <th class="py-3.5 px-3 text-right">Học phí</th>
                     <th class="py-3.5 px-3 text-center">Trạng thái đóng</th>
@@ -1605,8 +1605,15 @@
           <input type="hidden" id="pay-student-record-id" />
           <div class="flex items-center gap-2">
             <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white">
-              BƯỚC 2: GỬI THÔNG TIN ĐÃ CHUYỂN KHOẢN
+              BƯỚC 2: TỰ ĐỘNG LƯU THÔNG TIN KHI CHUYỂN KHOẢN VÀO STK
             </span>
+          </div>
+
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-[11px] text-emerald-900 flex items-start gap-2">
+            <i data-lucide="zap" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+            <div>
+              <strong>Tự động lưu 100%:</strong> Khi bạn quét mã QR chuyển khoản vào STK <strong>8601774789 (BIDV)</strong> (hoặc bấm Xác nhận bên dưới), hệ thống sẽ <strong>tự động lưu thông tin học sinh, tự động ghi phiếu thu và tự động cộng +1 đợt đã đóng</strong> ngay lập tức!
+            </div>
           </div>
 
           <div id="pay-student-info-banner" class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
