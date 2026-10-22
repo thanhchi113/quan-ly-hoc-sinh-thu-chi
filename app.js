@@ -345,6 +345,12 @@ function refreshAllViews() {
     tabBadge.classList.add('hidden');
   }
 
+  // Đếm tổng số học sinh trên nút Tab "Tất cả Học sinh"
+  const totalStudentsBadge = document.getElementById('tab-all-students-count');
+  if (totalStudentsBadge) {
+    totalStudentsBadge.textContent = `${(appState.students || []).length} HS`;
+  }
+
   // Cập nhật các bộ lọc Lớp và Kỳ học phí
   populateStudentFilterDropdowns();
 
@@ -1253,16 +1259,88 @@ function getFilteredStudents() {
   });
 }
 
+function quickFilterByClassInAllStudents(className) {
+  const select = document.getElementById('filter-student-class');
+  if (!select) return;
+  select.value = className || 'ALL';
+  renderAdminStudents();
+}
+
 function renderAdminStudents() {
   const tbody = document.getElementById('admin-students-tbody');
   if (!tbody) return;
 
+  const allStudents = appState.students || [];
   const list = getFilteredStudents();
+
+  // 1. Cập nhật 4 thẻ đếm số lượng học sinh & tổng tiền
+  const paidList = list.filter(s => s.status === 'Đã hoàn thành');
+  const pendingList = list.filter(s => s.status === 'Chờ duyệt');
+  const unpaidList = list.filter(s => s.status === 'Chưa đóng');
+
+  const paidSum = paidList.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
+  const unpaidSum = unpaidList.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
+  const totalFeeSum = list.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
+
+  const kpiTotalEl = document.getElementById('all-stu-kpi-total');
+  const kpiFilteredEl = document.getElementById('all-stu-kpi-filtered');
+  const kpiPaidEl = document.getElementById('all-stu-kpi-paid');
+  const kpiPaidSumEl = document.getElementById('all-stu-kpi-paid-sum');
+  const kpiPendingEl = document.getElementById('all-stu-kpi-pending');
+  const kpiUnpaidEl = document.getElementById('all-stu-kpi-unpaid');
+  const kpiUnpaidSumEl = document.getElementById('all-stu-kpi-unpaid-sum');
+
+  if (kpiTotalEl) kpiTotalEl.textContent = `${allStudents.length} HS`;
+  if (kpiFilteredEl) kpiFilteredEl.textContent = `Đang hiển thị: ${list.length} / ${allStudents.length} HS`;
+  if (kpiPaidEl) kpiPaidEl.textContent = `${paidList.length} HS`;
+  if (kpiPaidSumEl) kpiPaidSumEl.textContent = `Đã thu: ${formatCurrency(paidSum)}`;
+  if (kpiPendingEl) kpiPendingEl.textContent = `${pendingList.length} HS`;
+  if (kpiUnpaidEl) kpiUnpaidEl.textContent = `${unpaidList.length} HS`;
+  if (kpiUnpaidSumEl) kpiUnpaidSumEl.textContent = `Còn thiếu: ${formatCurrency(unpaidSum)}`;
+
+  // 2. Render thanh đếm sĩ số theo từng lớp
+  const classCountsBar = document.getElementById('all-stu-class-counts-bar');
+  if (classCountsBar) {
+    const currentClassFilter = document.getElementById('filter-student-class')?.value || 'ALL';
+    const classMap = {};
+    allStudents.forEach(s => {
+      const cls = (s.className || 'Chưa phân lớp').trim();
+      classMap[cls] = (classMap[cls] || 0) + 1;
+    });
+    const classEntries = Object.entries(classMap);
+
+    classCountsBar.innerHTML =
+      `<span class="text-xs font-bold text-slate-500 mr-1">Đếm theo lớp:</span>` +
+      `<button type="button" onclick="quickFilterByClassInAllStudents('ALL')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+        currentClassFilter === 'ALL'
+          ? 'bg-blue-600 text-white shadow-2xs'
+          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+      }">Tất cả (${allStudents.length} HS)</button>` +
+      classEntries
+        .map(
+          ([cls, count]) => `
+        <button
+          type="button"
+          onclick="quickFilterByClassInAllStudents('${escapeAttr(cls)}')"
+          class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+            currentClassFilter === cls
+              ? 'bg-blue-600 text-white shadow-2xs'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }"
+        >
+          ${escapeHtml(cls)}: <span class="${
+            currentClassFilter === cls ? 'text-amber-300' : 'text-blue-700'
+          }">${count} HS</span>
+        </button>
+      `
+        )
+        .join('');
+  }
 
   if (list.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" class="py-10 text-center text-slate-400 text-sm">
+        <td colspan="9" class="py-10 text-center text-slate-400 text-sm">
           Không tìm thấy học sinh nào khớp với bộ lọc hiện tại.
         </td>
       </tr>
@@ -1270,11 +1348,15 @@ function renderAdminStudents() {
     return;
   }
 
-  tbody.innerHTML = list
-    .map(s => {
-      const badgeClass = getStatusBadgeClass(s.status);
-      return `
+  tbody.innerHTML =
+    list
+      .map((s, idx) => {
+        const badgeClass = getStatusBadgeClass(s.status);
+        return `
         <tr class="hover:bg-slate-50/80 transition">
+          <td class="py-3.5 px-3 text-center font-bold text-slate-500 text-xs">
+            ${idx + 1}
+          </td>
           <td class="py-3.5 px-4 font-mono font-bold text-xs text-blue-700">
             ${escapeHtml(s.studentCode)}
           </td>
@@ -1347,8 +1429,22 @@ function renderAdminStudents() {
           </td>
         </tr>
       `;
-    })
-    .join('');
+      })
+      .join('') +
+    `
+      <tr class="bg-slate-100 font-extrabold text-xs border-t-2 border-slate-300 text-slate-900">
+        <td colspan="5" class="py-3 px-4 uppercase">
+          TỔNG CỘNG DANH SÁCH ĐANG HIỂN THỊ: <span class="text-blue-700">${list.length} học sinh</span>
+        </td>
+        <td class="py-3 px-4 text-right text-blue-700">
+          ${formatCurrency(totalFeeSum)}
+        </td>
+        <td colspan="3" class="py-3 px-4 text-center">
+          <span class="text-emerald-700">Đã đóng: ${paidList.length} HS</span> •
+          <span class="text-rose-600">Chưa đóng: ${unpaidList.length} HS</span>
+        </td>
+      </tr>
+    `;
 
   lucide.createIcons();
 }
@@ -2526,8 +2622,15 @@ function renderAdminClassbook() {
               <div class="font-bold text-slate-900">${escapeHtml(s.fullName)}</div>
               <div class="text-[11px] text-slate-400 font-mono">${escapeHtml(s.studentCode)} • SĐT: ${escapeHtml(s.parentPhone)}</div>
             </td>
-            <td class="py-2 px-2.5 text-right font-semibold text-slate-800">
-              ${formatCurrency(s.tuitionFee)}
+            <td class="py-1.5 px-2 text-right font-semibold text-slate-800">
+              <select
+                onchange="handleClassbookFeeSelect('${s.id}', this.value)"
+                title="Bấm để tùy chọn mức học phí tương ứng cho học sinh này"
+                class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
+              >
+                ${getPresetTuitionOptionsHtml(s.tuitionFee)}
+                <option value="CUSTOM">✏️ Nhập số khác...</option>
+              </select>
             </td>
             <td class="py-2 px-2 text-center">
               <input
@@ -2602,6 +2705,113 @@ function updateClassbookStudentNote(studentId, newNote) {
   s.updatedAt = getCurrentDateTimeString();
   saveStateToLocal();
   triggerAutoSyncIfNeeded('Đã lưu ghi chú học sinh!');
+}
+
+function getPresetTuitionOptionsHtml(currentFee) {
+  const cur = Number(currentFee) || 0;
+  const presets = [400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1500000, 2000000];
+  if (!presets.includes(cur)) {
+    presets.push(cur);
+    presets.sort((a, b) => a - b);
+  }
+  return presets
+    .map(val => `<option value="${val}" ${val === cur ? 'selected' : ''}>${formatCurrency(val)}</option>`)
+    .join('');
+}
+
+async function handleClassbookFeeSelect(studentId, selectedVal) {
+  const s = appState.students.find(item => item.id === studentId);
+  if (!s) return;
+
+  let newFee = Number(selectedVal);
+  if (selectedVal === 'CUSTOM') {
+    const input = prompt(`Nhập số tiền học phí mới cho học sinh ${s.fullName} (VNĐ):`, String(s.tuitionFee || 600000));
+    if (input === null) {
+      renderAdminClassbook();
+      return;
+    }
+    newFee = Number(String(input).replace(/[^0-9]/g, ''));
+  }
+
+  if (isNaN(newFee) || newFee < 0) {
+    renderAdminClassbook();
+    return;
+  }
+
+  s.tuitionFee = newFee;
+  s.updatedAt = getCurrentDateTimeString();
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(`Đã cập nhật học phí của ${s.fullName} thành ${formatCurrency(newFee)}!`);
+}
+
+function setClassbookQuickFee(amount) {
+  const feeInput = document.getElementById('cb-quick-fee');
+  if (feeInput) {
+    feeInput.value = amount;
+  }
+}
+
+function generateNextStudentCode() {
+  const list = appState.students || [];
+  let maxNum = list.length;
+  list.forEach(s => {
+    const m = String(s.studentCode || '').match(/(\d+)/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  });
+  return 'HS' + String(maxNum + 1).padStart(3, '0');
+}
+
+async function quickAddStudentInClassbook(event) {
+  event.preventDefault();
+  const nameInput = document.getElementById('cb-quick-name');
+  const phoneInput = document.getElementById('cb-quick-phone');
+  const feeInput = document.getElementById('cb-quick-fee');
+
+  const fullName = (nameInput?.value || '').trim();
+  const parentPhone = (phoneInput?.value || '').trim();
+  const tuitionFee = Number(feeInput?.value) || 0;
+
+  if (!fullName) {
+    showToast('Vui lòng nhập Họ và tên học sinh!', 'warning');
+    nameInput?.focus();
+    return;
+  }
+
+  const map = getClassSchedulesMap();
+  const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const period = cfg.periodLabel || appState.settings?.defaultPeriod || 'Tháng 10-11/2026';
+  const nowStr = getCurrentDateTimeString();
+
+  const newStudent = {
+    id: 'ST_' + Date.now(),
+    studentCode: generateNextStudentCode(),
+    fullName,
+    className: targetClass,
+    parentName: '',
+    parentPhone,
+    period,
+    tuitionFee,
+    status: 'Chưa đóng',
+    receiptUrl: '',
+    updatedAt: nowStr,
+    note: ''
+  };
+
+  if (!appState.students) appState.students = [];
+  appState.students.push(newStudent);
+
+  if (nameInput) nameInput.value = '';
+  if (phoneInput) phoneInput.value = '';
+  nameInput?.focus();
+
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(
+    `Đã thêm học sinh "${fullName}" (${formatCurrency(tuitionFee)}) vào lớp ${targetClass} & cập nhật danh sách Tất cả Học sinh!`
+  );
 }
 
 function generateScheduleWeeks(startDateStr, endDateStr, daysOfWeek) {
