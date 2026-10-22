@@ -3329,6 +3329,17 @@ function openHistoryForCurrentClass() {
   }
 }
 
+let expandedHistoryIds = new Set();
+
+function toggleHistoryBatchDetail(histId) {
+  if (expandedHistoryIds.has(histId)) {
+    expandedHistoryIds.delete(histId);
+  } else {
+    expandedHistoryIds.add(histId);
+  }
+  renderAdminHistory();
+}
+
 function renderAdminHistory() {
   const container = document.getElementById('history-batches-container');
   const filterSelect = document.getElementById('history-filter-class');
@@ -3377,6 +3388,64 @@ function renderAdminHistory() {
 
   container.innerHTML = filteredHistory
     .map(hist => {
+      const isExpanded = expandedHistoryIds.has(hist.id);
+      const dateRangeText =
+        hist.startDate && hist.endDate
+          ? `${formatShortDateVN(hist.startDate)} → ${formatShortDateVN(hist.endDate)}`
+          : hist.archivedAt || '';
+
+      // Nếu chưa bấm chọn xem chi tiết -> Chỉ hiển thị gọn: Tên lớp, Đợt, Ngày tháng
+      if (!isExpanded) {
+        return `
+          <div
+            onclick="toggleHistoryBatchDetail('${hist.id}')"
+            class="bg-white hover:bg-purple-50/40 transition rounded-2xl border border-slate-200 hover:border-purple-400 p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3 cursor-pointer"
+          >
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-[#1f3d6e] text-white flex items-center justify-center font-extrabold text-xs shrink-0">
+                LỚP
+              </div>
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-extrabold text-slate-900 text-sm sm:text-base">
+                    Lớp ${escapeHtml(hist.className)}
+                  </span>
+                  <span class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs uppercase">
+                    ${escapeHtml(hist.batchLabel || 'ĐỢT CŨ')}
+                  </span>
+                  <span class="px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-xs">
+                    ${escapeHtml(hist.periodLabel)}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
+                  <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                  <span>Ngày tháng: <strong>${escapeHtml(dateRangeText)}</strong></span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+              <button
+                type="button"
+                onclick="toggleHistoryBatchDetail('${hist.id}')"
+                class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>Xem đầy đủ</span>
+              </button>
+              <button
+                type="button"
+                onclick="deleteHistoryBatch('${hist.id}')"
+                class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                title="Xóa bản lưu lịch sử này"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
       const students = hist.studentsSnapshot || [];
       const totalCount = students.length;
       const paidStudents = students.filter(s => s.status === 'Đã hoàn thành');
@@ -3452,7 +3521,7 @@ function renderAdminHistory() {
               .join('');
 
       return `
-        <div class="bg-white rounded-2xl border-2 border-purple-900/80 shadow-md overflow-hidden">
+        <div class="bg-white rounded-2xl border-2 border-purple-900/80 shadow-md overflow-hidden animate-fade-in">
           <!-- Banner Đợt Lịch Sử -->
           <div class="bg-gradient-to-r from-[#1f3d6e] to-purple-900 text-white py-3 px-4 flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-2">
@@ -3463,11 +3532,19 @@ function renderAdminHistory() {
                 LỚP ${escapeHtml(hist.className)} — ${escapeHtml(hist.periodLabel)}
               </span>
               <span class="text-xs text-purple-200">
-                (Lưu lúc: ${escapeHtml(hist.archivedAt)})
+                (Ngày học: ${escapeHtml(dateRangeText)})
               </span>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="toggleHistoryBatchDetail('${hist.id}')"
+                class="px-3 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
+              >
+                <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                <span>Thu gọn</span>
+              </button>
               <button
                 type="button"
                 onclick="restoreHistoryBatch('${hist.id}')"
