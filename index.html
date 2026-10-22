@@ -295,25 +295,51 @@
             </button>
           </div>
 
-          <div class="flex items-center gap-2 pr-1">
+          <div class="flex flex-wrap items-center gap-1.5 pr-1">
+            <!-- Nút Quay lại thao tác trước (Undo) & Làm lại (Redo) toàn hệ thống -->
+            <div class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 p-0.5 shadow-2xs">
+              <button
+                type="button"
+                id="btn-global-undo"
+                onclick="undoLastAction()"
+                disabled
+                title="Quay lại thao tác vừa làm trước đó (Phím tắt: Ctrl + Z)"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-extrabold text-amber-900 hover:bg-amber-200/70 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                <span>Quay lại thao tác</span>
+                <span id="badge-undo-count" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">0</span>
+              </button>
+              <button
+                type="button"
+                id="btn-global-redo"
+                onclick="redoLastAction()"
+                disabled
+                title="Làm lại thao tác vừa hoàn tác (Phím tắt: Ctrl + Y)"
+                class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-amber-200/70 disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap border-l border-amber-200/80"
+              >
+                <i data-lucide="redo-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
             <a
               href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
               target="_blank"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
               <span>Mở Google Sheet</span>
             </a>
             <button
               onclick="syncFromGoogleSheet(true)"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer whitespace-nowrap"
             >
               <i data-lucide="cloud-download" class="w-4 h-4"></i>
               <span>Tải từ Sheet</span>
             </button>
             <button
               onclick="syncAllToGoogleSheet(true)"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer whitespace-nowrap"
             >
               <i data-lucide="cloud-upload" class="w-4 h-4"></i>
               <span>Cập nhật lên Sheet</span>
@@ -473,6 +499,17 @@
               >
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
                 <span>+ Thêm Học Sinh</span>
+              </button>
+              <button
+                type="button"
+                id="btn-classbook-undo"
+                onclick="undoLastAction()"
+                disabled
+                title="Quay lại thao tác vừa làm trước đó (Ctrl + Z)"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="undo-2" class="w-4 h-4"></i>
+                <span>↩️ Quay lại thao tác trước</span>
               </button>
             </div>
 
@@ -924,6 +961,17 @@
                 >
                   <option value="ALL">Tất cả lớp / khóa học</option>
                 </select>
+                <button
+                  type="button"
+                  id="btn-students-undo"
+                  onclick="undoLastAction()"
+                  disabled
+                  title="Quay lại thao tác vừa làm trước đó (Ctrl + Z)"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="undo-2" class="w-4 h-4"></i>
+                  <span>↩️ Quay lại thao tác trước</span>
+                </button>
                 <button
                   onclick="openStudentModal()"
                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
