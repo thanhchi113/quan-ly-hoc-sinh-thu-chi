@@ -2575,7 +2575,7 @@ function renderAdminClassbook() {
     selectedClassbookClass = classNames[0] || '12 2K8';
   }
 
-  // 1. Render các nút chọn lớp
+  // 1. Render các nút chọn lớp & dropdown chọn lớp (Tách riêng khỏi thanh công cụ)
   pillsContainer.innerHTML = classNames
     .map(cls => {
       const isSelected = cls === selectedClassbookClass;
@@ -2584,20 +2584,33 @@ function renderAdminClassbook() {
         <button
           type="button"
           onclick="selectClassbookClass('${escapeAttr(cls)}')"
-          class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+          class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-2 border ${
             isSelected
-              ? 'bg-[#1f3d6e] text-white shadow-xs'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              ? 'bg-blue-600 text-white border-blue-700 shadow-sm ring-2 ring-blue-200'
+              : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:border-blue-300'
           }"
         >
-          <span>${escapeHtml(cls)}</span>
-          <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-            isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+          <span>Lớp ${escapeHtml(cls)}</span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] ${
+            isSelected ? 'bg-amber-300 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 font-bold'
           }">${count} HS</span>
         </button>
       `;
     })
     .join('');
+
+  const classDropdown = document.getElementById('classbook-class-dropdown');
+  if (classDropdown) {
+    classDropdown.innerHTML = classNames
+      .map(cls => {
+        const count = (appState.students || []).filter(s => s.className === cls).length;
+        const cCfg = map[cls] || {};
+        return `<option value="${escapeAttr(cls)}" ${
+          cls === selectedClassbookClass ? 'selected' : ''
+        }>Lớp ${escapeHtml(cls)} — ${escapeHtml(cCfg.batchLabel || 'Đang học')} (${count} HS)</option>`;
+      })
+      .join('');
+  }
 
   const cfg = map[selectedClassbookClass] || getDefaultClassScheduleConfig(selectedClassbookClass);
 
