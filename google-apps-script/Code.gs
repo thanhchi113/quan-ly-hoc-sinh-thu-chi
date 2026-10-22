@@ -437,11 +437,33 @@ function getAllSheetData() {
     if (key) settings[key] = val;
   }
 
+  // 5. Đọc toàn bộ các Sheet lớp học gốc trong file Google Sheet (ngoài 4 sheet hệ thống)
+  const systemSheetSet = new Set([
+    SHEET_NAMES.STUDENTS,
+    SHEET_NAMES.TRANSACTIONS,
+    SHEET_NAMES.PAYMENT_REQUESTS,
+    SHEET_NAMES.SETTINGS
+  ]);
+  const rawClassSheets = [];
+  const allSheets = ss.getSheets();
+  for (let sIdx = 0; sIdx < allSheets.length; sIdx++) {
+    const sh = allSheets[sIdx];
+    const shName = sh.getName();
+    if (systemSheetSet.has(shName)) continue;
+    const range = sh.getDataRange();
+    rawClassSheets.push({
+      sheetName: shName,
+      values: range.getDisplayValues(),
+      backgrounds: range.getBackgrounds()
+    });
+  }
+
   return {
     students: students,
     transactions: transactions,
     paymentRequests: paymentRequests,
-    settings: settings
+    settings: settings,
+    rawClassSheets: rawClassSheets
   };
 }
 
