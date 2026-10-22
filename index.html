@@ -17,7 +17,7 @@
 
   <!-- TOP NAVIGATION BAR -->
   <header class="sticky top-0 z-40 glass-nav border-b border-slate-200 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+    <div class="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
       <!-- Brand -->
       <div class="flex items-center gap-3 min-w-0">
         <div class="w-10 h-10 rounded-xl bg-blue-600 theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0">
@@ -99,7 +99,7 @@
   </header>
 
   <!-- MAIN CONTENT AREA -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <main class="flex-1 max-w-[1520px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
     <!-- =================================================================== -->
     <!-- PHÂN HỆ 1: CỔNG PHỤ HUYNH & HỌC SINH (TRA CỨU & GỬI BIÊN LAI CK)    -->
@@ -631,8 +631,8 @@
               <!-- SIDE-BY-SIDE TABLES: LEFT (STUDENTS & TUITION) | RIGHT (SCHEDULE CALENDAR) -->
               <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
 
-                <!-- LEFT TABLE (7 cols): DANH SÁCH HỌC SINH & HỌC PHÍ TRONG LỚP -->
-                <div class="xl:col-span-7 space-y-3 overflow-x-auto">
+                <!-- LEFT TABLE (8 cols): DANH SÁCH HỌC SINH & HỌC PHÍ TRONG LỚP -->
+                <div class="xl:col-span-8 space-y-3 overflow-x-auto">
                   <!-- Quick Inline Add Student + Tuition Fee Selector -->
                   <form
                     onsubmit="quickAddStudentInClassbook(event)"
@@ -693,30 +693,30 @@
 
                   <table class="sheet-table text-xs sm:text-sm">
                     <thead>
-                      <tr class="sheet-navy-header text-center font-bold text-xs">
+                      <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
                         <th class="py-2.5 px-2 w-10">STT</th>
-                        <th class="py-2.5 px-3 text-left">Họ và tên</th>
-                        <th class="py-2.5 px-2.5 text-right">Học phí</th>
-                        <th class="py-2.5 px-2 w-24">Đã thanh toán</th>
-                        <th class="py-2.5 px-2.5 w-32">Tình trạng</th>
-                        <th class="py-2.5 px-2.5 text-left">Ghi chú</th>
-                        <th class="py-2.5 px-2 w-16">Sửa</th>
+                        <th class="py-2.5 px-3 text-left min-w-[190px]">Họ và tên</th>
+                        <th class="py-2.5 px-2.5 text-right w-28">Học phí</th>
+                        <th class="py-2.5 px-2 w-28">Đã thanh toán</th>
+                        <th class="py-2.5 px-2.5 w-36">Tình trạng</th>
+                        <th class="py-2.5 px-2.5 text-left min-w-[140px]">Ghi chú</th>
+                        <th class="py-2.5 px-2 w-20">Sửa</th>
                       </tr>
                       <!-- Dòng TỔNG CỘNG giống hệt mẫu -->
-                      <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400">
+                      <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
                         <td colspan="2" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
                           TỔNG CỘNG
                         </td>
-                        <td id="cb-sum-expected" class="py-2 px-2.5 text-right text-slate-900">
+                        <td id="cb-sum-expected" class="py-2 px-2.5 text-right text-slate-900 whitespace-nowrap">
                           0 ₫
                         </td>
-                        <td id="cb-sum-paid-count" class="py-2 px-2 text-center text-slate-900">
+                        <td id="cb-sum-paid-count" class="py-2 px-2 text-center text-slate-900 whitespace-nowrap">
                           0 em
                         </td>
-                        <td id="cb-sum-collected" class="py-2 px-2.5 text-right text-emerald-700">
+                        <td id="cb-sum-collected" class="py-2 px-2.5 text-right text-emerald-700 whitespace-nowrap">
                           0 ₫
                         </td>
-                        <td id="cb-sum-missing" colspan="2" class="py-2 px-2.5 text-right text-rose-600">
+                        <td id="cb-sum-missing" colspan="2" class="py-2 px-2.5 text-right text-rose-600 whitespace-nowrap">
                           0 ₫
                         </td>
                       </tr>
@@ -727,8 +727,8 @@
                   </table>
                 </div>
 
-                <!-- RIGHT TABLE (5 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU -->
-                <div class="xl:col-span-5">
+                <!-- RIGHT TABLE (4 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU -->
+                <div class="xl:col-span-4">
                   <div class="rounded-xl overflow-hidden border-2 border-[#1f3d6e] shadow-xs bg-white">
                     <table class="sheet-table table-fixed w-full text-xs sm:text-sm text-center">
                       <thead id="cb-schedule-thead">
@@ -1030,16 +1030,16 @@
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse">
                 <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
                     <th class="py-3.5 px-3 text-center w-12">STT</th>
                     <th class="py-3.5 px-3">Mã HS</th>
-                    <th class="py-3.5 px-4">Họ tên Học sinh &amp; Lớp</th>
-                    <th class="py-3.5 px-3 text-center">Bắt đầu học từ</th>
-                    <th class="py-3.5 px-3 text-center">Đã đóng bao nhiêu đợt (Hệ thống)</th>
-                    <th class="py-3.5 px-3">Đợt hiện tại</th>
-                    <th class="py-3.5 px-3 text-right">Học phí</th>
-                    <th class="py-3.5 px-3 text-center">Trạng thái đóng</th>
-                    <th class="py-3.5 px-3 text-right">Thao tác</th>
+                    <th class="py-3.5 px-4 min-w-[220px]">Họ tên Học sinh &amp; Lớp</th>
+                    <th class="py-3.5 px-3 text-center min-w-[150px]">Bắt đầu học từ</th>
+                    <th class="py-3.5 px-3 text-center min-w-[190px]">Đã đóng bao nhiêu đợt (Hệ thống)</th>
+                    <th class="py-3.5 px-3 min-w-[155px]">Đợt hiện tại</th>
+                    <th class="py-3.5 px-3 text-right min-w-[100px]">Học phí</th>
+                    <th class="py-3.5 px-3 text-center min-w-[150px]">Trạng thái đóng</th>
+                    <th class="py-3.5 px-3 text-right min-w-[170px]">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody id="admin-students-tbody" class="divide-y divide-slate-100 text-sm">
@@ -1584,7 +1584,7 @@
   <!-- MODAL 1: PHỤ HUYNH QUÉT MÃ VIETQR & GỬI XÁC NHẬN CHUYỂN KHOẢN        -->
   <!-- ===================================================================== -->
   <div id="payment-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
+    <div class="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
       <!-- Modal Header -->
       <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 text-white flex items-center justify-between">
         <div class="flex items-center gap-2.5">
@@ -1782,7 +1782,7 @@
   <!-- MODAL 2: THÊM / SỬA HỌC SINH (QUẢN LÝ)                               -->
   <!-- ===================================================================== -->
   <div id="student-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
       <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
         <h3 id="student-modal-title" class="font-bold text-base">Thêm Học Sinh Mới</h3>
         <button onclick="closeStudentModal()" class="text-slate-400 hover:text-white cursor-pointer">
@@ -1942,7 +1942,7 @@
   >
     <div
       onclick="event.stopPropagation()"
-      class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
+      class="bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
     >
       <!-- Header -->
       <div class="bg-gradient-to-r from-[#1f3d6e] to-blue-800 text-white px-6 py-4 flex items-center justify-between gap-3">
@@ -1964,48 +1964,48 @@
       </div>
 
       <!-- Body -->
-      <div class="p-5 sm:p-6 space-y-5 max-h-[78vh] overflow-y-auto">
+      <div class="p-5 sm:p-6 space-y-5 max-h-[80vh] overflow-y-auto">
         <!-- 3 Cột Thống Kê Quan Trọng Nhất: Bắt Đầu Học Từ Khi Nào | Đã Đóng Bao Nhiêu Đợt | Tổng Tiền Đã Đóng -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Ô 1: Bắt đầu học từ khi nào -->
-          <div class="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 flex flex-col justify-between">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 flex items-center gap-1">
-              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-              Bắt đầu học từ ngày
+          <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 flex flex-col justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-blue-700 flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="calendar" class="w-4 h-4 shrink-0"></i>
+              <span>Bắt đầu học từ ngày</span>
             </span>
-            <div class="mt-2">
+            <div class="mt-2.5">
               <input
                 id="stu-detail-start-input"
                 type="date"
                 onchange="handleDetailStartDateChange(this.value)"
-                class="w-full px-2.5 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                class="w-full px-3 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
-              <p id="stu-detail-start-text" class="text-[11px] text-blue-700 font-semibold mt-1">Từ ngày: ---</p>
+              <p id="stu-detail-start-text" class="text-xs text-blue-700 font-semibold mt-1.5 whitespace-nowrap">Từ ngày: ---</p>
             </div>
           </div>
 
           <!-- Ô 2: Đã đóng bao nhiêu đợt (Theo hệ thống) -->
-          <div class="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col justify-between text-center">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center justify-center gap-1">
-              <i data-lucide="layers" class="w-3.5 h-3.5"></i>
-              Số đợt đã đóng (Hệ thống)
+          <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col justify-between text-center">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="layers" class="w-4 h-4 shrink-0"></i>
+              <span>Số đợt đã đóng (Hệ thống)</span>
             </span>
-            <div class="my-1">
-              <span id="stu-detail-paid-batches" class="text-2xl sm:text-3xl font-black text-emerald-700">0 đợt</span>
+            <div class="my-1.5">
+              <span id="stu-detail-paid-batches" class="text-2xl sm:text-3xl font-black text-emerald-700 whitespace-nowrap">0 đợt</span>
             </div>
-            <p class="text-[11px] text-emerald-700 font-semibold">Tự động đếm khi đóng tiền</p>
+            <p class="text-xs text-emerald-700 font-semibold whitespace-nowrap">Tự động đếm khi đóng tiền</p>
           </div>
 
           <!-- Ô 3: Tổng học phí đã đóng -->
-          <div class="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 flex flex-col justify-between text-center">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center justify-center gap-1">
-              <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
-              Tổng tiền đã đóng
+          <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 flex flex-col justify-between text-center">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900 flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="wallet" class="w-4 h-4 shrink-0"></i>
+              <span>Tổng tiền đã đóng</span>
             </span>
-            <div class="my-1">
-              <span id="stu-detail-total-paid" class="text-xl sm:text-2xl font-black text-amber-800">0 ₫</span>
+            <div class="my-1.5">
+              <span id="stu-detail-total-paid" class="text-2xl sm:text-3xl font-black text-amber-800 whitespace-nowrap">0 ₫</span>
             </div>
-            <p id="stu-detail-current-fee" class="text-[11px] text-amber-800 font-semibold">Mức học phí: 0 ₫/đợt</p>
+            <p id="stu-detail-current-fee" class="text-xs text-amber-800 font-semibold whitespace-nowrap">Mức học phí: 0 ₫/đợt</p>
           </div>
         </div>
 
@@ -2015,15 +2015,15 @@
             <i data-lucide="list-checks" class="w-4 h-4 text-blue-600"></i>
             <span>Thống Kê Chi Tiết Các Đợt Học Của Học Sinh</span>
           </h4>
-          <div class="rounded-2xl border border-slate-200 overflow-hidden">
+          <div class="rounded-2xl border border-slate-200 overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-600">
-                  <th class="py-2.5 px-3 text-center w-12 whitespace-nowrap">STT</th>
-                  <th class="py-2.5 px-3">Đợt / Kỳ học</th>
-                  <th class="py-2.5 px-3 text-center whitespace-nowrap">Thời gian đợt</th>
-                  <th class="py-2.5 px-3 text-right whitespace-nowrap">Học phí</th>
-                  <th class="py-2.5 px-3 text-center whitespace-nowrap">Trạng thái</th>
+                <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-600 whitespace-nowrap">
+                  <th class="py-3 px-4 text-center w-14">STT</th>
+                  <th class="py-3 px-4 min-w-[240px]">Đợt / Kỳ học</th>
+                  <th class="py-3 px-4 text-center min-w-[200px]">Thời gian đợt</th>
+                  <th class="py-3 px-4 text-right min-w-[130px]">Học phí</th>
+                  <th class="py-3 px-4 text-center min-w-[140px]">Trạng thái</th>
                 </tr>
               </thead>
               <tbody id="stu-detail-batches-tbody" class="divide-y divide-slate-100">
@@ -2113,7 +2113,7 @@
   <!-- MODAL 4: GHI PHIẾU THU / PHIẾU CHI (SỔ QUỸ)                          -->
   <!-- ===================================================================== -->
   <div id="transaction-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
       <div id="trans-modal-header" class="px-6 py-4 bg-emerald-600 text-white flex items-center justify-between">
         <h3 id="trans-modal-title" class="font-bold text-base">Ghi Phiếu Thu Mới</h3>
         <button onclick="closeTransactionModal()" class="text-white/80 hover:text-white cursor-pointer">
@@ -2242,7 +2242,7 @@
   <!-- MODAL 6: CÀI ĐẶT THÔNG TIN LỚP HỌC & LỊCH DẠY (TỪ NGÀY -> ĐẾN NGÀY)   -->
   <!-- ===================================================================== -->
   <div id="class-schedule-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in my-8">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in my-8">
       <div class="px-6 py-4 bg-[#1f3d6e] text-white flex items-center justify-between">
         <h3 id="cs-modal-title" class="font-bold text-base">Cài Đặt Lớp Học &amp; Lịch Các Buổi Dạy</h3>
         <button onclick="closeClassScheduleModal()" class="text-white/80 hover:text-white cursor-pointer">
@@ -2383,7 +2383,7 @@
     id="sepay-guide-modal"
     class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
   >
-    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
       <div class="bg-gradient-to-r from-[#0f294a] to-[#1d4ed8] text-white px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <i data-lucide="plug-zap" class="w-6 h-6 text-amber-300"></i>
@@ -2506,7 +2506,7 @@
     id="rollover-batch-modal"
     class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
   >
-    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
       <div class="bg-gradient-to-r from-[#0f294a] to-emerald-700 text-white px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
           <i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-300"></i>
@@ -2614,7 +2614,7 @@
   >
     <div
       onclick="event.stopPropagation()"
-      class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
+      class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
     >
       <!-- Header -->
       <div class="sheet-navy-header px-6 py-4 flex items-center justify-between gap-3">
