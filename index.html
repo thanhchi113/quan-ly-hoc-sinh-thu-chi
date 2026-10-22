@@ -238,6 +238,7 @@
             >
               <i data-lucide="graduation-cap" class="w-4 h-4"></i>
               <span>Tất cả Học sinh</span>
+              <span id="tab-all-students-count" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 font-extrabold">0</span>
             </button>
 
             <button
@@ -541,7 +542,60 @@
               <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
 
                 <!-- LEFT TABLE (7 cols): DANH SÁCH HỌC SINH & HỌC PHÍ TRONG LỚP -->
-                <div class="xl:col-span-7 overflow-x-auto">
+                <div class="xl:col-span-7 space-y-3 overflow-x-auto">
+                  <!-- Quick Inline Add Student + Tuition Fee Selector -->
+                  <form
+                    onsubmit="quickAddStudentInClassbook(event)"
+                    class="bg-blue-50/70 p-3 rounded-xl border border-blue-200 space-y-2"
+                  >
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="text-xs font-extrabold text-[#1f3d6e] flex items-center gap-1.5">
+                        <i data-lucide="user-plus" class="w-4 h-4 text-blue-600"></i>
+                        <span>Thêm nhanh Học sinh vào lớp này &amp; Tùy chọn số tiền học phí:</span>
+                      </span>
+                      <div class="flex flex-wrap items-center gap-1 text-[11px]">
+                        <span class="text-slate-500 font-semibold">Chọn nhanh tiền:</span>
+                        <button type="button" onclick="setClassbookQuickFee(500000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">500k</button>
+                        <button type="button" onclick="setClassbookQuickFee(600000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">600k</button>
+                        <button type="button" onclick="setClassbookQuickFee(700000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">700k</button>
+                        <button type="button" onclick="setClassbookQuickFee(800000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">800k</button>
+                        <button type="button" onclick="setClassbookQuickFee(1000000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1.000k</button>
+                        <button type="button" onclick="setClassbookQuickFee(1200000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1.200k</button>
+                        <button type="button" onclick="setClassbookQuickFee(1500000)" class="px-2 py-0.5 rounded bg-white border border-blue-200 hover:bg-blue-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">1.500k</button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                      <input
+                        id="cb-quick-name"
+                        type="text"
+                        required
+                        placeholder="Nhập Họ và tên học sinh *"
+                        class="sm:col-span-4 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        id="cb-quick-phone"
+                        type="tel"
+                        placeholder="SĐT (Không bắt buộc)"
+                        class="sm:col-span-3 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input
+                        id="cb-quick-fee"
+                        type="number"
+                        value="600000"
+                        placeholder="Số tiền học phí (VNĐ)"
+                        class="sm:col-span-3 px-2.5 py-1.5 rounded-lg border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="submit"
+                        class="sm:col-span-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                      >
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>Thêm HS</span>
+                      </button>
+                    </div>
+                  </form>
+
                   <table class="sheet-table text-xs sm:text-sm">
                     <thead>
                       <tr class="sheet-navy-header text-center font-bold text-xs">
@@ -704,12 +758,59 @@
         <!-- TAB 2: QUẢN LÝ HỌC SINH & HỌC PHÍ                               -->
         <!-- =============================================================== -->
         <div id="admin-tab-students" class="hidden space-y-4">
+          <!-- Student Count & Summary Bar -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tổng Số Học Sinh</span>
+                <p id="all-stu-kpi-total" class="text-2xl font-extrabold text-blue-600 mt-1">0 HS</p>
+                <p id="all-stu-kpi-filtered" class="text-xs text-slate-500 mt-0.5">Đang hiển thị: 0 HS</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="users" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Đã Hoàn Thành</span>
+                <p id="all-stu-kpi-paid" class="text-2xl font-extrabold text-emerald-600 mt-1">0 HS</p>
+                <p id="all-stu-kpi-paid-sum" class="text-xs text-emerald-700 font-semibold mt-0.5">Đã thu: 0 ₫</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Đang Chờ Duyệt</span>
+                <p id="all-stu-kpi-pending" class="text-2xl font-extrabold text-amber-500 mt-1">0 HS</p>
+                <p class="text-xs text-slate-500 mt-0.5">Phụ huynh báo đã CK</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Chưa Đóng Học Phí</span>
+                <p id="all-stu-kpi-unpaid" class="text-2xl font-extrabold text-rose-600 mt-1">0 HS</p>
+                <p id="all-stu-kpi-unpaid-sum" class="text-xs text-rose-600 font-semibold mt-0.5">Còn thiếu: 0 ₫</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+              </div>
+            </div>
+          </div>
+
           <!-- Action & Filter Bar -->
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 class="font-bold text-slate-900 text-base">Danh sách Học sinh & Trạng thái Học phí</h3>
-                <p class="text-xs text-slate-500">Chỉnh sửa trực tiếp tại đây hoặc trên Google Sheet đều được đồng bộ 2 chiều.</p>
+                <h3 class="font-bold text-slate-900 text-base">Danh sách Tất cả Học sinh &amp; Trạng thái Học phí</h3>
+                <p class="text-xs text-slate-500">Tự động đồng bộ học sinh từ mục Sổ Theo Dõi Lớp Học và Google Sheet 2 chiều.</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <button
@@ -734,6 +835,11 @@
                   <span>Xuất Excel/CSV</span>
                 </button>
               </div>
+            </div>
+
+            <!-- Class Count Pills Breakdown -->
+            <div id="all-stu-class-counts-bar" class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+              <!-- Rendered by JS -->
             </div>
 
             <!-- Filters -->
@@ -784,8 +890,9 @@
               <table class="w-full text-left border-collapse">
                 <thead>
                   <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th class="py-3.5 px-3 text-center w-12">STT</th>
                     <th class="py-3.5 px-4">Mã HS</th>
-                    <th class="py-3.5 px-4">Họ tên & Lớp</th>
+                    <th class="py-3.5 px-4">Họ tên &amp; Lớp</th>
                     <th class="py-3.5 px-4">Phụ huynh / SĐT</th>
                     <th class="py-3.5 px-4">Kỳ học phí</th>
                     <th class="py-3.5 px-4 text-right">Mức học phí</th>
@@ -1606,6 +1713,15 @@
               placeholder="600000"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-700"
             />
+            <div class="flex flex-wrap gap-1 mt-1.5 text-[11px]">
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=500000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">500k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=600000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">600k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=700000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">700k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=800000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">800k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=1000000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1.000k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=1200000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1.200k</button>
+              <button type="button" onclick="document.getElementById('stu-form-fee').value=1500000" class="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition cursor-pointer">1.500k</button>
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Trạng thái đóng học phí</label>
