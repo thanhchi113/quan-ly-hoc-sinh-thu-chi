@@ -636,39 +636,91 @@ function renderParentStudentCard(s) {
 }
 
 // Mở Modal Quét QR & Xác nhận chuyển khoản
-function openPaymentModal(studentRecordId) {
-  const student = appState.students.find(s => s.id === studentRecordId);
-  if (!student) return;
+function openPaymentModal(studentRecordId = '') {
+  const student = studentRecordId ? appState.students.find(s => s.id === studentRecordId) : null;
 
   uploadedReceiptBase64 = '';
   clearReceiptPreview();
 
   const stg = appState.settings;
-  const memo = buildTransferMemo(student);
+  const feeAmount = student ? student.tuitionFee : 600000;
+  const memo = student ? buildTransferMemo(student) : 'HP HOC SINH';
   const qrUrl = stg.customQrUrl
     ? stg.customQrUrl
-    : buildVietQrUrl(stg.bankBin, stg.bankAccountNo, stg.bankAccountName, student.tuitionFee, memo);
+    : buildVietQrUrl(stg.bankBin, stg.bankAccountNo, stg.bankAccountName, feeAmount, memo);
 
-  document.getElementById('pay-student-record-id').value = student.id;
+  document.getElementById('pay-student-record-id').value = student ? student.id : '';
   document.getElementById('pay-modal-qr-img').src = qrUrl;
-  document.getElementById('pay-modal-bank').textContent = stg.bankBin;
-  document.getElementById('pay-modal-owner').textContent = stg.bankAccountName;
-  document.getElementById('pay-modal-acc').textContent = stg.bankAccountNo;
-  document.getElementById('pay-modal-amount-text').textContent = formatCurrency(student.tuitionFee);
+  document.getElementById('pay-modal-bank').textContent = stg.bankBin || 'BIDV';
+  document.getElementById('pay-modal-owner').textContent = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
+  document.getElementById('pay-modal-acc').textContent = stg.bankAccountNo || '8601774789';
+  document.getElementById('pay-modal-amount-text').textContent = formatCurrency(feeAmount);
   document.getElementById('pay-modal-memo').textContent = memo;
 
-  document.getElementById('pay-form-student-name').textContent = student.fullName;
-  document.getElementById('pay-form-student-code').textContent = student.studentCode;
-  document.getElementById('pay-form-class').textContent = student.className;
-  document.getElementById('pay-form-period').textContent = student.period;
+  const infoBanner = document.getElementById('pay-student-info-banner');
+  const fullNameInput = document.getElementById('pay-form-student-fullname');
 
-  document.getElementById('pay-form-payer').value = student.parentName || ('PH em ' + student.fullName);
-  document.getElementById('pay-form-phone').value = student.parentPhone || '';
-  document.getElementById('pay-form-amount').value = student.tuitionFee || 0;
+  if (student) {
+    if (infoBanner) infoBanner.classList.remove('hidden');
+    document.getElementById('pay-form-student-name').textContent = student.fullName;
+    document.getElementById('pay-form-student-code').textContent = student.studentCode;
+    document.getElementById('pay-form-class').textContent = student.className;
+    document.getElementById('pay-form-period').textContent = student.period;
+    if (fullNameInput) fullNameInput.value = ''; // Để trống bắt buộc Phụ huynh tự gõ xác nhận tên học sinh
+    document.getElementById('pay-form-payer').value = student.parentName || '';
+    document.getElementById('pay-form-phone').value = student.parentPhone || '';
+    document.getElementById('pay-form-amount').value = student.tuitionFee || 0;
+  } else {
+    if (infoBanner) infoBanner.classList.add('hidden');
+    if (fullNameInput) fullNameInput.value = '';
+    document.getElementById('pay-form-payer').value = '';
+    document.getElementById('pay-form-phone').value = '';
+    document.getElementById('pay-form-amount').value = '';
+  }
+
   document.getElementById('pay-form-note').value = '';
-
   document.getElementById('payment-modal').classList.remove('hidden');
+  setTimeout(() => {
+    if (fullNameInput) fullNameInput.focus();
+  }, 100);
   lucide.createIcons();
+}
+
+function handleParentTypedStudentName(typedName) {
+  const cleanTyped = removeVietnameseTones((typedName || '').trim().toLowerCase());
+  const stg = appState.settings;
+  const currentRecordId = document.getElementById('pay-student-record-id').value;
+
+  // Nếu phụ huynh mở form trực tiếp (chưa chọn học sinh), tự động tìm học sinh khớp tên để lấy mã QR & số tiền
+  let matched = currentRecordId ? appState.students.find(s => s.id === currentRecordId) : null;
+  if (!matched && cleanTyped.length >= 3) {
+    matched = (appState.students || []).find(s =>
+      removeVietnameseTones((s.fullName || '').toLowerCase()).includes(cleanTyped)
+    );
+  }
+
+  const feeAmount = matched ? matched.tuitionFee : (Number(document.getElementById('pay-form-amount').value) || 0);
+  const cleanUpper = removeVietnameseTones(typedName || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim();
+  const memo = matched
+    ? `HP ${matched.studentCode} ${cleanUpper || removeVietnameseTones(matched.fullName).toUpperCase()}`.substring(0, 45)
+    : `HP ${cleanUpper || 'HOC SINH'}`.substring(0, 45);
+
+  document.getElementById('pay-modal-memo').textContent = memo;
+  if (matched) {
+    document.getElementById('pay-modal-amount-text').textContent = formatCurrency(matched.tuitionFee);
+    if (!document.getElementById('pay-form-amount').value) {
+      document.getElementById('pay-form-amount').value = matched.tuitionFee;
+    }
+  }
+  if (!stg.customQrUrl) {
+    document.getElementById('pay-modal-qr-img').src = buildVietQrUrl(
+      stg.bankBin,
+      stg.bankAccountNo,
+      stg.bankAccountName,
+      feeAmount,
+      memo
+    );
+  }
 }
 
 function closePaymentModal() {
@@ -773,15 +825,51 @@ function compressImageFile(file, maxDimension, quality, callback) {
 // Phụ huynh bấm nút "Xác nhận đã chuyển khoản"
 async function submitParentPaymentConfirm(event) {
   event.preventDefault();
-  const studentRecordId = document.getElementById('pay-student-record-id').value;
-  const student = appState.students.find(s => s.id === studentRecordId);
-  if (!student) return;
+  const fullNameInput = document.getElementById('pay-form-student-fullname');
+  const typedStudentName = (fullNameInput ? fullNameInput.value : '').trim();
 
-  const payerName = document.getElementById('pay-form-payer').value.trim();
-  const parentPhone = document.getElementById('pay-form-phone').value.trim();
-  const amount = Number(document.getElementById('pay-form-amount').value) || student.tuitionFee;
+  if (!typedStudentName) {
+    showToast('Vui lòng bắt buộc điền Họ và tên học sinh trước khi gửi xác nhận!', 'error');
+    if (fullNameInput) fullNameInput.focus();
+    return;
+  }
+
+  const studentRecordId = document.getElementById('pay-student-record-id').value;
+  let student = studentRecordId ? appState.students.find(s => s.id === studentRecordId) : null;
+
+  // Nếu chưa có studentRecordId, tìm học sinh khớp tên phụ huynh vừa gõ
+  if (!student) {
+    const cleanTyped = removeVietnameseTones(typedStudentName.toLowerCase()).replace(/\s+/g, ' ').trim();
+    student = (appState.students || []).find(s =>
+      removeVietnameseTones((s.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim().includes(cleanTyped)
+    );
+  }
+
+  const payerName = document.getElementById('pay-form-payer').value.trim() || ('PH em ' + typedStudentName);
+  const parentPhone = document.getElementById('pay-form-phone').value.trim() || (student ? student.parentPhone : '');
+  const amount = Number(document.getElementById('pay-form-amount').value) || (student ? student.tuitionFee : 0);
   const note = document.getElementById('pay-form-note').value.trim();
   const nowStr = getCurrentDateTimeString();
+
+  // Nếu học sinh chưa có trong danh sách lớp, tự động tạo bản ghi học sinh trạng thái Chờ duyệt để Quản lý thấy
+  if (!student) {
+    const nextNum = (appState.students.length + 1).toString().padStart(3, '0');
+    student = {
+      id: 'ST_' + Date.now(),
+      studentCode: 'HS' + nextNum,
+      fullName: typedStudentName,
+      className: selectedClassbookClass || '12 2K8',
+      parentName: payerName,
+      parentPhone: parentPhone,
+      period: appState.settings.defaultPeriod || 'Tháng 10/2026',
+      tuitionFee: amount || 600000,
+      status: 'Chờ duyệt',
+      receiptUrl: uploadedReceiptBase64 || '',
+      updatedAt: nowStr,
+      note: note || 'Phụ huynh điền tên xác nhận trên Web'
+    };
+    appState.students.unshift(student);
+  }
 
   const submitBtn = document.getElementById('btn-submit-parent-pay');
   const originalBtnHtml = submitBtn.innerHTML;
@@ -794,13 +882,13 @@ async function submitParentPaymentConfirm(event) {
     submittedAt: nowStr,
     studentRecordId: student.id,
     studentCode: student.studentCode,
-    studentName: student.fullName,
+    studentName: typedStudentName,
     className: student.className,
     period: student.period,
     amount: amount,
     parentPhone: parentPhone,
     payerName: payerName,
-    note: note || 'Phụ huynh xác nhận đã chuyển khoản trên App',
+    note: note || `Phụ huynh xác nhận chuyển khoản cho HS: ${typedStudentName}`,
     receiptUrl: uploadedReceiptBase64 || student.receiptUrl || '',
     receiptBase64: uploadedReceiptBase64 || '',
     status: 'Chờ duyệt',
