@@ -1729,17 +1729,38 @@ async function postToGas(gasUrl, payloadObj) {
   return await response.json();
 }
 
-function mergeServerData(serverData) {
-  return {
-    students: Array.isArray(serverData.students) ? serverData.students : appState.students,
-    transactions: Array.isArray(serverData.transactions) ? serverData.transactions : appState.transactions,
-    paymentRequests: Array.isArray(serverData.paymentRequests)
-      ? serverData.paymentRequests
-      : appState.paymentRequests,
-    settings: {
-      ...appState.settings,
-      ...(serverData.settings || {})
+function normalizePeriodValue(val) {
+  const s = String(val || '').trim();
+  if (!s) return 'Tháng 10/2026';
+  if (s.includes('GMT') || /^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `Tháng ${mm}/${yyyy}`;
     }
+  }
+  return s;
+}
+
+function mergeServerData(serverData) {
+  const students = Array.isArray(serverData.students)
+    ? serverData.students.map(st => ({ ...st, period: normalizePeriodValue(st.period) }))
+    : appState.students;
+  const paymentRequests = Array.isArray(serverData.paymentRequests)
+    ? serverData.paymentRequests.map(rq => ({ ...rq, period: normalizePeriodValue(rq.period) }))
+    : appState.paymentRequests;
+  const mergedSettings = {
+    ...appState.settings,
+    ...(serverData.settings || {})
+  };
+  mergedSettings.defaultPeriod = normalizePeriodValue(mergedSettings.defaultPeriod);
+
+  return {
+    students,
+    transactions: Array.isArray(serverData.transactions) ? serverData.transactions : appState.transactions,
+    paymentRequests,
+    settings: mergedSettings
   };
 }
 
