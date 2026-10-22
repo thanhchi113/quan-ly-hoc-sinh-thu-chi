@@ -686,7 +686,7 @@ function openPaymentModal(studentRecordId = '') {
     if (fullNameInput) fullNameInput.value = ''; // Để trống bắt buộc Phụ huynh tự gõ xác nhận tên học sinh
     document.getElementById('pay-form-payer').value = student.parentName || '';
     document.getElementById('pay-form-phone').value = student.parentPhone || '';
-    document.getElementById('pay-form-amount').value = student.tuitionFee || 0;
+    document.getElementById('pay-form-amount').value = toShortMoney(student.tuitionFee || 0);
   } else {
     if (infoBanner) infoBanner.classList.add('hidden');
     if (fullNameInput) fullNameInput.value = '';
@@ -716,7 +716,7 @@ function handleParentTypedStudentName(typedName) {
     );
   }
 
-  const feeAmount = matched ? matched.tuitionFee : (Number(document.getElementById('pay-form-amount').value) || 0);
+  const feeAmount = matched ? matched.tuitionFee : (fromShortMoney(document.getElementById('pay-form-amount').value) || 0);
   const cleanUpper = removeVietnameseTones(typedName || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim();
   const memo = matched
     ? `HP ${matched.studentCode} ${cleanUpper || removeVietnameseTones(matched.fullName).toUpperCase()}`.substring(0, 45)
@@ -726,7 +726,7 @@ function handleParentTypedStudentName(typedName) {
   if (matched) {
     document.getElementById('pay-modal-amount-text').textContent = formatCurrency(matched.tuitionFee);
     if (!document.getElementById('pay-form-amount').value) {
-      document.getElementById('pay-form-amount').value = matched.tuitionFee;
+      document.getElementById('pay-form-amount').value = toShortMoney(matched.tuitionFee);
     }
   }
   if (!stg.customQrUrl) {
@@ -864,7 +864,7 @@ async function submitParentPaymentConfirm(event) {
 
   const payerName = document.getElementById('pay-form-payer').value.trim() || ('PH em ' + typedStudentName);
   const parentPhone = document.getElementById('pay-form-phone').value.trim() || (student ? student.parentPhone : '');
-  const amount = Number(document.getElementById('pay-form-amount').value) || (student ? student.tuitionFee : 0);
+  const amount = fromShortMoney(document.getElementById('pay-form-amount').value) || (student ? student.tuitionFee : 0);
   const note = document.getElementById('pay-form-note').value.trim();
   const nowStr = getCurrentDateTimeString();
 
@@ -1522,7 +1522,7 @@ function openStudentModal(studentId = '') {
     document.getElementById('stu-form-period').value = s.period;
     document.getElementById('stu-form-parent').value = s.parentName;
     document.getElementById('stu-form-phone').value = s.parentPhone;
-    document.getElementById('stu-form-fee').value = s.tuitionFee;
+    document.getElementById('stu-form-fee').value = toShortMoney(s.tuitionFee);
     document.getElementById('stu-form-status').value = s.status;
     document.getElementById('stu-form-note').value = s.note || '';
   } else {
@@ -1535,7 +1535,7 @@ function openStudentModal(studentId = '') {
     document.getElementById('stu-form-period').value = appState.settings.defaultPeriod || 'Tháng 10/2026';
     document.getElementById('stu-form-parent').value = '';
     document.getElementById('stu-form-phone').value = '';
-    document.getElementById('stu-form-fee').value = 1200000;
+    document.getElementById('stu-form-fee').value = 600;
     document.getElementById('stu-form-status').value = 'Chưa đóng';
     document.getElementById('stu-form-note').value = '';
   }
@@ -1558,7 +1558,7 @@ function saveStudentForm(event) {
   const period = document.getElementById('stu-form-period').value.trim() || appState.settings.defaultPeriod || 'Tháng 10/2026';
   const parentName = document.getElementById('stu-form-parent').value.trim();
   const parentPhone = document.getElementById('stu-form-phone').value.trim();
-  const tuitionFee = Number(document.getElementById('stu-form-fee').value) || 0;
+  const tuitionFee = fromShortMoney(document.getElementById('stu-form-fee').value);
   const status = document.getElementById('stu-form-status').value || 'Chưa đóng';
   const note = document.getElementById('stu-form-note').value.trim();
   const nowStr = getCurrentDateTimeString();
@@ -1802,7 +1802,7 @@ function saveTransactionForm(event) {
   const type = document.getElementById('trans-form-type').value || 'Thu';
   const date = document.getElementById('trans-form-date').value || new Date().toISOString().slice(0, 10);
   const category = document.getElementById('trans-form-category').value || (type === 'Thu' ? 'Thu học phí' : 'Khác');
-  const amount = Number(document.getElementById('trans-form-amount').value) || 0;
+  const amount = fromShortMoney(document.getElementById('trans-form-amount').value);
   const description = document.getElementById('trans-form-desc').value.trim() || category;
   const studentCode = document.getElementById('trans-form-student-code').value.trim().toUpperCase();
   const method = document.getElementById('trans-form-method').value || 'Chuyển khoản';
@@ -2379,6 +2379,37 @@ function formatCurrency(val) {
   return num.toLocaleString('vi-VN') + ' ₫';
 }
 
+// Rút gọn 3 số 000 cuối khi hiển thị trong ô nhập tiền (VD: 600000 -> 600)
+function toShortMoney(val) {
+  const num = Number(val) || 0;
+  if (num === 0) return 0;
+  if (Math.abs(num) >= 10000) {
+    return Math.round(num / 1000);
+  }
+  return num;
+}
+
+// Chuyển từ số tiền rút gọn (VD: 600) sang số tiền đầy đủ (600.000) để tính Tổng đầy đủ
+function fromShortMoney(val) {
+  const num = Number(String(val ?? '').replace(/[^0-9.-]/g, '')) || 0;
+  if (num === 0) return 0;
+  if (Math.abs(num) > 0 && Math.abs(num) < 100000) {
+    return Math.round(num * 1000);
+  }
+  return Math.round(num);
+}
+
+// Nếu người dùng gõ dư 3 số 000 (VD: 600000), tự động cắt gọn 3 số 000 ngay trong ô nhập (thành 600)
+function autoShortenMoneyInput(inputEl) {
+  if (!inputEl) return;
+  const raw = String(inputEl.value || '').trim();
+  if (!raw) return;
+  const num = Number(raw);
+  if (!isNaN(num) && num >= 100000 && num % 1000 === 0) {
+    inputEl.value = String(num / 1000);
+  }
+}
+
 function maskPhone(phone) {
   const p = String(phone || '').trim();
   if (p.length < 7) return p;
@@ -2723,7 +2754,7 @@ function getPresetTuitionOptionsHtml(currentFee) {
     presets.sort((a, b) => a - b);
   }
   return presets
-    .map(val => `<option value="${val}" ${val === cur ? 'selected' : ''}>${formatCurrency(val)}</option>`)
+    .map(val => `<option value="${val}" ${val === cur ? 'selected' : ''}>${toShortMoney(val).toLocaleString('vi-VN')}</option>`)
     .join('');
 }
 
@@ -2733,12 +2764,15 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
 
   let newFee = Number(selectedVal);
   if (selectedVal === 'CUSTOM') {
-    const input = prompt(`Nhập số tiền học phí mới cho học sinh ${s.fullName} (VNĐ):`, String(s.tuitionFee || 600000));
+    const input = prompt(
+      `Nhập số tiền học phí mới cho học sinh ${s.fullName} (Đã rút gọn 3 số 000 — VD: nhập 600 = 600.000 ₫):`,
+      String(toShortMoney(s.tuitionFee || 600000))
+    );
     if (input === null) {
       renderAdminClassbook();
       return;
     }
-    newFee = Number(String(input).replace(/[^0-9]/g, ''));
+    newFee = fromShortMoney(input);
   }
 
   if (isNaN(newFee) || newFee < 0) {
@@ -2755,7 +2789,7 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
 function setClassbookQuickFee(amount) {
   const feeInput = document.getElementById('cb-quick-fee');
   if (feeInput) {
-    feeInput.value = amount;
+    feeInput.value = toShortMoney(amount);
   }
 }
 
@@ -2780,7 +2814,7 @@ async function quickAddStudentInClassbook(event) {
 
   const fullName = (nameInput?.value || '').trim();
   const parentPhone = (phoneInput?.value || '').trim();
-  const tuitionFee = Number(feeInput?.value) || 0;
+  const tuitionFee = fromShortMoney(feeInput?.value);
 
   if (!fullName) {
     showToast('Vui lòng nhập Họ và tên học sinh!', 'warning');
