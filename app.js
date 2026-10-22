@@ -14,7 +14,7 @@
  * trước khi đẩy lên GitHub Pages để TẤT CẢ điện thoại của Phụ huynh & Học sinh khi truy cập
  * link web đều tự động kết nối thẳng vào Google Sheet của bạn!
  */
-const DEFAULT_GAS_WEBAPP_URL = '';
+const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz6CZ6W-WRxFP67uj3or2arPYHc_VLqCUQsG8L5vNMI4DNAqDquBT7OFvR7FRTvjYcx6w/exec';
 
 const STORAGE_KEYS = {
   STATE: 'edupay_app_state_v1',
