@@ -13,7 +13,7 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="min-h-screen flex flex-col mobile-safe-bottom">
+<body oncontextmenu="return false" onselectstart="return false" class="min-h-screen flex flex-col mobile-safe-bottom">
 
   <!-- TOP NAVIGATION BAR -->
   <header class="sticky top-0 z-40 glass-nav border-b border-slate-200 shadow-xs">
@@ -102,7 +102,7 @@
                 <input
                   id="parent-search-input"
                   type="text"
-                  placeholder="VD: HS001, 0901234567 hoặc Nguyễn Minh Anh..."
+                  placeholder="Nhập đúng Mã học sinh (VD: HS001) hoặc SĐT Phụ huynh..."
                   onkeyup="if(event.key==='Enter') handleParentSearch()"
                   class="w-full pl-11 pr-4 py-2.5 text-slate-900 placeholder-slate-400 text-sm sm:text-base font-medium focus:outline-none rounded-lg"
                 />
@@ -117,22 +117,9 @@
             </div>
           </div>
 
-          <!-- Quick Demo Tags -->
-          <div class="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-blue-100">
-            <span>Tra cứu thử nhanh:</span>
-            <button onclick="quickParentSearch('HS001')" class="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/25 transition font-medium cursor-pointer">
-              HS001 (Chưa đóng)
-            </button>
-            <button onclick="quickParentSearch('HS002')" class="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/25 transition font-medium cursor-pointer">
-              HS002 (Chờ duyệt)
-            </button>
-            <button onclick="quickParentSearch('HS003')" class="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/25 transition font-medium cursor-pointer">
-              HS003 (Đã hoàn thành)
-            </button>
-            <button onclick="quickParentSearch('Tất cả')" class="px-2.5 py-1 rounded-md bg-amber-400/30 hover:bg-amber-400/40 text-amber-100 transition font-medium cursor-pointer">
-              Xem toàn bộ danh sách
-            </button>
-          </div>
+          <p class="pt-1 text-xs text-blue-100/90">
+            🔒 Để bảo mật thông tin học sinh, hệ thống chỉ hiển thị kết quả khi nhập đúng <strong>Mã học sinh</strong> hoặc <strong>Số điện thoại phụ huynh</strong>.
+          </p>
         </div>
       </div>
 
@@ -186,16 +173,16 @@
 
         <form onsubmit="handleAdminLogin(event)" class="mt-6 space-y-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu quản lý</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu quản trị viên</label>
             <input
               id="admin-password-input"
               type="password"
-              placeholder="Nhập mật khẩu (mặc định: 123456)"
+              placeholder="Nhập mật khẩu quản lý..."
               required
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p class="text-[11px] text-slate-400 mt-1.5">
-              * Mật khẩu mặc định ban đầu là <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">123456</code> (Bạn có thể đổi trong mục Cài đặt).
+              * Khu vực dành riêng cho Quản lý / Giáo viên. Phụ huynh và học sinh vui lòng sử dụng Cổng Tra Cứu.
             </p>
           </div>
           <button
