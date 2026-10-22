@@ -102,13 +102,15 @@
                 <input
                   id="parent-search-input"
                   type="text"
-                  placeholder="Nhập đúng Mã học sinh (VD: HS001) hoặc SĐT Phụ huynh..."
-                  onkeyup="if(event.key==='Enter') handleParentSearch()"
+                  placeholder="Nhập Tên học sinh, Mã HS (VD: HS001) hoặc SĐT Phụ huynh..."
+                  oninput="handleParentSearch(false)"
+                  onkeyup="if(event.key==='Enter') handleParentSearch(true)"
                   class="w-full pl-11 pr-4 py-2.5 text-slate-900 placeholder-slate-400 text-sm sm:text-base font-medium focus:outline-none rounded-lg"
                 />
               </div>
               <button
-                onclick="handleParentSearch()"
+                type="button"
+                onclick="handleParentSearch(true)"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >
                 <i data-lucide="arrow-right-circle" class="w-5 h-5"></i>
@@ -118,7 +120,7 @@
           </div>
 
           <p class="pt-1 text-xs text-blue-100/90">
-            🔒 Để bảo mật thông tin học sinh, hệ thống chỉ hiển thị kết quả khi nhập đúng <strong>Mã học sinh</strong> hoặc <strong>Số điện thoại phụ huynh</strong>.
+            💡 Nhập <strong>Tên học sinh</strong> (VD: Minh Anh, Gia Huy...), <strong>Mã HS</strong> (VD: HS001) hoặc <strong>Số điện thoại phụ huynh</strong> để tra cứu.
           </p>
         </div>
       </div>
@@ -1320,11 +1322,10 @@
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ tên người chuyển khoản *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ tên người chuyển khoản (Không bắt buộc)</label>
             <input
               id="pay-form-payer"
               type="text"
-              required
               placeholder="Nhập tên phụ huynh / người chuyển..."
               class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -1332,21 +1333,19 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại liên hệ *</label>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại (Không bắt buộc)</label>
               <input
                 id="pay-form-phone"
                 type="tel"
-                required
                 placeholder="SĐT phụ huynh"
                 class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền đã chuyển (VNĐ) *</label>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền đã chuyển (VNĐ)</label>
               <input
                 id="pay-form-amount"
                 type="number"
-                required
                 class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -1430,11 +1429,10 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã HS *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã HS (Tự tạo nếu trống)</label>
             <input
               id="stu-form-code"
               type="text"
-              required
               placeholder="HS001"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono uppercase"
             />
@@ -1453,21 +1451,19 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Lớp / Khóa học *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Lớp / Khóa học (Không bắt buộc)</label>
             <input
               id="stu-form-class"
               type="text"
-              required
-              placeholder="VD: Toán 12A - Ca 1"
+              placeholder="VD: 12 2K8"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ thu học phí *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ thu học phí (Không bắt buộc)</label>
             <input
               id="stu-form-period"
               type="text"
-              required
               placeholder="VD: Tháng 10/2026"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
             />
@@ -1476,7 +1472,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ tên Phụ huynh</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ tên Phụ huynh (Không bắt buộc)</label>
             <input
               id="stu-form-parent"
               type="text"
@@ -1485,11 +1481,10 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">SĐT Phụ huynh *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">SĐT Phụ huynh (Không bắt buộc)</label>
             <input
               id="stu-form-phone"
               type="tel"
-              required
               placeholder="0901234567"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
             />
@@ -1498,12 +1493,11 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Mức học phí (VNĐ) *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mức học phí (VNĐ)</label>
             <input
               id="stu-form-fee"
               type="number"
-              required
-              placeholder="1200000"
+              placeholder="600000"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-700"
             />
           </div>
@@ -1610,11 +1604,10 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch</label>
             <input
               id="trans-form-date"
               type="date"
-              required
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
             />
           </div>
@@ -1622,7 +1615,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục</label>
             <select
               id="trans-form-category"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
@@ -1649,11 +1642,10 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết *</label>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết (Không bắt buộc)</label>
           <input
             id="trans-form-desc"
             type="text"
-            required
             placeholder="VD: Thu học phí tháng 10 em Nguyễn Minh Anh / Chi tiền in đề thi..."
             class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
           />
@@ -1737,11 +1729,10 @@
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Môn học *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Môn học (Không bắt buộc)</label>
             <input
               id="cs-form-subject"
               type="text"
-              required
               placeholder="VD: Toán"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
             />
@@ -1750,21 +1741,19 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ học (Tháng) *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ học (Không bắt buộc)</label>
             <input
               id="cs-form-period"
               type="text"
-              required
               placeholder="VD: Tháng 10-11/2026"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
             />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Đợt thu học phí *</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Đợt thu (Không bắt buộc)</label>
             <input
               id="cs-form-batch"
               type="text"
-              required
               placeholder="VD: ĐỢT SỐ 5"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm uppercase font-semibold"
             />
@@ -1785,20 +1774,18 @@
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Từ ngày *</label>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Từ ngày</label>
               <input
                 id="cs-form-start-date"
                 type="date"
-                required
                 class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
               />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Đến ngày *</label>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Đến ngày</label>
               <input
                 id="cs-form-end-date"
                 type="date"
-                required
                 class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
               />
             </div>
