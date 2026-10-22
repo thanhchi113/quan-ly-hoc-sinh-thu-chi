@@ -455,6 +455,14 @@
                 <i data-lucide="history" class="w-4 h-4"></i>
                 <span>Xem Lịch Sử Đợt Cũ</span>
               </button>
+              <button
+                onclick="switchAdminTab('students')"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-blue-50 text-blue-800 border border-blue-300 hover:bg-blue-100 transition cursor-pointer"
+                title="Mở bảng Thống kê Tất cả Học sinh (Bắt đầu học từ khi nào, Đã đóng bao nhiêu đợt)"
+              >
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+                <span>📊 Thống Kê &amp; Xem Chi Tiết HS</span>
+              </button>
             </div>
           </div>
 
@@ -1884,6 +1892,150 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2B: XEM HỒ SƠ CHI TIẾT & THỐNG KÊ ĐỢT ĐÓNG CỦA HỌC SINH         -->
+  <!-- ===================================================================== -->
+  <div
+    id="student-detail-modal"
+    onclick="closeStudentDetailModal()"
+    class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
+    >
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#1f3d6e] to-blue-800 text-white px-6 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i data-lucide="user-check" class="w-6 h-6 text-amber-300"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span id="stu-detail-code" class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-mono font-extrabold text-xs">HS001</span>
+              <h3 id="stu-detail-name" class="font-extrabold text-base sm:text-lg truncate">Nguyễn Minh Anh</h3>
+            </div>
+            <p id="stu-detail-sub" class="text-xs text-blue-200 mt-0.5 truncate">Lớp 12 2K8 • SĐT Phụ huynh: ---</p>
+          </div>
+        </div>
+        <button onclick="closeStudentDetailModal()" class="p-1.5 rounded-xl hover:bg-white/15 transition cursor-pointer shrink-0">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 sm:p-6 space-y-5 max-h-[78vh] overflow-y-auto">
+        <!-- 3 Cột Thống Kê Quan Trọng Nhất: Bắt Đầu Học Từ Khi Nào | Đã Đóng Bao Nhiêu Đợt | Tổng Tiền Đã Đóng -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- Ô 1: Bắt đầu học từ khi nào -->
+          <div class="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200 flex flex-col justify-between">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 flex items-center gap-1">
+              <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+              Bắt đầu học từ ngày
+            </span>
+            <div class="mt-2">
+              <input
+                id="stu-detail-start-input"
+                type="date"
+                onchange="handleDetailStartDateChange(this.value)"
+                class="w-full px-2.5 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-blue-950 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+              <p id="stu-detail-start-text" class="text-[11px] text-blue-700 font-semibold mt-1">Từ ngày: ---</p>
+            </div>
+          </div>
+
+          <!-- Ô 2: Đã đóng bao nhiêu đợt (Theo hệ thống) -->
+          <div class="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex flex-col justify-between text-center">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 flex items-center justify-center gap-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+              Số đợt đã đóng (Hệ thống)
+            </span>
+            <div class="my-1">
+              <span id="stu-detail-paid-batches" class="text-2xl sm:text-3xl font-black text-emerald-700">0 đợt</span>
+            </div>
+            <p class="text-[11px] text-emerald-700 font-semibold">Tự động đếm khi đóng tiền</p>
+          </div>
+
+          <!-- Ô 3: Tổng học phí đã đóng -->
+          <div class="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 flex flex-col justify-between text-center">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center justify-center gap-1">
+              <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+              Tổng tiền đã đóng
+            </span>
+            <div class="my-1">
+              <span id="stu-detail-total-paid" class="text-xl sm:text-2xl font-black text-amber-800">0 ₫</span>
+            </div>
+            <p id="stu-detail-current-fee" class="text-[11px] text-amber-800 font-semibold">Mức học phí: 0 ₫/đợt</p>
+          </div>
+        </div>
+
+        <!-- Bảng 1: Chi tiết từng Đợt học của học sinh này -->
+        <div class="space-y-2">
+          <h4 class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="list-checks" class="w-4 h-4 text-blue-600"></i>
+            <span>Thống Kê Chi Tiết Các Đợt Học Của Học Sinh</span>
+          </h4>
+          <div class="rounded-2xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-600">
+                  <th class="py-2.5 px-3 text-center w-12">STT</th>
+                  <th class="py-2.5 px-3">Đợt / Kỳ học</th>
+                  <th class="py-2.5 px-3 text-center">Thời gian đợt</th>
+                  <th class="py-2.5 px-3 text-right">Học phí</th>
+                  <th class="py-2.5 px-3 text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="stu-detail-batches-tbody" class="divide-y divide-slate-100">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Bảng 2: Lịch sử giao dịch chuyển khoản / đóng tiền của học sinh này -->
+        <div class="space-y-2">
+          <h4 class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="receipt" class="w-4 h-4 text-emerald-600"></i>
+            <span>Lịch Sử Đóng Tiền / Chuyển Khoản Vào STK</span>
+          </h4>
+          <div id="stu-detail-tx-list" class="space-y-2">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            id="stu-detail-btn-qr"
+            class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <i data-lucide="qr-code" class="w-4 h-4"></i>
+            <span>Mã QR Học Phí</span>
+          </button>
+          <button
+            type="button"
+            id="stu-detail-btn-edit"
+            class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+            <span>Chỉnh Sửa Hồ Sơ</span>
+          </button>
+        </div>
+        <button
+          type="button"
+          onclick="closeStudentDetailModal()"
+          class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold cursor-pointer"
+        >
+          Đóng
+        </button>
+      </div>
     </div>
   </div>
 
