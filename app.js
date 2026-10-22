@@ -1274,6 +1274,117 @@ function quickFilterByClassInAllStudents(className) {
   renderAdminStudents();
 }
 
+function getStudentMetaMap() {
+  try {
+    if (appState.settings && appState.settings.studentMetaJson) {
+      return JSON.parse(appState.settings.studentMetaJson) || {};
+    }
+  } catch (e) {}
+  return {};
+}
+
+function saveStudentMetaMap(map, syncMsg = '') {
+  if (!appState.settings) appState.settings = {};
+  appState.settings.studentMetaJson = JSON.stringify(map || {});
+  saveStateToLocal();
+  if (syncMsg) {
+    triggerAutoSyncIfNeeded(syncMsg);
+  }
+}
+
+function getStudentStatistics(s) {
+  const metaMap = getStudentMetaMap();
+  const codeKey = s.studentCode || s.id;
+  const meta = metaMap[codeKey] || {};
+  const historyList = typeof getClassHistoryList === 'function' ? getClassHistoryList() : [];
+  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+
+  // 1. Tính ngày bắt đầu học (Ưu tiên ngày đã lưu trong meta -> ngày bắt đầu của đợt lịch sử cũ nhất -> ngày bắt đầu của lớp hiện tại)
+  let startDateIso = meta.startDate || s.startDate || '';
+  let historyPaidCount = 0;
+  let totalPaidAmount = 0;
+  const paidBatchLabels = [];
+  const cleanName = removeVietnameseTones((s.fullName || '').toLowerCase()).trim();
+
+  // Duyệt từ đợt lịch sử cũ nhất đến mới nhất
+  const chronologicalHist = [...historyList].reverse();
+  chronologicalHist.forEach(hist => {
+    const matchedInHist = (hist.studentsSnapshot || []).find(
+      hs =>
+        (hs.studentCode && hs.studentCode === s.studentCode) ||
+        (cleanName &&
+          removeVietnameseTones((hs.fullName || '').toLowerCase()).trim() === cleanName &&
+          hs.className === s.className)
+    );
+    if (matchedInHist) {
+      if (!startDateIso && hist.startDate) {
+        startDateIso = hist.startDate;
+      }
+      if (matchedInHist.status === 'Đã hoàn thành') {
+        historyPaidCount++;
+        totalPaidAmount += Number(matchedInHist.tuitionFee) || 0;
+        paidBatchLabels.push(hist.batchLabel || hist.periodLabel || 'Đợt cũ');
+      }
+    }
+  });
+
+  if (!startDateIso) {
+    const clsCfg = scheduleMap[s.className];
+    startDateIso = clsCfg?.startDate || '2026-05-04';
+  }
+
+  // 2. Cộng đợt hiện tại nếu học sinh đã đóng ("Đã hoàn thành")
+  const currentPaidCount = s.status === 'Đã hoàn thành' ? 1 : 0;
+  if (currentPaidCount > 0) {
+    totalPaidAmount += Number(s.tuitionFee) || 0;
+    const clsCfg = scheduleMap[s.className];
+    paidBatchLabels.push(clsCfg?.batchLabel || s.period || 'Đợt hiện tại');
+  }
+
+  // 3. Cộng số đợt điều chỉnh thêm (nếu học sinh đã đóng các đợt trước khi dùng phần mềm)
+  const extraBatches = Number(meta.extraPaidBatches || 0);
+  const paidBatchesCount = Math.max(0, historyPaidCount + currentPaidCount + extraBatches);
+  if (extraBatches > 0) {
+    totalPaidAmount += extraBatches * (Number(s.tuitionFee) || 0);
+  }
+
+  return {
+    startDateIso,
+    startDateVN: formatShortDateVN(startDateIso),
+    paidBatchesCount,
+    paidBatchLabels,
+    totalPaidAmount
+  };
+}
+
+async function updateStudentStartDate(studentId, newDateIso) {
+  const s = (appState.students || []).find(item => item.id === studentId);
+  if (!s) return;
+  const metaMap = getStudentMetaMap();
+  const key = s.studentCode || s.id;
+  if (!metaMap[key]) metaMap[key] = {};
+  metaMap[key].startDate = newDateIso;
+  s.startDate = newDateIso;
+  saveStudentMetaMap(metaMap, `Đã cập nhật ngày bắt đầu học của ${s.fullName}: ${formatShortDateVN(newDateIso)}!`);
+}
+
+async function adjustStudentPaidBatches(studentId, delta) {
+  const s = (appState.students || []).find(item => item.id === studentId);
+  if (!s) return;
+  const metaMap = getStudentMetaMap();
+  const key = s.studentCode || s.id;
+  if (!metaMap[key]) metaMap[key] = {};
+  const curExtra = Number(metaMap[key].extraPaidBatches || 0);
+  const stats = getStudentStatistics(s);
+  if (stats.paidBatchesCount + delta < 0) return;
+
+  metaMap[key].extraPaidBatches = curExtra + delta;
+  saveStudentMetaMap(
+    metaMap,
+    `Đã cập nhật số đợt đã đóng của ${s.fullName}: ${stats.paidBatchesCount + delta} đợt!`
+  );
+}
+
 function renderAdminStudents() {
   const tbody = document.getElementById('admin-students-tbody');
   if (!tbody) return;
@@ -1360,34 +1471,77 @@ function renderAdminStudents() {
     list
       .map((s, idx) => {
         const badgeClass = getStatusBadgeClass(s.status);
+        const stats = getStudentStatistics(s);
         return `
         <tr class="hover:bg-slate-50/80 transition">
-          <td class="py-3.5 px-3 text-center font-bold text-slate-500 text-xs">
+          <td class="py-3 px-3 text-center font-bold text-slate-500 text-xs">
             ${idx + 1}
           </td>
-          <td class="py-3.5 px-4 font-mono font-bold text-xs text-blue-700">
+          <td class="py-3 px-3 font-mono font-bold text-xs text-blue-700">
             ${escapeHtml(s.studentCode)}
           </td>
-          <td class="py-3.5 px-4">
+          <td class="py-3 px-4">
             <div class="font-bold text-slate-900">${escapeHtml(s.fullName)}</div>
-            <div class="text-xs text-slate-500">${escapeHtml(s.className)}</div>
+            <div class="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
+              <span class="px-2 py-0.2 rounded bg-blue-50 text-blue-800 font-bold text-[11px]">Lớp ${escapeHtml(s.className)}</span>
+              ${
+                s.parentPhone
+                  ? `<a href="tel:${escapeAttr(s.parentPhone)}" class="text-blue-600 hover:underline font-mono text-[11px]">• SĐT: ${escapeHtml(
+                      s.parentPhone
+                    )}</a>`
+                  : ''
+              }
+            </div>
             ${s.note ? `<div class="text-[11px] text-slate-400 italic mt-0.5">${escapeHtml(s.note)}</div>` : ''}
           </td>
-          <td class="py-3.5 px-4">
-            <div class="text-slate-800 font-medium text-xs">${escapeHtml(s.parentName || '---')}</div>
-            <a href="tel:${escapeAttr(s.parentPhone)}" class="text-xs text-blue-600 hover:underline font-mono">
-              ${escapeHtml(s.parentPhone)}
-            </a>
+          <td class="py-3 px-3 text-center">
+            <input
+              type="date"
+              value="${escapeAttr(stats.startDateIso)}"
+              onchange="updateStudentStartDate('${s.id}', this.value)"
+              title="Bấm để chọn hoặc sửa ngày bắt đầu học của học sinh"
+              class="px-2 py-1 rounded-lg border border-slate-200 hover:border-blue-400 bg-slate-50/70 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            />
+            <div class="text-[10px] text-slate-400 mt-0.5">Từ: ${escapeHtml(stats.startDateVN)}</div>
           </td>
-          <td class="py-3.5 px-4">
+          <td class="py-3 px-3 text-center">
+            <div class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-xl px-2 py-1">
+              <button
+                type="button"
+                onclick="adjustStudentPaidBatches('${s.id}', -1)"
+                title="Giảm số đợt đã đóng"
+                class="w-5 h-5 rounded-md bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 text-xs font-extrabold flex items-center justify-center cursor-pointer"
+              >-</button>
+              <span class="px-1.5 text-xs sm:text-sm font-extrabold text-emerald-800">
+                ${stats.paidBatchesCount} đợt
+              </span>
+              <button
+                type="button"
+                onclick="adjustStudentPaidBatches('${s.id}', 1)"
+                title="Tăng số đợt đã đóng"
+                class="w-5 h-5 rounded-md bg-white hover:bg-emerald-100 text-slate-600 hover:text-emerald-700 border border-slate-200 text-xs font-extrabold flex items-center justify-center cursor-pointer"
+              >+</button>
+            </div>
+            <div class="text-[11px] font-bold text-emerald-700 mt-1">
+              Tổng đã đóng: ${formatCurrency(stats.totalPaidAmount)}
+            </div>
+            ${
+              stats.paidBatchLabels.length > 0
+                ? `<div class="text-[10px] text-slate-400 truncate max-w-[170px] mx-auto" title="${escapeAttr(
+                    stats.paidBatchLabels.join(', ')
+                  )}">(${escapeHtml(stats.paidBatchLabels.join(', '))})</div>`
+                : ''
+            }
+          </td>
+          <td class="py-3 px-3">
             <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold text-xs">
               ${escapeHtml(s.period)}
             </span>
           </td>
-          <td class="py-3.5 px-4 text-right font-bold text-slate-900">
-            ${formatCurrency(s.tuitionFee)}
+          <td class="py-3 px-3 text-right font-extrabold text-slate-900">
+            ${toShortMoney(s.tuitionFee).toLocaleString('vi-VN')}
           </td>
-          <td class="py-3.5 px-4 text-center">
+          <td class="py-3 px-3 text-center">
             <select
               onchange="quickChangeStudentStatus('${s.id}', this.value)"
               class="px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer focus:outline-none ${badgeClass}"
@@ -1397,20 +1551,7 @@ function renderAdminStudents() {
               <option value="Đã hoàn thành" ${s.status === 'Đã hoàn thành' ? 'selected' : ''}>Đã hoàn thành</option>
             </select>
           </td>
-          <td class="py-3.5 px-4 text-center">
-            ${
-              s.receiptUrl
-                ? `<button
-                    onclick="openReceiptViewer('${escapeAttr(s.receiptUrl)}', 'Biên lai ${escapeAttr(s.fullName)}')"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold cursor-pointer"
-                  >
-                    <i data-lucide="image" class="w-3.5 h-3.5"></i>
-                    <span>Xem</span>
-                  </button>`
-                : `<span class="text-xs text-slate-300">---</span>`
-            }
-          </td>
-          <td class="py-3.5 px-4 text-right">
+          <td class="py-3 px-3 text-right">
             <div class="inline-flex items-center gap-1">
               <button
                 onclick="openPaymentModal('${s.id}')"
@@ -1441,13 +1582,13 @@ function renderAdminStudents() {
       .join('') +
     `
       <tr class="bg-slate-100 font-extrabold text-xs border-t-2 border-slate-300 text-slate-900">
-        <td colspan="5" class="py-3 px-4 uppercase">
+        <td colspan="6" class="py-3 px-4 uppercase">
           TỔNG CỘNG DANH SÁCH ĐANG HIỂN THỊ: <span class="text-blue-700">${list.length} học sinh</span>
         </td>
-        <td class="py-3 px-4 text-right text-blue-700">
+        <td class="py-3 px-3 text-right text-blue-700">
           ${formatCurrency(totalFeeSum)}
         </td>
-        <td colspan="3" class="py-3 px-4 text-center">
+        <td colspan="2" class="py-3 px-4 text-center">
           <span class="text-emerald-700">Đã đóng: ${paidList.length} HS</span> •
           <span class="text-rose-600">Chưa đóng: ${unpaidList.length} HS</span>
         </td>
@@ -1510,10 +1651,12 @@ function quickChangeStudentStatus(studentId, newStatus) {
 function openStudentModal(studentId = '') {
   const modal = document.getElementById('student-modal');
   const title = document.getElementById('student-modal-title');
+  const startDateInput = document.getElementById('stu-form-start-date');
 
   if (studentId) {
     const s = appState.students.find(item => item.id === studentId);
     if (!s) return;
+    const stats = getStudentStatistics(s);
     title.textContent = 'Chỉnh Sửa Thông Tin Học Sinh';
     document.getElementById('stu-form-id').value = s.id;
     document.getElementById('stu-form-code').value = s.studentCode;
@@ -1525,6 +1668,7 @@ function openStudentModal(studentId = '') {
     document.getElementById('stu-form-fee').value = toShortMoney(s.tuitionFee);
     document.getElementById('stu-form-status').value = s.status;
     document.getElementById('stu-form-note').value = s.note || '';
+    if (startDateInput) startDateInput.value = stats.startDateIso || '';
   } else {
     title.textContent = 'Thêm Học Sinh Mới';
     const nextNum = (appState.students.length + 1).toString().padStart(3, '0');
@@ -1538,6 +1682,7 @@ function openStudentModal(studentId = '') {
     document.getElementById('stu-form-fee').value = 600;
     document.getElementById('stu-form-status').value = 'Chưa đóng';
     document.getElementById('stu-form-note').value = '';
+    if (startDateInput) startDateInput.value = new Date().toISOString().slice(0, 10);
   }
 
   modal.classList.remove('hidden');
@@ -1561,6 +1706,7 @@ function saveStudentForm(event) {
   const tuitionFee = fromShortMoney(document.getElementById('stu-form-fee').value);
   const status = document.getElementById('stu-form-status').value || 'Chưa đóng';
   const note = document.getElementById('stu-form-note').value.trim();
+  const startDateIso = (document.getElementById('stu-form-start-date')?.value || '').trim();
   const nowStr = getCurrentDateTimeString();
 
   if (id) {
@@ -1595,6 +1741,14 @@ function saveStudentForm(event) {
       updatedAt: nowStr,
       note
     });
+  }
+
+  if (startDateIso) {
+    const metaMap = getStudentMetaMap();
+    const key = String(studentCode || id).trim().toUpperCase();
+    if (!metaMap[key]) metaMap[key] = {};
+    metaMap[key].startDate = startDateIso;
+    saveStudentMetaMap(metaMap);
   }
 
   closeStudentModal();
