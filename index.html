@@ -72,11 +72,11 @@
         </button>
 
         <!-- Role Toggle Pill -->
-        <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+        <div class="role-switch-pill p-1 rounded-xl flex items-center">
           <button
             id="btn-mode-parent"
             onclick="switchAppMode('parent')"
-            class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-blue-600 shadow-xs cursor-pointer"
+            class="mode-pill-active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer"
           >
             <i data-lucide="users" class="w-4 h-4"></i>
             <span>Phụ huynh / HS</span>
@@ -84,7 +84,7 @@
           <button
             id="btn-mode-admin"
             onclick="switchAppMode('admin')"
-            class="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900 cursor-pointer"
+            class="mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer"
           >
             <i data-lucide="shield-check" class="w-4 h-4"></i>
             <span>Quản lý</span>
@@ -499,6 +499,15 @@
               >
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
                 <span>+ Thêm Học Sinh</span>
+              </button>
+              <button
+                type="button"
+                onclick="deleteCurrentClassSchedule()"
+                title="Xóa lớp học đang chọn khỏi hệ thống"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span>🗑️ Xóa Lớp</span>
               </button>
               <button
                 type="button"
@@ -978,6 +987,16 @@
                 >
                   <i data-lucide="user-plus" class="w-4 h-4"></i>
                   <span>+ Thêm Học Sinh</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-students-delete-class"
+                  onclick="handleDeleteClassInAllStudents()"
+                  title="Xóa lớp học đang chọn hoặc chọn lớp cần xóa khỏi hệ thống"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  <span id="btn-students-delete-class-label">🗑️ Xóa Lớp</span>
                 </button>
                 <button
                   onclick="exportStudentsCSV()"
@@ -3004,6 +3023,52 @@
           class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold cursor-pointer transition shadow-xs"
         >
           Hoàn tất
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 10: CHỌN LỚP HỌC CẦN XÓA KHỎI HỆ THỐNG                          -->
+  <!-- ===================================================================== -->
+  <div
+    id="delete-class-picker-modal"
+    onclick="closeDeleteClassPickerModal()"
+    class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
+    >
+      <div class="bg-gradient-to-r from-rose-600 to-rose-700 text-white px-6 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i data-lucide="trash-2" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base sm:text-lg text-white">Quản Lý &amp; Xóa Lớp Học Khỏi Hệ Thống</h3>
+            <p class="text-xs text-rose-100">Bấm "Xóa lớp" ở dòng tương ứng để xóa lớp đó (Có thể bấm "Quay lại thao tác" nếu xóa nhầm)</p>
+          </div>
+        </div>
+        <button onclick="closeDeleteClassPickerModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-3 max-h-[70vh] overflow-y-auto">
+        <div id="delete-class-picker-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+        <span class="text-xs text-slate-500 font-medium">💡 Mẹo: Bạn cũng có thể bấm biểu tượng 🗑️ ngay trên từng thẻ lớp.</span>
+        <button
+          type="button"
+          onclick="closeDeleteClassPickerModal()"
+          class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-extrabold cursor-pointer transition"
+        >
+          Đóng
         </button>
       </div>
     </div>
