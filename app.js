@@ -4406,24 +4406,24 @@ function openStudentDetailModal(studentId) {
           : 'bg-rose-50 text-rose-700 border-rose-200';
         return `
           <tr class="${b.isCurrent ? 'bg-blue-50/40' : 'hover:bg-slate-50'}">
-            <td class="py-2.5 px-3 text-center font-bold text-slate-500 whitespace-nowrap">${idx + 1}</td>
-            <td class="py-2.5 px-3">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-extrabold text-[11px] uppercase whitespace-nowrap">${escapeHtml(
+            <td class="py-3 px-4 text-center font-bold text-slate-500 whitespace-nowrap">${idx + 1}</td>
+            <td class="py-3 px-4 whitespace-nowrap">
+              <div class="flex items-center gap-2 whitespace-nowrap">
+                <span class="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-extrabold text-xs uppercase whitespace-nowrap">${escapeHtml(
                   b.batchLabel
                 )}</span>
                 <span class="font-bold text-slate-800 whitespace-nowrap">${escapeHtml(b.periodLabel)}</span>
                 ${
                   b.isCurrent
-                    ? `<span class="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold whitespace-nowrap">Hiện tại</span>`
+                    ? `<span class="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[11px] font-bold whitespace-nowrap">Hiện tại</span>`
                     : ''
                 }
               </div>
             </td>
-            <td class="py-2.5 px-3 text-center text-xs text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(b.dateRange)}</td>
-            <td class="py-2.5 px-3 text-right font-extrabold text-slate-900 whitespace-nowrap">${formatCurrency(b.fee)}</td>
-            <td class="py-2.5 px-3 text-center whitespace-nowrap">
-              <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full border text-[11px] font-extrabold whitespace-nowrap ${badgeCls}">
+            <td class="py-3 px-4 text-center text-xs sm:text-sm text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(b.dateRange)}</td>
+            <td class="py-3 px-4 text-right font-extrabold text-slate-900 whitespace-nowrap">${formatCurrency(b.fee)}</td>
+            <td class="py-3 px-4 text-center whitespace-nowrap">
+              <span class="inline-flex items-center justify-center px-3 py-1 rounded-full border text-xs font-extrabold whitespace-nowrap ${badgeCls}">
                 ${isPaid ? '✓ ' : ''}${escapeHtml(b.status)}
               </span>
             </td>
@@ -4678,18 +4678,18 @@ function renderAdminStudents() {
                 : `<div class="text-[10px] text-slate-400">(Tự động đếm theo hệ thống)</div>`
             }
           </td>
-          <td class="py-3 px-3">
-            <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold text-xs">
+          <td class="py-3 px-3 whitespace-nowrap">
+            <span class="inline-block px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs whitespace-nowrap">
               ${escapeHtml(s.period)}
             </span>
           </td>
-          <td class="py-3 px-3 text-right font-extrabold text-slate-900">
+          <td class="py-3 px-3 text-right font-extrabold text-slate-900 whitespace-nowrap">
             ${toShortMoney(s.tuitionFee).toLocaleString('vi-VN')}
           </td>
-          <td class="py-3 px-3 text-center">
+          <td class="py-3 px-3 text-center whitespace-nowrap">
             <select
               onchange="quickChangeStudentStatus('${s.id}', this.value)"
-              class="px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer focus:outline-none ${badgeClass}"
+              class="px-3 py-1 rounded-full text-xs font-bold cursor-pointer focus:outline-none whitespace-nowrap ${badgeClass}"
             >
               <option value="Chưa đóng" ${s.status === 'Chưa đóng' ? 'selected' : ''}>Chưa đóng</option>
               <option value="Chờ duyệt" ${s.status === 'Chờ duyệt' ? 'selected' : ''}>Chờ duyệt</option>
