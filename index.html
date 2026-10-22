@@ -896,156 +896,392 @@
         </div>
 
         <!-- =============================================================== -->
-        <!-- TAB 2: QUẢN LÝ HỌC SINH & HỌC PHÍ                               -->
+        <!-- TAB 2: SỔ THỐNG KÊ HỌC SINH & HỌC PHÍ (GIỐNG SỔ THEO DÕI)       -->
         <!-- =============================================================== -->
         <div id="admin-tab-students" class="hidden space-y-4">
-          <!-- Student Count & Summary Bar -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-              <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tổng Số Học Sinh</span>
-                <p id="all-stu-kpi-total" class="text-2xl font-extrabold text-blue-600 mt-1">0 HS</p>
-                <p id="all-stu-kpi-filtered" class="text-xs text-slate-500 mt-0.5">Đang hiển thị: 0 HS</p>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <i data-lucide="users" class="w-5 h-5"></i>
-              </div>
-            </div>
 
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-              <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Đã Hoàn Thành</span>
-                <p id="all-stu-kpi-paid" class="text-2xl font-extrabold text-emerald-600 mt-1">0 HS</p>
-                <p id="all-stu-kpi-paid-sum" class="text-xs text-emerald-700 font-semibold mt-0.5">Đã thu: 0 ₫</p>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-              </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-              <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Đang Chờ Duyệt</span>
-                <p id="all-stu-kpi-pending" class="text-2xl font-extrabold text-amber-500 mt-1">0 HS</p>
-                <p class="text-xs text-slate-500 mt-0.5">Phụ huynh báo đã CK</p>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <i data-lucide="clock" class="w-5 h-5"></i>
-              </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
-              <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Chưa Đóng Học Phí</span>
-                <p id="all-stu-kpi-unpaid" class="text-2xl font-extrabold text-rose-600 mt-1">0 HS</p>
-                <p id="all-stu-kpi-unpaid-sum" class="text-xs text-rose-600 font-semibold mt-0.5">Còn thiếu: 0 ₫</p>
-              </div>
-              <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                <i data-lucide="alert-circle" class="w-5 h-5"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- Action & Filter Bar -->
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 class="font-bold text-slate-900 text-base">Thống Kê Tất Cả Học Sinh (Ngày Bắt Đầu Học &amp; Số Đợt Đã Đóng Theo Hệ Thống)</h3>
-                <p class="text-xs text-slate-500">Số đợt đã đóng của mỗi học sinh được <strong>hệ thống tự động đếm</strong> dựa trên dữ liệu đã đóng tiền (Đợt hiện tại + Lịch sử các đợt + Giao dịch chuyển khoản vào STK).</p>
-              </div>
+          <!-- KHUNG 1 (GIỐNG SỔ THEO DÕI): ĐẾM & CHỌN LỚP XEM THỐNG KÊ (LƯỚI 4 CỘT CÂN ĐỐI) -->
+          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3.5">
+            <!-- Hàng 1: Tiêu đề + Lọc nhanh theo Khối lớp + Chuyển nhanh & Công cụ -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
               <div class="flex flex-wrap items-center gap-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
+                  <i data-lucide="graduation-cap" class="w-4 h-4 text-amber-300"></i>
+                  <span>Đếm &amp; Chọn Lớp Xem Thống Kê</span>
+                </div>
+                <!-- Các nút lọc nhanh theo Khối lớp (Tất cả / Khối 12 / 11 / 10 / 9 / 6-8) -->
+                <div id="all-stu-grade-filters" class="flex flex-wrap items-center gap-1.5">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
+                <select
+                  id="filter-student-class"
+                  onchange="renderAdminStudents()"
+                  class="px-3.5 py-2 rounded-xl border-2 border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[230px]"
+                >
+                  <option value="ALL">Tất cả lớp / khóa học</option>
+                </select>
                 <button
                   onclick="openStudentModal()"
-                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="user-plus" class="w-4 h-4"></i>
-                  <span>Thêm Học Sinh</span>
-                </button>
-                <button
-                  onclick="openBatchPeriodModal()"
-                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
-                >
-                  <i data-lucide="calendar-plus" class="w-4 h-4"></i>
-                  <span>Tạo Kỳ Thu Tháng Mới</span>
+                  <span>+ Thêm Học Sinh</span>
                 </button>
                 <button
                   onclick="exportStudentsCSV()"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="download" class="w-4 h-4"></i>
-                  <span>Xuất Excel/CSV</span>
+                  <span>Xuất Excel</span>
                 </button>
               </div>
             </div>
 
-            <!-- Class Count Pills Breakdown -->
-            <div id="all-stu-class-counts-bar" class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+            <!-- Hàng 2: Lưới thẻ Đếm & Chọn Lớp cân đối đều 4 cột giống hệt Sổ Theo Dõi -->
+            <div id="all-stu-class-counts-bar" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- KHUNG 2: BỘ LỌC THỐNG KÊ THEO THÁNG • NĂM • LỚP • THỜI GIAN (NGÀY / THÁNG / NĂM) -->
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3.5">
+            <!-- Hàng 1: Chọn chế độ xem thống kê thời gian (Tất cả / Theo Ngày / Theo Tháng / Theo Năm / Khoảng ngày) -->
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-xs font-extrabold uppercase tracking-wider whitespace-nowrap">
+                  <i data-lucide="calendar-clock" class="w-4 h-4 text-blue-600"></i>
+                  <span>Thống Kê Thời Gian:</span>
+                </span>
+                <div class="flex flex-wrap items-center gap-1.5" id="stu-stat-time-mode-pills">
+                  <button
+                    type="button"
+                    id="stu-mode-btn-ALL"
+                    onclick="setStuStatTimeMode('ALL')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-blue-600 text-white border-blue-600 shadow-2xs whitespace-nowrap"
+                  >
+                    🌐 Tất cả thời gian
+                  </button>
+                  <button
+                    type="button"
+                    id="stu-mode-btn-MONTH"
+                    onclick="setStuStatTimeMode('MONTH')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                  >
+                    🗓️ Theo Tháng
+                  </button>
+                  <button
+                    type="button"
+                    id="stu-mode-btn-YEAR"
+                    onclick="setStuStatTimeMode('YEAR')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                  >
+                    📊 Theo Năm
+                  </button>
+                  <button
+                    type="button"
+                    id="stu-mode-btn-DAY"
+                    onclick="setStuStatTimeMode('DAY')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                  >
+                    📅 Theo Ngày
+                  </button>
+                  <button
+                    type="button"
+                    id="stu-mode-btn-RANGE"
+                    onclick="setStuStatTimeMode('RANGE')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                  >
+                    ⏳ Từ Ngày → Đến Ngày
+                  </button>
+                </div>
+              </div>
+
+              <!-- Các ô chọn Ngày / Tháng / Năm động theo chế độ -->
+              <div class="flex flex-wrap items-center gap-2">
+                <!-- Điều khiển khi chọn THEO THÁNG -->
+                <div id="stu-stat-ctrl-MONTH" class="hidden flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Chọn Tháng:</span>
+                  <select
+                    id="filter-stu-month"
+                    onchange="renderAdminStudents()"
+                    class="px-3 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="ALL">Tất cả các tháng</option>
+                    <option value="1">Tháng 1</option>
+                    <option value="2">Tháng 2</option>
+                    <option value="3">Tháng 3</option>
+                    <option value="4">Tháng 4</option>
+                    <option value="5">Tháng 5</option>
+                    <option value="6">Tháng 6</option>
+                    <option value="7">Tháng 7</option>
+                    <option value="8">Tháng 8</option>
+                    <option value="9">Tháng 9</option>
+                    <option value="10">Tháng 10</option>
+                    <option value="11">Tháng 11</option>
+                    <option value="12">Tháng 12</option>
+                  </select>
+                  <select
+                    id="filter-stu-month-year"
+                    onchange="renderAdminStudents()"
+                    class="px-3 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="ALL">Tất cả năm</option>
+                    <option value="2026" selected>Năm 2026</option>
+                    <option value="2025">Năm 2025</option>
+                    <option value="2027">Năm 2027</option>
+                  </select>
+                </div>
+
+                <!-- Điều khiển khi chọn THEO NĂM -->
+                <div id="stu-stat-ctrl-YEAR" class="hidden flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Chọn Năm:</span>
+                  <select
+                    id="filter-stu-year"
+                    onchange="renderAdminStudents()"
+                    class="px-3.5 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="2026" selected>Năm 2026</option>
+                    <option value="2025">Năm 2025</option>
+                    <option value="2027">Năm 2027</option>
+                    <option value="ALL">Tất cả các năm</option>
+                  </select>
+                </div>
+
+                <!-- Điều khiển khi chọn THEO NGÀY -->
+                <div id="stu-stat-ctrl-DAY" class="hidden flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Chọn Ngày:</span>
+                  <input
+                    type="date"
+                    id="filter-stu-date"
+                    onchange="renderAdminStudents()"
+                    class="px-3 py-1.5 rounded-xl border border-blue-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onclick="setStuStatToday()"
+                    class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold cursor-pointer whitespace-nowrap"
+                  >
+                    Hôm nay
+                  </button>
+                </div>
+
+                <!-- Điều khiển khi chọn TỪ NGÀY -> ĐẾN NGÀY -->
+                <div id="stu-stat-ctrl-RANGE" class="hidden flex-wrap items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Từ:</span>
+                  <input
+                    type="date"
+                    id="filter-stu-from-date"
+                    onchange="renderAdminStudents()"
+                    class="px-2.5 py-1.5 rounded-xl border border-blue-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span class="text-xs font-bold text-slate-600 whitespace-nowrap">Đến:</span>
+                  <input
+                    type="date"
+                    id="filter-stu-to-date"
+                    onchange="renderAdminStudents()"
+                    class="px-2.5 py-1.5 rounded-xl border border-blue-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onclick="resetAllStudentStatFilters()"
+                  title="Đặt lại toàn bộ bộ lọc về mặc định"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                  <span>Xem tất cả</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Hàng 2: Lưới Thẻ Tổng Hợp Nhanh Theo Tháng / Kỳ & Năm (Bấm để lọc nhanh) -->
+            <div id="all-stu-period-breakdown" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5">
               <!-- Rendered by JS -->
             </div>
 
-            <!-- Filters -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
+            <!-- Hàng 3: 4 Ô Tìm Kiếm & Lọc Chi Tiết -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-200">
               <div class="relative">
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
                 <input
                   id="filter-student-search"
                   type="text"
                   oninput="renderAdminStudents()"
-                  placeholder="Tìm mã HS, tên, SĐT phụ huynh..."
-                  class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Tìm mã HS, họ tên, SĐT, lớp..."
+                  class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <select
-                id="filter-student-class"
-                onchange="renderAdminStudents()"
-                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="ALL">Tất cả lớp / khóa học</option>
-              </select>
-
-              <select
                 id="filter-student-period"
                 onchange="renderAdminStudents()"
-                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               >
-                <option value="ALL">Tất cả kỳ học phí</option>
+                <option value="ALL">Tất cả kỳ / đợt học phí</option>
               </select>
 
               <select
                 id="filter-student-status"
                 onchange="renderAdminStudents()"
-                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="Chưa đóng">Chưa đóng</option>
-                <option value="Chờ duyệt">Chờ duyệt</option>
-                <option value="Đã hoàn thành">Đã hoàn thành</option>
+                <option value="ALL">Tất cả trạng thái đóng</option>
+                <option value="Đã hoàn thành">✓ Đã hoàn thành</option>
+                <option value="Chờ duyệt">⏳ Đang chờ duyệt</option>
+                <option value="Chưa đóng">✕ Chưa đóng học phí</option>
+              </select>
+
+              <select
+                id="filter-student-date-target"
+                onchange="renderAdminStudents()"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                title="Chọn tiêu chí áp dụng khi lọc theo Ngày / Tháng / Năm"
+              >
+                <option value="ALL">Lọc thời gian: Kỳ học + Ngày đóng + Ngày học</option>
+                <option value="PAYMENT_DATE">Chỉ lọc theo Ngày đóng tiền / Chuyển khoản</option>
+                <option value="START_DATE">Chỉ lọc theo Ngày bắt đầu học của HS</option>
+                <option value="CLASS_SCHEDULE">Chỉ lọc theo Lịch buổi học của Lớp</option>
               </select>
             </div>
           </div>
 
-          <!-- Students Table -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap">
-                    <th class="py-3.5 px-3 text-center w-12">STT</th>
-                    <th class="py-3.5 px-3">Mã HS</th>
-                    <th class="py-3.5 px-4 min-w-[220px]">Họ tên Học sinh &amp; Lớp</th>
-                    <th class="py-3.5 px-3 text-center min-w-[150px]">Bắt đầu học từ</th>
-                    <th class="py-3.5 px-3 text-center min-w-[190px]">Đã đóng bao nhiêu đợt (Hệ thống)</th>
-                    <th class="py-3.5 px-3 min-w-[155px]">Đợt hiện tại</th>
-                    <th class="py-3.5 px-3 text-right min-w-[100px]">Học phí</th>
-                    <th class="py-3.5 px-3 text-center min-w-[150px]">Trạng thái đóng</th>
-                    <th class="py-3.5 px-3 text-right min-w-[170px]">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-students-tbody" class="divide-y divide-slate-100 text-sm">
-                  <!-- Rendered by JS -->
-                </tbody>
-              </table>
+          <!-- KHUNG 3 (TRÌNH BÀY GIỐNG HỆT SỔ THEO DÕI LỚP HỌC - CHUẨN MẪU): BẢNG TỔNG HỢP & DANH SÁCH HỌC SINH -->
+          <div class="bg-white rounded-xl border-2 border-[#1f3d6e] shadow-md overflow-hidden">
+            <!-- Navy Title Banner -->
+            <div id="stu-stat-sheet-title" class="sheet-navy-header py-3 px-4 text-center font-extrabold text-base sm:text-lg tracking-wide uppercase">
+              SỔ THỐNG KÊ HỌC SINH &amp; QUẢN LÝ HỌC PHÍ - TẤT CẢ CÁC LỚP
+            </div>
+
+            <!-- Metadata Sub-bar (4 cột giống Sổ Theo Dõi) -->
+            <div class="sheet-sub-bar px-4 py-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs sm:text-sm font-bold text-slate-800">
+              <div>
+                Phạm vi Lớp: <span id="stu-meta-classname" class="text-[#1f3d6e]">Tất cả các lớp</span>
+              </div>
+              <div>
+                Thời gian xem: <span id="stu-meta-time" class="text-[#1f3d6e]">Tất cả thời gian</span>
+              </div>
+              <div>
+                Tổng đợt đã đóng: <span id="stu-meta-batches" class="text-emerald-700">0 đợt (hệ thống)</span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span>Hiển thị: <span id="all-stu-kpi-filtered" class="text-[#1f3d6e]">0 HS</span></span>
+                <button
+                  type="button"
+                  onclick="resetAllStudentStatFilters()"
+                  class="text-blue-600 hover:underline text-xs font-extrabold cursor-pointer whitespace-nowrap"
+                >
+                  [Đặt lại]
+                </button>
+              </div>
+            </div>
+
+            <div class="p-4 space-y-4">
+              <!-- 4 Ô KPI Lớn Chuẩn Mẫu Sổ Theo Dõi -->
+              <div class="grid grid-cols-2 lg:grid-cols-4 border border-slate-300 rounded-lg overflow-hidden">
+                <!-- Ô 1: Sĩ số học sinh -->
+                <div class="border-r border-b lg:border-b-0 border-slate-300 text-center">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    SĨ SỐ HỌC SINH (ĐANG XEM)
+                  </div>
+                  <div id="all-stu-kpi-total" class="py-2.5 text-2xl sm:text-3xl font-extrabold text-blue-600">
+                    0 HS
+                  </div>
+                  <div id="all-stu-kpi-sub-classes" class="pb-2 text-[11px] font-semibold text-slate-500">
+                    Trên tổng số 17 lớp
+                  </div>
+                </div>
+
+                <!-- Ô 2: Đã hoàn thành & Tỷ lệ -->
+                <div class="border-b lg:border-b-0 lg:border-r border-slate-300 text-center">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    ĐÃ HOÀN THÀNH HỌC PHÍ
+                  </div>
+                  <div id="all-stu-kpi-paid" class="py-2.5 text-2xl sm:text-3xl font-extrabold text-emerald-600">
+                    0 HS
+                  </div>
+                  <div id="all-stu-kpi-pending" class="pb-2 text-[11px] font-semibold text-amber-600">
+                    0 chờ duyệt
+                  </div>
+                </div>
+
+                <!-- Ô 3: Tổng thực thu -->
+                <div class="border-r border-slate-300 text-center ring-2 ring-blue-500 ring-inset">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    TỔNG THỰC THU (ĐÃ ĐÓNG)
+                  </div>
+                  <div id="all-stu-kpi-paid-sum" class="py-2.5 text-xl sm:text-2xl font-extrabold text-emerald-600">
+                    0 ₫
+                  </div>
+                  <div id="all-stu-kpi-alltime-sum" class="pb-2 text-[11px] font-semibold text-slate-500">
+                    Lũy kế các đợt: 0 ₫
+                  </div>
+                </div>
+
+                <!-- Ô 4: Khoản còn thiếu -->
+                <div class="text-center">
+                  <div class="bg-slate-100 py-1.5 px-2 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-300">
+                    CHƯA ĐÓNG / CÒN THIẾU
+                  </div>
+                  <div id="all-stu-kpi-unpaid-sum" class="py-2.5 text-xl sm:text-2xl font-extrabold text-rose-600">
+                    0 ₫
+                  </div>
+                  <div id="all-stu-kpi-unpaid" class="pb-2 text-[11px] font-semibold text-rose-600">
+                    0 HS chưa đóng
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bảng Học Sinh Chuẩn Mẫu Sổ Theo Dõi (sheet-table + Dòng TỔNG CỘNG) -->
+              <div class="overflow-x-auto">
+                <table class="sheet-table text-xs sm:text-sm">
+                  <thead>
+                    <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
+                      <th class="py-2.5 px-2 w-12">STT</th>
+                      <th class="py-2.5 px-2.5 w-20">Mã HS</th>
+                      <th class="py-2.5 px-3 text-left min-w-[180px]">Họ và tên Học sinh</th>
+                      <th class="py-2.5 px-3 text-left min-w-[180px]">Lớp đang học</th>
+                      <th class="py-2.5 px-2.5 w-36">Bắt đầu học từ</th>
+                      <th class="py-2.5 px-2.5 w-44">Số đợt đã đóng (Hệ thống)</th>
+                      <th class="py-2.5 px-2.5 w-36">Kỳ / Tháng</th>
+                      <th class="py-2.5 px-2.5 text-right w-28">Học phí</th>
+                      <th class="py-2.5 px-2.5 w-36">Tình trạng</th>
+                      <th class="py-2.5 px-2.5 w-36">Thao tác</th>
+                    </tr>
+                    <!-- Dòng TỔNG CỘNG ngay dưới tiêu đề giống hệt Sổ Theo Dõi Lớp Học -->
+                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
+                      <td colspan="4" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
+                        TỔNG CỘNG (<span id="stu-sum-count" class="text-blue-700">0 HS</span>)
+                      </td>
+                      <td id="stu-sum-classes-cnt" class="py-2 px-2.5 text-center text-slate-700">
+                        0 lớp
+                      </td>
+                      <td id="stu-sum-batches" class="py-2 px-2.5 text-center text-emerald-700">
+                        0 đợt đã đóng
+                      </td>
+                      <td id="stu-sum-paid-ratio" class="py-2 px-2.5 text-center text-slate-900">
+                        0/0 em đã đóng
+                      </td>
+                      <td id="stu-sum-expected" class="py-2 px-2.5 text-right text-slate-900">
+                        0 ₫
+                      </td>
+                      <td id="stu-sum-collected" class="py-2 px-2.5 text-right text-emerald-700">
+                        Thu: 0 ₫
+                      </td>
+                      <td id="stu-sum-missing" class="py-2 px-2.5 text-right text-rose-600">
+                        Thiếu: 0 ₫
+                      </td>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-students-tbody">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
