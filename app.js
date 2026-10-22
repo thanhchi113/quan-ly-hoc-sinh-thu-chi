@@ -1480,6 +1480,188 @@ async function updateStudentStartDate(studentId, newDateIso) {
   saveStudentMetaMap(metaMap, `Đã cập nhật ngày bắt đầu học của ${s.fullName}: ${formatShortDateVN(newDateIso)}!`);
 }
 
+let currentDetailStudentId = '';
+
+function openStudentDetailModal(studentId) {
+  const s = (appState.students || []).find(item => item.id === studentId);
+  if (!s) return;
+  currentDetailStudentId = s.id;
+
+  const modal = document.getElementById('student-detail-modal');
+  if (!modal) return;
+
+  const stats = getStudentStatistics(s);
+  const historyList = typeof getClassHistoryList === 'function' ? getClassHistoryList() : [];
+  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+  const cleanName = removeVietnameseTones((s.fullName || '').toLowerCase()).trim();
+
+  // 1. Điền Header & 3 Ô Thống Kê Chính
+  document.getElementById('stu-detail-code').textContent = s.studentCode || 'HS';
+  document.getElementById('stu-detail-name').textContent = s.fullName || '';
+  document.getElementById('stu-detail-sub').textContent = `Lớp ${s.className || '---'} • Phụ huynh: ${
+    s.parentName || '---'
+  } • SĐT: ${s.parentPhone || '---'}`;
+
+  const startInput = document.getElementById('stu-detail-start-input');
+  if (startInput) startInput.value = stats.startDateIso || '';
+  document.getElementById('stu-detail-start-text').textContent = `Từ ngày: ${stats.startDateVN || '---'}`;
+  document.getElementById('stu-detail-paid-batches').textContent = `${stats.paidBatchesCount} đợt`;
+  document.getElementById('stu-detail-total-paid').textContent = formatCurrency(stats.totalPaidAmount);
+  document.getElementById('stu-detail-current-fee').textContent = `Mức học phí: ${formatCurrency(s.tuitionFee)}/đợt`;
+
+  // 2. Tạo danh sách tất cả các đợt học của học sinh này (Lịch sử + Đợt hiện tại)
+  const batchRecords = [];
+  const chronologicalHist = [...historyList].reverse();
+  chronologicalHist.forEach(hist => {
+    const matchedInHist = (hist.studentsSnapshot || []).find(
+      hs =>
+        (hs.studentCode && hs.studentCode === s.studentCode) ||
+        (cleanName &&
+          removeVietnameseTones((hs.fullName || '').toLowerCase()).trim() === cleanName &&
+          hs.className === s.className)
+    );
+    if (matchedInHist) {
+      batchRecords.push({
+        batchLabel: hist.batchLabel || 'ĐỢT CŨ',
+        periodLabel: hist.periodLabel || '',
+        dateRange:
+          hist.startDate && hist.endDate
+            ? `${formatShortDateVN(hist.startDate)} → ${formatShortDateVN(hist.endDate)}`
+            : hist.archivedAt || '---',
+        fee: Number(matchedInHist.tuitionFee) || 0,
+        status: matchedInHist.status || 'Chưa đóng',
+        isCurrent: false
+      });
+    }
+  });
+
+  const curClsCfg = scheduleMap[s.className] || {};
+  batchRecords.push({
+    batchLabel: curClsCfg.batchLabel || 'ĐỢT HIỆN TẠI',
+    periodLabel: s.period || curClsCfg.periodLabel || '',
+    dateRange:
+      curClsCfg.startDate && curClsCfg.endDate
+        ? `${formatShortDateVN(curClsCfg.startDate)} → ${formatShortDateVN(curClsCfg.endDate)}`
+        : 'Đang diễn ra',
+    fee: Number(s.tuitionFee) || 0,
+    status: s.status || 'Chưa đóng',
+    isCurrent: true
+  });
+
+  const batchesTbody = document.getElementById('stu-detail-batches-tbody');
+  if (batchesTbody) {
+    batchesTbody.innerHTML = batchRecords
+      .map((b, idx) => {
+        const isPaid = b.status === 'Đã hoàn thành';
+        const badgeCls = isPaid
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+          : b.status === 'Chờ duyệt'
+          ? 'bg-amber-100 text-amber-800 border-amber-300'
+          : 'bg-rose-50 text-rose-700 border-rose-200';
+        return `
+          <tr class="${b.isCurrent ? 'bg-blue-50/40' : 'hover:bg-slate-50'}">
+            <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
+            <td class="py-2.5 px-3">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-extrabold text-[11px] uppercase">${escapeHtml(
+                  b.batchLabel
+                )}</span>
+                <span class="font-bold text-slate-800">${escapeHtml(b.periodLabel)}</span>
+                ${
+                  b.isCurrent
+                    ? `<span class="px-1.5 py-0.2 rounded bg-blue-600 text-white text-[10px] font-bold">Hiện tại</span>`
+                    : ''
+                }
+              </div>
+            </td>
+            <td class="py-2.5 px-3 text-center text-xs text-slate-600 font-medium">${escapeHtml(b.dateRange)}</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-slate-900">${formatCurrency(b.fee)}</td>
+            <td class="py-2.5 px-3 text-center">
+              <span class="px-2.5 py-0.5 rounded-full border text-[11px] font-extrabold ${badgeCls}">
+                ${isPaid ? '✓ ' : ''}${escapeHtml(b.status)}
+              </span>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+  }
+
+  // 3. Lịch sử giao dịch thu học phí / chuyển khoản của học sinh này
+  const studentTxs = (appState.transactions || []).filter(
+    t =>
+      t.type === 'Thu' &&
+      ((t.studentCode && s.studentCode && t.studentCode.toUpperCase() === s.studentCode.toUpperCase()) ||
+        (s.studentCode && String(t.description || '').toUpperCase().includes(s.studentCode.toUpperCase())))
+  );
+
+  const txContainer = document.getElementById('stu-detail-tx-list');
+  if (txContainer) {
+    if (studentTxs.length === 0) {
+      txContainer.innerHTML = `
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-400">
+          Chưa có giao dịch thu học phí nào được ghi nhận trong Sổ Thu - Chi cho học sinh này.
+        </div>
+      `;
+    } else {
+      txContainer.innerHTML = studentTxs
+        .map(
+          tx => `
+          <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="space-y-0.5">
+              <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span class="px-2 py-0.2 rounded bg-emerald-600 text-white font-mono text-[10px]">${escapeHtml(
+                  tx.id
+                )}</span>
+                <span>${escapeHtml(tx.description || 'Thu học phí')}</span>
+              </div>
+              <div class="text-[11px] text-slate-500">
+                Ngày: <strong>${escapeHtml(formatShortDateVN(tx.date))}</strong> • Phương thức: <strong>${escapeHtml(
+            tx.method || 'Chuyển khoản'
+          )}</strong>
+              </div>
+            </div>
+            <div class="font-extrabold text-sm text-emerald-700">
+              +${formatCurrency(tx.amount)}
+            </div>
+          </div>
+        `
+        )
+        .join('');
+    }
+  }
+
+  // 4. Nút thao tác nhanh
+  const qrBtn = document.getElementById('stu-detail-btn-qr');
+  if (qrBtn) {
+    qrBtn.onclick = () => {
+      closeStudentDetailModal();
+      openPaymentModal(s.id);
+    };
+  }
+  const editBtn = document.getElementById('stu-detail-btn-edit');
+  if (editBtn) {
+    editBtn.onclick = () => {
+      closeStudentDetailModal();
+      openStudentModal(s.id);
+    };
+  }
+
+  modal.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeStudentDetailModal() {
+  const modal = document.getElementById('student-detail-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleDetailStartDateChange(newDateIso) {
+  if (!currentDetailStudentId || !newDateIso) return;
+  await updateStudentStartDate(currentDetailStudentId, newDateIso);
+  openStudentDetailModal(currentDetailStudentId);
+}
+
 async function adjustStudentPaidBatches(studentId, delta) {
   const s = (appState.students || []).find(item => item.id === studentId);
   if (!s) return;
@@ -1593,7 +1775,15 @@ function renderAdminStudents() {
             ${escapeHtml(s.studentCode)}
           </td>
           <td class="py-3 px-4">
-            <div class="font-bold text-slate-900">${escapeHtml(s.fullName)}</div>
+            <button
+              type="button"
+              onclick="openStudentDetailModal('${s.id}')"
+              class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer flex items-center gap-1.5"
+              title="Bấm để xem Hồ sơ chi tiết của học sinh này"
+            >
+              <span>${escapeHtml(s.fullName)}</span>
+              <i data-lucide="info" class="w-3.5 h-3.5 text-blue-500 shrink-0"></i>
+            </button>
             <div class="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
               <span class="px-2 py-0.2 rounded bg-blue-50 text-blue-800 font-bold text-[11px]">Lớp ${escapeHtml(s.className)}</span>
               ${
@@ -1662,6 +1852,14 @@ function renderAdminStudents() {
           </td>
           <td class="py-3 px-3 text-right">
             <div class="inline-flex items-center gap-1">
+              <button
+                onclick="openStudentDetailModal('${s.id}')"
+                title="Xem thông tin chi tiết & thống kê đợt học của học sinh này"
+                class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+              >
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>Chi tiết</span>
+              </button>
               <button
                 onclick="openPaymentModal('${s.id}')"
                 title="Lấy mã VietQR của học sinh này"
@@ -2935,6 +3133,7 @@ function renderAdminClassbook() {
       .map((s, idx) => {
         const isPaid = s.status === 'Đã hoàn thành';
         const isPending = s.status === 'Chờ duyệt';
+        const stats = getStudentStatistics(s);
         const statusCellClass = isPaid
           ? 'bg-emerald-100 text-emerald-800 font-bold'
           : isPending
@@ -2945,8 +3144,22 @@ function renderAdminClassbook() {
           <tr class="hover:bg-slate-50 transition">
             <td class="py-2 px-2 text-center font-semibold text-slate-600">${idx + 1}</td>
             <td class="py-2 px-3">
-              <div class="font-bold text-slate-900">${escapeHtml(s.fullName)}</div>
-              <div class="text-[11px] text-slate-400 font-mono">${escapeHtml(s.studentCode)} • SĐT: ${escapeHtml(s.parentPhone)}</div>
+              <button
+                type="button"
+                onclick="openStudentDetailModal('${s.id}')"
+                title="Bấm để xem thông tin chi tiết của học sinh ${escapeAttr(s.fullName)}"
+                class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer flex items-center gap-1"
+              >
+                <span>${escapeHtml(s.fullName)}</span>
+                <span class="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">Chi tiết</span>
+              </button>
+              <div class="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
+                <span class="font-mono text-slate-400">${escapeHtml(s.studentCode)}</span>
+                <span>• Học từ: <strong class="text-slate-700">${escapeHtml(stats.startDateVN)}</strong></span>
+                <span class="px-1.5 py-0.2 rounded ${
+                  stats.paidBatchesCount > 0 ? 'bg-emerald-50 text-emerald-700 font-bold' : 'bg-slate-100 text-slate-500'
+                }">Đã đóng: ${stats.paidBatchesCount} đợt</span>
+              </div>
             </td>
             <td class="py-1.5 px-2 text-right font-semibold text-slate-800">
               <select
@@ -2995,6 +3208,9 @@ function renderAdminClassbook() {
             </td>
             <td class="py-2 px-1.5 text-center">
               <div class="inline-flex items-center gap-1">
+                <button onclick="openStudentDetailModal('${s.id}')" title="Xem thông tin chi tiết học sinh" class="p-1 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                </button>
                 <button onclick="openStudentModal('${s.id}')" title="Sửa" class="p-1 text-slate-500 hover:text-blue-600 cursor-pointer">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </button>
