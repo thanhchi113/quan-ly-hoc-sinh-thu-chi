@@ -103,3 +103,65 @@ body {
     padding-bottom: 5.5rem;
   }
 }
+
+/* Sổ Theo Dõi Lớp Học - Chuẩn Mẫu Styles */
+.sheet-navy-header {
+  background-color: #1f3d6e;
+  color: #ffffff;
+}
+
+.sheet-sub-bar {
+  background-color: #eef4fb;
+  border-bottom: 2px solid #1f3d6e;
+}
+
+.sheet-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.sheet-table th,
+.sheet-table td {
+  border: 1px solid #cbd5e1;
+}
+
+/* Trạng thái tô màu các buổi dạy trên lịch */
+.session-cell {
+  transition: all 0.15s ease;
+  user-select: none;
+  cursor: pointer;
+}
+
+.session-cell:hover {
+  filter: brightness(0.95);
+  transform: scale(1.02);
+}
+
+/* 0: Chưa dạy (Trắng) */
+.session-state-0 {
+  background-color: #ffffff;
+  color: #1e293b;
+}
+
+/* 1: Đã dạy (Tô màu Xanh lá) */
+.session-state-1 {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+/* 2: Đã xác nhận / Chốt (Tô màu Vàng Cam / Xanh Dương nổi bật) */
+.session-state-2 {
+  background-color: #f59e0b !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+/* 3: Nghỉ / Dạy bù (Tô màu Đỏ nhạt) */
+.session-state-3 {
+  background-color: #fecdd3 !important;
+  color: #9f1239 !important;
+  text-decoration: line-through;
+  font-weight: 600;
+}
+
