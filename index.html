@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EduPay & SheetSync - Quản Lý Học Sinh, Học Phí & Thu Chi</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen flex flex-col mobile-safe-bottom">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 glass-nav border-b border-slate-200 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+      <!-- Brand -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-200 shrink-0">
+          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+        </div>
+        <div class="truncate">
+          <h1 id="header-center-name" class="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">
+            Quản Lý Lớp Học & Học Phí
+          </h1>
+          <div class="flex items-center gap-1.5 text-xs text-slate-500">
+            <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+            <span id="sync-status-text" class="truncate">Chế độ Local (Chưa gắn link Sheet)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Switcher & Quick Sync -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          id="btn-quick-sync"
+          onclick="syncFromGoogleSheet(true)"
+          title="Lấy dữ liệu mới nhất từ Google Sheet về ứng dụng"
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition"
+        >
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="icon-quick-sync"></i>
+          <span>Đồng bộ Sheet</span>
+        </button>
+
+        <!-- Role Toggle Pill -->
+        <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+          <button
+            id="btn-mode-parent"
+            onclick="switchAppMode('parent')"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-blue-600 shadow-xs"
+          >
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Phụ huynh / HS</span>
+          </button>
+          <button
+            id="btn-mode-admin"
+            onclick="switchAppMode('admin')"
+            class="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900"
+          >
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Quản lý</span>
+            <span
+              id="nav-pending-badge"
+              class="hidden ml-0.5 px-1.5 py-0.2 bg-amber-500 text-white text-[11px] font-bold rounded-full"
+            >0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- =================================================================== -->
+    <!-- PHÂN HỆ 1: CỔNG PHỤ HUYNH & HỌC SINH (TRA CỨU & GỬI BIÊN LAI CK)    -->
+    <!-- =================================================================== -->
+    <section id="parent-view" class="animate-fade-in space-y-6">
+      <!-- Hero Search Box -->
+      <div class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg">
+        <div class="max-w-2xl mx-auto text-center space-y-3">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 text-blue-100 backdrop-blur-xs">
+            <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+            Cổng Tra Cứu & Xác Nhận Học Phí Trực Tuyến
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Tra cứu học phí & Gửi xác nhận chuyển khoản
+          </h2>
+          <p class="text-blue-100 text-sm sm:text-base">
+            Nhập <strong>Mã học sinh</strong>, <strong>Số điện thoại phụ huynh</strong> hoặc <strong>Họ tên học sinh</strong> để xem học phí, lấy mã QR chuyển khoản và gửi biên lai xác nhận.
+          </p>
+
+          <!-- Search Input -->
+          <div class="pt-2">
+            <div class="flex flex-col sm:flex-row gap-2 bg-white p-2 rounded-xl shadow-md">
+              <div class="relative flex-1 flex items-center">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3.5"></i>
+                <input
+                  id="parent-search-input"
+                  type="text"
+                  placeholder="VD: HS001, 0901234567 hoặc Nguyễn Minh Anh..."
+                  onkeyup="if(event.key==='Enter') handleParentSearch()"
+                  class="w-full pl-11 pr-4 py-2.5 text-slate-900 placeholder-slate-400 text-sm sm:text-base font-medium focus:outline-none rounded-lg"
+                />
+              </div>
+              <button
+                onclick="handleParentSearch()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <i data-lucide="arrow-right-circle" class="w-5 h-5"></i>
+                <span>Tra cứu ngay</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Demo Tags -->
+          <div class="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-blue-100">
+            <span>Tra cứu thử nhanh:</span>
+            <button onclick="quickParentSearch('HS001')" class="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/25 transition font-medium cursor-pointer">
+              HS001 (Chưa đóng)
+            </button>
+            <button onclick="quickParentSearch('HS002')" class="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/25 transition font-medium cursor-pointer">
+              HS002 (Chờ duyệt)
+            </button>
+            <button onclick="quickParentSearch('HS003')" class="px-2.5 py-1 rounded-md bg-white/15 hover:bg-white/25 transition font-medium cursor-pointer">
+              HS003 (Đã hoàn thành)
+            </button>
+            <button onclick="quickParentSearch('Tất cả')" class="px-2.5 py-1 rounded-md bg-amber-400/30 hover:bg-amber-400/40 text-amber-100 transition font-medium cursor-pointer">
+              Xem toàn bộ danh sách
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parent Search Results -->
+      <div id="parent-results-container" class="space-y-4">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- 3-Step Guide Cards for Parents -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">1</div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">1. Tra cứu thông tin học sinh</h3>
+            <p class="text-xs text-slate-500 mt-1">Tìm theo Mã HS, SĐT phụ huynh hoặc Họ tên để kiểm tra số tiền học phí trong kỳ.</p>
+          </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">2</div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">2. Quét mã VietQR tự động</h3>
+            <p class="text-xs text-slate-500 mt-1">Mã QR tự động điền sẵn đúng số tiền và nội dung chuyển khoản theo tên học sinh.</p>
+          </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-2xs flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">3</div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">3. Gửi biên lai & Cập nhật trạng thái</h3>
+            <p class="text-xs text-slate-500 mt-1">Đính kèm ảnh biên lai chuyển khoản để hệ thống và Google Sheet cập nhật hoàn thành.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- PHÂN HỆ 2: CỔNG QUẢN LÝ & GIÁO VIÊN (DASHBOARD, HỌC SINH, THU CHI)  -->
+    <!-- =================================================================== -->
+    <section id="admin-view" class="hidden animate-fade-in space-y-6">
+
+      <!-- Admin Login Card (Shown when not authenticated) -->
+      <div id="admin-login-box" class="max-w-md mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 mt-6">
+        <div class="text-center space-y-2">
+          <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+            <i data-lucide="lock" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900">Đăng nhập Quản lý / Giáo viên</h2>
+          <p class="text-xs text-slate-500">
+            Nhập mật khẩu quản trị để duyệt học phí, quản lý danh sách học sinh, sổ thu chi và đồng bộ Google Sheet.
+          </p>
+        </div>
+
+        <form onsubmit="handleAdminLogin(event)" class="mt-6 space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu quản lý</label>
+            <input
+              id="admin-password-input"
+              type="password"
+              placeholder="Nhập mật khẩu (mặc định: 123456)"
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p class="text-[11px] text-slate-400 mt-1.5">
+              * Mật khẩu mặc định ban đầu là <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">123456</code> (Bạn có thể đổi trong mục Cài đặt).
+            </p>
+          </div>
+          <button
+            type="submit"
+            class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-xs cursor-pointer"
+          >
+            Truy cập Trang Quản Lý
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin Main Workspace (Shown after login) -->
+      <div id="admin-workspace" class="hidden space-y-6">
+
+        <!-- Desktop Sub-navigation & Sync Bar -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-2 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <div class="flex flex-wrap items-center gap-1">
+            <button
+              onclick="switchAdminTab('dashboard')"
+              id="tab-btn-dashboard"
+              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"
+            >
+              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+              <span>Tổng quan & Duyệt CK</span>
+              <span id="tab-pending-count" class="px-1.5 py-0.2 text-xs rounded-full bg-amber-400 text-slate-950 font-bold hidden">0</span>
+            </button>
+
+            <button
+              onclick="switchAdminTab('students')"
+              id="tab-btn-students"
+              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
+            >
+              <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+              <span>Học sinh & Học phí</span>
+            </button>
+
+            <button
+              onclick="switchAdminTab('finance')"
+              id="tab-btn-finance"
+              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
+            >
+              <i data-lucide="wallet" class="w-4 h-4"></i>
+              <span>Sổ Thu - Chi</span>
+            </button>
+
+            <button
+              onclick="switchAdminTab('settings')"
+              id="tab-btn-settings"
+              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
+            >
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>Google Sheet & Cài đặt QR</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 pr-1">
+            <a
+              href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+              target="_blank"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition cursor-pointer shadow-2xs"
+            >
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Mở Google Sheet</span>
+            </a>
+            <button
+              onclick="syncFromGoogleSheet(true)"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+            >
+              <i data-lucide="cloud-download" class="w-4 h-4"></i>
+              <span>Tải từ Sheet</span>
+            </button>
+            <button
+              onclick="syncAllToGoogleSheet(true)"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
+            >
+              <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+              <span>Cập nhật lên Sheet</span>
+            </button>
+            <button
+              onclick="handleAdminLogout()"
+              title="Đăng xuất Quản lý"
+              class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- TAB 1: DASHBOARD & DUYỆT XÁC NHẬN CHUYỂN KHOẢN                  -->
+        <!-- =============================================================== -->
+        <div id="admin-tab-dashboard" class="space-y-6">
+          <!-- KPI Summary Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Income -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tổng Thu (Sổ Quỹ)</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <i data-lucide="trending-up" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-total-income" class="text-2xl font-extrabold text-emerald-600 mt-2">0 ₫</p>
+              <p id="kpi-income-sub" class="text-xs text-slate-500 mt-1">0 giao dịch thu</p>
+            </div>
+
+            <!-- Total Expense -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tổng Chi</span>
+                <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <i data-lucide="trending-down" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-total-expense" class="text-2xl font-extrabold text-rose-600 mt-2">0 ₫</p>
+              <p id="kpi-expense-sub" class="text-xs text-slate-500 mt-1">0 giao dịch chi</p>
+            </div>
+
+            <!-- Net Balance -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tồn Quỹ Thực Tế</span>
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <i data-lucide="landmark" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-net-balance" class="text-2xl font-extrabold text-blue-600 mt-2">0 ₫</p>
+              <p class="text-xs text-slate-500 mt-1">Tổng Thu trừ Tổng Chi</p>
+            </div>
+
+            <!-- Tuition Progress -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tình Trạng Học Phí</span>
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                </div>
+              </div>
+              <p id="kpi-tuition-progress" class="text-2xl font-extrabold text-slate-900 mt-2">0 / 0 HS</p>
+              <p id="kpi-tuition-sub" class="text-xs text-slate-500 mt-1">0 chờ duyệt • 0 chưa đóng</p>
+            </div>
+          </div>
+
+          <!-- Pending Payment Approvals Box -->
+          <div class="bg-white rounded-2xl border border-amber-200 shadow-xs overflow-hidden">
+            <div class="bg-amber-50/80 px-5 py-4 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+                  <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-slate-900 text-sm sm:text-base">
+                    Yêu cầu xác nhận chuyển khoản từ Phụ huynh / Học sinh
+                  </h3>
+                  <p class="text-xs text-slate-600">
+                    Khi bấm <strong>"Duyệt đã nhận"</strong>, hệ thống tự động đổi trạng thái học sinh sang <strong>Đã hoàn thành</strong>, ghi vào <strong>Sổ Thu Chi</strong> và cập nhật lên <strong>Google Sheet</strong>.
+                  </p>
+                </div>
+              </div>
+              <span id="pending-box-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white">
+                0 chờ duyệt
+              </span>
+            </div>
+
+            <div id="pending-requests-list" class="divide-y divide-slate-100 p-4 space-y-3">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-800 text-sm sm:text-base">Biểu đồ Thu - Chi & Dòng tiền</h3>
+                <span class="text-xs text-slate-400">Đơn vị: VNĐ</span>
+              </div>
+              <div class="h-64">
+                <canvas id="financeBarChart"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-800 text-sm sm:text-base">Tỷ lệ hoàn thành học phí</h3>
+                <span class="text-xs text-slate-400">Theo số học sinh</span>
+              </div>
+              <div class="h-64 flex items-center justify-center">
+                <canvas id="tuitionPieChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- TAB 2: QUẢN LÝ HỌC SINH & HỌC PHÍ                               -->
+        <!-- =============================================================== -->
+        <div id="admin-tab-students" class="hidden space-y-4">
+          <!-- Action & Filter Bar -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-slate-900 text-base">Danh sách Học sinh & Trạng thái Học phí</h3>
+                <p class="text-xs text-slate-500">Chỉnh sửa trực tiếp tại đây hoặc trên Google Sheet đều được đồng bộ 2 chiều.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  onclick="openStudentModal()"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer"
+                >
+                  <i data-lucide="user-plus" class="w-4 h-4"></i>
+                  <span>Thêm Học Sinh</span>
+                </button>
+                <button
+                  onclick="openBatchPeriodModal()"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
+                >
+                  <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                  <span>Tạo Kỳ Thu Tháng Mới</span>
+                </button>
+                <button
+                  onclick="exportStudentsCSV()"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+                >
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <span>Xuất Excel/CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                <input
+                  id="filter-student-search"
+                  type="text"
+                  oninput="renderAdminStudents()"
+                  placeholder="Tìm mã HS, tên, SĐT phụ huynh..."
+                  class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <select
+                id="filter-student-class"
+                onchange="renderAdminStudents()"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">Tất cả lớp / khóa học</option>
+              </select>
+
+              <select
+                id="filter-student-period"
+                onchange="renderAdminStudents()"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">Tất cả kỳ học phí</option>
+              </select>
+
+              <select
+                id="filter-student-status"
+                onchange="renderAdminStudents()"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="Chưa đóng">Chưa đóng</option>
+                <option value="Chờ duyệt">Chờ duyệt</option>
+                <option value="Đã hoàn thành">Đã hoàn thành</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Students Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th class="py-3.5 px-4">Mã HS</th>
+                    <th class="py-3.5 px-4">Họ tên & Lớp</th>
+                    <th class="py-3.5 px-4">Phụ huynh / SĐT</th>
+                    <th class="py-3.5 px-4">Kỳ học phí</th>
+                    <th class="py-3.5 px-4 text-right">Mức học phí</th>
+                    <th class="py-3.5 px-4 text-center">Trạng thái đóng</th>
+                    <th class="py-3.5 px-4 text-center">Biên lai</th>
+                    <th class="py-3.5 px-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-students-tbody" class="divide-y divide-slate-100 text-sm">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- TAB 3: QUẢN LÝ SỔ THU - CHI                                     -->
+        <!-- =============================================================== -->
+        <div id="admin-tab-finance" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-slate-900 text-base">Sổ Quản Lý Thu - Chi Chi Tiết</h3>
+                <p class="text-xs text-slate-500">Tự động ghi nhận khi duyệt học phí hoặc thêm các khoản thu/chi vận hành lớp học.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  onclick="openTransactionModal('Thu')"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer"
+                >
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                  <span>+ Ghi Phiếu Thu</span>
+                </button>
+                <button
+                  onclick="openTransactionModal('Chi')"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition cursor-pointer"
+                >
+                  <i data-lucide="minus-circle" class="w-4 h-4"></i>
+                  <span>- Ghi Phiếu Chi</span>
+                </button>
+                <button
+                  onclick="exportTransactionsCSV()"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+                >
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <span>Xuất Sổ Quỹ CSV</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Finance Filters -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100">
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                <input
+                  id="filter-trans-search"
+                  type="text"
+                  oninput="renderAdminTransactions()"
+                  placeholder="Tìm mã GD, nội dung, mã học sinh..."
+                  class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <select
+                id="filter-trans-type"
+                onchange="renderAdminTransactions()"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">Tất cả loại (Thu & Chi)</option>
+                <option value="Thu">Khoản Thu (+)</option>
+                <option value="Chi">Khoản Chi (-)</option>
+              </select>
+
+              <select
+                id="filter-trans-category"
+                onchange="renderAdminTransactions()"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">Tất cả danh mục</option>
+                <option value="Thu học phí">Thu học phí</option>
+                <option value="Thu tiền tài liệu / giáo trình">Thu tiền tài liệu / giáo trình</option>
+                <option value="Chi thuê phòng / điện nước">Chi thuê phòng / điện nước</option>
+                <option value="Chi in ấn / tài liệu">Chi in ấn / tài liệu</option>
+                <option value="Chi lương / trợ giảng">Chi lương / trợ giảng</option>
+                <option value="Chi thưởng học sinh / liên hoan">Chi thưởng học sinh / liên hoan</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Transactions Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th class="py-3.5 px-4">Mã GD / Ngày</th>
+                    <th class="py-3.5 px-4">Loại</th>
+                    <th class="py-3.5 px-4">Danh mục</th>
+                    <th class="py-3.5 px-4">Nội dung chi tiết</th>
+                    <th class="py-3.5 px-4 text-right">Số tiền</th>
+                    <th class="py-3.5 px-4 text-center">Phương thức</th>
+                    <th class="py-3.5 px-4 text-center">Chứng từ</th>
+                    <th class="py-3.5 px-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-transactions-tbody" class="divide-y divide-slate-100 text-sm">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- TAB 4: ĐỒNG BỘ GOOGLE SHEETS & CÀI ĐẶT VIETQR                   -->
+        <!-- =============================================================== -->
+        <div id="admin-tab-settings" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Left Column: Google Sheet 2-way Sync Config -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <i data-lucide="sheet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">Kết nối Đồng bộ 2 chiều Google Sheets</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Dữ liệu thêm/sửa trên App sẽ tự động cập nhật vào Google Sheet, và khi bạn chỉnh sửa trên Google Sheet cũng đồng bộ ngược về App.
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">
+                    Google Apps Script Web App URL (Đuôi <code class="text-emerald-700">/exec</code>)
+                  </label>
+                  <input
+                    id="setting-gas-url"
+                    type="url"
+                    placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <label class="flex items-center gap-2.5 text-xs sm:text-sm text-slate-700 cursor-pointer select-none">
+                  <input
+                    id="setting-auto-sync"
+                    type="checkbox"
+                    checked
+                    class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>Tự động đẩy thay đổi lên Google Sheet ngay khi thêm/sửa/duyệt trên App</span>
+                </label>
+
+                <div class="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onclick="saveGasUrlConfig()"
+                    class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Lưu kết nối Sheet</span>
+                  </button>
+
+                  <button
+                    onclick="syncFromGoogleSheet(true)"
+                    class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i data-lucide="cloud-download" class="w-4 h-4"></i>
+                    <span>Đọc từ Sheet về App</span>
+                  </button>
+
+                  <button
+                    onclick="syncAllToGoogleSheet(true)"
+                    class="px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                    <span>Ghi toàn bộ từ App lên Sheet</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Setup Guide for Google Sheets -->
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2.5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    File Google Sheet của bạn đã được gắn sẵn ID
+                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <a
+                      href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+                      target="_blank"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition cursor-pointer"
+                    >
+                      <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                      <span>1. Mở Sheet của bạn</span>
+                    </a>
+                    <button
+                      onclick="copyGasCodeToClipboard()"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition cursor-pointer"
+                    >
+                      <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                      <span>2. Copy mã Code.gs</span>
+                    </button>
+                  </div>
+                </div>
+                <ol class="text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
+                  <li>Bấm nút <strong>"1. Mở Sheet của bạn"</strong> ở trên, vào menu <strong>Tiện ích mở rộng (Extensions) &rarr; Apps Script</strong>.</li>
+                  <li>Bấm nút <strong>"2. Copy mã Code.gs"</strong> (đã cấu hình sẵn ID Sheet <code class="text-emerald-700">1dObYu...lsvq0</code> của bạn) và dán vào cửa sổ Apps Script &rarr; Bấm <strong>Lưu</strong>.</li>
+                  <li>Bấm nút <strong>Triển khai (Deploy) &rarr; Tùy chọn triển khai mới (New deployment)</strong> &rarr; Chọn loại <strong>Ứng dụng web (Web app)</strong>.</li>
+                  <li>Mục <em>Ai có quyền truy cập (Who has access)</em> chọn <strong>Bất kỳ ai (Anyone)</strong> &rarr; Bấm <strong>Triển khai</strong> và copy đường link <code class="text-emerald-700">.../exec</code> dán vào ô bên trên.</li>
+                </ol>
+              </div>
+
+              <!-- Auto Push to GitHub Pages Box -->
+              <div class="bg-slate-900 text-white rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="github" class="w-5 h-5 text-blue-400"></i>
+                    <span class="text-xs sm:text-sm font-bold">Tự động đẩy Web lên GitHub Pages</span>
+                  </div>
+                  <a
+                    href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=EduPay_Auto_Deploy"
+                    target="_blank"
+                    class="text-[11px] font-semibold text-blue-300 hover:underline"
+                  >
+                    Lấy mã GitHub Token tại đây &rarr;
+                  </a>
+                </div>
+                <p class="text-xs text-slate-300">
+                  Nhập tên Repository và GitHub Token để hệ thống tự động tạo kho chứa, tải toàn bộ code kèm link Google Sheet của bạn lên GitHub và bật sẵn link web <strong>GitHub Pages</strong>:
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    id="gh-repo-name"
+                    type="text"
+                    value="quan-ly-hoc-sinh-thu-chi"
+                    placeholder="Tên repo (VD: quan-ly-hoc-phi)"
+                    class="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-400"
+                  />
+                  <input
+                    id="gh-token-input"
+                    type="password"
+                    placeholder="Dán GitHub Token (ghp_...)"
+                    class="px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+                <button
+                  type="button"
+                  id="btn-auto-github"
+                  onclick="autoDeployToGitHubPages()"
+                  class="w-full py-2 px-4 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <i data-lucide="rocket" class="w-4 h-4"></i>
+                  <span>Tự Động Đẩy Lên GitHub & Kích Hoạt Link Web Ngay</span>
+                </button>
+                <div id="gh-deploy-result" class="hidden text-xs p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-600 text-emerald-200 space-y-1"></div>
+              </div>
+
+              <!-- Reset Demo Data -->
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-xs text-slate-500">Khôi phục lại bộ dữ liệu mẫu ban đầu để thử nghiệm:</span>
+                <button
+                  onclick="resetDemoData()"
+                  class="text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
+                >
+                  Khôi phục dữ liệu mẫu
+                </button>
+              </div>
+            </div>
+
+            <!-- Right Column: Bank VietQR & Center Settings -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                  <i data-lucide="qr-code" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">Cài đặt Ngân hàng (VietQR) & Thông tin Lớp học</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Cấu hình tài khoản nhận học phí để tự động tạo mã QR chính xác cho từng học sinh.
+                  </p>
+                </div>
+              </div>
+
+              <form onsubmit="saveGeneralSettings(event)" class="space-y-3.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tên Lớp học / Trung tâm</label>
+                    <input
+                      id="setting-center-name"
+                      type="text"
+                      required
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ học phí mặc định hiện tại</label>
+                    <input
+                      id="setting-default-period"
+                      type="text"
+                      placeholder="VD: Tháng 10/2026"
+                      required
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ngân hàng thụ hưởng (VietQR)</label>
+                    <select
+                      id="setting-bank-bin"
+                      onchange="updateQrPreviewInSettings()"
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+                    >
+                      <option value="MB">MB Bank (Quân Đội)</option>
+                      <option value="VCB">Vietcombank</option>
+                      <option value="TCB">Techcombank</option>
+                      <option value="ACB">ACB (Á Châu)</option>
+                      <option value="ICB">VietinBank</option>
+                      <option value="BIDV">BIDV</option>
+                      <option value="VPB">VPBank</option>
+                      <option value="TPB">TPBank</option>
+                      <option value="STB">Sacombank</option>
+                      <option value="VBA">Agribank</option>
+                      <option value="VIB">VIB</option>
+                      <option value="HDB">HDBank</option>
+                      <option value="MSB">MSB</option>
+                      <option value="OCB">OCB</option>
+                      <option value="SHB">SHB</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Số tài khoản nhận học phí</label>
+                    <input
+                      id="setting-bank-acc"
+                      type="text"
+                      oninput="updateQrPreviewInSettings()"
+                      required
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tên chủ tài khoản (Không dấu)</label>
+                    <input
+                      id="setting-bank-owner"
+                      type="text"
+                      oninput="this.value = this.value.toUpperCase(); updateQrPreviewInSettings()"
+                      required
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">SĐT / Zalo Giáo viên hỗ trợ</label>
+                    <input
+                      id="setting-teacher-phone"
+                      type="text"
+                      class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu Quản lý trên Web App</label>
+                  <input
+                    id="setting-admin-pass"
+                    type="text"
+                    required
+                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+                  />
+                </div>
+
+                <!-- Live VietQR Preview -->
+                <div class="qr-frame rounded-xl p-3.5 flex items-center gap-4">
+                  <img
+                    id="setting-qr-preview"
+                    src=""
+                    alt="VietQR Preview"
+                    class="w-24 h-24 rounded-lg bg-white p-1 border border-slate-200 object-contain shrink-0"
+                  />
+                  <div class="text-xs space-y-1 text-slate-700">
+                    <span class="inline-block px-2 py-0.5 rounded bg-blue-600 text-white font-semibold text-[10px]">
+                      XEM TRƯỚC MÃ VIETQR
+                    </span>
+                    <p class="font-bold text-slate-900" id="setting-qr-preview-text">MB - 090123456789</p>
+                    <p class="text-slate-500">Khi phụ huynh tra cứu, mã QR sẽ tự động gắn đúng số tiền học phí và mã học sinh.</p>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-xs cursor-pointer"
+                >
+                  Lưu Cài Đặt & Đồng Bộ
+                </button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: PHỤ HUYNH QUÉT MÃ VIETQR & GỬI XÁC NHẬN CHUYỂN KHOẢN        -->
+  <!-- ===================================================================== -->
+  <div id="payment-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="qr-code" class="w-6 h-6"></i>
+          <div>
+            <h3 class="font-bold text-base sm:text-lg">Thanh Toán Học Phí & Gửi Xác Nhận</h3>
+            <p id="pay-modal-subtitle" class="text-xs text-blue-100">Quét mã VietQR bên dưới và gửi thông tin biên lai</p>
+          </div>
+        </div>
+        <button onclick="closePaymentModal()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[82vh] overflow-y-auto">
+        <!-- Left: Dynamic VietQR & Bank Transfer Details -->
+        <div class="qr-frame rounded-2xl p-4 flex flex-col items-center text-center space-y-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white">
+            BƯỚC 1: QUÉT MÃ QR CHUYỂN KHOẢN
+          </span>
+          <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+            <img
+              id="pay-modal-qr-img"
+              src=""
+              alt="Mã QR học phí"
+              class="w-52 h-52 sm:w-56 sm:h-56 object-contain mx-auto"
+            />
+          </div>
+
+          <div class="w-full bg-white rounded-xl p-3 border border-slate-200 text-left text-xs space-y-2">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+              <span class="text-slate-500">Ngân hàng:</span>
+              <span id="pay-modal-bank" class="font-bold text-slate-900">MB Bank</span>
+            </div>
+            <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+              <span class="text-slate-500">Chủ tài khoản:</span>
+              <span id="pay-modal-owner" class="font-bold text-slate-900">NGUYEN VAN A</span>
+            </div>
+            <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+              <span class="text-slate-500">Số tài khoản:</span>
+              <div class="flex items-center gap-1.5">
+                <span id="pay-modal-acc" class="font-mono font-bold text-blue-700 text-sm">090123456789</span>
+                <button type="button" onclick="copyTextById('pay-modal-acc')" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[11px] font-semibold cursor-pointer">Copy</button>
+              </div>
+            </div>
+            <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
+              <span class="text-slate-500">Số tiền:</span>
+              <div class="flex items-center gap-1.5">
+                <span id="pay-modal-amount-text" class="font-extrabold text-emerald-600 text-sm">1.200.000 ₫</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500">Nội dung CK:</span>
+              <div class="flex items-center gap-1.5">
+                <span id="pay-modal-memo" class="font-mono font-bold text-indigo-700">HP HS001</span>
+                <button type="button" onclick="copyTextById('pay-modal-memo')" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[11px] font-semibold cursor-pointer">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Confirmation Form & Receipt Upload -->
+        <form onsubmit="submitParentPaymentConfirm(event)" class="space-y-4">
+          <input type="hidden" id="pay-student-record-id" />
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white">
+              BƯỚC 2: GỬI THÔNG TIN ĐÃ CHUYỂN KHOẢN
+            </span>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+            <p>Học sinh: <strong id="pay-form-student-name" class="text-slate-900"></strong> (<span id="pay-form-student-code" class="font-mono text-blue-600 font-semibold"></span>)</p>
+            <p>Lớp: <strong id="pay-form-class"></strong> • Kỳ thu: <strong id="pay-form-period" class="text-indigo-700"></strong></p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ tên người chuyển khoản *</label>
+            <input
+              id="pay-form-payer"
+              type="text"
+              required
+              placeholder="Nhập tên phụ huynh / người chuyển..."
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại liên hệ *</label>
+              <input
+                id="pay-form-phone"
+                type="tel"
+                required
+                placeholder="SĐT phụ huynh"
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền đã chuyển (VNĐ) *</label>
+              <input
+                id="pay-form-amount"
+                type="number"
+                required
+                class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <!-- Upload Receipt Screenshot -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Ảnh chụp màn hình biên lai chuyển khoản (Khuyên dùng)
+            </label>
+            <label
+              for="pay-form-receipt-file"
+              class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-3.5 cursor-pointer bg-slate-50/70 hover:bg-blue-50/40 transition text-center"
+            >
+              <i data-lucide="image-plus" class="w-6 h-6 text-blue-600 mb-1"></i>
+              <span class="text-xs font-semibold text-slate-700">Bấm để chọn ảnh biên lai hoặc chụp ảnh</span>
+              <span class="text-[11px] text-slate-400">Hỗ trợ JPG, PNG (Tự động tối ưu dung lượng gửi lên Sheet/Drive)</span>
+              <input
+                id="pay-form-receipt-file"
+                type="file"
+                accept="image/*"
+                onchange="handleReceiptFileSelect(event)"
+                class="hidden"
+              />
+            </label>
+
+            <!-- Preview Container -->
+            <div id="pay-receipt-preview-box" class="hidden mt-2 relative inline-block">
+              <img id="pay-receipt-preview-img" src="" alt="Biên lai" class="h-28 rounded-xl border border-slate-300 object-cover" />
+              <button
+                type="button"
+                onclick="clearReceiptPreview()"
+                class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full p-1 shadow-md cursor-pointer"
+              >
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ghi chú thêm (Nếu có)</label>
+            <input
+              id="pay-form-note"
+              type="text"
+              placeholder="VD: Phụ huynh bé Minh Anh đã chuyển khoản lúc 16h15..."
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <button
+            id="btn-submit-parent-pay"
+            type="submit"
+            class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-md shadow-emerald-100 cursor-pointer"
+          >
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Xác Nhận Đã Chuyển Khoản</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: THÊM / SỬA HỌC SINH (QUẢN LÝ)                               -->
+  <!-- ===================================================================== -->
+  <div id="student-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <h3 id="student-modal-title" class="font-bold text-base">Thêm Học Sinh Mới</h3>
+        <button onclick="closeStudentModal()" class="text-slate-400 hover:text-white cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveStudentForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="stu-form-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã HS *</label>
+            <input
+              id="stu-form-code"
+              type="text"
+              required
+              placeholder="HS001"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono uppercase"
+            />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên học sinh *</label>
+            <input
+              id="stu-form-name"
+              type="text"
+              required
+              placeholder="Nguyễn Minh Anh"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Lớp / Khóa học *</label>
+            <input
+              id="stu-form-class"
+              type="text"
+              required
+              placeholder="VD: Toán 12A - Ca 1"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kỳ thu học phí *</label>
+            <input
+              id="stu-form-period"
+              type="text"
+              required
+              placeholder="VD: Tháng 10/2026"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ tên Phụ huynh</label>
+            <input
+              id="stu-form-parent"
+              type="text"
+              placeholder="Chị Lan (Mẹ)"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">SĐT Phụ huynh *</label>
+            <input
+              id="stu-form-phone"
+              type="tel"
+              required
+              placeholder="0901234567"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mức học phí (VNĐ) *</label>
+            <input
+              id="stu-form-fee"
+              type="number"
+              required
+              placeholder="1200000"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-700"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Trạng thái đóng học phí</label>
+            <select
+              id="stu-form-status"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+            >
+              <option value="Chưa đóng">Chưa đóng</option>
+              <option value="Chờ duyệt">Chờ duyệt</option>
+              <option value="Đã hoàn thành">Đã hoàn thành</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Ghi chú</label>
+          <input
+            id="stu-form-note"
+            type="text"
+            placeholder="Ghi chú thêm về học sinh hoặc ưu đãi học phí..."
+            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+          />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            onclick="closeStudentModal()"
+            class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 cursor-pointer"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            class="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 cursor-pointer"
+          >
+            Lưu Học Sinh
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: TẠO KỲ THU HỌC PHÍ THÁNG MỚI HÀNG LOẠT                      -->
+  <!-- ===================================================================== -->
+  <div id="batch-period-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-indigo-700 text-white flex items-center justify-between">
+        <h3 class="font-bold text-base">Tạo Kỳ Thu Học Phí Mới Hàng Loạt</h3>
+        <button onclick="closeBatchPeriodModal()" class="text-indigo-200 hover:text-white cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleCreateBatchPeriod(event)" class="p-6 space-y-4">
+        <p class="text-xs text-slate-600">
+          Tính năng này giúp bạn tạo nhanh danh sách thu học phí cho <strong>Tháng/Khóa mới</strong> dựa trên danh sách học sinh hiện có với trạng thái mặc định là <span class="font-bold text-rose-600">Chưa đóng</span>.
+        </p>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Tên kỳ học phí mới *</label>
+          <input
+            id="batch-new-period"
+            type="text"
+            required
+            placeholder="VD: Tháng 11/2026"
+            class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm"
+          />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeBatchPeriodModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold cursor-pointer">Tạo Kỳ Mới</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 4: GHI PHIẾU THU / PHIẾU CHI (SỔ QUỸ)                          -->
+  <!-- ===================================================================== -->
+  <div id="transaction-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div id="trans-modal-header" class="px-6 py-4 bg-emerald-600 text-white flex items-center justify-between">
+        <h3 id="trans-modal-title" class="font-bold text-base">Ghi Phiếu Thu Mới</h3>
+        <button onclick="closeTransactionModal()" class="text-white/80 hover:text-white cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveTransactionForm(event)" class="p-6 space-y-4">
+        <input type="hidden" id="trans-form-id" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Loại giao dịch *</label>
+            <select
+              id="trans-form-type"
+              onchange="updateTransactionModalTheme(this.value)"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-white"
+            >
+              <option value="Thu">Phiếu Thu (+)</option>
+              <option value="Chi">Phiếu Chi (-)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch *</label>
+            <input
+              id="trans-form-date"
+              type="date"
+              required
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục *</label>
+            <select
+              id="trans-form-category"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+            >
+              <option value="Thu học phí">Thu học phí</option>
+              <option value="Thu tiền tài liệu / giáo trình">Thu tiền tài liệu / giáo trình</option>
+              <option value="Chi thuê phòng / điện nước">Chi thuê phòng / điện nước</option>
+              <option value="Chi in ấn / tài liệu">Chi in ấn / tài liệu</option>
+              <option value="Chi lương / trợ giảng">Chi lương / trợ giảng</option>
+              <option value="Chi thưởng học sinh / liên hoan">Chi thưởng học sinh / liên hoan</option>
+              <option value="Khác">Khác</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền (VNĐ) *</label>
+            <input
+              id="trans-form-amount"
+              type="number"
+              required
+              placeholder="500000"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết *</label>
+          <input
+            id="trans-form-desc"
+            type="text"
+            required
+            placeholder="VD: Thu học phí tháng 10 em Nguyễn Minh Anh / Chi tiền in đề thi..."
+            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã HS liên quan (Nếu có)</label>
+            <input
+              id="trans-form-student-code"
+              type="text"
+              placeholder="VD: HS001"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono uppercase"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức thanh toán</label>
+            <select
+              id="trans-form-method"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
+            >
+              <option value="Chuyển khoản">Chuyển khoản</option>
+              <option value="Tiền mặt">Tiền mặt</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeTransactionModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">Lưu Giao Dịch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 5: XEM ẢNH BIÊN LAI PHÓNG TO                                    -->
+  <!-- ===================================================================== -->
+  <div id="receipt-viewer-modal" onclick="closeReceiptViewer()" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-fade-in">
+      <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
+        <span id="receipt-viewer-title" class="font-bold text-sm">Ảnh biên lai chuyển khoản</span>
+        <button onclick="closeReceiptViewer()" class="text-slate-400 hover:text-white cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-4 bg-slate-100 flex flex-col items-center">
+        <img id="receipt-viewer-img" src="" alt="Receipt" class="max-h-[72vh] w-auto rounded-lg shadow-sm object-contain" />
+        <a id="receipt-viewer-link" href="#" target="_blank" class="mt-3 text-xs font-semibold text-blue-600 hover:underline">
+          Mở ảnh gốc trong tab mới &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Main Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
