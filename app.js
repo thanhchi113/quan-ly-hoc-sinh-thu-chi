@@ -3052,6 +3052,7 @@ let financeBarChartInstance = null;
 let tuitionPieChartInstance = null;
 
 function bootstrapApp() {
+  initThemeSystem();
   enableSourceProtection();
   lucide.createIcons();
   initAppUI();
@@ -4336,9 +4337,16 @@ function openStudentDetailModal(studentId) {
   // 1. Điền Header & 3 Ô Thống Kê Chính
   document.getElementById('stu-detail-code').textContent = s.studentCode || 'HS';
   document.getElementById('stu-detail-name').textContent = s.fullName || '';
-  document.getElementById('stu-detail-sub').textContent = `Lớp ${s.className || '---'} • Phụ huynh: ${
-    s.parentName || '---'
-  } • SĐT: ${s.parentPhone || '---'}`;
+  const subParts = [`Lớp ${s.className || '---'}`];
+  if (s.parentName && s.parentName.trim()) {
+    subParts.push(`Phụ huynh: ${s.parentName.trim()}`);
+  }
+  if (s.parentPhone && s.parentPhone.trim() && s.parentPhone.trim() !== '1234567890') {
+    subParts.push(`SĐT: ${s.parentPhone.trim()}`);
+  } else {
+    subParts.push(`Kỳ học: ${s.period || '---'}`);
+  }
+  document.getElementById('stu-detail-sub').textContent = subParts.join(' • ');
 
   const startInput = document.getElementById('stu-detail-start-input');
   if (startInput) startInput.value = stats.startDateIso || '';
@@ -4398,24 +4406,24 @@ function openStudentDetailModal(studentId) {
           : 'bg-rose-50 text-rose-700 border-rose-200';
         return `
           <tr class="${b.isCurrent ? 'bg-blue-50/40' : 'hover:bg-slate-50'}">
-            <td class="py-2.5 px-3 text-center font-bold text-slate-500">${idx + 1}</td>
+            <td class="py-2.5 px-3 text-center font-bold text-slate-500 whitespace-nowrap">${idx + 1}</td>
             <td class="py-2.5 px-3">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-extrabold text-[11px] uppercase">${escapeHtml(
+                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-extrabold text-[11px] uppercase whitespace-nowrap">${escapeHtml(
                   b.batchLabel
                 )}</span>
-                <span class="font-bold text-slate-800">${escapeHtml(b.periodLabel)}</span>
+                <span class="font-bold text-slate-800 whitespace-nowrap">${escapeHtml(b.periodLabel)}</span>
                 ${
                   b.isCurrent
-                    ? `<span class="px-1.5 py-0.2 rounded bg-blue-600 text-white text-[10px] font-bold">Hiện tại</span>`
+                    ? `<span class="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold whitespace-nowrap">Hiện tại</span>`
                     : ''
                 }
               </div>
             </td>
-            <td class="py-2.5 px-3 text-center text-xs text-slate-600 font-medium">${escapeHtml(b.dateRange)}</td>
-            <td class="py-2.5 px-3 text-right font-extrabold text-slate-900">${formatCurrency(b.fee)}</td>
-            <td class="py-2.5 px-3 text-center">
-              <span class="px-2.5 py-0.5 rounded-full border text-[11px] font-extrabold ${badgeCls}">
+            <td class="py-2.5 px-3 text-center text-xs text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(b.dateRange)}</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-slate-900 whitespace-nowrap">${formatCurrency(b.fee)}</td>
+            <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full border text-[11px] font-extrabold whitespace-nowrap ${badgeCls}">
                 ${isPaid ? '✓ ' : ''}${escapeHtml(b.status)}
               </span>
             </td>
@@ -5869,6 +5877,47 @@ function setCalendarBrush(brushMode) {
   });
 }
 
+let selectedClassbookGradeFilter = 'ALL';
+
+function getGradeCategoryForClassName(cls) {
+  const s = String(cls || '').trim();
+  if (/^12\b/.test(s)) return '12';
+  if (/^11\b/.test(s)) return '11';
+  if (/^10\b/.test(s)) return '10';
+  if (/^9\b/.test(s)) return '9';
+  if (/^[678]\b/.test(s)) return '6-8';
+  return 'OTHER';
+}
+
+function setClassbookGradeFilter(gradeKey) {
+  selectedClassbookGradeFilter = gradeKey || 'ALL';
+  const map = getClassSchedulesMap();
+  const classNames = Object.keys(map);
+  const filtered =
+    selectedClassbookGradeFilter === 'ALL'
+      ? classNames
+      : classNames.filter(c => getGradeCategoryForClassName(c) === selectedClassbookGradeFilter);
+  if (filtered.length > 0 && !filtered.includes(selectedClassbookClass)) {
+    selectedClassbookClass = filtered[0];
+  }
+  renderAdminClassbook();
+}
+
+function parseClassDisplayTitle(cls) {
+  const raw = String(cls || '').trim();
+  const m = raw.match(/^([^(]+)\(([^)]+)\)$/);
+  if (m) {
+    return {
+      mainTitle: `Lớp ${m[1].trim()}`,
+      subLabel: m[2].trim()
+    };
+  }
+  return {
+    mainTitle: `Lớp ${raw}`,
+    subLabel: 'Ca chính'
+  };
+}
+
 function selectClassbookClass(className) {
   selectedClassbookClass = className;
   renderAdminClassbook();
@@ -5882,28 +5931,100 @@ function renderAdminClassbook() {
   const classNames = Object.keys(map);
 
   if (!selectedClassbookClass || !map[selectedClassbookClass]) {
-    selectedClassbookClass = classNames[0] || '12 2K8';
+    selectedClassbookClass = classNames[0] || '12 2K9 (Ca 1 - T3,5,7)';
   }
 
-  // 1. Render các nút chọn lớp & dropdown chọn lớp (Tách riêng khỏi thanh công cụ)
-  pillsContainer.innerHTML = classNames
+  // 0. Render bộ lọc nhanh theo Khối lớp (Tất cả, Khối 12, Khối 11, Khối 10, Khối 9, Khối 6-8)
+  const gradeFiltersEl = document.getElementById('classbook-grade-filters');
+  if (gradeFiltersEl) {
+    const gradeGroups = [
+      { key: 'ALL', label: 'Tất cả', count: classNames.length },
+      { key: '12', label: 'Khối 12', count: classNames.filter(c => getGradeCategoryForClassName(c) === '12').length },
+      { key: '11', label: 'Khối 11', count: classNames.filter(c => getGradeCategoryForClassName(c) === '11').length },
+      { key: '10', label: 'Khối 10', count: classNames.filter(c => getGradeCategoryForClassName(c) === '10').length },
+      { key: '9', label: 'Khối 9', count: classNames.filter(c => getGradeCategoryForClassName(c) === '9').length },
+      { key: '6-8', label: 'Khối 6 - 8', count: classNames.filter(c => getGradeCategoryForClassName(c) === '6-8').length }
+    ].filter(g => g.key === 'ALL' || g.count > 0);
+
+    gradeFiltersEl.innerHTML = gradeGroups
+      .map(g => {
+        const active = selectedClassbookGradeFilter === g.key;
+        return `
+          <button
+            type="button"
+            onclick="setClassbookGradeFilter('${g.key}')"
+            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border ${
+              active
+                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+            }"
+          >
+            <span>${g.label}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+            }">${g.count}</span>
+          </button>
+        `;
+      })
+      .join('');
+  }
+
+  const visibleClasses =
+    selectedClassbookGradeFilter === 'ALL'
+      ? classNames
+      : classNames.filter(c => getGradeCategoryForClassName(c) === selectedClassbookGradeFilter);
+
+  // 1. Render lưới thẻ chọn lớp cân đối (4 cột đều nhau, chuyên nghiệp)
+  pillsContainer.innerHTML = visibleClasses
     .map(cls => {
       const isSelected = cls === selectedClassbookClass;
-      const count = (appState.students || []).filter(s => s.className === cls).length;
+      const clsStudents = (appState.students || []).filter(s => s.className === cls);
+      const count = clsStudents.length;
+      const paidCnt = clsStudents.filter(s => s.status === 'Đã hoàn thành').length;
+      const cCfg = map[cls] || {};
+      const { mainTitle, subLabel } = parseClassDisplayTitle(cls);
+      const batchTag = cCfg.batchLabel || 'ĐỢT 1';
+
       return `
         <button
           type="button"
           onclick="selectClassbookClass('${escapeAttr(cls)}')"
-          class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-2 border ${
+          class="group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5 border ${
             isSelected
-              ? 'bg-blue-600 text-white border-blue-700 shadow-sm ring-2 ring-blue-200'
-              : 'bg-white text-slate-700 border-slate-300 hover:bg-blue-50 hover:border-blue-300'
+              ? 'bg-blue-600 text-white border-blue-700 shadow-md ring-2 ring-blue-200'
+              : 'bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-xs'
           }"
         >
-          <span>Lớp ${escapeHtml(cls)}</span>
-          <span class="px-2 py-0.5 rounded-full text-[11px] ${
-            isSelected ? 'bg-amber-300 text-slate-950 font-black' : 'bg-slate-100 text-slate-600 font-bold'
-          }">${count} HS</span>
+          <div class="flex items-center justify-between gap-2 w-full">
+            <span class="font-extrabold text-xs sm:text-sm truncate ${
+              isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-700'
+            }">
+              ${escapeHtml(mainTitle)}
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
+              isSelected
+                ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
+                : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200/70'
+            }">
+              ${count} HS
+            </span>
+          </div>
+          <div class="flex items-center justify-between gap-2 w-full text-[11px]">
+            <span class="truncate font-semibold ${
+              isSelected ? 'text-blue-100' : 'text-slate-500'
+            }">
+              ${escapeHtml(subLabel)} • ${escapeHtml(batchTag)}
+            </span>
+            <span class="shrink-0 font-bold whitespace-nowrap ${
+              isSelected
+                ? 'text-emerald-200'
+                : paidCnt === count && count > 0
+                ? 'text-emerald-600'
+                : 'text-slate-400'
+            }">
+              ✓ ${paidCnt}/${count} đóng
+            </span>
+          </div>
         </button>
       `;
     })
@@ -7140,14 +7261,20 @@ let livePollingTimer = null;
 
 function getComputedSepayBalance() {
   const stg = appState.settings || {};
-  if (stg.sepayBalance !== undefined && stg.sepayBalance !== '' && !isNaN(Number(stg.sepayBalance))) {
-    return Number(stg.sepayBalance);
-  }
-  // Nếu chưa có số dư SePay truyền về thì tạm tính theo Tồn Quỹ Thực Tế (Tổng Thu - Tổng Chi)
   const transactions = appState.transactions || [];
   const totalIn = transactions.filter(t => t.type === 'Thu').reduce((s, t) => s + (Number(t.amount) || 0), 0);
   const totalOut = transactions.filter(t => t.type === 'Chi').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  return totalIn - totalOut;
+  const netBalance = totalIn - totalOut;
+
+  if (stg.sepayBalance !== undefined && stg.sepayBalance !== '' && !isNaN(Number(stg.sepayBalance))) {
+    const savedBal = Number(stg.sepayBalance);
+    // Nếu sepayBalance đang là 0 mặc định nhưng hệ thống đã có phiếu thu học phí thực tế, hiển thị tổng thực thu
+    if (savedBal === 0 && netBalance !== 0) {
+      return netBalance;
+    }
+    return savedBal;
+  }
+  return netBalance;
 }
 
 function renderSepayBalanceBanner() {
@@ -7508,4 +7635,341 @@ async function simulateIncomingBankTransfer() {
       )} -> Đã tự động lưu vào Sổ Thu - Chi!`;
 
   await triggerAutoSyncIfNeeded(msg);
+}
+
+
+// ============================================================================
+// HỆ THỐNG CÀI ĐẶT MÀU SẮC GIAO DIỆN & CHẾ ĐỘ SÁNG / TỐI (LIGHT / DARK MODE)
+// ============================================================================
+const THEME_STORAGE_KEY = 'edupay_ui_theme_v1';
+
+const THEME_PRESETS = {
+  navy: {
+    key: 'navy',
+    name: 'Xanh Navy Chuẩn',
+    desc: 'Chuyên nghiệp, chuẩn giáo dục',
+    primary: '#2563eb',
+    primaryHover: '#1d4ed8',
+    primaryRgb: '37, 99, 235',
+    navy: '#1f3d6e',
+    navyMid: '#25477d',
+    soft: '#eef4fb',
+    border: '#bfdbfe',
+    bannerFrom: '#0f294a',
+    bannerVia: '#173b6c',
+    bannerTo: '#1e4b85'
+  },
+  emerald: {
+    key: 'emerald',
+    name: 'Xanh Ngọc Lục Bảo',
+    desc: 'Tươi mát, dịu mắt, tài chính',
+    primary: '#059669',
+    primaryHover: '#047857',
+    primaryRgb: '5, 150, 105',
+    navy: '#064e3b',
+    navyMid: '#065f46',
+    soft: '#ecfdf5',
+    border: '#a7f3d0',
+    bannerFrom: '#022c22',
+    bannerVia: '#064e3b',
+    bannerTo: '#047857'
+  },
+  indigo: {
+    key: 'indigo',
+    name: 'Tím Indigo Hiện Đại',
+    desc: 'Sang trọng, công nghệ cao',
+    primary: '#4f46e5',
+    primaryHover: '#4338ca',
+    primaryRgb: '79, 70, 229',
+    navy: '#312e81',
+    navyMid: '#3730a3',
+    soft: '#eef2ff',
+    border: '#c7d2fe',
+    bannerFrom: '#1e1b4b',
+    bannerVia: '#312e81',
+    bannerTo: '#4338ca'
+  },
+  teal: {
+    key: 'teal',
+    name: 'Xanh Cổ Vịt (Teal)',
+    desc: 'Thanh lịch, cân bằng, hiện đại',
+    primary: '#0d9488',
+    primaryHover: '#0f766e',
+    primaryRgb: '13, 148, 136',
+    navy: '#134e4a',
+    navyMid: '#115e59',
+    soft: '#f0fdfa',
+    border: '#99f6e4',
+    bannerFrom: '#042f2e',
+    bannerVia: '#134e4a',
+    bannerTo: '#0f766e'
+  },
+  rose: {
+    key: 'rose',
+    name: 'Đỏ Ruby Nổi Bật',
+    desc: 'Ấm áp, năng động, ấn tượng',
+    primary: '#e11d48',
+    primaryHover: '#be123c',
+    primaryRgb: '225, 29, 72',
+    navy: '#881337',
+    navyMid: '#9f1239',
+    soft: '#fff1f2',
+    border: '#fecdd3',
+    bannerFrom: '#4c0519',
+    bannerVia: '#881337',
+    bannerTo: '#be123c'
+  },
+  amber: {
+    key: 'amber',
+    name: 'Cam Hoàng Kim',
+    desc: 'Tươi sáng, nhiệt huyết',
+    primary: '#d97706',
+    primaryHover: '#b45309',
+    primaryRgb: '217, 119, 6',
+    navy: '#78350f',
+    navyMid: '#92400e',
+    soft: '#fffbeb',
+    border: '#fde68a',
+    bannerFrom: '#451a03',
+    bannerVia: '#78350f',
+    bannerTo: '#b45309'
+  }
+};
+
+function getSavedThemePreferences() {
+  try {
+    const raw = localStorage.getItem(THEME_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (e) {}
+  return {
+    darkMode: false,
+    themeKey: 'navy',
+    customHex: ''
+  };
+}
+
+function saveThemePreferences(prefs) {
+  localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(prefs));
+}
+
+function hexToRgbTuple(hex) {
+  const clean = String(hex || '#2563eb').replace('#', '').trim();
+  if (clean.length !== 6) return [37, 99, 235];
+  const r = parseInt(clean.slice(0, 2), 16) || 37;
+  const g = parseInt(clean.slice(2, 4), 16) || 99;
+  const b = parseInt(clean.slice(4, 6), 16) || 235;
+  return [r, g, b];
+}
+
+function darkenHex(hex, factor = 0.7) {
+  const [r, g, b] = hexToRgbTuple(hex);
+  const toHex = n => Math.max(0, Math.min(255, Math.round(n * factor))).toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function lightenHex(hex, mixWhite = 0.92) {
+  const [r, g, b] = hexToRgbTuple(hex);
+  const mix = c => Math.round(c + (255 - c) * mixWhite).toString(16).padStart(2, '0');
+  return `#${mix(r)}${mix(g)}${mix(b)}`;
+}
+
+function applyCssThemeVariables(cfg) {
+  const root = document.documentElement;
+  root.style.setProperty('--brand-primary', cfg.primary);
+  root.style.setProperty('--brand-primary-hover', cfg.primaryHover);
+  root.style.setProperty('--brand-primary-rgb', cfg.primaryRgb);
+  root.style.setProperty('--brand-navy', cfg.navy);
+  root.style.setProperty('--brand-navy-mid', cfg.navyMid);
+  root.style.setProperty('--brand-soft', cfg.soft);
+  root.style.setProperty('--brand-border', cfg.border);
+  root.style.setProperty('--brand-banner-from', cfg.bannerFrom);
+  root.style.setProperty('--brand-banner-via', cfg.bannerVia);
+  root.style.setProperty('--brand-banner-to', cfg.bannerTo);
+
+  const swatchDot = document.getElementById('header-theme-swatch-dot');
+  if (swatchDot) {
+    swatchDot.style.backgroundColor = cfg.primary;
+  }
+}
+
+function updateDarkModeHeaderUI(isDark) {
+  const root = document.documentElement;
+  if (isDark) {
+    root.classList.add('dark-mode');
+  } else {
+    root.classList.remove('dark-mode');
+  }
+
+  const iconEl = document.getElementById('darkmode-toggle-icon');
+  const labelEl = document.getElementById('darkmode-toggle-label');
+  if (iconEl) iconEl.textContent = isDark ? '☀️' : '🌙';
+  if (labelEl) labelEl.textContent = isDark ? 'Sáng' : 'Tối';
+}
+
+function initThemeSystem() {
+  const prefs = getSavedThemePreferences();
+  updateDarkModeHeaderUI(Boolean(prefs.darkMode));
+  if (prefs.themeKey === 'custom' && prefs.customHex) {
+    applyCustomHexTheme(prefs.customHex, false);
+  } else {
+    const preset = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.navy;
+    applyCssThemeVariables(preset);
+  }
+}
+
+function toggleDarkModeQuick() {
+  const prefs = getSavedThemePreferences();
+  const nextDark = !prefs.darkMode;
+  setDarkMode(nextDark, true);
+}
+
+function setDarkMode(isDark, showMsg = true) {
+  const prefs = getSavedThemePreferences();
+  prefs.darkMode = Boolean(isDark);
+  saveThemePreferences(prefs);
+  updateDarkModeHeaderUI(prefs.darkMode);
+  renderThemeCustomizerControls();
+  if (showMsg) {
+    showToast(
+      prefs.darkMode ? '🌙 Đã bật Chế độ Tối (Dark Mode) dịu mắt!' : '☀️ Đã chuyển về Chế độ Sáng (Light Mode)!',
+      'info'
+    );
+  }
+}
+
+function applyColorTheme(themeKey, showMsg = true) {
+  const preset = THEME_PRESETS[themeKey] || THEME_PRESETS.navy;
+  const prefs = getSavedThemePreferences();
+  prefs.themeKey = preset.key;
+  prefs.customHex = '';
+  saveThemePreferences(prefs);
+  applyCssThemeVariables(preset);
+  renderThemeCustomizerControls();
+  if (showMsg) {
+    showToast(`🎨 Đã đổi tông màu giao diện sang "${preset.name}"!`, 'success');
+  }
+}
+
+function applyCustomHexTheme(hexColor, savePref = true) {
+  const cleanHex = String(hexColor || '#2563eb').trim();
+  const [r, g, b] = hexToRgbTuple(cleanHex);
+  const customCfg = {
+    key: 'custom',
+    name: `Màu tùy chỉnh (${cleanHex.toUpperCase()})`,
+    primary: cleanHex,
+    primaryHover: darkenHex(cleanHex, 0.85),
+    primaryRgb: `${r}, ${g}, ${b}`,
+    navy: darkenHex(cleanHex, 0.52),
+    navyMid: darkenHex(cleanHex, 0.65),
+    soft: lightenHex(cleanHex, 0.92),
+    border: lightenHex(cleanHex, 0.72),
+    bannerFrom: darkenHex(cleanHex, 0.35),
+    bannerVia: darkenHex(cleanHex, 0.5),
+    bannerTo: darkenHex(cleanHex, 0.68)
+  };
+  applyCssThemeVariables(customCfg);
+  if (savePref) {
+    const prefs = getSavedThemePreferences();
+    prefs.themeKey = 'custom';
+    prefs.customHex = cleanHex;
+    saveThemePreferences(prefs);
+    renderThemeCustomizerControls();
+  }
+}
+
+function resetDefaultTheme() {
+  const prefs = { darkMode: false, themeKey: 'navy', customHex: '' };
+  saveThemePreferences(prefs);
+  updateDarkModeHeaderUI(false);
+  applyCssThemeVariables(THEME_PRESETS.navy);
+  renderThemeCustomizerControls();
+  showToast('Đã khôi phục màu sắc & chế độ Sáng mặc định!', 'success');
+}
+
+function openThemeCustomizerModal() {
+  const modal = document.getElementById('theme-customizer-modal');
+  if (!modal) return;
+  renderThemeCustomizerControls();
+  modal.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeThemeCustomizerModal() {
+  const modal = document.getElementById('theme-customizer-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderThemeCustomizerControls() {
+  const prefs = getSavedThemePreferences();
+  const lightBtn = document.getElementById('theme-mode-light-btn');
+  const darkBtn = document.getElementById('theme-mode-dark-btn');
+
+  if (lightBtn && darkBtn) {
+    if (!prefs.darkMode) {
+      lightBtn.className = 'p-3.5 rounded-2xl border-2 border-blue-600 bg-blue-50/50 flex items-center gap-3 text-left transition cursor-pointer ring-2 ring-blue-200';
+      darkBtn.className = 'p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 flex items-center gap-3 text-left transition cursor-pointer';
+    } else {
+      darkBtn.className = 'p-3.5 rounded-2xl border-2 border-blue-600 bg-blue-50/50 flex items-center gap-3 text-left transition cursor-pointer ring-2 ring-blue-200';
+      lightBtn.className = 'p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 flex items-center gap-3 text-left transition cursor-pointer';
+    }
+  }
+
+  const labelEl = document.getElementById('theme-current-label');
+  if (labelEl) {
+    if (prefs.themeKey === 'custom' && prefs.customHex) {
+      labelEl.textContent = `Màu tùy chỉnh (${prefs.customHex.toUpperCase()})`;
+    } else {
+      const p = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.navy;
+      labelEl.textContent = p.name;
+    }
+  }
+
+  const pickerEl = document.getElementById('theme-custom-color-picker');
+  if (pickerEl) {
+    if (prefs.themeKey === 'custom' && prefs.customHex) {
+      pickerEl.value = prefs.customHex;
+    } else {
+      const p = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.navy;
+      pickerEl.value = p.primary;
+    }
+  }
+
+  const gridEl = document.getElementById('theme-preset-grid');
+  if (gridEl) {
+    gridEl.innerHTML = Object.values(THEME_PRESETS)
+      .map(p => {
+        const isSelected = prefs.themeKey === p.key;
+        return `
+          <button
+            type="button"
+            onclick="applyColorTheme('${p.key}')"
+            class="p-3 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
+              isSelected
+                ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-200 shadow-xs'
+                : 'border-slate-200 bg-white hover:border-slate-300'
+            }"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="w-5 h-5 rounded-full shadow-xs border border-white/60 inline-block" style="background-color: ${p.primary}"></span>
+                <span class="w-3.5 h-3.5 rounded-full inline-block" style="background-color: ${p.navy}"></span>
+              </div>
+              ${
+                isSelected
+                  ? `<span class="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-extrabold">Đang dùng</span>`
+                  : ''
+              }
+            </div>
+            <div>
+              <div class="font-extrabold text-xs text-slate-900">${escapeHtml(p.name)}</div>
+              <div class="text-[10px] text-slate-500 truncate">${escapeHtml(p.desc)}</div>
+            </div>
+          </button>
+        `;
+      })
+      .join('');
+  }
 }
