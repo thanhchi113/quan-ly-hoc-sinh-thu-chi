@@ -40,6 +40,14 @@ function getTargetSpreadsheet() {
 function setupSheets() {
   const ss = getTargetSpreadsheet();
 
+  // Tự động xóa tab nháp "Sheet mẫu" nếu còn tồn tại
+  try {
+    const shMau = ss.getSheetByName('Sheet mẫu');
+    if (shMau && ss.getSheets().length > 1) {
+      ss.deleteSheet(shMau);
+    }
+  } catch (e) {}
+
   // 1. Sheet Học sinh & Học phí
   let shStudents = ss.getSheetByName(SHEET_NAMES.STUDENTS);
   if (!shStudents) {
