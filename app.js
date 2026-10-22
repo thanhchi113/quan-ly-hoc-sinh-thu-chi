@@ -2685,6 +2685,7 @@ function renderClassbookScheduleTable(cfg) {
   });
 
   const colCount = Math.max(1, orderedCols.length);
+  const checkedSessions = taughtCount + confirmedCount;
 
   thead.innerHTML = `
     <tr class="sheet-navy-header font-bold text-xs uppercase">
@@ -2703,11 +2704,8 @@ function renderClassbookScheduleTable(cfg) {
       <td colspan="${colCount}" class="py-2 px-2 text-center uppercase text-slate-800">
         TỔNG CỘNG SỐ BUỔI DẠY
       </td>
-      <td class="py-2 px-2 text-center text-blue-700">
-        <div>${totalSessions} buổi</div>
-        <div class="text-[10px] font-semibold text-emerald-700">
-          Đã dạy: ${taughtCount + confirmedCount}/${totalSessions}
-        </div>
+      <td class="py-2 px-2 text-center text-blue-700 font-extrabold">
+        ${checkedSessions} buổi
       </td>
     </tr>
   `;
@@ -2759,8 +2757,8 @@ function renderClassbookScheduleTable(cfg) {
       return `
         <tr>
           ${cellsHtml}
-          <td class="py-2 px-1.5 text-[11px] font-semibold text-slate-500 bg-slate-50/60">
-            Tuần ${wIdx + 1} (${weekDone}b)
+          <td class="py-2 px-1.5 text-xs font-bold text-blue-700 bg-slate-50/40">
+            ${weekDone > 0 ? `${weekDone} buổi` : ''}
           </td>
         </tr>
       `;
