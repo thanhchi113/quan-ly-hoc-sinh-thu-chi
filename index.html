@@ -293,6 +293,88 @@
         </div>
 
         <!-- =============================================================== -->
+        <!-- SEPAY LIVE BANK BALANCE & REALTIME NOTIFICATION BAR             -->
+        <!-- =============================================================== -->
+        <div class="bg-gradient-to-r from-[#0f294a] via-[#173b6c] to-[#1e4b85] text-white rounded-2xl p-4 shadow-md border border-blue-800/80 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <!-- Left: Live Bank Account Balance -->
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+              <i data-lucide="wallet" class="w-6 h-6 text-emerald-300"></i>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-blue-200">
+                  Số Dư Ngân Hàng (SePay Live):
+                </span>
+                <span id="sepay-bank-badge" class="px-2 py-0.5 rounded-md bg-white/15 text-[11px] font-mono font-bold text-amber-300">
+                  BIDV • 8601774789
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-bold text-emerald-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  Tự động báo số dư
+                </span>
+              </div>
+              <div class="flex flex-wrap items-baseline gap-2.5 mt-0.5">
+                <span id="sepay-live-balance" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                  0 ₫
+                </span>
+                <button
+                  type="button"
+                  onclick="promptEditSepayBalance()"
+                  title="Chỉnh sửa số dư gốc ban đầu cho khớp với tài khoản BIDV hiện tại của bạn"
+                  class="text-[11px] font-semibold text-blue-200 hover:text-white underline cursor-pointer"
+                >
+                  (Cập nhật số dư gốc)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Middle: Latest Balance Fluctuation Notification -->
+          <div id="sepay-last-alert-box" class="flex-1 w-full lg:w-auto bg-white/10 backdrop-blur-xs rounded-xl px-3.5 py-2.5 border border-white/15">
+            <div class="flex items-center justify-between gap-2 text-[11px] text-blue-200 font-semibold">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300"></i>
+                <span>Biến động số dư gần nhất (SePay Webhook):</span>
+              </span>
+              <span id="sepay-last-alert-time" class="font-mono text-[10px] text-blue-200/90">Chưa có GD mới</span>
+            </div>
+            <p id="sepay-last-alert-text" class="text-xs sm:text-sm font-bold text-emerald-300 mt-0.5 truncate">
+              Đang chờ thông báo biến động số dư từ SePay.vn...
+            </p>
+          </div>
+
+          <!-- Right: Actions (Sound Alert, Test, Setup Guide) -->
+          <div class="flex flex-wrap items-center gap-2 shrink-0 w-full lg:w-auto justify-end">
+            <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold cursor-pointer select-none">
+              <input
+                id="sepay-sound-toggle"
+                type="checkbox"
+                checked
+                class="w-3.5 h-3.5 rounded text-emerald-500"
+              />
+              <span>🔔 Âm báo Ting-Ting</span>
+            </label>
+            <button
+              type="button"
+              onclick="quickTestSepayAlert()"
+              class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>Test Báo Số Dư</span>
+            </button>
+            <button
+              type="button"
+              onclick="openSepayGuideModal()"
+              class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
+              <span>Hướng Dẫn Nối SePay</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
         <!-- TAB 0: SỔ THEO DÕI LỚP HỌC & LỊCH DẠY CHUẨN MẪU (GIỐNG ẢNH)    -->
         <!-- =============================================================== -->
         <div id="admin-tab-classbook" class="space-y-4">
@@ -1860,6 +1942,129 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 7: HƯỚNG DẪN CHI TIẾT KẾT NỐI SEPAY.VN ĐỂ HIỂN THỊ SỐ DƯ BIDV  -->
+  <!-- ===================================================================== -->
+  <div
+    id="sepay-guide-modal"
+    class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+  >
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in">
+      <div class="bg-gradient-to-r from-[#0f294a] to-[#1d4ed8] text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="plug-zap" class="w-6 h-6 text-amber-300"></i>
+          <div>
+            <h3 class="font-extrabold text-base sm:text-lg">Kết Nối SePay.vn Để Báo Số Dư Thực Tế &amp; Tự Động Duyệt Học Phí</h3>
+            <p class="text-xs text-blue-200">Tài khoản thụ hưởng của bạn: <strong>BIDV • 8601774789 • HKD TRUNG TAM HUYNH THANH CHI</strong></p>
+          </div>
+        </div>
+        <button onclick="closeSepayGuideModal()" class="p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs sm:text-sm text-slate-700 max-h-[80vh] overflow-y-auto">
+        <!-- Bước 1 -->
+        <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-extrabold text-blue-950 text-sm">
+              Bước 1: Cập nhật mã Code.gs mới nhất (Có tính năng nhận Số dư SePay)
+            </span>
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                onclick="copyGasCodeToClipboard()"
+                class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy mã Code.gs mới</span>
+              </button>
+              <a
+                href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+                target="_blank"
+                class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                <span>Mở Google Sheet</span>
+              </a>
+            </div>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600">
+            <li>Bấm nút <strong>"Copy mã Code.gs mới"</strong> ở trên, mở Google Sheet của bạn &rarr; vào <strong>Tiện ích mở rộng &rarr; Apps Script</strong>.</li>
+            <li>Xóa code cũ, dán code mới vào &rarr; Bấm biểu tượng Lưu 💾.</li>
+            <li>Bấm <strong>Triển khai (Deploy) &rarr; Quản lý nội dung triển khai (Manage deployments)</strong> &rarr; Bấm biểu tượng cây bút ✏️ (Chỉnh sửa) &rarr; mục <em>Phiên bản (Version)</em> chọn <strong>Phiên bản mới (New version)</strong> &rarr; Bấm <strong>Triển khai</strong>.</li>
+          </ol>
+        </div>
+
+        <!-- Bước 2 -->
+        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-extrabold text-emerald-950 text-sm">
+              Bước 2: Liên kết tài khoản BIDV (8601774789) trên SePay.vn
+            </span>
+            <a
+              href="https://my.sepay.vn"
+              target="_blank"
+              class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Mở my.sepay.vn</span>
+            </a>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600">
+            <li>Đăng nhập tại <a href="https://my.sepay.vn" target="_blank" class="text-blue-600 font-bold underline">my.sepay.vn</a> (Gói miễn phí hỗ trợ đầy đủ).</li>
+            <li>Vào menu <strong>Ngân hàng &rarr; Thêm ngân hàng &rarr; Chọn BIDV</strong>.</li>
+            <li>Nhập số tài khoản <strong>8601774789</strong> (HKD TRUNG TAM HUYNH THANH CHI) và xác thực OTP theo hướng dẫn chính thức của BIDV &amp; SePay.</li>
+          </ol>
+        </div>
+
+        <!-- Bước 3 -->
+        <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-300 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-extrabold text-amber-950 text-sm">
+              Bước 3: Dán đường dẫn Webhook URL này vào SePay
+            </span>
+            <button
+              type="button"
+              onclick="copyTextById('modal-sepay-webhook-url')"
+              class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Copy Webhook URL</span>
+            </button>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white border border-amber-300 font-mono text-xs text-emerald-800 break-all" id="modal-sepay-webhook-url">
+            https://script.google.com/macros/s/AKfycbz6CZ6W-WRxFP67uj3or2arPYHc_VLqCUQsG8L5vNMI4DNAqDquBT7OFvR7FRTvjYcx6w/exec
+          </div>
+          <ul class="list-disc list-inside space-y-1 text-xs text-slate-700">
+            <li>Trên SePay, vào mục <strong>Tích hợp Webhooks &rarr; Thêm Webhook</strong>.</li>
+            <li><strong>Khi có:</strong> Chọn <em>Có tiền vào (hoặc Cả tiền vào và tiền ra)</em>.</li>
+            <li><strong>Gọi đến URL:</strong> Dán đường dẫn Webhook URL vừa copy ở trên vào.</li>
+            <li><strong>Kiểu chứng thực:</strong> Chọn <em>Không chứng thực (No Auth)</em> &rarr; <strong>Content-Type:</strong> Chọn <code>application/json</code> &rarr; Bấm <strong>Lưu</strong>!</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <button
+          type="button"
+          onclick="closeSepayGuideModal(); quickTestSepayAlert();"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 cursor-pointer"
+        >
+          <i data-lucide="zap" class="w-4 h-4"></i>
+          <span>Chạy Thử Thông Báo Số Dư Ngay</span>
+        </button>
+        <button
+          type="button"
+          onclick="closeSepayGuideModal()"
+          class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold cursor-pointer"
+        >
+          Đã Hiểu &amp; Đóng
+        </button>
+      </div>
     </div>
   </div>
 
