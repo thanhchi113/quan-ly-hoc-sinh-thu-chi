@@ -1,8 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --brand-navy: #1f3d6e;
+  --brand-navy-mid: #25477d;
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #1d4ed8;
+  --brand-primary-rgb: 37, 99, 235;
+  --brand-soft: #eef4fb;
+  --brand-border: #bfdbfe;
+  --brand-banner-from: #0f294a;
+  --brand-banner-via: #173b6c;
+  --brand-banner-to: #1e4b85;
+  --primary: var(--brand-primary);
+  --primary-hover: var(--brand-primary-hover);
   --success: #059669;
   --warning: #d97706;
   --danger: #dc2626;
@@ -17,6 +27,7 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: #f8fafc;
   color: #0f172a;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Custom Scrollbar */
@@ -88,13 +99,48 @@ body {
 
 /* Glass header & cards */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
 }
 
 .qr-frame {
-  background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
-  border: 2px dashed #93c5fd;
+  background: linear-gradient(135deg, var(--brand-soft) 0%, #eef2ff 100%);
+  border: 2px dashed var(--brand-border);
+}
+
+/* Dynamic Theme Bindings */
+.theme-brand-icon {
+  background-color: var(--brand-primary) !important;
+}
+
+.theme-hero-banner {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
+}
+
+.sepay-live-banner {
+  background: linear-gradient(90deg, var(--brand-banner-from) 0%, var(--brand-banner-via) 50%, var(--brand-banner-to) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.classbook-selector-card {
+  background: linear-gradient(135deg, var(--brand-soft) 0%, #ffffff 100%);
+  border: 2px solid var(--brand-border);
+}
+
+.theme-navy-badge {
+  background-color: var(--brand-navy) !important;
+  color: #ffffff !important;
+}
+
+.admin-tab-btn.bg-blue-600 {
+  background-color: var(--brand-primary) !important;
+}
+
+.class-card-active {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
+  color: #ffffff !important;
+  border-color: var(--brand-navy) !important;
+  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.25);
 }
 
 /* Mobile bottom bar padding */
@@ -106,13 +152,22 @@ body {
 
 /* Sổ Theo Dõi Lớp Học - Chuẩn Mẫu Styles */
 .sheet-navy-header {
-  background-color: #1f3d6e;
-  color: #ffffff;
+  background-color: var(--brand-navy) !important;
+  color: #ffffff !important;
+}
+
+.sheet-weekday-header {
+  background-color: var(--brand-navy-mid) !important;
+  color: #ffffff !important;
 }
 
 .sheet-sub-bar {
-  background-color: #eef4fb;
-  border-bottom: 2px solid #1f3d6e;
+  background-color: var(--brand-soft);
+  border-bottom: 2px solid var(--brand-navy);
+}
+
+.sheet-main-frame {
+  border-color: var(--brand-navy) !important;
 }
 
 .sheet-table {
@@ -171,3 +226,114 @@ body {
   font-weight: 700;
 }
 
+/* ========================================================================== */
+/* CHẾ ĐỘ TỐI (DARK MODE)                                                     */
+/* ========================================================================== */
+html.dark-mode body {
+  background-color: #0b1120;
+  color: #f1f5f9;
+}
+
+html.dark-mode ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+html.dark-mode .glass-nav {
+  background: rgba(15, 23, 42, 0.94);
+  border-color: #1e293b !important;
+}
+
+html.dark-mode .bg-white {
+  background-color: #111827 !important;
+  color: #f1f5f9;
+}
+
+html.dark-mode .bg-slate-50,
+html.dark-mode .bg-slate-50\/80,
+html.dark-mode .bg-slate-50\/60 {
+  background-color: #1e293b !important;
+}
+
+html.dark-mode .bg-slate-100 {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark-mode .classbook-selector-card {
+  background: linear-gradient(135deg, #111827 0%, #1e293b 100%) !important;
+  border-color: #334155 !important;
+}
+
+html.dark-mode .sheet-sub-bar {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark-mode .text-slate-900,
+html.dark-mode .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark-mode .text-slate-700,
+html.dark-mode .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark-mode .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark-mode .text-\[\#1f3d6e\] {
+  color: #93c5fd !important;
+}
+
+html.dark-mode .border-slate-200,
+html.dark-mode .border-slate-300,
+html.dark-mode .border-slate-400,
+html.dark-mode .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+html.dark-mode .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+html.dark-mode .sheet-table th,
+html.dark-mode .sheet-table td {
+  border-color: #334155;
+}
+
+html.dark-mode .session-state-0 {
+  background-color: #111827;
+  color: #e2e8f0;
+}
+
+html.dark-mode .session-state-0:hover {
+  background-color: #1e293b;
+}
+
+html.dark-mode input:not([type="checkbox"]):not([type="color"]),
+html.dark-mode select,
+html.dark-mode textarea {
+  background-color: #0f172a;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+html.dark-mode .sheet-table select,
+html.dark-mode .sheet-table input[type="text"] {
+  background-color: transparent;
+  color: #f8fafc;
+}
+
+html.dark-mode .sheet-table select option {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+html.dark-mode .hover\:bg-slate-50:hover,
+html.dark-mode .hover\:bg-slate-50\/80:hover,
+html.dark-mode .hover\:bg-slate-100:hover {
+  background-color: #1e293b !important;
+}
