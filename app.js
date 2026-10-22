@@ -86,7 +86,7 @@ function purgeDraftDataFromState(state) {
   if (!state) return state;
 
   if (Array.isArray(state.students)) {
-    state.students = state.students.filter(s => {
+    const filtered = state.students.filter(s => {
       if (!s) return false;
       const cls = String(s.className || '').trim();
       const nameLower = String(s.fullName || '').trim().toLowerCase();
@@ -95,6 +95,35 @@ function purgeDraftDataFromState(state) {
       if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
       return true;
     });
+
+    // Loại bỏ bản ghi học sinh bị nhân đôi (ưu tiên giữ bản ghi gốc ST_REAL_* và bảo toàn trạng thái Đã hoàn thành)
+    const byKey = new Map();
+    filtered.forEach(s => {
+      const code = String(s.studentCode || '').trim().toUpperCase();
+      const nameCls = `${String(s.fullName || '').trim().toLowerCase()}__${String(s.className || '').trim().toLowerCase()}`;
+      const key = code || nameCls || String(s.id || '');
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, s);
+      } else {
+        const isCurrentReal = String(s.id || '').startsWith('ST_REAL_');
+        const isExistingReal = String(existing.id || '').startsWith('ST_REAL_');
+        if (isCurrentReal && !isExistingReal) {
+          if (existing.status === 'Đã hoàn thành' && s.status !== 'Đã hoàn thành') {
+            s.status = 'Đã hoàn thành';
+            if (!s.note && existing.note) s.note = existing.note;
+          }
+          byKey.set(key, s);
+        } else if (!isCurrentReal && isExistingReal) {
+          if (s.status === 'Đã hoàn thành' && existing.status !== 'Đã hoàn thành') {
+            existing.status = 'Đã hoàn thành';
+            if (!existing.note && s.note) existing.note = s.note;
+          }
+        }
+      }
+    });
+
+    state.students = Array.from(byKey.values());
   }
 
   if (Array.isArray(state.paymentRequests)) {
@@ -4140,8 +4169,24 @@ function renderDashboardCharts(totalIncome, totalExpense, paidCount, pendingCoun
 }
 
 // ============================================================================
-// TAB 2: QUẢN LÝ DANH SÁCH HỌC SINH & HỌC PHÍ
+// TAB 2: SỔ THỐNG KÊ HỌC SINH & HỌC PHÍ (ĐA CHIỀU: LỚP • THÁNG • NĂM • NGÀY)
 // ============================================================================
+let selectedAllStuGradeFilter = 'ALL';
+let selectedStuStatTimeMode = 'ALL'; // 'ALL' | 'MONTH' | 'YEAR' | 'DAY' | 'RANGE'
+
+function sortClassNamesStandard(classNames) {
+  const gradeOrder = { '12': 1, '11': 2, '10': 3, '9': 4, '6-8': 5, 'OTHER': 6 };
+  return [...classNames].sort((a, b) => {
+    const ga = gradeOrder[getGradeCategoryForClassName(a)] || 99;
+    const gb = gradeOrder[getGradeCategoryForClassName(b)] || 99;
+    if (ga !== gb) return ga - gb;
+    const numA = parseInt(String(a).match(/^\d+/)?.[0] || '0', 10);
+    const numB = parseInt(String(b).match(/^\d+/)?.[0] || '0', 10);
+    if (numA !== numB) return numB - numA;
+    return String(a).localeCompare(String(b), 'vi');
+  });
+}
+
 function populateStudentFilterDropdowns() {
   const classSelect = document.getElementById('filter-student-class');
   const periodSelect = document.getElementById('filter-student-period');
@@ -4150,19 +4195,205 @@ function populateStudentFilterDropdowns() {
   const currentClass = classSelect.value || 'ALL';
   const currentPeriod = periodSelect.value || 'ALL';
 
-  const classes = Array.from(new Set((appState.students || []).map(s => s.className).filter(Boolean)));
+  const rawClasses = Array.from(new Set((appState.students || []).map(s => s.className).filter(Boolean)));
+  const classes = sortClassNamesStandard(rawClasses);
   const periods = Array.from(new Set((appState.students || []).map(s => s.period).filter(Boolean)));
 
   classSelect.innerHTML =
-    `<option value="ALL">Tất cả lớp (${classes.length})</option>` +
-    classes.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+    `<option value="ALL">Tất cả các lớp (${classes.length} lớp • ${(appState.students || []).length} HS)</option>` +
+    classes
+      .map(c => {
+        const cnt = (appState.students || []).filter(s => s.className === c).length;
+        return `<option value="${escapeAttr(c)}">Lớp ${escapeHtml(c)} (${cnt} HS)</option>`;
+      })
+      .join('');
 
   periodSelect.innerHTML =
-    `<option value="ALL">Tất cả kỳ học phí (${periods.length})</option>` +
-    periods.map(p => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join('');
+    `<option value="ALL">Tất cả kỳ / đợt học phí (${periods.length} kỳ)</option>` +
+    periods
+      .map(p => {
+        const cnt = (appState.students || []).filter(s => s.period === p).length;
+        return `<option value="${escapeAttr(p)}">${escapeHtml(p)} (${cnt} HS)</option>`;
+      })
+      .join('');
 
   if (classes.includes(currentClass)) classSelect.value = currentClass;
   if (periods.includes(currentPeriod)) periodSelect.value = currentPeriod;
+}
+
+function extractMonthsAndYearsFromText(periodStr, startDateStr = '', endDateStr = '') {
+  const months = new Set();
+  const years = new Set();
+  const s = String(periodStr || '');
+
+  // Tìm các năm (2024..2030)
+  const yearMatches = s.match(/\b(202\d)\b/g);
+  if (yearMatches) {
+    yearMatches.forEach(y => years.add(Number(y)));
+  }
+
+  // Trường hợp đặc biệt: "Tháng 8/2025 - 1/2026"
+  const crossYearMatch = s.match(/(\d{1,2})\s*\/\s*(202\d)\s*-\s*(\d{1,2})\s*\/\s*(202\d)/);
+  if (crossYearMatch) {
+    const m1 = Number(crossYearMatch[1]);
+    const y1 = Number(crossYearMatch[2]);
+    const m2 = Number(crossYearMatch[3]);
+    const y2 = Number(crossYearMatch[4]);
+    years.add(y1);
+    years.add(y2);
+    for (let m = m1; m <= 12; m++) months.add(m);
+    for (let m = 1; m <= m2; m++) months.add(m);
+  } else {
+    // Trường hợp "Tháng 9-10/2026" hoặc "T9-10"
+    const rangeMatch = s.match(/(?:Tháng|T)\s*(\d{1,2})\s*-\s*(\d{1,2})/i);
+    if (rangeMatch) {
+      const m1 = Number(rangeMatch[1]);
+      const m2 = Number(rangeMatch[2]);
+      const startM = Math.min(m1, m2);
+      const endM = Math.max(m1, m2);
+      for (let m = startM; m <= endM; m++) {
+        if (m >= 1 && m <= 12) months.add(m);
+      }
+    } else {
+      const singleMatch = s.match(/(?:Tháng|T)\s*(\d{1,2})/i);
+      if (singleMatch) {
+        const m = Number(singleMatch[1]);
+        if (m >= 1 && m <= 12) months.add(m);
+      }
+    }
+  }
+
+  // Bổ sung từ startDate -> endDate nếu có
+  [startDateStr, endDateStr].forEach(dStr => {
+    if (dStr && /^\d{4}-\d{2}-\d{2}/.test(dStr)) {
+      const parts = dStr.slice(0, 10).split('-');
+      years.add(Number(parts[0]));
+      months.add(Number(parts[1]));
+    }
+  });
+
+  if (years.size === 0) years.add(2026);
+  return { months, years };
+}
+
+function getStudentPaymentDatesIso(s) {
+  const dates = new Set();
+  const code = String(s.studentCode || '').trim().toUpperCase();
+  (appState.transactions || []).forEach(tx => {
+    if (tx.type !== 'Thu') return;
+    const matchCode =
+      (tx.studentCode && code && String(tx.studentCode).trim().toUpperCase() === code) ||
+      (code && String(tx.description || '').toUpperCase().includes(code));
+    if (matchCode && tx.date && /^\d{4}-\d{2}-\d{2}/.test(tx.date)) {
+      dates.add(tx.date.slice(0, 10));
+    }
+  });
+  if (s.status === 'Đã hoàn thành' && s.updatedAt && /^\d{4}-\d{2}-\d{2}/.test(s.updatedAt)) {
+    dates.add(s.updatedAt.slice(0, 10));
+  }
+  return Array.from(dates);
+}
+
+function matchesStudentTimeFilter(s) {
+  if (selectedStuStatTimeMode === 'ALL') return true;
+
+  const dateTarget = document.getElementById('filter-student-date-target')?.value || 'ALL';
+  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+  const clsCfg = scheduleMap[s.className] || {};
+  const stats = getStudentStatistics(s);
+  const startDateIso = stats.startDateIso || clsCfg.startDate || '';
+  const paymentDates = getStudentPaymentDatesIso(s);
+  const periodInfo = extractMonthsAndYearsFromText(s.period, clsCfg.startDate, clsCfg.endDate);
+
+  if (selectedStuStatTimeMode === 'MONTH') {
+    const selMonthVal = document.getElementById('filter-stu-month')?.value || 'ALL';
+    const selYearVal = document.getElementById('filter-stu-month-year')?.value || 'ALL';
+    const mNum = selMonthVal === 'ALL' ? null : Number(selMonthVal);
+    const yNum = selYearVal === 'ALL' ? null : Number(selYearVal);
+
+    const checkDateIsoMonthYear = iso => {
+      if (!iso || !/^\d{4}-\d{2}/.test(iso)) return false;
+      const y = Number(iso.slice(0, 4));
+      const m = Number(iso.slice(5, 7));
+      if (yNum && y !== yNum) return false;
+      if (mNum && m !== mNum) return false;
+      return true;
+    };
+
+    const matchPeriod =
+      (!yNum || periodInfo.years.has(yNum)) &&
+      (!mNum || periodInfo.months.has(mNum));
+    const matchPayment = paymentDates.some(checkDateIsoMonthYear) || (s.status === 'Đã hoàn thành' && matchPeriod);
+    const matchStart = checkDateIsoMonthYear(startDateIso);
+    const matchSchedule =
+      (!yNum || periodInfo.years.has(yNum)) &&
+      (!mNum || periodInfo.months.has(mNum) || Object.keys(clsCfg.sessionStates || {}).some(checkDateIsoMonthYear));
+
+    if (dateTarget === 'PAYMENT_DATE') return matchPayment;
+    if (dateTarget === 'START_DATE') return matchStart;
+    if (dateTarget === 'CLASS_SCHEDULE') return matchSchedule;
+    return matchPeriod || matchPayment || matchStart || matchSchedule;
+  }
+
+  if (selectedStuStatTimeMode === 'YEAR') {
+    const selYearVal = document.getElementById('filter-stu-year')?.value || 'ALL';
+    if (selYearVal === 'ALL') return true;
+    const yNum = Number(selYearVal);
+
+    const checkDateIsoYear = iso => iso && Number(iso.slice(0, 4)) === yNum;
+    const matchPeriod = periodInfo.years.has(yNum);
+    const matchPayment = paymentDates.some(checkDateIsoYear) || (s.status === 'Đã hoàn thành' && matchPeriod);
+    const matchStart = checkDateIsoYear(startDateIso);
+    const matchSchedule =
+      periodInfo.years.has(yNum) || Object.keys(clsCfg.sessionStates || {}).some(checkDateIsoYear);
+
+    if (dateTarget === 'PAYMENT_DATE') return matchPayment;
+    if (dateTarget === 'START_DATE') return matchStart;
+    if (dateTarget === 'CLASS_SCHEDULE') return matchSchedule;
+    return matchPeriod || matchPayment || matchStart || matchSchedule;
+  }
+
+  if (selectedStuStatTimeMode === 'DAY') {
+    const selDate = (document.getElementById('filter-stu-date')?.value || '').trim();
+    if (!selDate) return true;
+
+    const matchPayment = paymentDates.includes(selDate);
+    const matchStart = startDateIso === selDate;
+    const inClassRange =
+      clsCfg.startDate && clsCfg.endDate && selDate >= clsCfg.startDate && selDate <= clsCfg.endDate;
+    const hasSessionOnDate =
+      Boolean(clsCfg.sessionStates && clsCfg.sessionStates[selDate]) ||
+      (inClassRange &&
+        Array.isArray(clsCfg.daysOfWeek) &&
+        clsCfg.daysOfWeek.includes(new Date(selDate + 'T00:00:00').getDay()));
+
+    if (dateTarget === 'PAYMENT_DATE') return matchPayment;
+    if (dateTarget === 'START_DATE') return matchStart;
+    if (dateTarget === 'CLASS_SCHEDULE') return hasSessionOnDate;
+    return matchPayment || matchStart || hasSessionOnDate || inClassRange;
+  }
+
+  if (selectedStuStatTimeMode === 'RANGE') {
+    const fromDate = (document.getElementById('filter-stu-from-date')?.value || '').trim();
+    const toDate = (document.getElementById('filter-stu-to-date')?.value || '').trim();
+    if (!fromDate && !toDate) return true;
+    const minD = fromDate || '1900-01-01';
+    const maxD = toDate || '2099-12-31';
+
+    const inRange = iso => iso && iso >= minD && iso <= maxD;
+    const matchPayment = paymentDates.some(inRange);
+    const matchStart = inRange(startDateIso);
+    const matchSchedule =
+      (clsCfg.startDate && clsCfg.endDate && clsCfg.startDate <= maxD && clsCfg.endDate >= minD) ||
+      Object.keys(clsCfg.sessionStates || {}).some(inRange);
+
+    if (dateTarget === 'PAYMENT_DATE') return matchPayment;
+    if (dateTarget === 'START_DATE') return matchStart;
+    if (dateTarget === 'CLASS_SCHEDULE') return matchSchedule;
+    return matchPayment || matchStart || matchSchedule;
+  }
+
+  return true;
 }
 
 function getFilteredStudents() {
@@ -4172,12 +4403,16 @@ function getFilteredStudents() {
   const statusFilter = document.getElementById('filter-student-status')?.value || 'ALL';
 
   return (appState.students || []).filter(s => {
+    if (selectedAllStuGradeFilter !== 'ALL') {
+      if (getGradeCategoryForClassName(s.className) !== selectedAllStuGradeFilter) return false;
+    }
     if (classFilter !== 'ALL' && s.className !== classFilter) return false;
     if (periodFilter !== 'ALL' && s.period !== periodFilter) return false;
     if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
+    if (!matchesStudentTimeFilter(s)) return false;
     if (q) {
       const hay = removeVietnameseTones(
-        `${s.studentCode} ${s.fullName} ${s.parentName} ${s.parentPhone} ${s.className}`.toLowerCase()
+        `${s.studentCode} ${s.fullName} ${s.parentName} ${s.parentPhone} ${s.className} ${s.period}`.toLowerCase()
       );
       if (!hay.includes(q)) return false;
     }
@@ -4185,11 +4420,100 @@ function getFilteredStudents() {
   });
 }
 
+function setAllStuGradeFilter(gradeKey) {
+  selectedAllStuGradeFilter = gradeKey || 'ALL';
+  const classSelect = document.getElementById('filter-student-class');
+  if (classSelect && classSelect.value !== 'ALL') {
+    if (
+      selectedAllStuGradeFilter !== 'ALL' &&
+      getGradeCategoryForClassName(classSelect.value) !== selectedAllStuGradeFilter
+    ) {
+      classSelect.value = 'ALL';
+    }
+  }
+  renderAdminStudents();
+}
+
 function quickFilterByClassInAllStudents(className) {
   const select = document.getElementById('filter-student-class');
   if (!select) return;
   select.value = className || 'ALL';
   renderAdminStudents();
+}
+
+function setStuStatTimeMode(mode) {
+  selectedStuStatTimeMode = mode || 'ALL';
+  const modes = ['ALL', 'MONTH', 'YEAR', 'DAY', 'RANGE'];
+  modes.forEach(m => {
+    const btn = document.getElementById('stu-mode-btn-' + m);
+    if (btn) {
+      if (m === selectedStuStatTimeMode) {
+        btn.className =
+          'px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-blue-600 text-white border-blue-600 shadow-2xs whitespace-nowrap';
+      } else {
+        btn.className =
+          'px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap';
+      }
+    }
+    const ctrl = document.getElementById('stu-stat-ctrl-' + m);
+    if (ctrl) {
+      if (m === selectedStuStatTimeMode) {
+        ctrl.classList.remove('hidden');
+        ctrl.classList.add('flex');
+      } else {
+        ctrl.classList.add('hidden');
+        ctrl.classList.remove('flex');
+      }
+    }
+  });
+
+  if (selectedStuStatTimeMode === 'DAY') {
+    const dateInput = document.getElementById('filter-stu-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+  } else if (selectedStuStatTimeMode === 'RANGE') {
+    const fromInput = document.getElementById('filter-stu-from-date');
+    const toInput = document.getElementById('filter-stu-to-date');
+    if (fromInput && !fromInput.value) fromInput.value = '2026-09-01';
+    if (toInput && !toInput.value) toInput.value = '2026-10-31';
+  }
+
+  renderAdminStudents();
+}
+
+function setStuStatToday() {
+  const dateInput = document.getElementById('filter-stu-date');
+  if (dateInput) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+  renderAdminStudents();
+}
+
+function quickSelectPeriodBreakdown(periodValue) {
+  const periodSelect = document.getElementById('filter-student-period');
+  if (!periodSelect) return;
+  if (periodSelect.value === periodValue) {
+    periodSelect.value = 'ALL';
+  } else {
+    periodSelect.value = periodValue || 'ALL';
+  }
+  renderAdminStudents();
+}
+
+function resetAllStudentStatFilters() {
+  selectedAllStuGradeFilter = 'ALL';
+  const searchEl = document.getElementById('filter-student-search');
+  const classEl = document.getElementById('filter-student-class');
+  const periodEl = document.getElementById('filter-student-period');
+  const statusEl = document.getElementById('filter-student-status');
+  const targetEl = document.getElementById('filter-student-date-target');
+  if (searchEl) searchEl.value = '';
+  if (classEl) classEl.value = 'ALL';
+  if (periodEl) periodEl.value = 'ALL';
+  if (statusEl) statusEl.value = 'ALL';
+  if (targetEl) targetEl.value = 'ALL';
+  setStuStatTimeMode('ALL');
 }
 
 function getStudentMetaMap() {
@@ -4525,14 +4849,44 @@ async function adjustStudentPaidBatches(studentId, delta) {
   );
 }
 
+function getActiveTimeFilterDescription() {
+  if (selectedStuStatTimeMode === 'MONTH') {
+    const m = document.getElementById('filter-stu-month')?.value || 'ALL';
+    const y = document.getElementById('filter-stu-month-year')?.value || 'ALL';
+    const mText = m === 'ALL' ? 'Tất cả tháng' : `Tháng ${m}`;
+    const yText = y === 'ALL' ? 'Tất cả năm' : `Năm ${y}`;
+    return `${mText} / ${yText}`;
+  }
+  if (selectedStuStatTimeMode === 'YEAR') {
+    const y = document.getElementById('filter-stu-year')?.value || 'ALL';
+    return y === 'ALL' ? 'Tất cả các năm' : `Năm ${y}`;
+  }
+  if (selectedStuStatTimeMode === 'DAY') {
+    const d = document.getElementById('filter-stu-date')?.value || '';
+    return d ? `Ngày ${formatShortDateVN(d)}` : 'Theo ngày';
+  }
+  if (selectedStuStatTimeMode === 'RANGE') {
+    const f = document.getElementById('filter-stu-from-date')?.value || '';
+    const t = document.getElementById('filter-stu-to-date')?.value || '';
+    if (f && t) return `${formatShortDateVN(f)} → ${formatShortDateVN(t)}`;
+    if (f) return `Từ ${formatShortDateVN(f)}`;
+    if (t) return `Đến ${formatShortDateVN(t)}`;
+    return 'Khoảng thời gian';
+  }
+  const p = document.getElementById('filter-student-period')?.value || 'ALL';
+  if (p !== 'ALL') return p;
+  return 'Tất cả thời gian';
+}
+
 function renderAdminStudents() {
   const tbody = document.getElementById('admin-students-tbody');
   if (!tbody) return;
 
   const allStudents = appState.students || [];
+  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
   const list = getFilteredStudents();
 
-  // 1. Cập nhật 4 thẻ đếm số lượng học sinh & tổng tiền
+  // 1. Tính toán các chỉ số thống kê của danh sách đang hiển thị
   const paidList = list.filter(s => s.status === 'Đã hoàn thành');
   const pendingList = list.filter(s => s.status === 'Chờ duyệt');
   const unpaidList = list.filter(s => s.status === 'Chưa đóng');
@@ -4541,167 +4895,441 @@ function renderAdminStudents() {
   const unpaidSum = unpaidList.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
   const totalFeeSum = list.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
 
+  let totalBatchesPaidCount = 0;
+  let allTimePaidSum = 0;
+  const studentStatsCache = new Map();
+  list.forEach(s => {
+    const st = getStudentStatistics(s);
+    studentStatsCache.set(s.id, st);
+    totalBatchesPaidCount += st.paidBatchesCount;
+    allTimePaidSum += st.totalPaidAmount;
+  });
+
+  const activeClassesInList = new Set(list.map(s => s.className).filter(Boolean));
+  const allClassNames = sortClassNamesStandard(
+    Array.from(new Set(allStudents.map(s => (s.className || '').trim()).filter(Boolean)))
+  );
+  const paidRateText =
+    list.length > 0 ? ((paidList.length / list.length) * 100).toFixed(1).replace('.', ',') + '%' : '0%';
+
+  // Cập nhật tiêu đề Sổ Thống Kê, Thanh Sub-bar & 4 Ô KPI chuẩn mẫu Sổ Theo Dõi
+  const currentClassFilter = document.getElementById('filter-student-class')?.value || 'ALL';
+  const timeDesc = getActiveTimeFilterDescription();
+
+  const sheetTitleEl = document.getElementById('stu-stat-sheet-title');
+  if (sheetTitleEl) {
+    const classTitlePart =
+      currentClassFilter === 'ALL'
+        ? selectedAllStuGradeFilter === 'ALL'
+          ? 'TẤT CẢ CÁC LỚP'
+          : `KHỐI ${selectedAllStuGradeFilter}`
+        : `LỚP ${currentClassFilter}`;
+    sheetTitleEl.textContent = `SỔ THỐNG KÊ HỌC SINH & QUẢN LÝ HỌC PHÍ — ${classTitlePart} (${timeDesc})`;
+  }
+
+  const metaClassEl = document.getElementById('stu-meta-classname');
+  const metaTimeEl = document.getElementById('stu-meta-time');
+  const metaBatchesEl = document.getElementById('stu-meta-batches');
+  if (metaClassEl) {
+    metaClassEl.textContent =
+      currentClassFilter === 'ALL'
+        ? `Tất cả (${activeClassesInList.size}/${allClassNames.length} lớp)`
+        : `Lớp ${currentClassFilter}`;
+  }
+  if (metaTimeEl) metaTimeEl.textContent = timeDesc;
+  if (metaBatchesEl) metaBatchesEl.textContent = `${totalBatchesPaidCount} đợt đã đóng`;
+
   const kpiTotalEl = document.getElementById('all-stu-kpi-total');
+  const kpiSubClassesEl = document.getElementById('all-stu-kpi-sub-classes');
   const kpiFilteredEl = document.getElementById('all-stu-kpi-filtered');
   const kpiPaidEl = document.getElementById('all-stu-kpi-paid');
   const kpiPaidSumEl = document.getElementById('all-stu-kpi-paid-sum');
+  const kpiAllTimeSumEl = document.getElementById('all-stu-kpi-alltime-sum');
   const kpiPendingEl = document.getElementById('all-stu-kpi-pending');
   const kpiUnpaidEl = document.getElementById('all-stu-kpi-unpaid');
   const kpiUnpaidSumEl = document.getElementById('all-stu-kpi-unpaid-sum');
 
-  if (kpiTotalEl) kpiTotalEl.textContent = `${allStudents.length} HS`;
-  if (kpiFilteredEl) kpiFilteredEl.textContent = `Đang hiển thị: ${list.length} / ${allStudents.length} HS`;
-  if (kpiPaidEl) kpiPaidEl.textContent = `${paidList.length} HS`;
-  if (kpiPaidSumEl) kpiPaidSumEl.textContent = `Đã thu: ${formatCurrency(paidSum)}`;
-  if (kpiPendingEl) kpiPendingEl.textContent = `${pendingList.length} HS`;
-  if (kpiUnpaidEl) kpiUnpaidEl.textContent = `${unpaidList.length} HS`;
-  if (kpiUnpaidSumEl) kpiUnpaidSumEl.textContent = `Còn thiếu: ${formatCurrency(unpaidSum)}`;
+  if (kpiTotalEl) kpiTotalEl.textContent = `${list.length} HS`;
+  if (kpiSubClassesEl) {
+    kpiSubClassesEl.textContent =
+      list.length === allStudents.length
+        ? `Toàn bộ ${allClassNames.length} lớp (${allStudents.length} HS)`
+        : `Lọc từ ${allStudents.length} HS (${activeClassesInList.size} lớp)`;
+  }
+  if (kpiFilteredEl) kpiFilteredEl.textContent = `${list.length} / ${allStudents.length} HS`;
+  if (kpiPaidEl) kpiPaidEl.textContent = `${paidList.length} HS (${paidRateText})`;
+  if (kpiPaidSumEl) kpiPaidSumEl.textContent = formatCurrency(paidSum);
+  if (kpiAllTimeSumEl) kpiAllTimeSumEl.textContent = `Tổng lũy kế ${totalBatchesPaidCount} đợt: ${formatCurrency(allTimePaidSum)}`;
+  if (kpiPendingEl) {
+    kpiPendingEl.textContent =
+      pendingList.length > 0
+        ? `${pendingList.length} HS đang chờ duyệt • Đã đóng ${totalBatchesPaidCount} đợt`
+        : `Tổng cộng ${totalBatchesPaidCount} đợt đã đóng trên hệ thống`;
+  }
+  if (kpiUnpaidEl) kpiUnpaidEl.textContent = `${unpaidList.length} HS chưa đóng`;
+  if (kpiUnpaidSumEl) kpiUnpaidSumEl.textContent = formatCurrency(unpaidSum);
 
-  // 2. Render thanh đếm sĩ số theo từng lớp
-  const classCountsBar = document.getElementById('all-stu-class-counts-bar');
-  if (classCountsBar) {
-    const currentClassFilter = document.getElementById('filter-student-class')?.value || 'ALL';
-    const classMap = {};
-    allStudents.forEach(s => {
-      const cls = (s.className || 'Chưa phân lớp').trim();
-      classMap[cls] = (classMap[cls] || 0) + 1;
-    });
-    const classEntries = Object.entries(classMap);
+  // Cập nhật dòng TỔNG CỘNG ngay dưới tiêu đề bảng (giống Sổ Theo Dõi Lớp Học)
+  const sumCountEl = document.getElementById('stu-sum-count');
+  const sumClassesEl = document.getElementById('stu-sum-classes-cnt');
+  const sumBatchesEl = document.getElementById('stu-sum-batches');
+  const sumPaidRatioEl = document.getElementById('stu-sum-paid-ratio');
+  const sumExpectedEl = document.getElementById('stu-sum-expected');
+  const sumCollectedEl = document.getElementById('stu-sum-collected');
+  const sumMissingEl = document.getElementById('stu-sum-missing');
 
-    classCountsBar.innerHTML =
-      `<span class="text-xs font-bold text-slate-500 mr-1">Đếm theo lớp:</span>` +
-      `<button type="button" onclick="quickFilterByClassInAllStudents('ALL')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-        currentClassFilter === 'ALL'
-          ? 'bg-blue-600 text-white shadow-2xs'
-          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-      }">Tất cả (${allStudents.length} HS)</button>` +
-      classEntries
-        .map(
-          ([cls, count]) => `
-        <button
-          type="button"
-          onclick="quickFilterByClassInAllStudents('${escapeAttr(cls)}')"
-          class="px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-            currentClassFilter === cls
-              ? 'bg-blue-600 text-white shadow-2xs'
-              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-          }"
-        >
-          ${escapeHtml(cls)}: <span class="${
-            currentClassFilter === cls ? 'text-amber-300' : 'text-blue-700'
-          }">${count} HS</span>
-        </button>
-      `
-        )
-        .join('');
+  if (sumCountEl) sumCountEl.textContent = `${list.length} HS`;
+  if (sumClassesEl) sumClassesEl.textContent = `${activeClassesInList.size} lớp`;
+  if (sumBatchesEl) sumBatchesEl.textContent = `${totalBatchesPaidCount} đợt (${formatCurrency(allTimePaidSum)})`;
+  if (sumPaidRatioEl) sumPaidRatioEl.textContent = `${paidList.length}/${list.length} em (${paidRateText})`;
+  if (sumExpectedEl) sumExpectedEl.textContent = formatCurrency(totalFeeSum);
+  if (sumCollectedEl) sumCollectedEl.textContent = formatCurrency(paidSum);
+  if (sumMissingEl) sumMissingEl.textContent = formatCurrency(unpaidSum);
+
+  // 2. Render bộ lọc nhanh theo Khối lớp (giống hệt Sổ Theo Dõi)
+  const gradeFiltersEl = document.getElementById('all-stu-grade-filters');
+  if (gradeFiltersEl) {
+    const gradeGroups = [
+      { key: 'ALL', label: 'Tất cả', count: allClassNames.length, stuCount: allStudents.length },
+      {
+        key: '12',
+        label: 'Khối 12',
+        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '12').length,
+        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '12').length
+      },
+      {
+        key: '11',
+        label: 'Khối 11',
+        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '11').length,
+        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '11').length
+      },
+      {
+        key: '10',
+        label: 'Khối 10',
+        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '10').length,
+        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '10').length
+      },
+      {
+        key: '9',
+        label: 'Khối 9',
+        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '9').length,
+        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '9').length
+      },
+      {
+        key: '6-8',
+        label: 'Khối 6 - 8',
+        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '6-8').length,
+        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '6-8').length
+      }
+    ].filter(g => g.key === 'ALL' || g.count > 0);
+
+    gradeFiltersEl.innerHTML = gradeGroups
+      .map(g => {
+        const active = selectedAllStuGradeFilter === g.key;
+        return `
+          <button
+            type="button"
+            onclick="setAllStuGradeFilter('${g.key}')"
+            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
+              active
+                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+            }"
+          >
+            <span>${g.label}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }">${g.stuCount} HS</span>
+          </button>
+        `;
+      })
+      .join('');
   }
 
+  // 3. Render Lưới Thẻ Đếm & Chọn Lớp 4 cột cân đối (giống hệt Sổ Theo Dõi Lớp Học)
+  const classCountsBar = document.getElementById('all-stu-class-counts-bar');
+  if (classCountsBar) {
+    const visibleClasses =
+      selectedAllStuGradeFilter === 'ALL'
+        ? allClassNames
+        : allClassNames.filter(c => getGradeCategoryForClassName(c) === selectedAllStuGradeFilter);
+
+    const allPaidCnt = allStudents.filter(s => s.status === 'Đã hoàn thành').length;
+    const isAllSelected = currentClassFilter === 'ALL';
+
+    const allCardHtml = `
+      <button
+        type="button"
+        onclick="quickFilterByClassInAllStudents('ALL')"
+        class="class-selector-item ${
+          isAllSelected ? 'is-active' : ''
+        } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
+      >
+        <div class="flex items-center justify-between gap-2 w-full">
+          <span class="font-extrabold text-xs sm:text-sm truncate ${
+            isAllSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
+          }">
+            🌐 Tất cả các lớp
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
+            isAllSelected
+              ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
+              : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
+          }">
+            ${allStudents.length} HS
+          </span>
+        </div>
+        <div class="flex items-center justify-between gap-2 w-full text-[11px]">
+          <span class="truncate font-semibold ${isAllSelected ? 'text-blue-100' : 'text-slate-500'}">
+            Tổng hợp ${allClassNames.length} lớp học
+          </span>
+          <span class="shrink-0 font-bold whitespace-nowrap ${
+            isAllSelected ? 'text-emerald-200' : 'text-emerald-600'
+          }">
+            ✓ ${allPaidCnt}/${allStudents.length} đóng
+          </span>
+        </div>
+      </button>
+    `;
+
+    const classCardsHtml = visibleClasses
+      .map(cls => {
+        const isSelected = currentClassFilter === cls;
+        const clsStudents = allStudents.filter(s => s.className === cls);
+        const count = clsStudents.length;
+        const paidCnt = clsStudents.filter(s => s.status === 'Đã hoàn thành').length;
+        const cCfg = scheduleMap[cls] || {};
+        const { mainTitle, subLabel } = parseClassDisplayTitle(cls);
+        const batchTag = cCfg.batchLabel || 'ĐỢT 1';
+
+        return `
+          <button
+            type="button"
+            onclick="quickFilterByClassInAllStudents('${escapeAttr(cls)}')"
+            class="class-selector-item ${
+              isSelected ? 'is-active' : ''
+            } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
+          >
+            <div class="flex items-center justify-between gap-2 w-full">
+              <span class="font-extrabold text-xs sm:text-sm truncate ${
+                isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
+              }">
+                ${escapeHtml(mainTitle)}
+              </span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
+                isSelected
+                  ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
+                  : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
+              }">
+                ${count} HS
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-2 w-full text-[11px]">
+              <span class="truncate font-semibold ${isSelected ? 'text-blue-100' : 'text-slate-500'}">
+                ${escapeHtml(subLabel)} • ${escapeHtml(batchTag)}
+              </span>
+              <span class="shrink-0 font-bold whitespace-nowrap ${
+                isSelected
+                  ? 'text-emerald-200'
+                  : paidCnt === count && count > 0
+                  ? 'text-emerald-600'
+                  : 'text-slate-500'
+              }">
+                ✓ ${paidCnt}/${count} đóng
+              </span>
+            </div>
+          </button>
+        `;
+      })
+      .join('');
+
+    classCountsBar.innerHTML = allCardHtml + classCardsHtml;
+  }
+
+  // 4. Render Lưới Thẻ Tổng Hợp Theo Từng Tháng / Kỳ & Năm (Bấm để xem thống kê của Tháng / Kỳ đó)
+  const periodBreakdownEl = document.getElementById('all-stu-period-breakdown');
+  if (periodBreakdownEl) {
+    const currentPeriodFilter = document.getElementById('filter-student-period')?.value || 'ALL';
+    const baseStudentsForPeriod = allStudents.filter(s => {
+      if (selectedAllStuGradeFilter !== 'ALL' && getGradeCategoryForClassName(s.className) !== selectedAllStuGradeFilter) {
+        return false;
+      }
+      if (currentClassFilter !== 'ALL' && s.className !== currentClassFilter) return false;
+      return true;
+    });
+
+    const periodGroups = new Map();
+    baseStudentsForPeriod.forEach(s => {
+      const p = (s.period || 'Chưa phân kỳ').trim();
+      if (!periodGroups.has(p)) {
+        periodGroups.set(p, { period: p, total: 0, paid: 0, collected: 0, missing: 0 });
+      }
+      const g = periodGroups.get(p);
+      g.total++;
+      const fee = Number(s.tuitionFee) || 0;
+      if (s.status === 'Đã hoàn thành') {
+        g.paid++;
+        g.collected += fee;
+      } else {
+        g.missing += fee;
+      }
+    });
+
+    const periodEntries = Array.from(periodGroups.values());
+    periodBreakdownEl.innerHTML = periodEntries
+      .map(g => {
+        const isSelected = currentPeriodFilter === g.period;
+        return `
+          <button
+            type="button"
+            onclick="quickSelectPeriodBreakdown('${escapeAttr(g.period)}')"
+            class="class-selector-item ${
+              isSelected ? 'is-active' : ''
+            } px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1"
+            title="Bấm để lọc riêng học sinh thuộc kỳ ${escapeAttr(g.period)}"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-extrabold text-xs truncate ${
+                isSelected ? 'text-white' : 'text-indigo-700'
+              }">
+                🗓️ ${escapeHtml(g.period)}
+              </span>
+              <span class="px-2 py-0.2 rounded-full text-[11px] font-extrabold whitespace-nowrap ${
+                isSelected ? 'bg-amber-300 text-slate-950' : 'bg-slate-100 text-slate-700 border border-slate-300'
+              }">
+                ${g.total} HS
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[11px] pt-0.5">
+              <span class="font-bold whitespace-nowrap ${
+                isSelected ? 'text-emerald-200' : 'text-emerald-600'
+              }">
+                Thu: ${formatCurrency(g.collected)}
+              </span>
+              <span class="font-semibold whitespace-nowrap ${
+                isSelected ? 'text-blue-100' : 'text-slate-500'
+              }">
+                ✓ ${g.paid}/${g.total} em
+              </span>
+            </div>
+          </button>
+        `;
+      })
+      .join('');
+  }
+
+  // 5. Render Bảng Học Sinh Chuẩn Mẫu Sổ Theo Dõi
   if (list.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="py-10 text-center text-slate-400 text-sm">
-          Không tìm thấy học sinh nào khớp với bộ lọc hiện tại.
+        <td colspan="10" class="py-10 text-center text-slate-400 text-xs sm:text-sm">
+          Không tìm thấy học sinh nào khớp với bộ lọc (Lớp / Tháng / Năm / Ngày) hiện tại.
+          <button onclick="resetAllStudentStatFilters()" class="text-blue-600 font-bold hover:underline ml-1.5 cursor-pointer">
+            [Xem lại tất cả học sinh]
+          </button>
         </td>
       </tr>
     `;
+    lucide.createIcons();
     return;
   }
 
-  tbody.innerHTML =
-    list
-      .map((s, idx) => {
-        const badgeClass = getStatusBadgeClass(s.status);
-        const stats = getStudentStatistics(s);
-        return `
-        <tr class="hover:bg-slate-50/80 transition">
-          <td class="py-3 px-3 text-center font-bold text-slate-500 text-xs">
+  tbody.innerHTML = list
+    .map((s, idx) => {
+      const isPaid = s.status === 'Đã hoàn thành';
+      const isPending = s.status === 'Chờ duyệt';
+      const stats = studentStatsCache.get(s.id) || getStudentStatistics(s);
+      const statusCellClass = isPaid
+        ? 'bg-emerald-100 text-emerald-800 font-bold'
+        : isPending
+        ? 'bg-amber-100 text-amber-800 font-bold'
+        : 'bg-rose-50 text-rose-700 font-semibold';
+
+      return `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-2 px-2 text-center font-bold text-slate-600 text-xs whitespace-nowrap">
             ${idx + 1}
           </td>
-          <td class="py-3 px-3 font-mono font-bold text-xs text-blue-700">
+          <td class="py-2 px-2.5 text-center font-mono font-bold text-xs text-blue-700 whitespace-nowrap">
             ${escapeHtml(s.studentCode)}
           </td>
-          <td class="py-3 px-4">
+          <td class="py-2 px-3">
             <button
               type="button"
               onclick="openStudentDetailModal('${s.id}')"
-              class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer flex items-center gap-1.5"
-              title="Bấm để xem Hồ sơ chi tiết của học sinh này"
+              class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+              title="Bấm để xem Hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
             >
               <span>${escapeHtml(s.fullName)}</span>
-              <i data-lucide="info" class="w-3.5 h-3.5 text-blue-500 shrink-0"></i>
+              <span class="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">Chi tiết</span>
             </button>
-            <div class="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
-              <span class="px-2 py-0.2 rounded bg-blue-50 text-blue-800 font-bold text-[11px]">Lớp ${escapeHtml(s.className)}</span>
-              ${
-                s.parentPhone
-                  ? `<a href="tel:${escapeAttr(s.parentPhone)}" class="text-blue-600 hover:underline font-mono text-[11px]">• SĐT: ${escapeHtml(
-                      s.parentPhone
-                    )}</a>`
-                  : ''
-              }
-            </div>
-            ${s.note ? `<div class="text-[11px] text-slate-400 italic mt-0.5">${escapeHtml(s.note)}</div>` : ''}
+            ${
+              s.parentPhone && s.parentPhone !== '1234567890'
+                ? `<div class="text-[11px] text-slate-500 font-mono mt-0.5">SĐT: ${escapeHtml(s.parentPhone)}</div>`
+                : ''
+            }
+            ${s.note ? `<div class="text-[11px] text-slate-500 italic mt-0.5">${escapeHtml(s.note)}</div>` : ''}
           </td>
-          <td class="py-3 px-3 text-center">
+          <td class="py-2 px-3 whitespace-nowrap">
+            <button
+              type="button"
+              onclick="quickFilterByClassInAllStudents('${escapeAttr(s.className)}')"
+              class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-xs transition cursor-pointer whitespace-nowrap"
+              title="Bấm để lọc riêng Lớp ${escapeAttr(s.className)}"
+            >
+              Lớp ${escapeHtml(s.className)}
+            </button>
+          </td>
+          <td class="py-2 px-2.5 text-center whitespace-nowrap">
             <input
               type="date"
               value="${escapeAttr(stats.startDateIso)}"
               onchange="updateStudentStartDate('${s.id}', this.value)"
               title="Bấm để chọn hoặc sửa ngày bắt đầu học của học sinh"
-              class="px-2 py-1 rounded-lg border border-slate-200 hover:border-blue-400 bg-slate-50/70 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              class="px-2 py-1 rounded-lg border border-slate-300 hover:border-blue-400 bg-slate-50 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             />
-            <div class="text-[10px] text-slate-400 mt-0.5">Từ: ${escapeHtml(stats.startDateVN)}</div>
           </td>
-          <td class="py-3 px-3 text-center">
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border ${
+          <td class="py-2 px-2.5 text-center whitespace-nowrap">
+            <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border ${
               stats.paidBatchesCount > 0
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-slate-100 border-slate-200 text-slate-500'
+                : 'bg-slate-100 border-slate-300 text-slate-600'
             }">
-              <i data-lucide="${stats.paidBatchesCount > 0 ? 'check-circle-2' : 'minus-circle'}" class="w-3.5 h-3.5 ${
-          stats.paidBatchesCount > 0 ? 'text-emerald-600' : 'text-slate-400'
-        }"></i>
-              <span class="text-xs sm:text-sm font-extrabold">
-                ${stats.paidBatchesCount} đợt
-              </span>
+              <span class="text-xs font-extrabold">${stats.paidBatchesCount} đợt</span>
+              <span class="text-[11px] font-bold">• ${formatCurrency(stats.totalPaidAmount)}</span>
             </div>
-            <div class="text-[11px] font-bold ${
-              stats.paidBatchesCount > 0 ? 'text-emerald-700' : 'text-slate-400'
-            } mt-1">
-              Đã đóng: ${formatCurrency(stats.totalPaidAmount)}
-            </div>
-            ${
-              stats.paidBatchLabels.length > 0
-                ? `<div class="text-[10px] text-slate-400 truncate max-w-[180px] mx-auto" title="${escapeAttr(
-                    stats.paidBatchLabels.join(', ')
-                  )}">(${escapeHtml(stats.paidBatchLabels.join(', '))})</div>`
-                : `<div class="text-[10px] text-slate-400">(Tự động đếm theo hệ thống)</div>`
-            }
           </td>
-          <td class="py-3 px-3 whitespace-nowrap">
-            <span class="inline-block px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs whitespace-nowrap">
+          <td class="py-2 px-2.5 text-center whitespace-nowrap">
+            <span class="inline-block px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold text-xs whitespace-nowrap">
               ${escapeHtml(s.period)}
             </span>
           </td>
-          <td class="py-3 px-3 text-right font-extrabold text-slate-900 whitespace-nowrap">
-            ${toShortMoney(s.tuitionFee).toLocaleString('vi-VN')}
-          </td>
-          <td class="py-3 px-3 text-center whitespace-nowrap">
+          <td class="py-2 px-2.5 text-right font-extrabold text-slate-900 whitespace-nowrap">
             <select
-              onchange="quickChangeStudentStatus('${s.id}', this.value)"
-              class="px-3 py-1 rounded-full text-xs font-bold cursor-pointer focus:outline-none whitespace-nowrap ${badgeClass}"
+              onchange="handleClassbookFeeSelect('${s.id}', this.value)"
+              title="Bấm để tùy chọn mức học phí cho học sinh"
+              class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
             >
-              <option value="Chưa đóng" ${s.status === 'Chưa đóng' ? 'selected' : ''}>Chưa đóng</option>
-              <option value="Chờ duyệt" ${s.status === 'Chờ duyệt' ? 'selected' : ''}>Chờ duyệt</option>
-              <option value="Đã hoàn thành" ${s.status === 'Đã hoàn thành' ? 'selected' : ''}>Đã hoàn thành</option>
+              ${getPresetTuitionOptionsHtml(s.tuitionFee)}
+              <option value="CUSTOM">✏️ Số khác...</option>
             </select>
           </td>
-          <td class="py-3 px-3 text-right">
+          <td class="py-2 px-2 text-center whitespace-nowrap ${statusCellClass}">
+            <select
+              onchange="quickChangeStudentStatus('${s.id}', this.value)"
+              class="bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
+            >
+              <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã hoàn thành</option>
+              <option value="Chờ duyệt" ${isPending ? 'selected' : ''}>Chờ duyệt</option>
+              <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
+            </select>
+          </td>
+          <td class="py-2 px-2 text-center whitespace-nowrap">
             <div class="inline-flex items-center gap-1">
               <button
                 onclick="openStudentDetailModal('${s.id}')"
-                title="Xem thông tin chi tiết & thống kê đợt học của học sinh này"
-                class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                title="Xem hồ sơ chi tiết học sinh"
+                class="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
               >
                 <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                 <span>Chi tiết</span>
@@ -4711,42 +5339,28 @@ function renderAdminStudents() {
                 title="Lấy mã VietQR của học sinh này"
                 class="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
               >
-                <i data-lucide="qr-code" class="w-4 h-4"></i>
+                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
               </button>
               <button
                 onclick="openStudentModal('${s.id}')"
                 title="Chỉnh sửa thông tin"
                 class="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
               >
-                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
               </button>
               <button
                 onclick="deleteStudentRecord('${s.id}')"
                 title="Xóa bản ghi"
                 class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition cursor-pointer"
               >
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
             </div>
           </td>
         </tr>
       `;
-      })
-      .join('') +
-    `
-      <tr class="bg-slate-100 font-extrabold text-xs border-t-2 border-slate-300 text-slate-900">
-        <td colspan="6" class="py-3 px-4 uppercase">
-          TỔNG CỘNG DANH SÁCH ĐANG HIỂN THỊ: <span class="text-blue-700">${list.length} học sinh</span>
-        </td>
-        <td class="py-3 px-3 text-right text-blue-700">
-          ${formatCurrency(totalFeeSum)}
-        </td>
-        <td colspan="2" class="py-3 px-4 text-center">
-          <span class="text-emerald-700">Đã đóng: ${paidList.length} HS</span> •
-          <span class="text-rose-600">Chưa đóng: ${unpaidList.length} HS</span>
-        </td>
-      </tr>
-    `;
+    })
+    .join('');
 
   lucide.createIcons();
 }
@@ -4945,44 +5559,62 @@ function handleCreateBatchPeriod(event) {
   const newPeriod = document.getElementById('batch-new-period').value.trim();
   if (!newPeriod) return;
 
-  // Lấy danh sách học sinh duy nhất theo studentCode
-  const uniqueMap = new Map();
-  (appState.students || []).forEach(s => {
-    if (!uniqueMap.has(s.studentCode)) {
-      uniqueMap.set(s.studentCode, s);
+  const nowStr = getCurrentDateTimeString();
+  const map = getClassSchedulesMap();
+  const historyList = getClassHistoryList();
+
+  // Lưu các đợt hiện tại của từng lớp vào mục Lịch Sử trước khi chuyển sang kỳ mới
+  Object.keys(map).forEach(cls => {
+    const oldCfg = map[cls];
+    const clsStudents = (appState.students || []).filter(s => s.className === cls);
+    if (clsStudents.length > 0) {
+      const paidStudents = clsStudents.filter(s => s.status === 'Đã hoàn thành');
+      const totalExpected = clsStudents.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
+      const totalCollected = paidStudents.reduce((sum, s) => sum + (Number(s.tuitionFee) || 0), 0);
+      historyList.unshift({
+        id: 'HIST_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        archivedAt: nowStr,
+        className: cls,
+        subject: oldCfg?.subject || 'Toán',
+        periodLabel: oldCfg?.periodLabel || clsStudents[0].period || 'Kỳ trước',
+        batchLabel: oldCfg?.batchLabel || 'ĐỢT TRƯỚC',
+        startDate: oldCfg?.startDate || '',
+        endDate: oldCfg?.endDate || '',
+        daysOfWeek: Array.isArray(oldCfg?.daysOfWeek) ? [...oldCfg.daysOfWeek] : [1, 3, 5, 0],
+        sessionStates: { ...(oldCfg?.sessionStates || {}) },
+        checkedSessions: countCheckedSessionsInConfig(oldCfg),
+        totalStudents: clsStudents.length,
+        paidCount: paidStudents.length,
+        totalExpected,
+        totalCollected,
+        totalMissing: Math.max(0, totalExpected - totalCollected),
+        studentsSnapshot: clsStudents.map(st => ({ ...st }))
+      });
+    }
+    if (oldCfg) {
+      oldCfg.periodLabel = newPeriod;
     }
   });
 
-  let addedCount = 0;
-  const nowStr = getCurrentDateTimeString();
+  if (!appState.settings) appState.settings = {};
+  appState.settings.classHistoryJson = JSON.stringify(historyList);
+  appState.settings.classSchedulesJson = JSON.stringify(map);
 
-  uniqueMap.forEach(s => {
-    const exists = appState.students.some(
-      item => item.studentCode === s.studentCode && item.period.toLowerCase() === newPeriod.toLowerCase()
-    );
-    if (!exists) {
-      appState.students.unshift({
-        id: 'ST_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        studentCode: s.studentCode,
-        fullName: s.fullName,
-        className: s.className,
-        parentName: s.parentName,
-        parentPhone: s.parentPhone,
-        period: newPeriod,
-        tuitionFee: s.tuitionFee,
-        status: 'Chưa đóng',
-        receiptUrl: '',
-        updatedAt: nowStr,
-        note: ''
-      });
-      addedCount++;
-    }
+  // Chuyển học sinh hiện tại sang kỳ mới (không nhân đôi sĩ số học sinh)
+  let updatedCount = 0;
+  (appState.students || []).forEach(s => {
+    s.period = newPeriod;
+    s.status = 'Chưa đóng';
+    s.note = '';
+    s.receiptUrl = '';
+    s.updatedAt = nowStr;
+    updatedCount++;
   });
 
   appState.settings.defaultPeriod = newPeriod;
   closeBatchPeriodModal();
   saveStateToLocal();
-  triggerAutoSyncIfNeeded(`Đã khởi tạo kỳ "${newPeriod}" cho ${addedCount} học sinh!`);
+  triggerAutoSyncIfNeeded(`Đã lưu kỳ cũ vào Lịch Sử và chuyển ${updatedCount} học sinh sang kỳ "${newPeriod}"!`);
 }
 
 // ============================================================================
@@ -5892,7 +6524,7 @@ function getGradeCategoryForClassName(cls) {
 function setClassbookGradeFilter(gradeKey) {
   selectedClassbookGradeFilter = gradeKey || 'ALL';
   const map = getClassSchedulesMap();
-  const classNames = Object.keys(map);
+  const classNames = sortClassNamesStandard(Object.keys(map));
   const filtered =
     selectedClassbookGradeFilter === 'ALL'
       ? classNames
@@ -5928,7 +6560,7 @@ function renderAdminClassbook() {
   if (!pillsContainer) return;
 
   const map = getClassSchedulesMap();
-  const classNames = Object.keys(map);
+  const classNames = sortClassNamesStandard(Object.keys(map));
 
   if (!selectedClassbookClass || !map[selectedClassbookClass]) {
     selectedClassbookClass = classNames[0] || '12 2K9 (Ca 1 - T3,5,7)';
@@ -5953,15 +6585,15 @@ function renderAdminClassbook() {
           <button
             type="button"
             onclick="setClassbookGradeFilter('${g.key}')"
-            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border ${
+            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
               active
                 ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
             }"
           >
             <span>${g.label}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
             }">${g.count}</span>
           </button>
         `;
@@ -5989,22 +6621,20 @@ function renderAdminClassbook() {
         <button
           type="button"
           onclick="selectClassbookClass('${escapeAttr(cls)}')"
-          class="group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5 border ${
-            isSelected
-              ? 'bg-blue-600 text-white border-blue-700 shadow-md ring-2 ring-blue-200'
-              : 'bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-xs'
-          }"
+          class="class-selector-item ${
+            isSelected ? 'is-active' : ''
+          } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
         >
           <div class="flex items-center justify-between gap-2 w-full">
             <span class="font-extrabold text-xs sm:text-sm truncate ${
-              isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-700'
+              isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
             }">
               ${escapeHtml(mainTitle)}
             </span>
             <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
               isSelected
                 ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
-                : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200/70'
+                : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
             }">
               ${count} HS
             </span>
@@ -6020,7 +6650,7 @@ function renderAdminClassbook() {
                 ? 'text-emerald-200'
                 : paidCnt === count && count > 0
                 ? 'text-emerald-600'
-                : 'text-slate-400'
+                : 'text-slate-500'
             }">
               ✓ ${paidCnt}/${count} đóng
             </span>
