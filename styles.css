@@ -25,7 +25,7 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
   color: #0f172a;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -37,35 +37,35 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #e2e8f0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #94a3b8;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #64748b;
 }
 
-/* Status Badges */
+/* Status Badges - Light Mode (High Contrast) */
 .badge-paid {
   background-color: #d1fae5;
   color: #065f46;
-  border: 1px solid #6ee7b7;
+  border: 1px solid #34d399;
 }
 
 .badge-pending {
   background-color: #fef3c7;
   color: #92400e;
-  border: 1px solid #fcd34d;
+  border: 1px solid #f59e0b;
 }
 
 .badge-unpaid {
   background-color: #fee2e2;
   color: #991b1b;
-  border: 1px solid #fca5a5;
+  border: 1px solid #f87171;
 }
 
 /* Animations */
@@ -99,7 +99,7 @@ body {
 
 /* Glass header & cards */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
 }
 
@@ -119,7 +119,7 @@ body {
 
 .sepay-live-banner {
   background: linear-gradient(90deg, var(--brand-banner-from) 0%, var(--brand-banner-via) 50%, var(--brand-banner-to) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .classbook-selector-card {
@@ -136,11 +136,25 @@ body {
   background-color: var(--brand-primary) !important;
 }
 
-.class-card-active {
+/* Thẻ lớp học ở Chế độ Sáng (tương phản rõ với nền khung) */
+.class-selector-item {
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.class-selector-item:hover {
+  border-color: var(--brand-primary);
+  background-color: #f8fafc;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1);
+}
+
+.class-selector-item.is-active {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
   color: #ffffff !important;
   border-color: var(--brand-navy) !important;
-  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.25);
+  box-shadow: 0 6px 16px rgba(var(--brand-primary-rgb), 0.32) !important;
 }
 
 /* Mobile bottom bar padding */
@@ -227,11 +241,11 @@ body {
 }
 
 /* ========================================================================== */
-/* CHẾ ĐỘ TỐI (DARK MODE)                                                     */
+/* CHẾ ĐỘ TỐI (DARK MODE) - PHÂN TẦNG NỀN RÕ RÀNG & CHỮ TƯƠNG PHẢN CAO        */
 /* ========================================================================== */
 html.dark-mode body {
-  background-color: #0b1120;
-  color: #f1f5f9;
+  background-color: #070b14;
+  color: #f8fafc;
 }
 
 html.dark-mode ::-webkit-scrollbar-track {
@@ -239,40 +253,151 @@ html.dark-mode ::-webkit-scrollbar-track {
 }
 
 html.dark-mode ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #475569;
 }
 
 html.dark-mode .glass-nav {
-  background: rgba(15, 23, 42, 0.94);
-  border-color: #1e293b !important;
+  background: rgba(11, 17, 32, 0.96);
+  border-color: #334155 !important;
 }
 
+/* Tầng 1: Khung Card chính (.bg-white) */
 html.dark-mode .bg-white {
   background-color: #111827 !important;
-  color: #f1f5f9;
+  color: #f8fafc;
+  border-color: #334155;
 }
 
+/* Tầng 2: Các hộp con / ô thống kê bên trong Card (.bg-slate-50, .bg-slate-100) */
 html.dark-mode .bg-slate-50,
 html.dark-mode .bg-slate-50\/80,
+html.dark-mode .bg-slate-50\/70,
 html.dark-mode .bg-slate-50\/60 {
   background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
 }
 
 html.dark-mode .bg-slate-100 {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
+  background-color: #263449 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
 }
 
+html.dark-mode .bg-slate-200 {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Khung chọn lớp & Thẻ từng lớp ở Chế độ Tối (Tách biệt hoàn toàn nền và chữ) */
 html.dark-mode .classbook-selector-card {
-  background: linear-gradient(135deg, #111827 0%, #1e293b 100%) !important;
-  border-color: #334155 !important;
+  background: linear-gradient(135deg, #0f172a 0%, #162033 100%) !important;
+  border: 2px solid #3b82f666 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+html.dark-mode .class-selector-item {
+  background-color: #1e293b !important;
+  border: 1.5px solid #475569 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .class-selector-item:hover {
+  background-color: #28374f !important;
+  border-color: #60a5fa !important;
+}
+
+html.dark-mode .class-selector-item.is-active {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
+  border-color: #93c5fd !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45) !important;
 }
 
 html.dark-mode .sheet-sub-bar {
   background-color: #1e293b !important;
-  color: #f1f5f9 !important;
+  color: #f8fafc !important;
+  border-bottom-color: #3b82f6 !important;
 }
 
+html.dark-mode .qr-frame {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  border-color: #475569 !important;
+}
+
+/* Tầng 3: Các hộp màu nhạt (Blue, Indigo, Emerald, Amber, Rose, Purple) trong Dark Mode */
+html.dark-mode .bg-blue-50,
+html.dark-mode .bg-blue-50\/70,
+html.dark-mode .bg-blue-50\/50,
+html.dark-mode .bg-blue-50\/40,
+html.dark-mode .bg-blue-100 {
+  background-color: rgba(37, 99, 235, 0.24) !important;
+  border-color: rgba(96, 165, 250, 0.5) !important;
+  color: #dbeafe !important;
+}
+
+html.dark-mode .bg-indigo-50,
+html.dark-mode .bg-indigo-50\/50,
+html.dark-mode .bg-indigo-100 {
+  background-color: rgba(99, 102, 241, 0.25) !important;
+  border-color: rgba(129, 140, 248, 0.5) !important;
+  color: #e0e7ff !important;
+}
+
+html.dark-mode .bg-emerald-50,
+html.dark-mode .bg-emerald-50\/50,
+html.dark-mode .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.24) !important;
+  border-color: rgba(52, 211, 153, 0.5) !important;
+  color: #d1fae5 !important;
+}
+
+html.dark-mode .bg-amber-50,
+html.dark-mode .bg-amber-50\/80,
+html.dark-mode .bg-amber-50\/40,
+html.dark-mode .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.24) !important;
+  border-color: rgba(251, 191, 36, 0.5) !important;
+  color: #fef3c7 !important;
+}
+
+html.dark-mode .bg-rose-50,
+html.dark-mode .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.24) !important;
+  border-color: rgba(251, 113, 133, 0.5) !important;
+  color: #ffe4e6 !important;
+}
+
+html.dark-mode .bg-purple-50,
+html.dark-mode .bg-purple-50\/50,
+html.dark-mode .bg-purple-50\/40,
+html.dark-mode .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.24) !important;
+  border-color: rgba(192, 132, 252, 0.5) !important;
+  color: #f3e8ff !important;
+}
+
+/* Status Badges trong Dark Mode */
+html.dark-mode .badge-paid {
+  background-color: rgba(16, 185, 129, 0.28) !important;
+  color: #6ee7b7 !important;
+  border-color: #34d399 !important;
+}
+
+html.dark-mode .badge-pending {
+  background-color: rgba(245, 158, 11, 0.28) !important;
+  color: #fde68a !important;
+  border-color: #fbbf24 !important;
+}
+
+html.dark-mode .badge-unpaid {
+  background-color: rgba(244, 63, 94, 0.28) !important;
+  color: #fda4af !important;
+  border-color: #fb7185 !important;
+}
+
+/* Chữ trắng / sáng rõ cho toàn bộ Text màu tối trong Dark Mode */
 html.dark-mode .text-slate-900,
 html.dark-mode .text-slate-800 {
   color: #f8fafc !important;
@@ -280,10 +405,11 @@ html.dark-mode .text-slate-800 {
 
 html.dark-mode .text-slate-700,
 html.dark-mode .text-slate-600 {
-  color: #cbd5e1 !important;
+  color: #e2e8f0 !important;
 }
 
-html.dark-mode .text-slate-500 {
+html.dark-mode .text-slate-500,
+html.dark-mode .text-slate-400 {
   color: #94a3b8 !important;
 }
 
@@ -291,7 +417,61 @@ html.dark-mode .text-\[\#1f3d6e\] {
   color: #93c5fd !important;
 }
 
+html.dark-mode .text-blue-600,
+html.dark-mode .text-blue-700,
+html.dark-mode .text-blue-800,
+html.dark-mode .text-blue-900,
+html.dark-mode .text-blue-950 {
+  color: #60a5fa !important;
+}
+
+html.dark-mode .text-indigo-600,
+html.dark-mode .text-indigo-700,
+html.dark-mode .text-indigo-800,
+html.dark-mode .text-indigo-900 {
+  color: #a5b4fc !important;
+}
+
+html.dark-mode .text-emerald-600,
+html.dark-mode .text-emerald-700,
+html.dark-mode .text-emerald-800,
+html.dark-mode .text-emerald-900 {
+  color: #34d399 !important;
+}
+
+html.dark-mode .text-amber-500,
+html.dark-mode .text-amber-600,
+html.dark-mode .text-amber-700,
+html.dark-mode .text-amber-800,
+html.dark-mode .text-amber-900 {
+  color: #fbbf24 !important;
+}
+
+html.dark-mode .text-rose-600,
+html.dark-mode .text-rose-700,
+html.dark-mode .text-rose-800,
+html.dark-mode .text-rose-900 {
+  color: #fb7185 !important;
+}
+
+html.dark-mode .text-purple-600,
+html.dark-mode .text-purple-700,
+html.dark-mode .text-purple-800,
+html.dark-mode .text-purple-900 {
+  color: #c084fc !important;
+}
+
+/* Giữ chữ đậm trên các nút nền Vàng tươi (.bg-amber-300 / .bg-amber-400) */
+html.dark-mode .bg-amber-300,
+html.dark-mode .bg-amber-400 {
+  color: #0f172a !important;
+}
+
+/* Đường viền (Borders & Dividers) rõ nét trong Dark Mode */
+html.dark-mode .border-slate-100,
 html.dark-mode .border-slate-200,
+html.dark-mode .border-slate-200\/80,
+html.dark-mode .border-slate-200\/90,
 html.dark-mode .border-slate-300,
 html.dark-mode .border-slate-400,
 html.dark-mode .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
@@ -306,28 +486,35 @@ html.dark-mode .sheet-table td {
 
 html.dark-mode .session-state-0 {
   background-color: #111827;
-  color: #e2e8f0;
+  color: #f1f5f9;
 }
 
 html.dark-mode .session-state-0:hover {
   background-color: #1e293b;
 }
 
+/* Ô nhập liệu (Inputs, Selects, Textareas) nổi bật trong Dark Mode */
 html.dark-mode input:not([type="checkbox"]):not([type="color"]),
 html.dark-mode select,
 html.dark-mode textarea {
-  background-color: #0f172a;
-  color: #f8fafc;
-  border-color: #334155;
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 html.dark-mode .sheet-table select,
 html.dark-mode .sheet-table input[type="text"] {
-  background-color: transparent;
-  color: #f8fafc;
+  background-color: transparent !important;
+  color: #f8fafc !important;
 }
 
-html.dark-mode .sheet-table select option {
+html.dark-mode .sheet-table select option,
+html.dark-mode select option {
   background-color: #1e293b;
   color: #f8fafc;
 }
