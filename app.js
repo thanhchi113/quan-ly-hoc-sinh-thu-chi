@@ -82,15 +82,52 @@ const DRAFT_STUDENT_NAMES = new Set([
   'abcd'
 ]);
 
+function getDeletedClassesSet(stateObj) {
+  const set = new Set();
+  try {
+    const raw = stateObj?.settings?.deletedClassesJson;
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        arr.forEach(c => {
+          const clean = String(c || '').trim();
+          if (clean) set.add(clean);
+        });
+      }
+    }
+  } catch (e) {}
+  return set;
+}
+
+function markClassAsDeletedInState(className) {
+  const clean = String(className || '').trim();
+  if (!clean) return;
+  if (!appState.settings) appState.settings = {};
+  const set = getDeletedClassesSet(appState);
+  set.add(clean);
+  appState.settings.deletedClassesJson = JSON.stringify(Array.from(set));
+}
+
+function unmarkClassAsDeletedInState(className) {
+  const clean = String(className || '').trim();
+  if (!clean || !appState.settings?.deletedClassesJson) return;
+  const set = getDeletedClassesSet(appState);
+  if (set.has(clean)) {
+    set.delete(clean);
+    appState.settings.deletedClassesJson = JSON.stringify(Array.from(set));
+  }
+}
+
 function purgeDraftDataFromState(state) {
   if (!state) return state;
+  const userDeletedClasses = getDeletedClassesSet(state);
 
   if (Array.isArray(state.students)) {
     const filtered = state.students.filter(s => {
       if (!s) return false;
       const cls = String(s.className || '').trim();
       const nameLower = String(s.fullName || '').trim().toLowerCase();
-      if (DRAFT_CLASS_NAMES.has(cls)) return false;
+      if (DRAFT_CLASS_NAMES.has(cls) || userDeletedClasses.has(cls)) return false;
       if (DRAFT_STUDENT_IDS.has(String(s.id || ''))) return false;
       if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
       return true;
@@ -131,7 +168,7 @@ function purgeDraftDataFromState(state) {
       if (!r) return false;
       const cls = String(r.className || '').trim();
       const nameLower = String(r.studentName || '').trim().toLowerCase();
-      if (DRAFT_CLASS_NAMES.has(cls)) return false;
+      if (DRAFT_CLASS_NAMES.has(cls) || userDeletedClasses.has(cls)) return false;
       if (DRAFT_STUDENT_IDS.has(String(r.studentRecordId || ''))) return false;
       if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
       return true;
@@ -153,7 +190,8 @@ function purgeDraftDataFromState(state) {
       try {
         const map = JSON.parse(state.settings.classSchedulesJson) || {};
         Object.keys(map).forEach(cls => {
-          if (DRAFT_CLASS_NAMES.has(cls.trim())) {
+          const cleanCls = cls.trim();
+          if (DRAFT_CLASS_NAMES.has(cleanCls) || userDeletedClasses.has(cleanCls)) {
             delete map[cls];
           }
         });
@@ -3198,6 +3236,9 @@ function detectActionDescription(prevJson, nextJson) {
     const prevSt = prev.students || [];
     const nextSt = next.students || [];
 
+    if (prev.settings?.deletedClassesJson !== next.settings?.deletedClassesJson) {
+      return `Xóa lớp học (${prevSt.length} → ${nextSt.length} HS)`;
+    }
     if (nextSt.length > prevSt.length) {
       return `Thêm học sinh (${prevSt.length} → ${nextSt.length} HS)`;
     }
@@ -3445,13 +3486,13 @@ function switchAppMode(mode) {
   if (mode === 'parent') {
     parentView.classList.remove('hidden');
     adminView.classList.add('hidden');
-    btnParent.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-blue-600 shadow-xs';
-    btnAdmin.className = 'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900';
+    btnParent.className = 'mode-pill-active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer';
+    btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer';
   } else {
     parentView.classList.add('hidden');
     adminView.classList.remove('hidden');
-    btnAdmin.className = 'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-blue-600 shadow-xs';
-    btnParent.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-600 hover:text-slate-900';
+    btnAdmin.className = 'mode-pill-active relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer';
+    btnParent.className = 'mode-pill-inactive flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer';
 
     checkAdminAuthStatus();
   }
@@ -4291,6 +4332,10 @@ function renderDashboardCharts(totalIncome, totalExpense, paidCount, pendingCoun
   const pieCtx = document.getElementById('tuitionPieChart');
   if (!barCtx || !pieCtx) return;
 
+  const isDark = document.documentElement.classList.contains('dark-mode');
+  const tickColor = isDark ? '#cbd5e1' : '#475569';
+  const gridColor = isDark ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.22)';
+
   // Tính tổng thu học phí vs thu khác vs các khoản chi
   const tuitionIncome = (appState.transactions || [])
     .filter(t => t.type === 'Thu' && t.category === 'Thu học phí')
@@ -4318,9 +4363,15 @@ function renderDashboardCharts(totalIncome, totalExpense, paidCount, pendingCoun
         legend: { display: false }
       },
       scales: {
+        x: {
+          ticks: { color: tickColor, font: { weight: '600' } },
+          grid: { display: false }
+        },
         y: {
           beginAtZero: true,
+          grid: { color: gridColor },
           ticks: {
+            color: tickColor,
             callback: function (val) {
               return (val / 1000000).toFixed(1) + 'M';
             }
@@ -4340,7 +4391,7 @@ function renderDashboardCharts(totalIncome, totalExpense, paidCount, pendingCoun
           data: [paidCount, pendingCount, unpaidCount],
           backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
           borderWidth: 2,
-          borderColor: '#ffffff'
+          borderColor: isDark ? '#111827' : '#ffffff'
         }
       ]
     },
@@ -4349,7 +4400,11 @@ function renderDashboardCharts(totalIncome, totalExpense, paidCount, pendingCoun
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'bottom'
+          position: 'bottom',
+          labels: {
+            color: tickColor,
+            font: { weight: '600' }
+          }
         }
       }
     }
@@ -4383,7 +4438,13 @@ function populateStudentFilterDropdowns() {
   const currentClass = classSelect.value || 'ALL';
   const currentPeriod = periodSelect.value || 'ALL';
 
-  const rawClasses = Array.from(new Set((appState.students || []).map(s => s.className).filter(Boolean)));
+  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+  const rawClasses = Array.from(
+    new Set([
+      ...Object.keys(scheduleMap),
+      ...(appState.students || []).map(s => (s.className || '').trim()).filter(Boolean)
+    ])
+  );
   const classes = sortClassNamesStandard(rawClasses);
   const periods = Array.from(new Set((appState.students || []).map(s => s.period).filter(Boolean)));
 
@@ -4405,8 +4466,16 @@ function populateStudentFilterDropdowns() {
       })
       .join('');
 
-  if (classes.includes(currentClass)) classSelect.value = currentClass;
-  if (periods.includes(currentPeriod)) periodSelect.value = currentPeriod;
+  if (classes.includes(currentClass)) {
+    classSelect.value = currentClass;
+  } else {
+    classSelect.value = 'ALL';
+  }
+  if (periods.includes(currentPeriod)) {
+    periodSelect.value = currentPeriod;
+  } else {
+    periodSelect.value = 'ALL';
+  }
 }
 
 function extractMonthsAndYearsFromText(periodStr, startDateStr = '', endDateStr = '') {
@@ -5095,7 +5164,12 @@ function renderAdminStudents() {
 
   const activeClassesInList = new Set(list.map(s => s.className).filter(Boolean));
   const allClassNames = sortClassNamesStandard(
-    Array.from(new Set(allStudents.map(s => (s.className || '').trim()).filter(Boolean)))
+    Array.from(
+      new Set([
+        ...Object.keys(scheduleMap),
+        ...allStudents.map(s => (s.className || '').trim()).filter(Boolean)
+      ])
+    )
   );
   const paidRateText =
     list.length > 0 ? ((paidList.length / list.length) * 100).toFixed(1).replace('.', ',') + '%' : '0%';
@@ -5103,6 +5177,12 @@ function renderAdminStudents() {
   // Cập nhật tiêu đề Sổ Thống Kê, Thanh Sub-bar & 4 Ô KPI chuẩn mẫu Sổ Theo Dõi
   const currentClassFilter = document.getElementById('filter-student-class')?.value || 'ALL';
   const timeDesc = getActiveTimeFilterDescription();
+
+  const delClassBtnLabel = document.getElementById('btn-students-delete-class-label');
+  if (delClassBtnLabel) {
+    delClassBtnLabel.textContent =
+      currentClassFilter === 'ALL' ? '🗑️ Xóa Lớp' : `🗑️ Xóa Lớp "${currentClassFilter}"`;
+  }
 
   const sheetTitleEl = document.getElementById('stu-stat-sheet-title');
   if (sheetTitleEl) {
@@ -5291,26 +5371,41 @@ function renderAdminStudents() {
         const batchTag = cCfg.batchLabel || 'ĐỢT 1';
 
         return `
-          <button
-            type="button"
+          <div
+            role="button"
+            tabindex="0"
             onclick="quickFilterByClassInAllStudents('${escapeAttr(cls)}')"
             class="class-selector-item ${
               isSelected ? 'is-active' : ''
             } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
           >
-            <div class="flex items-center justify-between gap-2 w-full">
+            <div class="flex items-center justify-between gap-1.5 w-full">
               <span class="font-extrabold text-xs sm:text-sm truncate ${
                 isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
               }">
                 ${escapeHtml(mainTitle)}
               </span>
-              <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
-                isSelected
-                  ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
-                  : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
-              }">
-                ${count} HS
-              </span>
+              <div class="flex items-center gap-1 shrink-0">
+                <span class="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
+                    : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
+                }">
+                  ${count} HS
+                </span>
+                <button
+                  type="button"
+                  onclick="event.stopPropagation(); deleteClassByName('${escapeAttr(cls)}')"
+                  title="Xóa lớp ${escapeAttr(cls)}"
+                  class="class-card-del-btn p-1 rounded-lg ${
+                    isSelected
+                      ? 'text-white/80 hover:text-white hover:bg-rose-500/80'
+                      : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                  } transition cursor-pointer"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
             </div>
             <div class="flex items-center justify-between gap-2 w-full text-[11px]">
               <span class="truncate font-semibold ${isSelected ? 'text-blue-100' : 'text-slate-500'}">
@@ -5326,7 +5421,7 @@ function renderAdminStudents() {
                 ✓ ${paidCnt}/${count} đóng
               </span>
             </div>
-          </button>
+          </div>
         `;
       })
       .join('');
@@ -5428,10 +5523,10 @@ function renderAdminStudents() {
       const isPending = s.status === 'Chờ duyệt';
       const stats = studentStatsCache.get(s.id) || getStudentStatistics(s);
       const statusCellClass = isPaid
-        ? 'bg-emerald-100 text-emerald-800 font-bold'
+        ? 'status-cell-paid'
         : isPending
-        ? 'bg-amber-100 text-amber-800 font-bold'
-        : 'bg-rose-50 text-rose-700 font-semibold';
+        ? 'status-cell-pending'
+        : 'status-cell-unpaid';
 
       return `
         <tr class="hover:bg-slate-50 transition">
@@ -5442,15 +5537,24 @@ function renderAdminStudents() {
             ${escapeHtml(s.studentCode)}
           </td>
           <td class="py-2 px-3">
-            <button
-              type="button"
-              onclick="openStudentDetailModal('${s.id}')"
-              class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-              title="Bấm để xem Hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
-            >
-              <span>${escapeHtml(s.fullName)}</span>
-              <span class="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">Chi tiết</span>
-            </button>
+            <div class="w-full flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onclick="openStudentDetailModal('${s.id}')"
+                class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer truncate"
+                title="Bấm để xem Hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
+              >
+                ${escapeHtml(s.fullName)}
+              </button>
+              <button
+                type="button"
+                onclick="openStudentDetailModal('${s.id}')"
+                title="Xem hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
+                class="stu-detail-inline-btn shrink-0 ml-auto px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-extrabold border border-blue-200 transition cursor-pointer whitespace-nowrap"
+              >
+                Chi tiết
+              </button>
+            </div>
             ${
               s.parentPhone && s.parentPhone !== '1234567890'
                 ? `<div class="text-[11px] text-slate-500 font-mono mt-0.5">SĐT: ${escapeHtml(s.parentPhone)}</div>`
@@ -5505,7 +5609,7 @@ function renderAdminStudents() {
           <td class="py-2 px-2 text-center whitespace-nowrap ${statusCellClass}">
             <select
               onchange="quickChangeStudentStatus('${s.id}', this.value)"
-              class="bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
+              class="status-select bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
             >
               <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã hoàn thành</option>
               <option value="Chờ duyệt" ${isPending ? 'selected' : ''}>Chờ duyệt</option>
@@ -5674,6 +5778,8 @@ function saveStudentForm(event) {
   const note = document.getElementById('stu-form-note').value.trim();
   const startDateIso = (document.getElementById('stu-form-start-date')?.value || '').trim();
   const nowStr = getCurrentDateTimeString();
+
+  unmarkClassAsDeletedInState(className);
 
   if (id) {
     const idx = appState.students.findIndex(s => s.id === id);
@@ -6652,6 +6758,7 @@ function getDefaultClassScheduleConfig(className) {
 
 function getClassSchedulesMap() {
   let map = {};
+  const userDeleted = getDeletedClassesSet(appState);
   try {
     if (appState.settings && appState.settings.classSchedulesJson) {
       map = JSON.parse(appState.settings.classSchedulesJson) || {};
@@ -6660,9 +6767,19 @@ function getClassSchedulesMap() {
     map = {};
   }
 
+  Object.keys(map).forEach(cls => {
+    if (userDeleted.has(cls.trim())) {
+      delete map[cls];
+    }
+  });
+
   // Đảm bảo mọi lớp đang có trong danh sách học sinh đều có cấu hình lịch
   const studentClasses = Array.from(
-    new Set((appState.students || []).map(s => (s.className || '').trim()).filter(Boolean))
+    new Set(
+      (appState.students || [])
+        .map(s => (s.className || '').trim())
+        .filter(cls => cls && !userDeleted.has(cls))
+    )
   );
 
   // Nếu chưa có lớp nào, tạo sẵn lớp mẫu '12 2K8'
@@ -6818,26 +6935,41 @@ function renderAdminClassbook() {
       const batchTag = cCfg.batchLabel || 'ĐỢT 1';
 
       return `
-        <button
-          type="button"
+        <div
+          role="button"
+          tabindex="0"
           onclick="selectClassbookClass('${escapeAttr(cls)}')"
           class="class-selector-item ${
             isSelected ? 'is-active' : ''
           } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
         >
-          <div class="flex items-center justify-between gap-2 w-full">
+          <div class="flex items-center justify-between gap-1.5 w-full">
             <span class="font-extrabold text-xs sm:text-sm truncate ${
               isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
             }">
               ${escapeHtml(mainTitle)}
             </span>
-            <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
-              isSelected
-                ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
-                : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
-            }">
-              ${count} HS
-            </span>
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${
+                isSelected
+                  ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
+                  : 'bg-blue-50 text-blue-700 font-extrabold border border-blue-200'
+              }">
+                ${count} HS
+              </span>
+              <button
+                type="button"
+                onclick="event.stopPropagation(); deleteClassByName('${escapeAttr(cls)}')"
+                title="Xóa lớp ${escapeAttr(cls)}"
+                class="class-card-del-btn p-1 rounded-lg ${
+                  isSelected
+                    ? 'text-white/80 hover:text-white hover:bg-rose-500/80'
+                    : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                } transition cursor-pointer"
+              >
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
           </div>
           <div class="flex items-center justify-between gap-2 w-full text-[11px]">
             <span class="truncate font-semibold ${
@@ -6855,7 +6987,7 @@ function renderAdminClassbook() {
               ✓ ${paidCnt}/${count} đóng
             </span>
           </div>
-        </button>
+        </div>
       `;
     })
     .join('');
@@ -6924,24 +7056,33 @@ function renderAdminClassbook() {
         const isPending = s.status === 'Chờ duyệt';
         const stats = getStudentStatistics(s);
         const statusCellClass = isPaid
-          ? 'bg-emerald-100 text-emerald-800 font-bold'
+          ? 'status-cell-paid'
           : isPending
-          ? 'bg-amber-100 text-amber-800 font-bold'
-          : 'bg-rose-50 text-rose-700 font-semibold';
+          ? 'status-cell-pending'
+          : 'status-cell-unpaid';
 
         return `
           <tr class="hover:bg-slate-50 transition">
             <td class="py-2 px-2 text-center font-semibold text-slate-600">${idx + 1}</td>
             <td class="py-2 px-3">
-              <button
-                type="button"
-                onclick="openStudentDetailModal('${s.id}')"
-                title="Bấm để xem thông tin chi tiết của học sinh ${escapeAttr(s.fullName)}"
-                class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer flex items-center gap-1"
-              >
-                <span>${escapeHtml(s.fullName)}</span>
-                <span class="px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">Chi tiết</span>
-              </button>
+              <div class="w-full flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onclick="openStudentDetailModal('${s.id}')"
+                  title="Bấm để xem thông tin chi tiết của học sinh ${escapeAttr(s.fullName)}"
+                  class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer truncate"
+                >
+                  ${escapeHtml(s.fullName)}
+                </button>
+                <button
+                  type="button"
+                  onclick="openStudentDetailModal('${s.id}')"
+                  title="Xem hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
+                  class="stu-detail-inline-btn shrink-0 ml-auto px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-extrabold border border-blue-200 transition cursor-pointer whitespace-nowrap"
+                >
+                  Chi tiết
+                </button>
+              </div>
               <div class="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
                 <span class="font-mono text-slate-400">${escapeHtml(s.studentCode)}</span>
                 <span>• Học từ: <strong class="text-slate-700">${escapeHtml(stats.startDateVN)}</strong></span>
@@ -6972,7 +7113,7 @@ function renderAdminClassbook() {
             <td class="py-2 px-2 text-center ${statusCellClass}">
               <select
                 onchange="quickChangeStudentStatus('${s.id}', this.value)"
-                class="bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
+                class="status-select bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
               >
                 <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã hoàn thành</option>
                 <option value="Chờ duyệt" ${isPending ? 'selected' : ''}>Chờ duyệt</option>
@@ -7116,6 +7257,7 @@ async function quickAddStudentInClassbook(event) {
 
   const map = getClassSchedulesMap();
   const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  unmarkClassAsDeletedInState(targetClass);
   const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
   const period = cfg.periodLabel || appState.settings?.defaultPeriod || 'Tháng 10-11/2026';
   const nowStr = getCurrentDateTimeString();
@@ -7417,11 +7559,13 @@ function saveClassScheduleForm(event) {
     return;
   }
 
+  unmarkClassAsDeletedInState(className);
   const map = getClassSchedulesMap();
   const existingStates = (!isNew && oldName && map[oldName]?.sessionStates) ? map[oldName].sessionStates : {};
 
   if (!isNew && oldName && oldName !== className) {
     delete map[oldName];
+    markClassAsDeletedInState(oldName);
     // Đổi tên lớp cho các học sinh thuộc lớp cũ
     (appState.students || []).forEach(s => {
       if (s.className === oldName) {
@@ -7447,14 +7591,145 @@ function saveClassScheduleForm(event) {
   saveClassSchedulesMap(map, `Đã cập nhật lịch học lớp "${className}"!`);
 }
 
-function deleteCurrentClassSchedule() {
-  if (!selectedClassbookClass) return;
-  if (!confirm(`Bạn có chắc muốn xóa cấu hình lịch của lớp "${selectedClassbookClass}"?`)) return;
-  const map = getClassSchedulesMap();
-  delete map[selectedClassbookClass];
-  selectedClassbookClass = Object.keys(map)[0] || '';
+async function deleteClassByName(className) {
+  const cleanTarget = String(className || '').trim();
+  if (!cleanTarget || cleanTarget === 'ALL') {
+    openDeleteClassPickerModal();
+    return;
+  }
+
+  const stuInClass = (appState.students || []).filter(
+    s => String(s.className || '').trim() === cleanTarget
+  );
+  const stuCount = stuInClass.length;
+  const confirmMsg =
+    stuCount > 0
+      ? `⚠️ Bạn có chắc chắn muốn XÓA LỚP "${cleanTarget}" (cùng ${stuCount} học sinh trong lớp này) khỏi hệ thống?\n\n💡 Bạn vẫn có thể bấm nút "↩️ Quay lại thao tác" (Ctrl + Z) nếu muốn khôi phục lại.`
+      : `⚠️ Bạn có chắc chắn muốn XÓA LỚP "${cleanTarget}" khỏi hệ thống?\n\n💡 Bạn vẫn có thể bấm nút "↩️ Quay lại thao tác" (Ctrl + Z) nếu muốn khôi phục lại.`;
+
+  if (!confirm(confirmMsg)) return;
+
+  // 1. Xóa toàn bộ học sinh thuộc lớp này khỏi appState.students
+  appState.students = (appState.students || []).filter(
+    s => String(s.className || '').trim() !== cleanTarget
+  );
+
+  // 2. Đánh dấu lớp đã xóa trong settings để không bị tái tạo khi đồng bộ ngầm
+  markClassAsDeletedInState(cleanTarget);
+
+  // 3. Xóa cấu hình lịch của lớp trong classSchedulesJson
+  let map = {};
+  try {
+    if (appState.settings && appState.settings.classSchedulesJson) {
+      map = JSON.parse(appState.settings.classSchedulesJson) || {};
+    }
+  } catch (e) {
+    map = {};
+  }
+  delete map[cleanTarget];
+  if (!appState.settings) appState.settings = {};
+  appState.settings.classSchedulesJson = JSON.stringify(map);
+
+  // 4. Cập nhật lại lớp đang chọn ở Sổ Theo Dõi và Bộ lọc ở Thống Kê Tất Cả Học Sinh
+  const remainingClasses = sortClassNamesStandard(
+    Array.from(
+      new Set([
+        ...Object.keys(map),
+        ...(appState.students || []).map(s => String(s.className || '').trim()).filter(Boolean)
+      ])
+    )
+  );
+  if (selectedClassbookClass === cleanTarget) {
+    selectedClassbookClass = remainingClasses[0] || '';
+  }
+  const classFilterEl = document.getElementById('filter-student-class');
+  if (classFilterEl && classFilterEl.value === cleanTarget) {
+    classFilterEl.value = 'ALL';
+  }
+
   closeClassScheduleModal();
-  saveClassSchedulesMap(map, 'Đã xóa lịch lớp học.');
+  closeDeleteClassPickerModal();
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(
+    `🗑️ Đã xóa lớp "${cleanTarget}"${stuCount > 0 ? ` (${stuCount} HS)` : ''} khỏi hệ thống!`
+  );
+}
+
+function deleteCurrentClassSchedule() {
+  if (!selectedClassbookClass) {
+    openDeleteClassPickerModal();
+    return;
+  }
+  deleteClassByName(selectedClassbookClass);
+}
+
+function handleDeleteClassInAllStudents() {
+  const currentClass = document.getElementById('filter-student-class')?.value || 'ALL';
+  if (currentClass && currentClass !== 'ALL') {
+    deleteClassByName(currentClass);
+  } else {
+    openDeleteClassPickerModal();
+  }
+}
+
+function openDeleteClassPickerModal() {
+  const modal = document.getElementById('delete-class-picker-modal');
+  const listEl = document.getElementById('delete-class-picker-list');
+  if (!modal || !listEl) return;
+
+  const scheduleMap = getClassSchedulesMap();
+  const allStudents = appState.students || [];
+  const classNames = sortClassNamesStandard(
+    Array.from(
+      new Set([
+        ...Object.keys(scheduleMap),
+        ...allStudents.map(s => (s.className || '').trim()).filter(Boolean)
+      ])
+    )
+  );
+
+  if (classNames.length === 0) {
+    listEl.innerHTML = `
+      <div class="col-span-full py-8 text-center text-slate-400 text-xs sm:text-sm">
+        Hiện không còn lớp học nào trong hệ thống.
+      </div>
+    `;
+  } else {
+    listEl.innerHTML = classNames
+      .map(cls => {
+        const clsStudents = allStudents.filter(s => s.className === cls);
+        const count = clsStudents.length;
+        const paidCnt = clsStudents.filter(s => s.status === 'Đã hoàn thành').length;
+        const { mainTitle, subLabel } = parseClassDisplayTitle(cls);
+        return `
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(mainTitle)}</div>
+              <div class="text-[11px] text-slate-500 font-semibold truncate">
+                ${escapeHtml(subLabel)} • ${count} HS (✓ ${paidCnt} đóng)
+              </div>
+            </div>
+            <button
+              type="button"
+              onclick="deleteClassByName('${escapeAttr(cls)}')"
+              class="shrink-0 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+            >
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Xóa lớp</span>
+            </button>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  modal.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeDeleteClassPickerModal() {
+  const modal = document.getElementById('delete-class-picker-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 function openStudentModalForCurrentClass() {
@@ -7519,6 +7794,7 @@ function openRolloverBatchModal() {
 
   const map = getClassSchedulesMap();
   const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  unmarkClassAsDeletedInState(targetClass);
   const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
   const classStudents = (appState.students || []).filter(s => s.className === targetClass);
   const paidCount = classStudents.filter(s => s.status === 'Đã hoàn thành').length;
@@ -8662,6 +8938,9 @@ function setDarkMode(isDark, showMsg = true) {
   saveThemePreferences(prefs);
   updateDarkModeHeaderUI(prefs.darkMode);
   renderThemeCustomizerControls();
+  if (typeof renderAdminDashboard === 'function') {
+    renderAdminDashboard();
+  }
   if (showMsg) {
     showToast(
       prefs.darkMode ? '🌙 Đã bật Chế độ Tối (Dark Mode) dịu mắt!' : '☀️ Đã chuyển về Chế độ Sáng (Light Mode)!',
