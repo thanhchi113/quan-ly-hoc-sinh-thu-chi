@@ -16,29 +16,29 @@
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
   <!-- TOP NAVIGATION BAR (THANH CHÍ EDU — SOFT PREMIUM SAAS HEADER) -->
-  <header class="sticky top-0 z-40 glass-nav">
-    <div class="max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5">
+  <header class="sticky top-0 z-40 glass-nav w-full">
+    <div class="max-w-[1640px] w-full mx-auto px-3 sm:px-5 lg:px-6 min-h-16 py-1.5 flex items-center justify-between gap-2">
       <!-- Brand (Bấm để quay lại trang đầu) -->
       <div
         onclick="handleGoToHomePage()"
         title="Bấm để quay lại trang đầu — THANH CHÍ EDU"
-        class="flex items-center gap-3 min-w-0 cursor-pointer group shrink-0"
+        class="flex items-center gap-2.5 min-w-0 max-w-[220px] sm:max-w-[275px] 2xl:max-w-[340px] cursor-pointer group shrink"
       >
-        <div class="w-10 h-10 rounded-2xl theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
           <i data-lucide="graduation-cap" class="w-5 h-5"></i>
         </div>
-        <div class="truncate">
-          <div class="flex items-center gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 min-w-0">
             <span id="header-brand-badge" class="px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0">
               THANH CHÍ EDU
             </span>
-            <h1 id="header-center-name" class="font-extrabold text-[#25214C] group-hover:text-[#5B55FF] transition text-sm sm:text-base leading-tight truncate">
+            <h1 id="header-center-name" class="font-extrabold text-[#25214C] group-hover:text-[#5B55FF] transition text-xs sm:text-sm 2xl:text-base leading-tight truncate">
               LỚP TOÁN ANH CHÍ
             </h1>
           </div>
-          <div class="flex items-center gap-1.5 text-[11px] text-[#8986A6] mt-0.5">
-            <span class="hidden sm:inline font-semibold text-[#25214C]/75">Quản lý học sinh và tài chính</span>
-            <span class="hidden sm:inline text-slate-300">•</span>
+          <div class="flex items-center gap-1.5 text-[11px] text-[#8986A6] mt-0.5 min-w-0">
+            <span class="hidden 2xl:inline font-semibold text-[#25214C]/75 shrink-0">Quản lý HS &amp; Tài chính</span>
+            <span class="hidden 2xl:inline text-slate-300 shrink-0">•</span>
             <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0"></span>
             <span id="sync-status-text" class="truncate">Đã kết nối Google Sheet (2 chiều)</span>
           </div>
@@ -46,16 +46,16 @@
       </div>
 
       <!-- Global Search Field & Date Range Selector (Desktop SaaS Header) -->
-      <div class="hidden xl:flex items-center gap-2.5 flex-1 max-w-md mx-2">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 text-[#8986A6] absolute left-3.5 top-2.5 pointer-events-none"></i>
+      <div class="hidden xl:flex items-center gap-2 flex-1 min-w-[250px] max-w-md mx-1">
+        <div class="relative flex-1 min-w-[155px]">
+          <i data-lucide="search" class="w-4 h-4 text-[#8986A6] absolute left-3 top-2 pointer-events-none"></i>
           <input
             id="global-header-search"
             type="text"
             oninput="handleGlobalHeaderSearch(this.value, false)"
             onkeyup="if(event.key==='Enter') handleGlobalHeaderSearch(this.value, true)"
-            placeholder="Tìm nhanh học sinh, mã HS, lớp hoặc giao dịch..."
-            class="w-full pl-9 pr-3.5 py-1.5 rounded-full bg-[#FAFAFC] border border-[#EBECF3] text-xs font-semibold text-[#25214C] placeholder-[#8986A6] focus:outline-none focus:ring-2 focus:ring-[#5B55FF]/30 focus:border-[#5B55FF] transition shadow-2xs"
+            placeholder="Tìm nhanh học sinh, mã HS, lớp..."
+            class="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#FAFAFC] border border-[#EBECF3] text-xs font-semibold text-[#25214C] placeholder-[#8986A6] focus:outline-none focus:ring-2 focus:ring-[#5B55FF]/30 focus:border-[#5B55FF] transition shadow-2xs"
           />
         </div>
         <button
@@ -63,25 +63,25 @@
           id="header-date-range-pill"
           onclick="handleHeaderPeriodClick()"
           title="Kỳ thu học phí & Lịch dạy đang hoạt động"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAFAFC] hover:bg-[#F3F1FF] border border-[#EBECF3] text-xs font-bold text-[#25214C] transition cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#FAFAFC] hover:bg-[#F3F1FF] border border-[#EBECF3] text-xs font-bold text-[#25214C] transition cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
         >
-          <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-[#5B55FF]"></i>
+          <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-[#5B55FF] shrink-0"></i>
           <span id="header-active-period-text">Tháng 9-10/2026</span>
         </button>
       </div>
 
       <!-- Mode Switcher, Theme Customizer, Notifications, Avatar & Quick Sync -->
-      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
         <!-- Nút Quay lại Trang đầu -->
         <button
           id="btn-header-home"
           type="button"
           onclick="handleGoToHomePage()"
           title="Quay lại trang đầu & cuộn lên đỉnh trang"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white border border-[#E6E1FF] transition cursor-pointer whitespace-nowrap"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white border border-[#E6E1FF] transition cursor-pointer whitespace-nowrap"
         >
-          <i data-lucide="home" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Trang đầu</span>
+          <i data-lucide="home" class="w-3.5 h-3.5 shrink-0"></i>
+          <span class="hidden md:inline">Trang đầu</span>
         </button>
 
         <!-- Nút chuyển nhanh Sáng / Tối -->
@@ -90,12 +90,12 @@
           type="button"
           onclick="toggleDarkModeQuick()"
           title="Chuyển đổi nhanh Chế độ Sáng / Tối (Light / Dark Mode)"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#EFEFF7] text-[#25214C] border border-[#EBECF3] transition cursor-pointer"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#EFEFF7] text-[#25214C] border border-[#EBECF3] transition cursor-pointer whitespace-nowrap"
         >
-          <span id="darkmode-toggle-icon" class="inline-flex items-center">
+          <span id="darkmode-toggle-icon" class="inline-flex items-center shrink-0">
             <i data-lucide="moon" class="w-3.5 h-3.5 text-[#5B55FF]"></i>
           </span>
-          <span id="darkmode-toggle-label" class="hidden md:inline">Tối</span>
+          <span id="darkmode-toggle-label" class="hidden 2xl:inline">Tối</span>
         </button>
 
         <!-- Nút Cài Đặt Màu Sắc & Giao Diện Web -->
@@ -104,21 +104,22 @@
           type="button"
           onclick="openThemeCustomizerModal()"
           title="Tùy chỉnh màu sắc giao diện & chế độ Sáng / Tối"
-          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#F3F1FF] text-[#25214C] border border-[#EBECF3] transition cursor-pointer"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#F3F1FF] text-[#25214C] border border-[#EBECF3] transition cursor-pointer whitespace-nowrap"
         >
-          <i data-lucide="palette" class="w-3.5 h-3.5 text-[#7C6BFF]"></i>
-          <span class="hidden sm:inline">Màu sắc</span>
-          <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#5B55FF] border border-white shadow-2xs"></span>
+          <i data-lucide="palette" class="w-3.5 h-3.5 text-[#7C6BFF] shrink-0"></i>
+          <span class="hidden 2xl:inline">Màu sắc</span>
+          <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#5B55FF] border border-white shadow-2xs shrink-0"></span>
         </button>
 
         <button
           id="btn-quick-sync"
           onclick="syncFromGoogleSheet(true)"
           title="Lấy dữ liệu mới nhất từ Google Sheet về ứng dụng"
-          class="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+          class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer whitespace-nowrap"
         >
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="icon-quick-sync"></i>
-          <span>Đồng bộ Sheet</span>
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
+          <span class="hidden 2xl:inline">Đồng bộ Sheet</span>
+          <span class="inline 2xl:hidden">Đồng bộ</span>
         </button>
 
         <!-- Notification Bell Icon -->
@@ -133,21 +134,21 @@
         </button>
 
         <!-- Role Toggle Pill -->
-        <div class="role-switch-pill flex items-center">
+        <div class="role-switch-pill flex items-center shrink-0">
           <button
             id="btn-mode-parent"
             onclick="switchAppMode('parent')"
-            class="mode-pill-active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer"
+            class="mode-pill-active flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
           >
-            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+            <i data-lucide="users" class="w-3.5 h-3.5 shrink-0"></i>
             <span>Phụ huynh / HS</span>
           </button>
           <button
             id="btn-mode-admin"
             onclick="switchAppMode('admin')"
-            class="mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer"
+            class="mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
           >
-            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0"></i>
             <span>Quản lý</span>
             <span
               id="nav-pending-badge"
@@ -158,9 +159,9 @@
             id="btn-mode-sandbox"
             onclick="toggleSandboxDraftMode()"
             title="Mở Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử (Không dùng dữ liệu thật của bạn)"
-            class="mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer"
+            class="mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
           >
-            <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16]"></i>
+            <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16] shrink-0"></i>
             <span>Tab Nháp</span>
           </button>
         </div>
@@ -170,7 +171,7 @@
           onclick="switchAppMode('admin')"
           id="header-avatar-box"
           title="Quản trị viên — THANH CHÍ EDU"
-          class="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-[#5B55FF] via-[#7C6BFF] to-[#FF4B16] p-0.5 shadow-sm cursor-pointer shrink-0"
+          class="hidden sm:flex w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#5B55FF] via-[#7C6BFF] to-[#FF4B16] p-0.5 shadow-sm cursor-pointer shrink-0"
         >
           <div id="header-avatar-initials" class="w-full h-full rounded-full bg-white flex items-center justify-center text-[11px] font-black text-[#25214C]">
             TC
