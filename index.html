@@ -845,15 +845,23 @@
 
             <!-- Middle (5 cols): Latest Balance Fluctuation Notification -->
             <div id="sepay-last-alert-box" class="lg:col-span-5 bg-white/10 backdrop-blur-xs rounded-xl px-4 py-2.5 border border-white/15 min-w-0">
-              <div class="flex items-center justify-between gap-2 text-[11px] text-blue-100 font-semibold">
+              <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-blue-100 font-semibold">
                 <span class="flex items-center gap-1.5 truncate">
                   <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
                   <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
                   <span class="truncate">Biến động số dư gần nhất (SePay Webhook):</span>
                 </span>
-                <span id="sepay-last-alert-time" class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 font-mono text-[10px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
-                  Sẵn sàng 24/7
-                </span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span
+                    id="sepay-test-alert-badge"
+                    class="hidden px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-extrabold text-[10px] tracking-wide uppercase shadow-2xs"
+                  >
+                    🧪 TEST THỬ STK • KHÔNG CỘNG TIỀN
+                  </span>
+                  <span id="sepay-last-alert-time" class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 font-mono text-[10px] font-bold text-emerald-300 whitespace-nowrap">
+                    Sẵn sàng 24/7
+                  </span>
+                </div>
               </div>
               <p id="sepay-last-alert-text" class="text-xs sm:text-sm font-bold text-emerald-300 mt-1 truncate">
                 Đang chờ thông báo biến động số dư từ SePay.vn...
@@ -878,11 +886,21 @@
               <button
                 type="button"
                 onclick="testSepayDraftAccount5801434567()"
-                title="Bắn thử giao dịch SePay vào STK Nháp 5801434567 (BIDV)"
+                title="Bấm để Test thử hoạt động STK 5801434567 (Có đánh dấu Test thử STK & KHÔNG cộng tiền vào Web)"
                 class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
               >
-                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
-                <span>Test STK 5801434567</span>
+                <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i>
+                <span>🧪 Test Thử STK (0₫)</span>
+              </button>
+              <button
+                type="button"
+                id="btn-clear-sepay-test"
+                onclick="clearSimulatedBankTests()"
+                title="Xóa các đánh dấu & lịch sử bấm Test thử STK"
+                class="hidden px-2.5 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-600 text-white text-xs font-bold transition items-center gap-1 cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                <span>Xóa Test</span>
               </button>
               <button
                 type="button"
@@ -2984,15 +3002,20 @@
                 <!-- Test Auto-Bank Transfer Simulator -->
                 <div class="bg-white p-3 rounded-lg border border-emerald-200 space-y-2">
                   <div class="flex flex-wrap items-center justify-between gap-1.5">
-                    <span class="text-xs font-bold text-slate-800 block">
-                      ⚡ Chạy thử ngay: Giả lập SePay báo có tiền chuyển vào STK đang chọn
-                    </span>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="text-xs font-bold text-slate-800">
+                        ⚡ Chạy thử kiểm tra hoạt động STK:
+                      </span>
+                      <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-400 text-[10px] font-extrabold">
+                        🧪 Có đánh dấu "Test thử STK" • KHÔNG cộng tiền vào Web
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onclick="selectReceivingBankAccount('TEST_BIDV'); testSepayDraftAccount5801434567();"
                       class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer transition"
                     >
-                      🧪 Dùng STK Nháp 5801434567 BIDV &amp; Test Ngay
+                      🧪 Test Thử STK Nháp 5801434567 (0₫)
                     </button>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -3006,19 +3029,29 @@
                     <input
                       id="sim-bank-amount"
                       type="number"
-                      value="1500000"
-                      placeholder="Số tiền (VNĐ)"
-                      class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-emerald-700"
+                      value="600000"
+                      placeholder="Mức tiền mô phỏng (Không cộng vào số dư)"
+                      class="px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-amber-700"
                     />
                   </div>
-                  <button
-                    type="button"
-                    onclick="simulateIncomingBankTransfer()"
-                    class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                    <span>Test Nhận Tiền Chuyển Khoản Tự Động Ngay</span>
-                  </button>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onclick="simulateIncomingBankTransfer()"
+                      class="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                      <span>🧪 Bấm Test Thử Hoạt Động STK (Chỉ Gắn Nhãn Test • Không Cộng Tiền Vào Web)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="clearSimulatedBankTests()"
+                      class="py-2 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                      <span>Xóa lịch sử Test</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -4778,6 +4811,6 @@
   <div id="toast-container" class="fixed bottom-20 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261023_v4"></script>
+  <script src="app.js?v=20261023_v5"></script>
 </body>
 </html>
