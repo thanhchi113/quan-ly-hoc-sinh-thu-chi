@@ -154,6 +154,15 @@
               class="hidden ml-0.5 px-1.5 py-0.2 bg-[#FF4B16] text-white text-[10px] font-bold rounded-full"
             >0</span>
           </button>
+          <button
+            id="btn-mode-sandbox"
+            onclick="toggleSandboxDraftMode()"
+            title="Mở Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử (Không dùng dữ liệu thật của bạn)"
+            class="mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer"
+          >
+            <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16]"></i>
+            <span>Tab Nháp</span>
+          </button>
         </div>
 
         <!-- Circular Administrator Avatar -->
@@ -171,7 +180,72 @@
   </header>
 
   <!-- MAIN CONTENT AREA -->
-  <main class="flex-1 max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+  <main class="flex-1 max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+    <!-- =================================================================== -->
+    <!-- BANNER ĐIỀU KHIỂN TAB NHÁP / DÙNG THỬ CHO BẠN BÈ (SANDBOX MODE)     -->
+    <!-- =================================================================== -->
+    <div
+      id="sandbox-draft-banner"
+      class="hidden bento-card bento-glow-dual p-4 sm:px-6 sm:py-4 border-2 border-[#7C6BFF]/40 animate-fade-in"
+    >
+      <div class="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3.5">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#5B55FF] to-[#FF4B16] text-white flex items-center justify-center shadow-sm shrink-0">
+            <i data-lucide="flask-conical" class="w-5 h-5"></i>
+          </div>
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-[#FF4B16] text-white text-[10px] font-black uppercase tracking-wider">
+                TAB NHÁP • DÙNG THỬ CHO BẠN BÈ
+              </span>
+              <span class="px-2.5 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold">
+                Tách biệt 100% với dữ liệu thật &amp; Google Sheet
+              </span>
+            </div>
+            <h3 class="text-sm sm:text-base font-extrabold text-[#25214C]">
+              Đang sử dụng bộ dữ liệu mẫu: <span class="text-[#5B55FF]">TRUNG TÂM GIÁO DỤC ALPHA (36 Học sinh mẫu • 6 Lớp Khối 8–12)</span>
+            </h3>
+            <p class="text-xs text-[#8986A6]">
+              Bạn bè có thể thoải mái thêm/xóa lớp, tạo khối, tích điểm danh tô màu, chụp bảng buổi học, duyệt học phí và test số dư SePay mà <strong>không chạm vào dữ liệu thật của bạn</strong>. Hãy thử tra cứu mã <strong>NV001</strong>, <strong>NV002</strong> hoặc SĐT <strong>0901234501</strong>!
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onclick="copySandboxShareLink()"
+            class="px-3.5 py-2 rounded-full bg-gradient-to-r from-[#5B55FF] to-[#7C6BFF] hover:opacity-95 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition cursor-pointer whitespace-nowrap"
+            title="Copy đường link trực tiếp vào Tab Nháp để gửi qua Zalo / Messenger cho bạn bè dùng thử"
+          >
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            <span>Copy Link Gửi Bạn Bè</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="resetSandboxDraftData()"
+            class="px-3.5 py-2 rounded-full bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap"
+            title="Khôi phục lại 36 học sinh mẫu, 6 lớp mẫu và các giao dịch nháp về ban đầu"
+          >
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>Tạo Lại Dữ Liệu Nháp</span>
+          </button>
+
+          <button
+            type="button"
+            id="btn-exit-sandbox-mode"
+            onclick="exitSandboxDraftMode()"
+            class="px-3.5 py-2 rounded-full bg-white hover:bg-slate-100 text-[#25214C] border border-[#EBECF3] text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap"
+            title="Thoát khỏi Tab Nháp và quay về dữ liệu thật của bạn"
+          >
+            <i data-lucide="arrow-left-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Quay Về Dữ Liệu Thật</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- =================================================================== -->
     <!-- PHÂN HỆ 1: CỔNG PHỤ HUYNH & HỌC SINH (TRA CỨU & GỬI BIÊN LAI CK)    -->
@@ -450,6 +524,19 @@
                     <span class="tc-sidebar-label truncate">Cài đặt</span>
                   </span>
                 </button>
+
+                <button
+                  type="button"
+                  id="side-nav-sandbox"
+                  onclick="toggleSandboxDraftMode()"
+                  title="Chuyển sang Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử"
+                  class="tc-nav-item border border-dashed border-[#FF4B16]/40 bg-[#FFF3EE]/60"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="flask-conical" class="w-4 h-4 text-[#FF4B16] shrink-0"></i>
+                    <span id="side-nav-sandbox-label" class="tc-sidebar-label truncate text-[#FF4B16] font-extrabold">Tab Nháp (Dùng thử)</span>
+                  </span>
+                </button>
               </nav>
             </div>
 
@@ -617,6 +704,17 @@
                 >
                   <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#8986A6]"></i>
                   <span>Google Sheet &amp; Cài đặt QR</span>
+                </button>
+
+                <button
+                  type="button"
+                  onclick="toggleSandboxDraftMode()"
+                  id="tab-btn-sandbox"
+                  title="Chuyển sang Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử"
+                  class="flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs"
+                >
+                  <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                  <span id="tab-btn-sandbox-label">Tab Nháp (Dùng Thử Cho Bạn Bè)</span>
                 </button>
               </div>
             </div>
