@@ -10080,7 +10080,35 @@ function syncFloatingStickyTableHeader(forceRebuild = false) {
   }
 }
 
+function scrollToPageTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleGoToHomePage() {
+  if (currentMode === 'admin' && isAdminAuthenticated) {
+    if (currentAdminTab !== 'classbook') {
+      switchAdminTab('classbook');
+    }
+  } else {
+    switchAppMode('parent');
+  }
+  scrollToPageTop();
+}
+
+function updateScrollToTopButtonVisibility() {
+  const btn = document.getElementById('btn-scroll-to-top');
+  if (!btn) return;
+  if (window.scrollY > 220) {
+    btn.classList.remove('hidden');
+    btn.classList.add('inline-flex');
+  } else {
+    btn.classList.add('hidden');
+    btn.classList.remove('inline-flex');
+  }
+}
+
 function scheduleStickyHeaderSync(forceRebuild = false) {
+  updateScrollToTopButtonVisibility();
   if (forceRebuild) {
     syncFloatingStickyTableHeader(true);
     return;
@@ -10098,6 +10126,7 @@ function initStickyTableHeaderEngine() {
   document.querySelectorAll('.js-sticky-table-wrap').forEach(wrap => {
     wrap.addEventListener('scroll', () => scheduleStickyHeaderSync(false), { passive: true });
   });
+  updateScrollToTopButtonVisibility();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
