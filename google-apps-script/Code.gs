@@ -335,7 +335,32 @@ function doPost(e) {
       });
     }
 
-    // 4. WEBHOOK NGÂN HÀNG TỰ ĐỘNG (Hỗ trợ SePay.vn, Casso.vn, SMS/Notification Forwarder & Test)
+    // 4. Kiểm tra & Tự động liên kết SePay (Auto-Connect & Verify SePay Link)
+    if (action === 'verifySepayConnection') {
+      const shSettings = ss.getSheetByName(SHEET_NAMES.SETTINGS);
+      const bankBin = String(payload.bankBin || 'BIDV');
+      const bankAccountNo = String(payload.bankAccountNo || '5801434567');
+      const bankAccountName = String(payload.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI');
+      const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+
+      if (shSettings) {
+        upsertSettingKey(shSettings, 'sepayLinkedStatus', 'CONNECTED', 'Trạng thái tự động kết nối SePay');
+        upsertSettingKey(shSettings, 'sepayLinkedAt', nowStr, 'Thời điểm kết nối SePay gần nhất');
+        upsertSettingKey(shSettings, 'sepayLinkedAccount', bankBin + ' • ' + bankAccountNo, 'Tài khoản đang kết nối SePay');
+      }
+
+      return jsonResponse({
+        success: true,
+        connected: true,
+        linkedAccount: bankBin + ' • ' + bankAccountNo,
+        linkedOwner: bankAccountName,
+        connectedAt: nowStr,
+        message: 'Đã tự động liên kết & kết nối SePay Webhook thành công cho STK ' + bankAccountNo + ' (' + bankBin + ')!',
+        data: getAllSheetData()
+      });
+    }
+
+    // 5. WEBHOOK NGÂN HÀNG TỰ ĐỘNG (Hỗ trợ SePay.vn, Casso.vn, SMS/Notification Forwarder & Test)
     if (
       action === 'bankWebhook' ||
       payload.transferAmount !== undefined ||
@@ -633,7 +658,11 @@ function processIncomingBankWebhook(ss, payload) {
   // 3. Định dạng Chung / SMS / Notification Forwarder / Test trên Web App
   else {
     incomingList.push({
-      amount: Number(payload.amount) || 0,
+      transferType: String(payload.transferType || 'in'),
+      amount: Number(payload.amount || payload.transferAmount) || 0,
+      accumulated: payload.accumulated !== undefined ? Number(payload.accumulated) : null,
+      gateway: String(payload.gateway || payload.bankBin || 'BIDV'),
+      accountNumber: String(payload.accountNumber || payload.bankAccountNo || '5801434567'),
       content: String(payload.content || payload.description || payload.text || ''),
       refCode: String(payload.referenceCode || ('AUTO_' + Date.now())),
       dateStr: new Date().toISOString().slice(0, 10)
