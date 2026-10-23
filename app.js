@@ -5323,6 +5323,7 @@ function renderAdminStudents() {
         : allClassNames.filter(c => getGradeCategoryForClassName(c) === selectedAllStuGradeFilter);
 
     const allPaidCnt = allStudents.filter(s => s.status === 'Đã hoàn thành').length;
+    const allPaidPct = allStudents.length > 0 ? Math.round((allPaidCnt / allStudents.length) * 100) : 0;
     const isAllSelected = currentClassFilter === 'ALL';
 
     const allCardHtml = `
@@ -5354,8 +5355,11 @@ function renderAdminStudents() {
           <span class="shrink-0 font-bold whitespace-nowrap ${
             isAllSelected ? 'text-emerald-200' : 'text-emerald-600'
           }">
-            ✓ ${allPaidCnt}/${allStudents.length} đóng
+            ✓ ${allPaidCnt}/${allStudents.length} đóng (${allPaidPct}%)
           </span>
+        </div>
+        <div class="class-card-progress-track">
+          <div class="class-card-progress-fill" style="width: ${allPaidPct}%"></div>
         </div>
       </button>
     `;
@@ -5366,6 +5370,7 @@ function renderAdminStudents() {
         const clsStudents = allStudents.filter(s => s.className === cls);
         const count = clsStudents.length;
         const paidCnt = clsStudents.filter(s => s.status === 'Đã hoàn thành').length;
+        const paidPct = count > 0 ? Math.round((paidCnt / count) * 100) : 0;
         const cCfg = scheduleMap[cls] || {};
         const { mainTitle, subLabel } = parseClassDisplayTitle(cls);
         const batchTag = cCfg.batchLabel || 'ĐỢT 1';
@@ -5418,8 +5423,11 @@ function renderAdminStudents() {
                   ? 'text-emerald-600'
                   : 'text-slate-500'
               }">
-                ✓ ${paidCnt}/${count} đóng
+                ✓ ${paidCnt}/${count} đóng (${paidPct}%)
               </span>
+            </div>
+            <div class="class-card-progress-track">
+              <div class="class-card-progress-fill" style="width: ${paidPct}%"></div>
             </div>
           </div>
         `;
@@ -6923,13 +6931,14 @@ function renderAdminClassbook() {
       ? classNames
       : classNames.filter(c => getGradeCategoryForClassName(c) === selectedClassbookGradeFilter);
 
-  // 1. Render lưới thẻ chọn lớp cân đối (4 cột đều nhau, chuyên nghiệp)
+  // 1. Render lưới thẻ chọn lớp cân đối (4 cột đều nhau, chuyên nghiệp + thanh tiến độ)
   pillsContainer.innerHTML = visibleClasses
     .map(cls => {
       const isSelected = cls === selectedClassbookClass;
       const clsStudents = (appState.students || []).filter(s => s.className === cls);
       const count = clsStudents.length;
       const paidCnt = clsStudents.filter(s => s.status === 'Đã hoàn thành').length;
+      const paidPct = count > 0 ? Math.round((paidCnt / count) * 100) : 0;
       const cCfg = map[cls] || {};
       const { mainTitle, subLabel } = parseClassDisplayTitle(cls);
       const batchTag = cCfg.batchLabel || 'ĐỢT 1';
@@ -6984,8 +6993,11 @@ function renderAdminClassbook() {
                 ? 'text-emerald-600'
                 : 'text-slate-500'
             }">
-              ✓ ${paidCnt}/${count} đóng
+              ✓ ${paidCnt}/${count} đóng (${paidPct}%)
             </span>
+          </div>
+          <div class="class-card-progress-track">
+            <div class="class-card-progress-fill" style="width: ${paidPct}%"></div>
           </div>
         </div>
       `;
