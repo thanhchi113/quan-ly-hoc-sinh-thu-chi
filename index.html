@@ -480,6 +480,15 @@
           <div class="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
             <div class="flex flex-wrap items-center gap-2">
               <button
+                type="button"
+                onclick="openGradeManagerModal()"
+                title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý các Khối"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="layers" class="w-4 h-4"></i>
+                <span>+ Tạo Khối</span>
+              </button>
+              <button
                 onclick="openClassScheduleModal(true)"
                 class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
               >
@@ -1054,6 +1063,15 @@
                 >
                   <i data-lucide="undo-2" class="w-4 h-4"></i>
                   <span>↩️ Quay lại thao tác trước</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="openGradeManagerModal()"
+                  title="Tạo thêm Khối mới hoặc quản lý danh sách Khối lớp"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="layers" class="w-4 h-4"></i>
+                  <span>+ Tạo Khối</span>
                 </button>
                 <button
                   onclick="openStudentModal()"
@@ -2667,16 +2685,39 @@
         <input type="hidden" id="cs-form-is-new" value="false" />
         <input type="hidden" id="cs-form-old-name" value="" />
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Tên Lớp học *</label>
             <input
               id="cs-form-classname"
               type="text"
               required
-              placeholder="VD: 12 2K8"
+              placeholder="VD: 12 2K8 (Ca 1 - T2,4,6)"
               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold text-blue-900"
             />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-slate-700">Thuộc Khối lớp</label>
+              <button
+                type="button"
+                onclick="openGradeManagerModal()"
+                class="text-[11px] font-extrabold text-purple-700 hover:underline cursor-pointer"
+              >
+                + Tạo Khối mới
+              </button>
+            </div>
+            <select
+              id="cs-form-grade"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-white text-slate-800"
+            >
+              <option value="AUTO">Tự động nhận diện theo tên lớp</option>
+              <option value="12">Khối 12</option>
+              <option value="11">Khối 11</option>
+              <option value="10">Khối 10</option>
+              <option value="9">Khối 9</option>
+              <option value="6-8">Khối 6 - 8</option>
+            </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Môn học (Không bắt buộc)</label>
@@ -3179,6 +3220,113 @@
           class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-extrabold cursor-pointer transition"
         >
           Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 11: TẠO KHỐI MỚI & QUẢN LÝ DANH SÁCH KHỐI LỚP                   -->
+  <!-- ===================================================================== -->
+  <div
+    id="grade-manager-modal"
+    onclick="closeGradeManagerModal()"
+    class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-fade-in"
+    >
+      <div class="bg-gradient-to-r from-[#1e3a8a] via-indigo-800 to-purple-800 text-white px-6 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i data-lucide="layers" class="w-5 h-5 text-amber-300"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base sm:text-lg text-white">Tạo Khối Mới &amp; Quản Lý Khối Lớp</h3>
+            <p class="text-xs text-indigo-100">Thêm các Khối lớp (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) lên thanh chọn nhanh</p>
+          </div>
+        </div>
+        <button onclick="closeGradeManagerModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-5 max-h-[78vh] overflow-y-auto">
+        <!-- Form tạo Khối mới + nút bấm tạo nhanh -->
+        <form onsubmit="handleCreateCustomGrade(event)" class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="text-xs sm:text-sm font-extrabold text-indigo-950 flex items-center gap-1.5">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i>
+              <span>Nhập tên Khối mới cần tạo:</span>
+            </label>
+            <div class="flex flex-wrap items-center gap-1 text-[11px]">
+              <span class="text-slate-500 font-semibold">Tạo nhanh 1 chạm:</span>
+              <button type="button" onclick="quickAddPresetGrade('12', 'Khối 12')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 12</button>
+              <button type="button" onclick="quickAddPresetGrade('11', 'Khối 11')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 11</button>
+              <button type="button" onclick="quickAddPresetGrade('10', 'Khối 10')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 10</button>
+              <button type="button" onclick="quickAddPresetGrade('9', 'Khối 9')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 9</button>
+              <button type="button" onclick="quickAddPresetGrade('8', 'Khối 8')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 8</button>
+              <button type="button" onclick="quickAddPresetGrade('7', 'Khối 7')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 7</button>
+              <button type="button" onclick="quickAddPresetGrade('6', 'Khối 6')" class="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white font-bold text-slate-700 transition cursor-pointer">+ Khối 6</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+            <input
+              id="new-grade-label-input"
+              type="text"
+              required
+              placeholder="VD: Khối 8, Khối 7, Khối Luyện Thi ĐH, Khối Chuyên..."
+              class="sm:col-span-6 px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <input
+              id="new-grade-first-class-input"
+              type="text"
+              placeholder="Tên lớp đầu tiên (Không bắt buộc - VD: 8A1)"
+              class="sm:col-span-4 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              type="submit"
+              class="sm:col-span-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+            >
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Tạo Khối</span>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500">
+            💡 Sau khi tạo Khối, nút Khối đó sẽ xuất hiện ngay trên thanh lọc ở cả <strong>Sổ Theo Dõi Lớp Học</strong> và <strong>Thống Kê Tất Cả Học Sinh</strong>.
+          </p>
+        </form>
+
+        <!-- Danh sách các Khối đang có trên hệ thống -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-slate-600">
+              Danh sách các Khối hiện có trên hệ thống
+            </span>
+          </div>
+          <div id="grade-manager-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onclick="closeGradeManagerModal(); openClassScheduleModal(true);"
+          class="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-extrabold cursor-pointer transition flex items-center gap-1.5"
+        >
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>+ Tạo Lớp Mới thuộc Khối</span>
+        </button>
+        <button
+          type="button"
+          onclick="closeGradeManagerModal()"
+          class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-extrabold cursor-pointer transition"
+        >
+          Hoàn tất &amp; Đóng
         </button>
       </div>
     </div>
