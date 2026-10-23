@@ -59,7 +59,9 @@
           title="Chuyển đổi nhanh Chế độ Sáng / Tối (Light / Dark Mode)"
           class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
         >
-          <span id="darkmode-toggle-icon">🌙</span>
+          <span id="darkmode-toggle-icon" class="inline-flex items-center">
+            <i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-600"></i>
+          </span>
           <span id="darkmode-toggle-label" class="hidden md:inline">Tối</span>
         </button>
 
@@ -160,8 +162,9 @@
           </div>
 
           <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
-            <p class="text-xs text-blue-100/90">
-              💡 Nhập <strong>Tên học sinh</strong>, <strong>Mã HS</strong> hoặc <strong>SĐT phụ huynh</strong> để tra cứu, hoặc:
+            <p class="text-xs text-blue-100/90 inline-flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
+              <span>Nhập <strong>Tên học sinh</strong>, <strong>Mã HS</strong> hoặc <strong>SĐT phụ huynh</strong> để tra cứu, hoặc:</span>
             </p>
             <button
               type="button"
@@ -433,7 +436,8 @@
                 checked
                 class="w-3.5 h-3.5 rounded text-emerald-500"
               />
-              <span>🔔 Âm báo</span>
+              <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
+              <span>Âm báo</span>
             </label>
             <button
               type="button"
@@ -734,41 +738,46 @@
                     type="button"
                     id="brush-btn-cycle"
                     onclick="setCalendarBrush('cycle')"
-                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-slate-900 text-white border-slate-900"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-slate-900 text-white border-slate-900"
                   >
-                    🔄 Bấm đổi màu tuần tự
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    <span>Bấm đổi màu tuần tự</span>
                   </button>
                   <button
                     type="button"
                     id="brush-btn-1"
                     onclick="setCalendarBrush(1)"
-                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-emerald-500 text-white border-emerald-600 opacity-80 hover:opacity-100"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-emerald-500 text-white border-emerald-600 opacity-80 hover:opacity-100"
                   >
-                    ✓ Đã dạy (Màu Xanh lá)
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                    <span>Đã dạy (Màu Xanh lá)</span>
                   </button>
                   <button
                     type="button"
                     id="brush-btn-2"
                     onclick="setCalendarBrush(2)"
-                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-amber-500 text-white border-amber-600 opacity-80 hover:opacity-100"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-amber-500 text-white border-amber-600 opacity-80 hover:opacity-100"
                   >
-                    ★ Đã xác nhận (Màu Cam)
+                    <i data-lucide="star" class="w-3.5 h-3.5"></i>
+                    <span>Đã xác nhận (Màu Cam)</span>
                   </button>
                   <button
                     type="button"
                     id="brush-btn-3"
                     onclick="setCalendarBrush(3)"
-                    class="px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-rose-200 text-rose-900 border-rose-300 opacity-80 hover:opacity-100"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold transition cursor-pointer bg-rose-200 text-rose-900 border-rose-300 opacity-80 hover:opacity-100"
                   >
-                    ✕ Nghỉ / Bù (Màu Đỏ)
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                    <span>Nghỉ / Bù (Màu Đỏ)</span>
                   </button>
                   <button
                     type="button"
                     id="brush-btn-0"
                     onclick="setCalendarBrush(0)"
-                    class="px-2.5 py-1 rounded-lg border text-xs font-semibold transition cursor-pointer bg-white text-slate-700 border-slate-300 opacity-80 hover:opacity-100"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition cursor-pointer bg-white text-slate-700 border-slate-300 opacity-80 hover:opacity-100"
                   >
-                    ⬜ Xóa màu
+                    <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                    <span>Xóa màu</span>
                   </button>
                 </div>
               </div>
@@ -885,7 +894,7 @@
                     class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-sm sm:text-base font-extrabold shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-center gap-2.5 whitespace-nowrap"
                   >
                     <i data-lucide="camera" class="w-5 h-5 text-amber-300 shrink-0"></i>
-                    <span>📸 Chụp hình Số buổi học (Chỉ việc dán)</span>
+                    <span>Chụp hình Số buổi học (Chỉ việc dán)</span>
                   </button>
 
                   <div id="cb-schedule-capture-card" class="modern-sheet-card bg-white">
@@ -1187,41 +1196,46 @@
                     type="button"
                     id="stu-mode-btn-ALL"
                     onclick="setStuStatTimeMode('ALL')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-blue-600 text-white border-blue-600 shadow-2xs whitespace-nowrap"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-blue-600 text-white border-blue-600 shadow-2xs whitespace-nowrap"
                   >
-                    🌐 Tất cả thời gian
+                    <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                    <span>Tất cả thời gian</span>
                   </button>
                   <button
                     type="button"
                     id="stu-mode-btn-MONTH"
                     onclick="setStuStatTimeMode('MONTH')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
                   >
-                    🗓️ Theo Tháng
+                    <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                    <span>Theo Tháng</span>
                   </button>
                   <button
                     type="button"
                     id="stu-mode-btn-YEAR"
                     onclick="setStuStatTimeMode('YEAR')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
                   >
-                    📊 Theo Năm
+                    <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+                    <span>Theo Năm</span>
                   </button>
                   <button
                     type="button"
                     id="stu-mode-btn-DAY"
                     onclick="setStuStatTimeMode('DAY')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
                   >
-                    📅 Theo Ngày
+                    <i data-lucide="calendar-check-2" class="w-3.5 h-3.5"></i>
+                    <span>Theo Ngày</span>
                   </button>
                   <button
                     type="button"
                     id="stu-mode-btn-RANGE"
                     onclick="setStuStatTimeMode('RANGE')"
-                    class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap"
                   >
-                    ⏳ Từ Ngày → Đến Ngày
+                    <i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>
+                    <span>Từ Ngày → Đến Ngày</span>
                   </button>
                 </div>
               </div>
@@ -3168,7 +3182,7 @@
               class="p-3.5 rounded-2xl border-2 flex items-center gap-3 text-left transition cursor-pointer"
             >
               <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
-                ☀️
+                <i data-lucide="sun" class="w-5 h-5"></i>
               </div>
               <div>
                 <div class="font-extrabold text-sm text-slate-900">Chế độ Sáng</div>
@@ -3183,7 +3197,7 @@
               class="p-3.5 rounded-2xl border-2 flex items-center gap-3 text-left transition cursor-pointer"
             >
               <div class="w-10 h-10 rounded-xl bg-slate-800 text-amber-300 flex items-center justify-center text-lg shrink-0">
-                🌙
+                <i data-lucide="moon" class="w-5 h-5"></i>
               </div>
               <div>
                 <div class="font-extrabold text-sm text-slate-900">Chế độ Tối</div>
@@ -3280,7 +3294,10 @@
       </div>
 
       <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
-        <span class="text-xs text-slate-500 font-medium">💡 Mẹo: Bạn cũng có thể bấm biểu tượng 🗑️ ngay trên từng thẻ lớp.</span>
+        <span class="text-xs text-slate-500 font-medium inline-flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i>
+          <span>Mẹo: Bạn cũng có thể bấm biểu tượng thùng rác ngay trên từng thẻ lớp.</span>
+        </span>
         <button
           type="button"
           onclick="closeDeleteClassPickerModal()"
@@ -3311,7 +3328,7 @@
           </div>
           <div>
             <h3 class="font-extrabold text-base sm:text-lg text-white">Tạo Khối Mới &amp; Xóa / Quản Lý Khối Lớp</h3>
-            <p class="text-xs text-indigo-100">Thêm Khối mới hoặc bấm "🗑️ Xóa Khối" để xóa bất kỳ Khối nào khỏi hệ thống</p>
+            <p class="text-xs text-indigo-100">Thêm Khối mới hoặc bấm "Xóa Khối" để xóa bất kỳ Khối nào khỏi hệ thống</p>
           </div>
         </div>
         <button onclick="closeGradeManagerModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
@@ -3361,8 +3378,9 @@
               <span>Tạo Khối</span>
             </button>
           </div>
-          <p class="text-[11px] text-slate-500">
-            💡 Sau khi tạo Khối, nút Khối đó sẽ xuất hiện ngay trên thanh lọc ở cả <strong>Sổ Theo Dõi Lớp Học</strong> và <strong>Thống Kê Tất Cả Học Sinh</strong>.
+          <p class="text-[11px] text-slate-500 inline-flex items-center gap-1.5">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+            <span>Sau khi tạo Khối, nút Khối đó sẽ xuất hiện ngay trên thanh lọc ở cả <strong>Sổ Theo Dõi Lớp Học</strong> và <strong>Thống Kê Tất Cả Học Sinh</strong>.</span>
           </p>
         </form>
 
