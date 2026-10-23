@@ -5260,30 +5260,56 @@ function renderAdminStudents() {
   if (sumCollectedEl) sumCollectedEl.textContent = formatCurrency(paidSum);
   if (sumMissingEl) sumMissingEl.textContent = formatCurrency(unpaidSum);
 
-  // 2. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối" (giống hệt Sổ Theo Dõi)
+  // 2. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối" & "Xóa Khối" (giống hệt Sổ Theo Dõi)
   const gradeFiltersEl = document.getElementById('all-stu-grade-filters');
   if (gradeFiltersEl) {
     const gradeGroups = getAllGradeGroupsForDisplay(allClassNames, allStudents);
+    const activeGradeLabel =
+      selectedAllStuGradeFilter && selectedAllStuGradeFilter !== 'ALL'
+        ? getGradeLabelByKey(selectedAllStuGradeFilter)
+        : '';
+
+    const topDelBtnLabel = document.getElementById('btn-students-delete-grade-label');
+    if (topDelBtnLabel) {
+      topDelBtnLabel.textContent = activeGradeLabel ? `Xóa ${activeGradeLabel}` : 'Xóa Khối';
+    }
 
     gradeFiltersEl.innerHTML =
       gradeGroups
         .map(g => {
           const active = selectedAllStuGradeFilter === g.key;
+          const canDelete = g.key !== 'ALL';
           return `
-            <button
-              type="button"
-              onclick="setAllStuGradeFilter('${escapeAttr(g.key)}')"
-              class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
-                active
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-              }"
-            >
-              <span>${escapeHtml(g.label)}</span>
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-              }">${g.stuCount} HS</span>
-            </button>
+            <div class="inline-flex items-center rounded-lg border transition whitespace-nowrap overflow-hidden ${
+              active
+                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+            }">
+              <button
+                type="button"
+                onclick="setAllStuGradeFilter('${escapeAttr(g.key)}')"
+                class="px-2.5 py-1 text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
+              >
+                <span>${escapeHtml(g.label)}</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+                  active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                }">${g.stuCount} HS</span>
+              </button>
+              ${
+                canDelete
+                  ? `<button
+                      type="button"
+                      onclick="event.stopPropagation(); deleteGradeByKey('${escapeAttr(g.key)}')"
+                      title="Xóa ${escapeAttr(g.label)}"
+                      class="pr-2 pl-1 py-1 text-[11px] font-black transition cursor-pointer ${
+                        active
+                          ? 'text-white/80 hover:text-white hover:bg-rose-500/40'
+                          : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                      }"
+                    >✕</button>`
+                  : ''
+              }
+            </div>
           `;
         })
         .join('') +
@@ -5296,6 +5322,15 @@ function renderAdminStudents() {
         >
           <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
           <span>+ Tạo Khối</span>
+        </button>
+        <button
+          type="button"
+          onclick="handleToolbarDeleteGrade('students')"
+          title="${activeGradeLabel ? `Xóa ${escapeAttr(activeGradeLabel)} đang chọn` : 'Chọn hoặc mở hộp thoại để Xóa Khối'}"
+          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-rose-400 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white whitespace-nowrap shadow-2xs"
+        >
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>${activeGradeLabel ? `Xóa ${escapeHtml(activeGradeLabel)}` : 'Xóa Khối'}</span>
         </button>
       `;
   }
@@ -6370,10 +6405,21 @@ function mergeServerData(serverData) {
   const paymentRequests = Array.isArray(serverData.paymentRequests)
     ? serverData.paymentRequests.map(rq => ({ ...rq, period: normalizePeriodValue(rq.period) }))
     : appState.paymentRequests;
+  const serverSettings = serverData.settings || {};
   const mergedSettings = {
     ...appState.settings,
-    ...(serverData.settings || {})
+    ...serverSettings
   };
+  // Bảo toàn danh sách Khối và Lớp đã xóa/tùy chỉnh nếu trên Server chưa kịp cập nhật
+  if (!serverSettings.deletedClassesJson && appState.settings?.deletedClassesJson) {
+    mergedSettings.deletedClassesJson = appState.settings.deletedClassesJson;
+  }
+  if (!serverSettings.deletedGradesJson && appState.settings?.deletedGradesJson) {
+    mergedSettings.deletedGradesJson = appState.settings.deletedGradesJson;
+  }
+  if (!serverSettings.customGradesJson && appState.settings?.customGradesJson) {
+    mergedSettings.customGradesJson = appState.settings.customGradesJson;
+  }
   mergedSettings.defaultPeriod = normalizePeriodValue(mergedSettings.defaultPeriod);
 
   return purgeDraftDataFromState({
@@ -7038,30 +7084,56 @@ function renderAdminClassbook() {
     selectedClassbookClass = classNames[0] || '12 2K9 (Ca 1 - T3,5,7)';
   }
 
-  // 0. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối"
+  // 0. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối" & "Xóa Khối"
   const gradeFiltersEl = document.getElementById('classbook-grade-filters');
   if (gradeFiltersEl) {
     const gradeGroups = getAllGradeGroupsForDisplay(classNames, appState.students || []);
+    const activeGradeLabel =
+      selectedClassbookGradeFilter && selectedClassbookGradeFilter !== 'ALL'
+        ? getGradeLabelByKey(selectedClassbookGradeFilter)
+        : '';
+
+    const topDelBtnLabel = document.getElementById('btn-classbook-delete-grade-label');
+    if (topDelBtnLabel) {
+      topDelBtnLabel.textContent = activeGradeLabel ? `Xóa ${activeGradeLabel}` : 'Xóa Khối';
+    }
 
     gradeFiltersEl.innerHTML =
       gradeGroups
         .map(g => {
           const active = selectedClassbookGradeFilter === g.key;
+          const canDelete = g.key !== 'ALL';
           return `
-            <button
-              type="button"
-              onclick="setClassbookGradeFilter('${escapeAttr(g.key)}')"
-              class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
-                active
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-              }"
-            >
-              <span>${escapeHtml(g.label)}</span>
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-              }">${g.count}</span>
-            </button>
+            <div class="inline-flex items-center rounded-lg border transition whitespace-nowrap overflow-hidden ${
+              active
+                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+            }">
+              <button
+                type="button"
+                onclick="setClassbookGradeFilter('${escapeAttr(g.key)}')"
+                class="px-2.5 py-1 text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
+              >
+                <span>${escapeHtml(g.label)}</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+                  active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                }">${g.count}</span>
+              </button>
+              ${
+                canDelete
+                  ? `<button
+                      type="button"
+                      onclick="event.stopPropagation(); deleteGradeByKey('${escapeAttr(g.key)}')"
+                      title="Xóa ${escapeAttr(g.label)}"
+                      class="pr-2 pl-1 py-1 text-[11px] font-black transition cursor-pointer ${
+                        active
+                          ? 'text-white/80 hover:text-white hover:bg-rose-500/40'
+                          : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                      }"
+                    >✕</button>`
+                  : ''
+              }
+            </div>
           `;
         })
         .join('') +
@@ -7074,6 +7146,15 @@ function renderAdminClassbook() {
         >
           <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
           <span>+ Tạo Khối</span>
+        </button>
+        <button
+          type="button"
+          onclick="handleToolbarDeleteGrade('classbook')"
+          title="${activeGradeLabel ? `Xóa ${escapeAttr(activeGradeLabel)} đang chọn` : 'Chọn hoặc mở hộp thoại để Xóa Khối'}"
+          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-rose-400 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white whitespace-nowrap shadow-2xs"
+        >
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>${activeGradeLabel ? `Xóa ${escapeHtml(activeGradeLabel)}` : 'Xóa Khối'}</span>
         </button>
       `;
   }
@@ -8107,10 +8188,11 @@ function renderGradeManagerList() {
             <button
               type="button"
               onclick="deleteGradeByKey('${escapeAttr(g.key)}')"
-              title="Xóa ${escapeAttr(g.label)} khỏi thanh lọc"
-              class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              title="Xóa ${escapeAttr(g.label)}"
+              class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-extrabold transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
             >
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Xóa Khối</span>
             </button>
           </div>
         </div>
@@ -8200,6 +8282,17 @@ async function quickAddPresetGrade(key, label) {
   await addOrEnableGrade(key, label, '');
 }
 
+function handleToolbarDeleteGrade(context = 'classbook') {
+  const activeKey =
+    context === 'students' ? selectedAllStuGradeFilter : selectedClassbookGradeFilter;
+  if (activeKey && activeKey !== 'ALL') {
+    deleteGradeByKey(activeKey);
+    return;
+  }
+  openGradeManagerModal();
+  showToast('Hãy nhấn nút "Xóa Khối" màu đỏ cạnh Khối bạn muốn xóa!', 'info');
+}
+
 async function deleteGradeByKey(gradeKey) {
   const cleanKey = String(gradeKey || '').trim();
   if (!cleanKey || cleanKey === 'ALL') return;
@@ -8207,28 +8300,72 @@ async function deleteGradeByKey(gradeKey) {
 
   const map = getClassSchedulesMap();
   const classesInGrade = Object.keys(map).filter(c => getGradeCategoryForClassName(c) === cleanKey);
+  const studentsInGrade = (appState.students || []).filter(
+    s => getGradeCategoryForClassName(s.className) === cleanKey
+  );
 
   const confirmMsg =
-    classesInGrade.length > 0
-      ? `Bạn có muốn xóa "${label}" (đang có ${classesInGrade.length} lớp: ${classesInGrade.join(', ')})?\n\n- Nhấn OK để ẩn Khối này khỏi thanh lọc.`
-      : `Bạn có chắc muốn xóa "${label}" khỏi danh sách Khối?`;
+    classesInGrade.length > 0 || studentsInGrade.length > 0
+      ? `⚠️ XÁC NHẬN XÓA "${label.toUpperCase()}":\n\n` +
+        `- Số lớp thuộc ${label}: ${classesInGrade.length} lớp${classesInGrade.length ? ` (${classesInGrade.join(', ')})` : ''}\n` +
+        `- Số học sinh thuộc ${label}: ${studentsInGrade.length} em\n\n` +
+        `Nhấn OK để xóa "${label}" (bạn vẫn có thể nhấn nút "Hoàn tác" hoặc Ctrl+Z nếu xóa nhầm).`
+      : `Bạn có chắc chắn muốn xóa "${label}" khỏi danh sách Khối?`;
 
   if (!confirm(confirmMsg)) return;
 
+  // Lưu snapshot để có thể Hoàn tác (Ctrl + Z) 100%
+  if (typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot(`Xóa ${label}`);
+  }
+
   if (!appState.settings) appState.settings = {};
-  const customList = getCustomGradesList().filter(g => String(g.key) !== cleanKey);
+
+  // 1. Xóa khỏi danh sách Khối tùy chỉnh
+  const customList = getCustomGradesList().filter(
+    g => String(g.key).trim().toUpperCase() !== cleanKey.toUpperCase()
+  );
   appState.settings.customGradesJson = JSON.stringify(customList);
 
+  // 2. Đánh dấu Khối đã xóa vào deletedGradesJson
   const deletedSet = getDeletedGradesSet();
   deletedSet.add(cleanKey);
   appState.settings.deletedGradesJson = JSON.stringify(Array.from(deletedSet));
 
+  // 3. Nếu Khối có các lớp bên trong thì xóa luôn các lớp và học sinh thuộc Khối đó để biến mất hoàn toàn
+  if (classesInGrade.length > 0) {
+    classesInGrade.forEach(cls => {
+      markClassAsDeletedInState(cls);
+      delete map[cls];
+    });
+    appState.settings.classSchedulesJson = JSON.stringify(map);
+  }
+  if (studentsInGrade.length > 0) {
+    const classSetUpper = new Set(classesInGrade.map(c => normalizeClassNameKey(c)));
+    appState.students = (appState.students || []).filter(
+      s =>
+        getGradeCategoryForClassName(s.className) !== cleanKey &&
+        !classSetUpper.has(normalizeClassNameKey(s.className))
+    );
+  }
+
+  // 4. Đưa bộ lọc về Tất cả nếu đang chọn đúng Khối vừa xóa
   if (selectedClassbookGradeFilter === cleanKey) selectedClassbookGradeFilter = 'ALL';
   if (selectedAllStuGradeFilter === cleanKey) selectedAllStuGradeFilter = 'ALL';
 
+  const remainingClasses = sortClassNamesStandard(Object.keys(map));
+  if (classesInGrade.includes(selectedClassbookClass)) {
+    selectedClassbookClass = remainingClasses[0] || '';
+  }
+  if (classesInGrade.includes(selectedAllStudentsClassFilter)) {
+    selectedAllStudentsClassFilter = 'ALL';
+  }
+
   saveStateToLocal();
+  renderAll();
   renderGradeManagerList();
-  await triggerAutoSyncIfNeeded(`🗑️ Đã xóa "${label}" khỏi thanh lọc Khối!`);
+  populateClassScheduleGradeSelect('AUTO');
+  await triggerAutoSyncIfNeeded(`🗑️ Đã xóa "${label}" & đồng bộ lên Google Sheet!`);
 }
 
 function populateClassScheduleGradeSelect(selectedVal = 'AUTO') {
