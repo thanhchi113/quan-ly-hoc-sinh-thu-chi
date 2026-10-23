@@ -22,7 +22,8 @@ const STORAGE_KEYS = {
   SANDBOX_STATE: 'edupay_sandbox_draft_state_v2',
   GAS_URL: 'edupay_gas_webapp_url',
   AUTO_SYNC: 'edupay_auto_sync_enabled',
-  ADMIN_AUTH: 'edupay_admin_authenticated'
+  ADMIN_AUTH: 'edupay_admin_authenticated',
+  SANDBOX_AUTH: 'edupay_sandbox_authenticated'
 };
 
 // Ảnh biên lai mẫu dạng SVG Data URI để người dùng xem thử ngay lập tức
@@ -3475,7 +3476,7 @@ function getInitialSandboxDraftState() {
       bankAccountNo: '0999888777',
       bankAccountName: 'TRUNG TAM GIAO DUC ALPHA DEMO',
       defaultPeriod: 'Tháng 10-11/2026',
-      adminPassword: '123456',
+      sandboxAdminPassword: 'DEMO-NHAP-2026',
       teacherPhone: '0901234567',
       customQrUrl: '',
       sepayBalance: '45600000',
@@ -3502,6 +3503,10 @@ function loadSandboxDraftStateFromLocal() {
         parsed.settings.isSandboxData === true &&
         !String(parsed.settings.centerName || '').toUpperCase().includes('ANH CHÍ')
       ) {
+        delete parsed.settings.adminPassword;
+        if (!parsed.settings.sandboxAdminPassword || parsed.settings.sandboxAdminPassword === '123456') {
+          parsed.settings.sandboxAdminPassword = 'DEMO-NHAP-2026';
+        }
         return parsed;
       }
     }
@@ -3532,6 +3537,7 @@ function checkIsSandboxUrlRequested() {
 let isSandboxDraftMode = false;
 let isOpenedViaFriendSandboxUrl = checkIsSandboxUrlRequested();
 let realAppStateBackup = null;
+let modeBeforeEnteringSandbox = 'parent';
 let appState = isOpenedViaFriendSandboxUrl ? loadSandboxDraftStateFromLocal() : loadStateFromLocal();
 if (isOpenedViaFriendSandboxUrl) {
   isSandboxDraftMode = true;
@@ -3555,6 +3561,11 @@ let currentCalendarBrush = 'cycle'; // 'cycle' | 1 | 2 | 3 | 0
 let uploadedReceiptBase64 = '';
 let financeBarChartInstance = null;
 let tuitionPieChartInstance = null;
+
+function isAdminAuthenticated() {
+  const authKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_AUTH : STORAGE_KEYS.ADMIN_AUTH;
+  return sessionStorage.getItem(authKey) === 'true';
+}
 
 function handleOpenGoogleSheetLink(event) {
   if (isSandboxDraftMode) {
@@ -3669,6 +3680,7 @@ function updateSandboxModeButtonsUI() {
 function enterSandboxDraftMode(silent = false) {
   if (!isSandboxDraftMode) {
     realAppStateBackup = JSON.stringify(appState);
+    modeBeforeEnteringSandbox = currentMode;
   }
   isSandboxDraftMode = true;
   if (typeof livePollingTimer !== 'undefined' && livePollingTimer) {
@@ -3686,8 +3698,8 @@ function enterSandboxDraftMode(silent = false) {
   selectedClassbookGradeFilter = 'ALL';
   selectedAllStuGradeFilter = 'ALL';
 
-  // Mở sẵn quyền xem trang Quản lý cho Tab Nháp để bạn bè trải nghiệm đầy đủ tính năng
-  sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+  // Chỉ mở quyền phiên Nháp (SANDBOX_AUTH), tuyệt đối không đụng vào quyền Quản lý chính (ADMIN_AUTH)
+  sessionStorage.setItem(STORAGE_KEYS.SANDBOX_AUTH, 'true');
 
   try {
     const newUrl = new URL(window.location.href);
@@ -3703,7 +3715,7 @@ function enterSandboxDraftMode(silent = false) {
 
   if (!silent) {
     showToast(
-      '🧪 Đã chuyển sang Tab Nháp (Dùng Thử)! Mọi thao tác tại đây hoàn toàn tách biệt với dữ liệu thật của bạn.',
+      '🧪 Đã chuyển sang Tab Nháp (Dùng Thử)! Mọi thao tác và mật khẩu tại đây hoàn toàn tách biệt với Quản lý chính.',
       'success'
     );
   }
@@ -3715,14 +3727,15 @@ function exitSandboxDraftMode() {
     const realStateCandidate = loadStateFromLocal();
     const ownerPass = String(realStateCandidate?.settings?.adminPassword || '123456').trim();
     const entered = prompt(
-      '🔒 Khu vực Dữ Liệu Thật dành riêng cho Chủ hệ thống (LỚP TOÁN ANH CHÍ).\nNhập mật khẩu quản lý để chuyển về dữ liệu thật (Nếu bạn đang dùng thử, hãy bấm Cancel để tiếp tục ở Tab Nháp):'
+      '🔒 Khu vực Dữ Liệu Thật dành riêng cho Chủ hệ thống (LỚP TOÁN ANH CHÍ).\nNhập mật khẩu quản lý chính để chuyển về dữ liệu thật (Nếu bạn đang dùng thử, hãy bấm Cancel để tiếp tục ở Tab Nháp):'
     );
     if (entered === null) return;
     if (entered.trim() !== ownerPass) {
-      showToast('Mật khẩu chủ hệ thống không đúng! Bạn vẫn đang ở Tab Nháp Dùng Thử.', 'warning');
+      showToast('Mật khẩu Quản lý chính không đúng! Bạn vẫn đang ở Tab Nháp Dùng Thử.', 'warning');
       return;
     }
     isOpenedViaFriendSandboxUrl = false;
+    sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
   }
 
   isSandboxDraftMode = false;
@@ -3755,7 +3768,14 @@ function exitSandboxDraftMode() {
   updateSandboxModeButtonsUI();
   updateSyncStatusBanner();
   populateSettingsForm();
-  refreshAllViews();
+
+  // Nếu trước đó chưa đăng nhập Quản lý chính thì kiểm tra lại trạng thái xác thực (hiển thị ô nhập mật khẩu chính)
+  if (!isAdminAuthenticated()) {
+    switchAppMode(modeBeforeEnteringSandbox || 'parent');
+    checkAdminAuthStatus();
+  } else {
+    refreshAllViews();
+  }
 
   const gasUrl = getGasUrl();
   if (gasUrl) {
@@ -3844,7 +3864,7 @@ function bootstrapApp() {
 function enableSourceProtection() {
   document.addEventListener('contextmenu', e => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
-    const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+    const isAuth = isAdminAuthenticated();
     if (tag === 'INPUT' || tag === 'TEXTAREA' || isAuth) {
       return true; // Cho phép chuột phải bình thường trong ô nhập liệu và khi Quản lý đăng nhập
     }
@@ -3856,7 +3876,7 @@ function enableSourceProtection() {
     // Hỗ trợ phím tắt Ctrl + Z (Quay lại thao tác trước) và Ctrl + Y (Làm lại) khi đang ở trang Quản lý
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
     const isTypingInField = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable);
-    if (!isTypingInField && currentMode === 'admin' && sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true') {
+    if (!isTypingInField && currentMode === 'admin' && isAdminAuthenticated()) {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && key === 'Z') {
         e.preventDefault();
         undoLastAction();
@@ -4105,7 +4125,11 @@ function saveStateToLocal() {
 
 function getGasUrl() {
   if (isSandboxDraftMode) return '';
-  return (localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_GAS_WEBAPP_URL || '').trim();
+  const saved = (localStorage.getItem(STORAGE_KEYS.GAS_URL) || '').trim();
+  if (!saved || saved.includes('DEMO_SANDBOX_MODE_ONLY')) {
+    return (DEFAULT_GAS_WEBAPP_URL || '').trim();
+  }
+  return saved;
 }
 
 function isAutoSyncEnabled() {
@@ -4242,7 +4266,7 @@ function switchAppMode(mode) {
 }
 
 function checkAdminAuthStatus() {
-  const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  const isAuth = isAdminAuthenticated();
   const loginBox = document.getElementById('admin-login-box');
   const workspace = document.getElementById('admin-workspace');
 
@@ -4259,12 +4283,18 @@ function checkAdminAuthStatus() {
 function handleAdminLogin(e) {
   e.preventDefault();
   const inputPass = document.getElementById('admin-password-input').value.trim();
-  const actualPass = String(appState.settings.adminPassword || '123456').trim();
+  const actualPass = isSandboxDraftMode
+    ? String(appState.settings.sandboxAdminPassword || 'DEMO-NHAP-2026').trim()
+    : String(appState.settings.adminPassword || '123456').trim();
 
   if (inputPass === actualPass) {
-    sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+    const authKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_AUTH : STORAGE_KEYS.ADMIN_AUTH;
+    sessionStorage.setItem(authKey, 'true');
     document.getElementById('admin-password-input').value = '';
-    showToast('Đăng nhập Quản lý thành công!', 'success');
+    showToast(
+      isSandboxDraftMode ? 'Đăng nhập Quản lý (Bản Nháp) thành công!' : 'Đăng nhập Quản lý chính thành công!',
+      'success'
+    );
     checkAdminAuthStatus();
   } else {
     showToast('Mật khẩu quản trị không đúng!', 'error');
@@ -4272,7 +4302,8 @@ function handleAdminLogin(e) {
 }
 
 function handleAdminLogout() {
-  sessionStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+  const authKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_AUTH : STORAGE_KEYS.ADMIN_AUTH;
+  sessionStorage.removeItem(authKey);
   showToast('Đã đăng xuất khỏi phiên Quản lý.', 'info');
   checkAdminAuthStatus();
 }
@@ -4408,7 +4439,7 @@ function handleGlobalHeaderSearch(query, isEnter = false) {
   }
 
   // Nếu ở chế độ Quản lý -> Tự động tìm trong Thống kê Học sinh (hoặc Sổ Thu Chi nếu đang mở Sổ Thu Chi)
-  const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  const isAuth = isAdminAuthenticated();
   if (!isAuth) return;
 
   if (currentAdminTab === 'finance') {
@@ -4430,7 +4461,7 @@ function handleGlobalHeaderSearch(query, isEnter = false) {
 }
 
 function handleHeaderPeriodClick() {
-  const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  const isAuth = isAdminAuthenticated();
   if (currentMode === 'admin' && isAuth) {
     openClassScheduleModal(false);
   } else {
@@ -4440,7 +4471,7 @@ function handleHeaderPeriodClick() {
 
 function handleHeaderNotificationClick() {
   switchAppMode('admin');
-  const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  const isAuth = isAdminAuthenticated();
   if (isAuth) {
     switchAdminTab('dashboard');
     setTimeout(() => {
@@ -4686,9 +4717,14 @@ function openPaymentModal(studentRecordId = '') {
 
   document.getElementById('pay-student-record-id').value = student ? student.id : '';
   document.getElementById('pay-modal-qr-img').src = qrUrl;
-  document.getElementById('pay-modal-bank').textContent = stg.bankBin || 'BIDV';
-  document.getElementById('pay-modal-owner').textContent = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
-  document.getElementById('pay-modal-acc').textContent = stg.bankAccountNo || '8601774789';
+  document.getElementById('pay-modal-bank').textContent = stg.bankBin || (isSandboxDraftMode ? 'MB' : 'BIDV');
+  document.getElementById('pay-modal-owner').textContent =
+    stg.bankAccountName || (isSandboxDraftMode ? 'TRUNG TAM GIAO DUC ALPHA DEMO' : 'HKD TRUNG TAM HUYNH THANH CHI');
+  document.getElementById('pay-modal-acc').textContent = stg.bankAccountNo || (isSandboxDraftMode ? '0999888777' : '8601774789');
+  const autoBankLabel = document.getElementById('pay-modal-auto-bank-label');
+  if (autoBankLabel) {
+    autoBankLabel.textContent = `${stg.bankAccountNo || (isSandboxDraftMode ? '0999888777' : '8601774789')} (${stg.bankBin || (isSandboxDraftMode ? 'MB' : 'BIDV')})`;
+  }
   document.getElementById('pay-modal-amount-text').textContent =
     student && student.tuitionFee > 0 ? formatCurrency(student.tuitionFee) : 'Tự nhập trên App Ngân hàng';
   document.getElementById('pay-modal-memo').textContent = memo;
@@ -7329,6 +7365,19 @@ function deleteTransactionRecord(transId) {
 // ============================================================================
 // TAB 4: ĐỒNG BỘ 2 CHIỀU GOOGLE SHEETS & CÀI ĐẶT VIETQR / MÃ QR RIÊNG
 // ============================================================================
+function toggleSettingPasswordVisibility() {
+  const passInput = document.getElementById('setting-admin-pass');
+  const iconEl = document.getElementById('icon-toggle-setting-pass');
+  const labelEl = document.getElementById('label-toggle-setting-pass');
+  if (!passInput) return;
+
+  const isCurrentlyHidden = passInput.type === 'password';
+  passInput.type = isCurrentlyHidden ? 'text' : 'password';
+  if (iconEl) iconEl.setAttribute('data-lucide', isCurrentlyHidden ? 'eye-off' : 'eye');
+  if (labelEl) labelEl.textContent = isCurrentlyHidden ? 'Ẩn' : 'Hiện';
+  lucide.createIcons();
+}
+
 function populateSettingsForm() {
   const stg = appState.settings || {};
   document.getElementById('setting-gas-url').value = isSandboxDraftMode
@@ -7336,13 +7385,99 @@ function populateSettingsForm() {
     : getGasUrl();
   document.getElementById('setting-auto-sync').checked = isAutoSyncEnabled();
 
-  document.getElementById('setting-center-name').value = stg.centerName || 'LỚP TOÁN ANH CHÍ';
-  document.getElementById('setting-default-period').value = stg.defaultPeriod || 'Tháng 10/2026';
-  document.getElementById('setting-bank-bin').value = stg.bankBin || 'BIDV';
-  document.getElementById('setting-bank-acc').value = stg.bankAccountNo || '8601774789';
-  document.getElementById('setting-bank-owner').value = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
-  document.getElementById('setting-teacher-phone').value = stg.teacherPhone || '0905957716';
-  document.getElementById('setting-admin-pass').value = stg.adminPassword || '123456';
+  document.getElementById('setting-center-name').value =
+    stg.centerName || (isSandboxDraftMode ? 'TRUNG TÂM GIÁO DỤC ALPHA (BẢN NHÁP)' : 'LỚP TOÁN ANH CHÍ');
+  document.getElementById('setting-default-period').value = stg.defaultPeriod || 'Tháng 10-11/2026';
+  document.getElementById('setting-bank-bin').value = stg.bankBin || (isSandboxDraftMode ? 'MB' : 'BIDV');
+  document.getElementById('setting-bank-acc').value = stg.bankAccountNo || (isSandboxDraftMode ? '0999888777' : '8601774789');
+  document.getElementById('setting-bank-owner').value =
+    stg.bankAccountName || (isSandboxDraftMode ? 'TRUNG TAM GIAO DUC ALPHA DEMO' : 'HKD TRUNG TAM HUYNH THANH CHI');
+  document.getElementById('setting-teacher-phone').value = stg.teacherPhone || (isSandboxDraftMode ? '0901234567' : '0905957716');
+
+  // Tách biệt hoàn toàn mật khẩu Quản lý chính và mật khẩu Bản Nháp
+  const passInput = document.getElementById('setting-admin-pass');
+  const passLabel = document.getElementById('setting-admin-pass-label');
+  const passBadge = document.getElementById('setting-admin-pass-badge');
+  const passHint = document.getElementById('setting-admin-pass-hint');
+  const passBox = document.getElementById('setting-admin-pass-box');
+  const iconToggle = document.getElementById('icon-toggle-setting-pass');
+  const labelToggle = document.getElementById('label-toggle-setting-pass');
+
+  if (passInput) {
+    // Luôn đặt mặc định ở trạng thái ẩn mật khẩu (••••••) khi mở Cài đặt
+    passInput.type = 'password';
+    if (iconToggle) iconToggle.setAttribute('data-lucide', 'eye');
+    if (labelToggle) labelToggle.textContent = 'Hiện';
+
+    if (isSandboxDraftMode) {
+      passInput.value = stg.sandboxAdminPassword || 'DEMO-NHAP-2026';
+    } else {
+      passInput.value = stg.adminPassword || '123456';
+    }
+  }
+
+  if (isSandboxDraftMode) {
+    if (passBox) passBox.className = 'p-3 rounded-xl border border-orange-200 bg-orange-50/50 space-y-1.5';
+    if (passLabel) passLabel.textContent = 'Mật khẩu Quản lý Bản Nháp (Độc lập với Quản lý chính)';
+    if (passBadge) {
+      passBadge.textContent = 'Mật khẩu Nháp riêng biệt';
+      passBadge.className = 'px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold';
+    }
+    if (passHint) {
+      passHint.textContent =
+        '🧪 Đang ở Tab Nháp: Mật khẩu của Quản lý chính đã được ẩn và tách biệt 100%. Mật khẩu mẫu ở trên (DEMO-NHAP-2026) chỉ áp dụng trong phiên dùng thử.';
+      passHint.className = 'text-[11px] text-[#FF4B16] font-semibold leading-snug';
+    }
+  } else {
+    if (passBox) passBox.className = 'p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5';
+    if (passLabel) passLabel.textContent = 'Mật khẩu Quản lý Chính trên Web App';
+    if (passBadge) {
+      passBadge.textContent = 'Bảo mật riêng Quản lý chính';
+      passBadge.className = 'px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-extrabold';
+    }
+    if (passHint) {
+      passHint.textContent =
+        '🔒 Mật khẩu Quản lý chính được tách biệt hoàn toàn và không bao giờ hiển thị bên Tab Nháp dùng thử.';
+      passHint.className = 'text-[11px] text-slate-500 leading-snug';
+    }
+  }
+
+  // Cập nhật các thông tin hướng dẫn Sheet / Ngân hàng trong tab Cài đặt theo đúng chế độ Nháp hoặc Thật
+  const sheetGuideTitle = document.getElementById('setting-sheet-guide-title');
+  const sheetIdCode = document.getElementById('setting-sheet-id-code');
+  const autobankDesc = document.getElementById('setting-autobank-desc');
+  const autobankGuideTitle = document.getElementById('setting-autobank-guide-title');
+  const simContent = document.getElementById('sim-bank-content');
+  const simAmount = document.getElementById('sim-bank-amount');
+  const ghBox = document.getElementById('setting-github-deploy-box');
+
+  if (isSandboxDraftMode) {
+    if (sheetGuideTitle) sheetGuideTitle.textContent = 'Chế độ Tab Nháp: Không sử dụng Google Sheet của Quản lý chính';
+    if (sheetIdCode) sheetIdCode.textContent = 'DEMO_SHEET_SANDBOX';
+    if (autobankDesc) {
+      autobankDesc.innerHTML =
+        'Tự động tích <code class="font-bold">☑ Đã hoàn thành</code> &amp; ghi Sổ Thu Chi ngay khi chuyển khoản vào STK MB Demo (0999888777).';
+    }
+    if (autobankGuideTitle) {
+      autobankGuideTitle.textContent = 'Cách kích hoạt tự động 100% cho STK MB Demo (0999888777) miễn phí:';
+    }
+    if (simContent) simContent.value = 'HP NV002 TRAN NGOC BAO CHAU';
+    if (simAmount) simAmount.value = '800000';
+    if (ghBox) ghBox.classList.add('hidden');
+  } else {
+    if (sheetGuideTitle) sheetGuideTitle.textContent = 'File Google Sheet của bạn đã được gắn sẵn ID';
+    if (sheetIdCode) sheetIdCode.textContent = '1dObYu...lsvq0';
+    if (autobankDesc) {
+      autobankDesc.innerHTML =
+        'Tự động tích <code class="font-bold">☑ Đã hoàn thành</code> &amp; ghi Sổ Thu Chi ngay khi học sinh/phụ huynh chuyển khoản vào STK BIDV của bạn.';
+    }
+    if (autobankGuideTitle) {
+      autobankGuideTitle.textContent = 'Cách kích hoạt tự động 100% cho STK BIDV (8601774789) miễn phí:';
+    }
+    if (simContent) simContent.value = 'HP HS001 QUOC VIET';
+    if (simAmount) simAmount.value = '600000';
+    if (ghBox) ghBox.classList.remove('hidden');
+  }
 
   const webhookDisplay = document.getElementById('bank-webhook-url-display');
   if (webhookDisplay) {
@@ -7437,6 +7572,14 @@ function clearCustomQrImage() {
 }
 
 function saveGasUrlConfig() {
+  if (isSandboxDraftMode) {
+    showToast(
+      '🧪 Đang ở Tab Nháp (Dùng Thử): Kết nối Google Sheet tại đây chỉ để minh họa, không làm thay đổi cấu hình Google Sheet thật của Quản lý chính!',
+      'info'
+    );
+    return;
+  }
+
   const url = document.getElementById('setting-gas-url').value.trim();
   const autoSync = document.getElementById('setting-auto-sync').checked;
 
@@ -7454,6 +7597,26 @@ function saveGasUrlConfig() {
 
 function saveGeneralSettings(event) {
   event.preventDefault();
+  const passValue = document.getElementById('setting-admin-pass').value.trim();
+
+  if (isSandboxDraftMode) {
+    appState.settings = {
+      ...appState.settings,
+      isSandboxData: true,
+      centerName: document.getElementById('setting-center-name').value.trim(),
+      defaultPeriod: document.getElementById('setting-default-period').value.trim(),
+      bankBin: document.getElementById('setting-bank-bin').value,
+      bankAccountNo: document.getElementById('setting-bank-acc').value.trim(),
+      bankAccountName: document.getElementById('setting-bank-owner').value.trim().toUpperCase(),
+      teacherPhone: document.getElementById('setting-teacher-phone').value.trim(),
+      sandboxAdminPassword: passValue || 'DEMO-NHAP-2026'
+    };
+    delete appState.settings.adminPassword;
+    saveStateToLocal();
+    showToast('🧪 Đã lưu cài đặt trong Tab Nháp (Hoàn toàn độc lập với Quản lý chính)!', 'success');
+    return;
+  }
+
   appState.settings = {
     ...appState.settings,
     centerName: document.getElementById('setting-center-name').value.trim(),
@@ -7462,7 +7625,7 @@ function saveGeneralSettings(event) {
     bankAccountNo: document.getElementById('setting-bank-acc').value.trim(),
     bankAccountName: document.getElementById('setting-bank-owner').value.trim().toUpperCase(),
     teacherPhone: document.getElementById('setting-teacher-phone').value.trim(),
-    adminPassword: document.getElementById('setting-admin-pass').value.trim() || '123456'
+    adminPassword: passValue || '123456'
   };
 
   saveStateToLocal();
@@ -7758,6 +7921,11 @@ function downloadCsvFile(filename, headers, rows) {
 }
 
 function resetDemoData() {
+  if (isSandboxDraftMode) {
+    if (!confirm('Khôi phục lại bộ dữ liệu nháp mẫu ban đầu của Tab Nháp?')) return;
+    resetSandboxDraftData();
+    return;
+  }
   if (!confirm('Khôi phục lại bộ dữ liệu mẫu ban đầu? Các thay đổi chưa lưu lên Sheet sẽ bị đặt lại.')) return;
   appState = getInitialDemoState();
   saveStateToLocal();
@@ -7771,18 +7939,35 @@ function copyTextById(elementId) {
 }
 
 async function copyGasCodeToClipboard() {
+  const sanitizeForSandbox = rawCode => {
+    if (!isSandboxDraftMode) return rawCode;
+    return String(rawCode || '').replace(
+      /1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/g,
+      'DIEN_ID_GOOGLE_SHEET_CUA_BAN_VAO_DAY'
+    );
+  };
   try {
     if (window.__EMBEDDED_GAS_CODE_B64__) {
-      const codeText = decodeURIComponent(escape(atob(window.__EMBEDDED_GAS_CODE_B64__)));
+      const codeText = sanitizeForSandbox(decodeURIComponent(escape(atob(window.__EMBEDDED_GAS_CODE_B64__))));
       await navigator.clipboard.writeText(codeText);
-      showToast('Đã copy toàn bộ mã Code.gs mới nhất (hỗ trợ SePay báo số dư)! Hãy dán vào Google Sheet -> Apps Script.', 'success');
+      showToast(
+        isSandboxDraftMode
+          ? 'Đã copy mã Code.gs mẫu (Dành cho Tab Nháp)! Bạn có thể thay ID Google Sheet riêng của bạn vào.'
+          : 'Đã copy toàn bộ mã Code.gs mới nhất (hỗ trợ SePay báo số dư)! Hãy dán vào Google Sheet -> Apps Script.',
+        'success'
+      );
       return;
     }
     const res = await fetch('google-apps-script/Code.gs');
     if (res.ok) {
-      const codeText = await res.text();
+      const codeText = sanitizeForSandbox(await res.text());
       await navigator.clipboard.writeText(codeText);
-      showToast('Đã copy toàn bộ mã Code.gs (gắn sẵn ID Sheet của bạn)! Hãy dán vào Google Sheet -> Apps Script.', 'success');
+      showToast(
+        isSandboxDraftMode
+          ? 'Đã copy mã Code.gs mẫu (Dành cho Tab Nháp)!'
+          : 'Đã copy toàn bộ mã Code.gs (gắn sẵn ID Sheet của bạn)! Hãy dán vào Google Sheet -> Apps Script.',
+        'success'
+      );
       return;
     }
   } catch (e) {
@@ -7796,6 +7981,10 @@ async function copyGasCodeToClipboard() {
  * lên GitHub và kích hoạt GitHub Pages chỉ với 1 cú nhấp chuột
  */
 async function autoDeployToGitHubPages() {
+  if (isSandboxDraftMode) {
+    showToast('Tính năng đẩy code GitHub chỉ dành cho Quản lý chính ở chế độ Dữ liệu thật!', 'warning');
+    return;
+  }
   const repoInput = document.getElementById('gh-repo-name');
   const tokenInput = document.getElementById('gh-token-input');
   const btn = document.getElementById('btn-auto-github');
@@ -10604,8 +10793,11 @@ function renderSepayBalanceBanner() {
 
 async function promptEditSepayBalance() {
   const currentBal = getComputedSepayBalance();
+  const bankLabel = isSandboxDraftMode
+    ? `${appState.settings?.bankBin || 'MB'} (${appState.settings?.bankAccountNo || '0999888777'}) [Bản Nháp]`
+    : `${appState.settings?.bankBin || 'BIDV'} (${appState.settings?.bankAccountNo || '8601774789'})`;
   const input = prompt(
-    'Nhập số dư thực tế hiện tại trong tài khoản BIDV (8601774789) của bạn (VNĐ):\n(Khi có giao dịch mới từ SePay, số dư sẽ tự động cập nhật theo ngân hàng)',
+    `Nhập số dư hiện tại trong tài khoản ${bankLabel} (VNĐ):\n(Khi có giao dịch mới từ SePay, số dư sẽ tự động cập nhật theo ngân hàng)`,
     String(currentBal)
   );
   if (input === null) return;
@@ -10623,8 +10815,28 @@ async function promptEditSepayBalance() {
 function openSepayGuideModal() {
   const modal = document.getElementById('sepay-guide-modal');
   const urlEl = document.getElementById('modal-sepay-webhook-url');
-  if (urlEl && getGasUrl()) {
-    urlEl.textContent = getGasUrl();
+  const summaryEl = document.getElementById('sepay-modal-bank-summary');
+  const step2Title = document.getElementById('sepay-modal-step2-title');
+  const step2Desc = document.getElementById('sepay-modal-step2-desc');
+  const stg = appState.settings || {};
+
+  const bin = stg.bankBin || (isSandboxDraftMode ? 'MB' : 'BIDV');
+  const acc = stg.bankAccountNo || (isSandboxDraftMode ? '0999888777' : '8601774789');
+  const owner = stg.bankAccountName || (isSandboxDraftMode ? 'TRUNG TAM GIAO DUC ALPHA DEMO' : 'HKD TRUNG TAM HUYNH THANH CHI');
+
+  if (summaryEl) {
+    summaryEl.textContent = `${bin} • ${acc} • ${owner}`;
+  }
+  if (step2Title) {
+    step2Title.textContent = `Bước 2: Liên kết tài khoản ${bin} (${acc}) trên SePay.vn`;
+  }
+  if (step2Desc) {
+    step2Desc.innerHTML = `Nhập số tài khoản <strong>${escapeHtml(acc)}</strong> (${escapeHtml(owner)}) và xác thực OTP theo hướng dẫn chính thức của ngân hàng &amp; SePay.`;
+  }
+  if (urlEl) {
+    urlEl.textContent = isSandboxDraftMode
+      ? 'https://script.google.com/macros/s/DEMO_SANDBOX_MODE_ONLY/exec'
+      : getGasUrl() || DEFAULT_GAS_WEBAPP_URL;
   }
   if (modal) {
     modal.classList.remove('hidden');
@@ -11407,7 +11619,7 @@ function scrollToPageTop() {
 }
 
 function handleGoToHomePage() {
-  const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  const isAuth = isAdminAuthenticated();
   if (currentMode === 'admin' && isAuth) {
     if (currentAdminTab !== 'classbook') {
       switchAdminTab('classbook');
