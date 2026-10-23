@@ -132,6 +132,38 @@ function isSimulatedBankTestItem(item) {
   return false;
 }
 
+function stripRedundantTestPrefix(text) {
+  return String(text || '')
+    .replace(/^🧪\s*\[TEST THỬ STK[^\]]*\]\s*/gi, '')
+    .replace(/^\[TEST THỬ STK[^\]]*\]\s*/gi, '')
+    .trim();
+}
+
+function formatCompactMethodHtml(methodStr, isTestTx = false) {
+  if (isTestTx) {
+    return `<div class="leading-tight text-center">
+      <div class="text-[11px] font-extrabold text-amber-900">🧪 Test STK</div>
+      <div class="text-[10px] font-bold text-amber-700">(0 ₫)</div>
+    </div>`;
+  }
+  const raw = String(methodStr || 'Chuyển khoản').trim();
+  const parenMatch = raw.match(/^([^(]+)\(([^)]+)\)$/);
+  if (parenMatch) {
+    return `<div class="leading-tight text-center">
+      <div class="text-xs font-bold text-slate-700">${escapeHtml(parenMatch[1].trim())}</div>
+      <div class="text-[10px] font-semibold text-slate-500">(${escapeHtml(parenMatch[2].trim())})</div>
+    </div>`;
+  }
+  const slashParts = raw.split(/\s*\/\s*/);
+  if (slashParts.length === 2) {
+    return `<div class="leading-tight text-center">
+      <div class="text-xs font-bold text-slate-700">${escapeHtml(slashParts[0])}</div>
+      <div class="text-[10px] font-semibold text-slate-500">${escapeHtml(slashParts[1])}</div>
+    </div>`;
+  }
+  return `<span class="text-xs font-semibold text-slate-700">${escapeHtml(raw)}</span>`;
+}
+
 function purgeDraftDataFromState(state) {
   if (!state) return state;
   const userDeletedClasses = getDeletedClassesSet(state);
@@ -5493,26 +5525,30 @@ function renderAdminDashboard() {
     const recentTxRows = [];
 
     pendingReqsForRows.forEach(req => {
+      const isTestReq = isSimulatedBankTestItem(req);
       recentTxRows.push({
         title: `Học phí ${req.period || 'kỳ này'} • ${req.studentName}`,
         subtitle: `${req.studentCode} • ${req.className}`,
-        amount: Number(req.amount) || 0,
+        amount: isTestReq ? 0 : Number(req.amount) || 0,
+        testDisplayAmount: req.testDisplayAmount || Number(req.amount) || 600000,
         isIncome: true,
-        statusLabel: 'Chờ xác nhận',
-        isPending: true
+        statusLabel: isTestReq ? '🧪 Test không cộng tiền' : 'Chờ xác nhận',
+        isPending: true,
+        isTest: isTestReq
       });
     });
 
     transactions.slice(0, 6).forEach(tx => {
       const isTestTx = isSimulatedBankTestItem(tx);
       const isInc = tx.type === 'Thu';
+      const rawTitle = tx.description || tx.category || (isInc ? 'Thu học phí' : 'Chi phí vận hành');
       recentTxRows.push({
-        title: tx.description || tx.category || (isInc ? 'Thu học phí' : 'Chi phí vận hành'),
-        subtitle: `${tx.date || ''} • ${tx.method || 'Chuyển khoản'}`,
+        title: isTestTx ? stripRedundantTestPrefix(rawTitle) || 'Kiểm tra hoạt động STK' : rawTitle,
+        subtitle: `${tx.date || ''} • ${isTestTx ? 'Test STK (0 ₫)' : tx.method || 'Chuyển khoản'}`,
         amount: isTestTx ? 0 : Number(tx.amount) || 0,
         testDisplayAmount: tx.testDisplayAmount || Number(tx.amount) || 600000,
         isIncome: isInc,
-        statusLabel: isTestTx ? '🧪 Test thử STK (0₫)' : 'Đã đối soát',
+        statusLabel: isTestTx ? '🧪 Test không cộng tiền' : 'Đã đối soát',
         isPending: false,
         isTest: isTestTx
       });
@@ -5559,7 +5595,7 @@ function renderAdminDashboard() {
         const amountSign = item.isTest ? '' : item.isIncome ? '+' : '−';
         const amountColor = item.isTest ? 'text-amber-700' : item.isIncome ? 'text-[#25214C]' : 'text-[#FF4B16]';
         const chipHtml = item.isTest
-          ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-400 text-[10px] font-extrabold">🧪 Test thử STK • Không cộng tiền</span>`
+          ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-400 text-[10px] font-extrabold">🧪 Test không cộng tiền</span>`
           : item.isPending
           ? `<span class="px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold">Chờ xác nhận</span>`
           : `<span class="px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[10px] font-extrabold">Đã đối soát</span>`;
@@ -5579,11 +5615,14 @@ function renderAdminDashboard() {
                 </div>
               </div>
             </div>
-            <div class="text-right shrink-0 space-y-0.5">
-              <div class="text-xs font-black ${amountColor} whitespace-nowrap">
-                ${item.isTest ? '0 ₫ (Test STK)' : `${amountSign}${formatCurrency(item.amount)}`}
-              </div>
-              <div>${chipHtml}</div>
+            <div class="text-right shrink-0 leading-tight">
+              ${
+                item.isTest
+                  ? `<div>${chipHtml}</div>
+                     <div class="text-xs font-black text-amber-700 whitespace-nowrap mt-0.5">${formatCurrency(item.testDisplayAmount || 600000)}</div>`
+                  : `<div class="text-xs font-black ${amountColor} whitespace-nowrap">${amountSign}${formatCurrency(item.amount)}</div>
+                     <div class="mt-0.5">${chipHtml}</div>`
+              }
             </div>
           </div>
         `;
@@ -5634,18 +5673,19 @@ function renderAdminDashboard() {
           const testBadgeHtml = isTestReq
             ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 border border-amber-400 font-extrabold text-[11px]">
                 <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-700"></i>
-                <span>🧪 TEST THỬ STK (Không cộng tiền vào Web)</span>
+                <span>🧪 Test không cộng tiền</span>
               </span>`
             : '';
           const bankStatusBadge = isBankVerified
             ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-[11px]">
                 <i data-lucide="badge-check" class="w-3.5 h-3.5 text-emerald-600"></i>
-                <span>Đã ghi nhận chuyển tiền thành công vào STK</span>
+                <span>Đã vào STK</span>
               </span>`
             : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 font-extrabold text-[11px]">
                 <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-600"></i>
-                <span>Chờ ngân hàng ghi nhận kết quả tiền vào STK</span>
+                <span>Chờ tiền vào STK</span>
               </span>`;
+          const cleanNote = isTestReq ? stripRedundantTestPrefix(req.note) : req.note;
 
           return `
         <div class="bento-inner-tile p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${isTestReq ? 'border-2 border-amber-300 bg-amber-50/40' : ''}">
@@ -5673,14 +5713,14 @@ function renderAdminDashboard() {
                 ${bankStatusBadge}
               </div>
               <p class="text-[#25214C]">
-                Người chuyển: <strong>${escapeHtml(req.payerName || 'Phụ huynh')}</strong> (${escapeHtml(req.parentPhone)})
-                — Số tiền: <strong class="text-[#5B55FF] text-sm">${
+                Người chuyển: <strong>${escapeHtml(req.payerName || 'Phụ huynh')}</strong>${req.parentPhone ? ` (${escapeHtml(req.parentPhone)})` : ''}
+                — Số tiền: <strong class="${isTestReq ? 'text-amber-700' : 'text-[#5B55FF]'} text-sm">${
                   isTestReq
-                    ? `0 ₫ (Mô phỏng Test: ${formatCurrency(req.testDisplayAmount || 600000)} • Không cộng vào Web)`
+                    ? `${formatCurrency(req.testDisplayAmount || 600000)} (Test không cộng tiền)`
                     : formatCurrency(req.amount)
                 }</strong>
               </p>
-              <p class="text-[#8986A6] italic">"${escapeHtml(req.note || 'Không có ghi chú')}"</p>
+              <p class="text-[#8986A6] italic">"${escapeHtml(cleanNote || 'Không có ghi chú')}"</p>
               <p class="text-[11px] text-[#8986A6]">Gửi lúc: ${escapeHtml(req.submittedAt)}</p>
             </div>
           </div>
@@ -6105,7 +6145,7 @@ function getStudentPaymentDatesIso(s) {
   const dates = new Set();
   const code = String(s.studentCode || '').trim().toUpperCase();
   (appState.transactions || []).forEach(tx => {
-    if (tx.type !== 'Thu') return;
+    if (tx.type !== 'Thu' || isSimulatedBankTestItem(tx)) return;
     const matchCode =
       (tx.studentCode && code && String(tx.studentCode).trim().toUpperCase() === code) ||
       (code && String(tx.description || '').toUpperCase().includes(code));
@@ -6426,10 +6466,11 @@ function getStudentStatistics(s) {
     }
   });
 
-  // Nguồn C: Kiểm tra Sổ Thu - Chi (nếu có các giao dịch chuyển khoản vào STK của học sinh này nhiều hơn số đợt trên thì tự động cộng bù)
+  // Nguồn C: Kiểm tra Sổ Thu - Chi (nếu có các giao dịch chuyển khoản thật vào STK của học sinh này nhiều hơn số đợt trên thì tự động cộng bù; loại trừ giao dịch Test STK)
   const studentIncomeTxs = (appState.transactions || []).filter(
     t =>
       t.type === 'Thu' &&
+      !isSimulatedBankTestItem(t) &&
       ((t.studentCode && s.studentCode && t.studentCode.toUpperCase() === s.studentCode.toUpperCase()) ||
         (s.studentCode && String(t.description || '').toUpperCase().includes(s.studentCode.toUpperCase())))
   );
@@ -6600,28 +6641,39 @@ function openStudentDetailModal(studentId) {
       `;
     } else {
       txContainer.innerHTML = studentTxs
-        .map(
-          tx => `
-          <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+        .map(tx => {
+          const isTestTx = isSimulatedBankTestItem(tx);
+          const cleanDesc = isTestTx ? stripRedundantTestPrefix(tx.description) : tx.description;
+          return `
+          <div class="p-3 rounded-xl ${
+            isTestTx ? 'bg-amber-50/70 border border-amber-300' : 'bg-emerald-50/50 border border-emerald-200'
+          } flex flex-wrap items-center justify-between gap-2 text-xs">
             <div class="space-y-0.5">
-              <div class="font-bold text-slate-900 flex items-center gap-1.5">
-                <span class="px-2 py-0.2 rounded bg-emerald-600 text-white font-mono text-[10px]">${escapeHtml(
-                  tx.id
-                )}</span>
-                <span>${escapeHtml(tx.description || 'Thu học phí')}</span>
+              <div class="font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
+                <span class="px-2 py-0.2 rounded ${
+                  isTestTx ? 'bg-amber-600' : 'bg-emerald-600'
+                } text-white font-mono text-[10px]">${escapeHtml(tx.id)}</span>
+                <span>${escapeHtml(cleanDesc || 'Thu học phí')}</span>
               </div>
               <div class="text-[11px] text-slate-500">
                 Ngày: <strong>${escapeHtml(formatShortDateVN(tx.date))}</strong> • Phương thức: <strong>${escapeHtml(
-            tx.method || 'Chuyển khoản'
-          )}</strong>
+                  isTestTx ? 'Test STK (0 ₫)' : tx.method || 'Chuyển khoản'
+                )}</strong>
               </div>
             </div>
-            <div class="font-extrabold text-sm text-emerald-700">
-              +${formatCurrency(tx.amount)}
+            <div class="text-right leading-tight">
+              ${
+                isTestTx
+                  ? `<div class="text-[10px] font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">🧪 Test không cộng tiền</div>
+                     <div class="font-black text-xs sm:text-sm text-amber-700 mt-0.5">${formatCurrency(
+                       tx.testDisplayAmount || 600000
+                     )}</div>`
+                  : `<div class="font-extrabold text-sm text-emerald-700">+${formatCurrency(tx.amount)}</div>`
+              }
             </div>
           </div>
-        `
-        )
+        `;
+        })
         .join('');
     }
   }
@@ -6816,8 +6868,14 @@ function renderAdminStudents() {
 
   if (sumCountEl) sumCountEl.textContent = `${list.length} HS`;
   if (sumClassesEl) sumClassesEl.textContent = `${activeClassesInList.size} lớp`;
-  if (sumBatchesEl) sumBatchesEl.textContent = `${totalBatchesPaidCount} đợt (${formatCurrency(allTimePaidSum)})`;
-  if (sumPaidRatioEl) sumPaidRatioEl.textContent = `${paidList.length}/${list.length} em (${paidRateText})`;
+  if (sumBatchesEl) {
+    sumBatchesEl.innerHTML = `<div class="leading-tight"><div>${totalBatchesPaidCount} đợt</div><div class="text-[11px] font-bold">${formatCurrency(
+      allTimePaidSum
+    )}</div></div>`;
+  }
+  if (sumPaidRatioEl) {
+    sumPaidRatioEl.innerHTML = `<div class="leading-tight"><div>${paidList.length}/${list.length} em</div><div class="text-[11px] text-slate-600">(${paidRateText})</div></div>`;
+  }
   if (sumExpectedEl) sumExpectedEl.textContent = formatCurrency(totalFeeSum);
   if (sumCollectedEl) sumCollectedEl.textContent = formatCurrency(paidSum);
   if (sumMissingEl) sumMissingEl.textContent = formatCurrency(unpaidSum);
@@ -7137,13 +7195,13 @@ function renderAdminStudents() {
             />
           </td>
           <td class="py-2 px-2.5 text-center whitespace-nowrap">
-            <div class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border ${
+            <div class="inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-lg border leading-tight ${
               stats.paidBatchesCount > 0
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                 : 'bg-slate-100 border-slate-300 text-slate-600'
             }">
               <span class="text-xs font-extrabold">${stats.paidBatchesCount} đợt</span>
-              <span class="text-[11px] font-bold">• ${formatCurrency(stats.totalPaidAmount)}</span>
+              <span class="text-[11px] font-bold mt-0.5">${formatCurrency(stats.totalPaidAmount)}</span>
             </div>
           </td>
           <td class="py-2 px-2.5 text-center whitespace-nowrap">
@@ -7528,19 +7586,20 @@ function renderAdminTransactions() {
     .map(t => {
       const isIncome = t.type === 'Thu';
       const isTestTx = isSimulatedBankTestItem(t);
+      const cleanDesc = isTestTx ? stripRedundantTestPrefix(t.description) || 'Kiểm tra hoạt động STK' : t.description;
       return `
         <tr class="hover:bg-slate-50/80 transition align-middle ${isTestTx ? 'bg-amber-50/45' : ''}">
-          <td class="py-3 px-4 whitespace-nowrap align-middle">
-            <div class="font-mono font-bold text-xs text-slate-800 truncate max-w-[175px]" title="${escapeAttr(t.id)}">${escapeHtml(t.id)}</div>
+          <td class="py-2.5 px-3 whitespace-nowrap align-middle">
+            <div class="font-mono font-bold text-xs text-slate-800 truncate max-w-[140px]" title="${escapeAttr(t.id)}">${escapeHtml(t.id)}</div>
             <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${escapeHtml(t.date)}</div>
           </td>
-          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
+          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
             ${
               isTestTx
-                ? `<span class="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-950 border-amber-400">
-                    🧪 Test thử STK
+                ? `<span class="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-950 border-amber-400">
+                    🧪 Test STK
                   </span>`
-                : `<span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-extrabold whitespace-nowrap border ${
+                : `<span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-extrabold whitespace-nowrap border ${
                     isIncome
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                       : 'bg-rose-100 text-rose-800 border-rose-300'
@@ -7549,54 +7608,64 @@ function renderAdminTransactions() {
                   </span>`
             }
           </td>
-          <td class="py-3 px-3.5 text-center whitespace-nowrap align-middle">
-            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg ${
+          <td class="py-2.5 px-2.5 text-center align-middle">
+            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-lg ${
               isTestTx
                 ? 'bg-amber-100/80 text-amber-900 border border-amber-300'
                 : 'bg-slate-100 text-slate-700 border border-slate-200'
-            } font-bold text-xs whitespace-nowrap">
-              ${escapeHtml(isTestTx ? '🧪 Test thử STK' : t.category)}
+            } font-bold text-xs leading-tight max-w-[130px] text-center">
+              ${escapeHtml(isTestTx ? 'Test STK' : t.category)}
             </span>
           </td>
-          <td class="py-3 px-4 align-middle">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="space-y-1">
-                ${
-                  isTestTx
-                    ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400 text-[10px] font-extrabold uppercase tracking-wide">
-                        🧪 Đánh dấu: Test thử hoạt động STK (Không cộng tiền vào Web)
-                      </div>`
-                    : ''
-                }
-                <div class="text-slate-900 font-semibold text-xs sm:text-sm leading-snug">${escapeHtml(t.description)}</div>
-              </div>
+          <td class="py-2.5 px-3.5 align-middle">
+            <div class="space-y-1">
               ${
-                t.studentCode
-                  ? `<span class="shrink-0 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-mono font-bold text-[11px] whitespace-nowrap">Mã HS: ${escapeHtml(t.studentCode)}</span>`
+                isTestTx || t.studentCode
+                  ? `<div class="flex flex-wrap items-center gap-1.5">
+                      ${
+                        isTestTx
+                          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400 text-[10px] font-extrabold">
+                              🧪 Test không cộng tiền
+                            </span>`
+                          : ''
+                      }
+                      ${
+                        t.studentCode
+                          ? `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-mono font-bold text-[10px] whitespace-nowrap">Mã HS: ${escapeHtml(
+                              t.studentCode
+                            )}</span>`
+                          : ''
+                      }
+                    </div>`
                   : ''
               }
+              <div class="text-slate-900 font-semibold text-xs sm:text-sm leading-snug">${escapeHtml(cleanDesc)}</div>
             </div>
           </td>
-          <td class="py-3 px-4 text-right font-mono font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
+          <td class="py-2.5 px-3 text-right font-mono font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
             isTestTx ? 'text-amber-700' : isIncome ? 'text-emerald-600' : 'text-rose-600'
           }">
             ${
               isTestTx
-                ? `<div>0 ₫</div>
-                   <div class="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 inline-block mt-0.5">
-                     Không cộng tiền (Test: ${formatCurrency(t.testDisplayAmount || 600000)})
+                ? `<div class="inline-flex flex-col items-end leading-tight">
+                     <span class="text-[10px] font-sans font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                       🧪 Test không cộng tiền
+                     </span>
+                     <span class="text-xs sm:text-sm font-black text-amber-700 mt-0.5">
+                       ${formatCurrency(t.testDisplayAmount || 600000)}
+                     </span>
                    </div>`
                 : `${isIncome ? '+' : '-'}${formatCurrency(t.amount)}`
             }
           </td>
-          <td class="py-3 px-3.5 text-center whitespace-nowrap align-middle">
-            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg ${
+          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
+            <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg ${
               isTestTx
-                ? 'bg-amber-50 text-amber-900 border border-amber-300 font-bold'
-                : 'bg-slate-50 text-slate-600 border border-slate-200 font-semibold'
-            } text-xs whitespace-nowrap">
-              ${escapeHtml(isTestTx ? '🧪 Test thử STK (0₫)' : t.method || 'Chuyển khoản')}
-            </span>
+                ? 'bg-amber-50 border border-amber-300'
+                : 'bg-slate-50 border border-slate-200'
+            }">
+              ${formatCompactMethodHtml(t.method, isTestTx)}
+            </div>
           </td>
           <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
             ${
@@ -12758,9 +12827,9 @@ function renderSepayBalanceBanner() {
 
         if (isTestAlert) {
           alertTextEl.className = 'text-xs sm:text-sm font-extrabold mt-1 truncate text-amber-300';
-          alertTextEl.textContent = `🧪 [TEST THỬ STK • KHÔNG CỘNG TIỀN VÀO WEB] ${accTag}Mức test: ${formatCurrency(
+          alertTextEl.textContent = `🧪 Test không cộng tiền • ${formatCurrency(
             alertObj.amount || 0
-          )} (Số dư giữ nguyên: 0₫ cộng thêm) | ND: ${alertObj.content || 'Test hoạt động STK'}`;
+          )} | ${accTag}ND: ${alertObj.content || 'Test hoạt động STK'}`;
         } else {
           alertTextEl.className = `text-xs sm:text-sm font-bold mt-1 truncate ${
             isOut ? 'text-rose-300' : 'text-emerald-300'
