@@ -19,6 +19,7 @@ const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz6CZ6W-
 
 const STORAGE_KEYS = {
   STATE: 'edupay_app_state_v2',
+  SANDBOX_STATE: 'edupay_sandbox_draft_state_v1',
   GAS_URL: 'edupay_gas_webapp_url',
   AUTO_SYNC: 'edupay_auto_sync_enabled',
   ADMIN_AUTH: 'edupay_admin_authenticated'
@@ -3108,8 +3109,425 @@ function getInitialDemoState() {
 };
 }
 
+// ============================================================================
+// BỘ DỮ LIỆU NHÁP MẪU ĐỘC LẬP 100% ĐỂ GỬI CHO BẠN BÈ DÙNG THỬ (SANDBOX MODE)
+// ============================================================================
+function getInitialSandboxDraftState() {
+  const sampleClassesConfig = {
+    '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)': {
+      className: '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)',
+      subject: 'Toán 12',
+      periodLabel: 'Tháng 10-11/2026',
+      batchLabel: 'ĐỢT 5',
+      status: 'Đang diễn ra',
+      startDate: '2026-10-01',
+      endDate: '2026-10-30',
+      daysOfWeek: [1, 3, 5],
+      sessionStates: {
+        '2026-10-02': 1,
+        '2026-10-05': 1,
+        '2026-10-07': 1,
+        '2026-10-09': 1,
+        '2026-10-12': 1,
+        '2026-10-14': 3,
+        '2026-10-16': 2,
+        '2026-10-19': 1,
+        '2026-10-21': 1,
+        '2026-10-23': 1
+      }
+    },
+    '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)': {
+      className: '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)',
+      subject: 'Toán 12',
+      periodLabel: 'Tháng 10-11/2026',
+      batchLabel: 'ĐỢT 5',
+      status: 'Đang diễn ra',
+      startDate: '2026-10-01',
+      endDate: '2026-10-31',
+      daysOfWeek: [2, 4, 6],
+      sessionStates: {
+        '2026-10-01': 1,
+        '2026-10-03': 1,
+        '2026-10-06': 1,
+        '2026-10-08': 1,
+        '2026-10-10': 1,
+        '2026-10-13': 1,
+        '2026-10-15': 1,
+        '2026-10-17': 1,
+        '2026-10-20': 1,
+        '2026-10-22': 1
+      }
+    },
+    '11B1 - Toán Nâng Cao (T2,4,6)': {
+      className: '11B1 - Toán Nâng Cao (T2,4,6)',
+      subject: 'Toán 11',
+      periodLabel: 'Tháng 10-11/2026',
+      batchLabel: 'ĐỢT 4',
+      status: 'Đang diễn ra',
+      startDate: '2026-10-02',
+      endDate: '2026-10-30',
+      daysOfWeek: [1, 3, 5],
+      sessionStates: {
+        '2026-10-02': 1,
+        '2026-10-05': 1,
+        '2026-10-07': 1,
+        '2026-10-09': 3,
+        '2026-10-12': 2,
+        '2026-10-14': 1,
+        '2026-10-16': 1,
+        '2026-10-19': 1,
+        '2026-10-21': 1
+      }
+    },
+    '10C1 - Toán Tư Duy (T3,5,7)': {
+      className: '10C1 - Toán Tư Duy (T3,5,7)',
+      subject: 'Toán 10',
+      periodLabel: 'Tháng 10-11/2026',
+      batchLabel: 'ĐỢT 3',
+      status: 'Đang diễn ra',
+      startDate: '2026-10-01',
+      endDate: '2026-10-29',
+      daysOfWeek: [2, 4, 6],
+      sessionStates: {
+        '2026-10-01': 1,
+        '2026-10-03': 1,
+        '2026-10-06': 1,
+        '2026-10-08': 1,
+        '2026-10-10': 1,
+        '2026-10-13': 1,
+        '2026-10-15': 1,
+        '2026-10-17': 1,
+        '2026-10-20': 1
+      }
+    },
+    '9D1 - Luyện Thi Vào 10 (T2,4,6)': {
+      className: '9D1 - Luyện Thi Vào 10 (T2,4,6)',
+      subject: 'Toán 9',
+      periodLabel: 'Tháng 10-11/2026',
+      batchLabel: 'ĐỢT 3',
+      status: 'Đang diễn ra',
+      startDate: '2026-10-02',
+      endDate: '2026-10-30',
+      daysOfWeek: [1, 3, 5],
+      sessionStates: {
+        '2026-10-02': 1,
+        '2026-10-05': 1,
+        '2026-10-07': 1,
+        '2026-10-09': 1,
+        '2026-10-12': 1,
+        '2026-10-14': 1,
+        '2026-10-16': 1,
+        '2026-10-19': 1
+      }
+    },
+    '8E1 - Toán Bồi Dưỡng (T7,CN)': {
+      className: '8E1 - Toán Bồi Dưỡng (T7,CN)',
+      subject: 'Toán 8',
+      periodLabel: 'Tháng 10-11/2026',
+      batchLabel: 'ĐỢT 2',
+      status: 'Đang diễn ra',
+      startDate: '2026-10-03',
+      endDate: '2026-11-01',
+      daysOfWeek: [6, 0],
+      sessionStates: {
+        '2026-10-03': 1,
+        '2026-10-04': 1,
+        '2026-10-10': 1,
+        '2026-10-11': 1,
+        '2026-10-17': 1,
+        '2026-10-18': 1
+      }
+    }
+  };
+
+  const rawStudents = [
+    // Lớp 12A1 (8 HS)
+    ['NV001', 'Nguyễn Hoàng Minh Khôi', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Minh Khôi', '0901234501', 800000, 'Đã hoàn thành', 'Đã CK VietQR tự động', '2026-06-01', 5],
+    ['NV002', 'Trần Ngọc Bảo Châu', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Bảo Châu', '0901234502', 800000, 'Chờ duyệt', 'Phụ huynh vừa gửi ảnh biên lai', '2026-06-01', 4],
+    ['NV003', 'Lê Quốc Thiên Ân', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Thiên Ân', '0901234503', 800000, 'Đã hoàn thành', 'Đã đối soát SePay', '2026-06-05', 5],
+    ['NV004', 'Phạm Gia Bảo', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Gia Bảo', '0901234504', 800000, 'Chưa đóng', 'Hẹn cuối tuần chuyển khoản', '2026-06-10', 4],
+    ['NV005', 'Vũ Hà My', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Hà My', '0901234505', 800000, 'Đã hoàn thành', 'Đóng 2 đợt liên tiếp', '2026-06-01', 5],
+    ['NV006', 'Đặng Tuấn Kiệt', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Tuấn Kiệt', '0901234506', 800000, 'Đã hoàn thành', '', '2026-06-15', 5],
+    ['NV007', 'Bùi Phương Thảo', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Phương Thảo', '0901234507', 800000, 'Chưa đóng', '', '2026-07-01', 3],
+    ['NV008', 'Hoàng Đức Anh', '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)', 'PH Đức Anh', '0901234508', 800000, 'Đã hoàn thành', 'Học sinh giỏi Tỉnh', '2026-06-01', 5],
+
+    // Lớp 12A2 (6 HS)
+    ['NV009', 'Ngô Khánh Linh', '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)', 'PH Khánh Linh', '0901234509', 800000, 'Đã hoàn thành', '', '2026-06-02', 5],
+    ['NV010', 'Đỗ Minh Quân', '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)', 'PH Minh Quân', '0901234510', 800000, 'Đã hoàn thành', 'Đã CK VietQR', '2026-06-02', 5],
+    ['NV011', 'Hồ Ngọc Quỳnh Hương', '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)', 'PH Quỳnh Hương', '0901234511', 800000, 'Chờ duyệt', 'Đang chờ xác nhận biên lai', '2026-06-10', 4],
+    ['NV012', 'Dương Hải Đăng', '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)', 'PH Hải Đăng', '0901234512', 800000, 'Đã hoàn thành', '', '2026-06-12', 5],
+    ['NV013', 'Lý Thanh Trúc', '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)', 'PH Thanh Trúc', '0901234513', 800000, 'Chưa đóng', '', '2026-07-05', 3],
+    ['NV014', 'Trương Gia Huy', '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)', 'PH Gia Huy', '0901234514', 800000, 'Đã hoàn thành', '', '2026-06-02', 5],
+
+    // Lớp 11B1 (6 HS)
+    ['NV015', 'Phan Bảo Ngọc', '11B1 - Toán Nâng Cao (T2,4,6)', 'PH Bảo Ngọc', '0901234515', 700000, 'Đã hoàn thành', '', '2026-07-01', 4],
+    ['NV016', 'Võ Quốc Khánh', '11B1 - Toán Nâng Cao (T2,4,6)', 'PH Quốc Khánh', '0901234516', 700000, 'Đã hoàn thành', '', '2026-07-01', 4],
+    ['NV017', 'Đinh Thùy Dương', '11B1 - Toán Nâng Cao (T2,4,6)', 'PH Thùy Dương', '0901234517', 700000, 'Đã hoàn thành', '', '2026-07-05', 4],
+    ['NV018', 'Lương Nhật Minh', '11B1 - Toán Nâng Cao (T2,4,6)', 'PH Nhật Minh', '0901234518', 700000, 'Chưa đóng', 'Xin đóng vào ngày 25', '2026-07-10', 3],
+    ['NV019', 'Mai Anh Thư', '11B1 - Toán Nâng Cao (T2,4,6)', 'PH Anh Thư', '0901234519', 700000, 'Đã hoàn thành', '', '2026-07-01', 4],
+    ['NV020', 'Tạ Hoàng Nam', '11B1 - Toán Nâng Cao (T2,4,6)', 'PH Hoàng Nam', '0901234520', 700000, 'Đã hoàn thành', '', '2026-07-01', 4],
+
+    // Lớp 10C1 (6 HS)
+    ['NV021', 'Nguyễn Lê Thảo Vy', '10C1 - Toán Tư Duy (T3,5,7)', 'PH Thảo Vy', '0901234521', 600000, 'Đã hoàn thành', '', '2026-08-01', 3],
+    ['NV022', 'Trần Đình Khang', '10C1 - Toán Tư Duy (T3,5,7)', 'PH Đình Khang', '0901234522', 600000, 'Đã hoàn thành', '', '2026-08-01', 3],
+    ['NV023', 'Lê Ngọc Diệp', '10C1 - Toán Tư Duy (T3,5,7)', 'PH Ngọc Diệp', '0901234523', 600000, 'Chưa đóng', '', '2026-08-10', 2],
+    ['NV024', 'Phạm Tuấn Dũng', '10C1 - Toán Tư Duy (T3,5,7)', 'PH Tuấn Dũng', '0901234524', 600000, 'Đã hoàn thành', '', '2026-08-01', 3],
+    ['NV025', 'Hoàng Kim Ngân', '10C1 - Toán Tư Duy (T3,5,7)', 'PH Kim Ngân', '0901234525', 600000, 'Đã hoàn thành', 'Học sinh mới tháng này', '2026-10-01', 1],
+    ['NV026', 'Vũ Minh Triết', '10C1 - Toán Tư Duy (T3,5,7)', 'PH Minh Triết', '0901234526', 600000, 'Đã hoàn thành', '', '2026-08-01', 3],
+
+    // Lớp 9D1 (5 HS)
+    ['NV027', 'Đặng Ngọc Ánh', '9D1 - Luyện Thi Vào 10 (T2,4,6)', 'PH Ngọc Ánh', '0901234527', 600000, 'Đã hoàn thành', '', '2026-08-05', 3],
+    ['NV028', 'Bùi Quang Vinh', '9D1 - Luyện Thi Vào 10 (T2,4,6)', 'PH Quang Vinh', '0901234528', 600000, 'Đã hoàn thành', '', '2026-08-05', 3],
+    ['NV029', 'Đỗ Lan Anh', '9D1 - Luyện Thi Vào 10 (T2,4,6)', 'PH Lan Anh', '0901234529', 600000, 'Chưa đóng', '', '2026-08-15', 2],
+    ['NV030', 'Ngô Tấn Phát', '9D1 - Luyện Thi Vào 10 (T2,4,6)', 'PH Tấn Phát', '0901234530', 600000, 'Đã hoàn thành', '', '2026-08-05', 3],
+    ['NV031', 'Lê Mỹ Tâm', '9D1 - Luyện Thi Vào 10 (T2,4,6)', 'PH Mỹ Tâm', '0901234531', 600000, 'Đã hoàn thành', '', '2026-08-05', 3],
+
+    // Lớp 8E1 (5 HS)
+    ['NV032', 'Trần Khôi Nguyên', '8E1 - Toán Bồi Dưỡng (T7,CN)', 'PH Khôi Nguyên', '0901234532', 500000, 'Đã hoàn thành', '', '2026-09-01', 2],
+    ['NV033', 'Phạm Bảo Hân', '8E1 - Toán Bồi Dưỡng (T7,CN)', 'PH Bảo Hân', '0901234533', 500000, 'Đã hoàn thành', '', '2026-09-01', 2],
+    ['NV034', 'Nguyễn Thành Đạt', '8E1 - Toán Bồi Dưỡng (T7,CN)', 'PH Thành Đạt', '0901234534', 500000, 'Đã hoàn thành', '', '2026-09-01', 2],
+    ['NV035', 'Võ Thiên Kim', '8E1 - Toán Bồi Dưỡng (T7,CN)', 'PH Thiên Kim', '0901234535', 500000, 'Chưa đóng', 'Mới nhập học tuần này', '2026-10-10', 0],
+    ['NV036', 'Lý Trọng Nghĩa', '8E1 - Toán Bồi Dưỡng (T7,CN)', 'PH Trọng Nghĩa', '0901234536', 500000, 'Đã hoàn thành', '', '2026-09-01', 2]
+  ];
+
+  const metaMap = {};
+  const students = rawStudents.map((row, index) => {
+    const [code, fullName, className, parentName, parentPhone, tuitionFee, status, note, startDate, paidBatches] = row;
+    metaMap[code] = { startDate, paidBatches };
+    return {
+      id: `ST_DEMO_${String(index + 1).padStart(3, '0')}`,
+      studentCode: code,
+      fullName,
+      className,
+      parentName,
+      parentPhone,
+      period: 'Tháng 10-11/2026',
+      tuitionFee,
+      status,
+      receiptUrl: status === 'Chờ duyệt' ? SAMPLE_RECEIPT_SVG : '',
+      updatedAt: '2026-10-23 09:30',
+      note
+    };
+  });
+
+  const sampleHistory = [
+    {
+      id: 'HIST_DEMO_01',
+      archivedAt: '2026-09-30 20:15',
+      className: '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)',
+      subject: 'Toán 12',
+      periodLabel: 'Tháng 8-9/2026',
+      batchLabel: 'ĐỢT 4',
+      startDate: '2026-08-25',
+      endDate: '2026-09-25',
+      daysOfWeek: [1, 3, 5],
+      sessionStates: {
+        '2026-08-26': 1,
+        '2026-08-28': 1,
+        '2026-08-31': 1,
+        '2026-09-02': 1,
+        '2026-09-04': 1,
+        '2026-09-07': 1,
+        '2026-09-09': 1,
+        '2026-09-11': 1,
+        '2026-09-14': 1,
+        '2026-09-16': 1,
+        '2026-09-18': 1,
+        '2026-09-21': 1
+      },
+      checkedSessions: 12,
+      totalStudents: 8,
+      paidCount: 8,
+      totalExpected: 6400000,
+      totalCollected: 6400000,
+      totalMissing: 0,
+      studentsSnapshot: students
+        .filter(s => s.className === '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)')
+        .map(s => ({ ...s, period: 'Tháng 8-9/2026', status: 'Đã hoàn thành', note: 'Đã hoàn thành Đợt 4' }))
+    }
+  ];
+
+  const paymentRequests = [
+    {
+      id: 'YC_DEMO_01',
+      submittedAt: '2026-10-23 08:45',
+      studentRecordId: 'ST_DEMO_002',
+      studentCode: 'NV002',
+      studentName: 'Trần Ngọc Bảo Châu',
+      className: '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)',
+      period: 'Tháng 10-11/2026',
+      amount: 800000,
+      parentPhone: '0901234502',
+      payerName: 'Trần Văn Hùng (PH em Bảo Châu)',
+      note: 'Chuyển khoản học phí Đợt 5 cho cháu Bảo Châu lớp 12A1',
+      receiptUrl: SAMPLE_RECEIPT_SVG,
+      status: 'Chờ duyệt'
+    },
+    {
+      id: 'YC_DEMO_02',
+      submittedAt: '2026-10-23 10:15',
+      studentRecordId: 'ST_DEMO_011',
+      studentCode: 'NV011',
+      studentName: 'Hồ Ngọc Quỳnh Hương',
+      className: '12A2 - Mục Tiêu 9+ (Ca 2 - T3,5,7)',
+      period: 'Tháng 10-11/2026',
+      amount: 800000,
+      parentPhone: '0901234511',
+      payerName: 'Mẹ bé Quỳnh Hương',
+      note: 'Gửi thầy học phí tháng 10-11 của em Hương ạ',
+      receiptUrl: SAMPLE_RECEIPT_SVG,
+      status: 'Chờ duyệt'
+    }
+  ];
+
+  const transactions = [
+    {
+      id: 'GD_DEMO_001',
+      date: '2026-10-23',
+      type: 'Thu',
+      category: 'Thu học phí',
+      amount: 800000,
+      description: 'Tự động lưu CK vào STK: NV001 - Nguyễn Hoàng Minh Khôi (Tháng 10-11/2026)',
+      studentCode: 'NV001',
+      method: 'Chuyển khoản STK (Tự động)',
+      receiptUrl: '',
+      createdBy: 'Tự động từ STK (SePay)'
+    },
+    {
+      id: 'GD_DEMO_002',
+      date: '2026-10-22',
+      type: 'Thu',
+      category: 'Thu học phí',
+      amount: 800000,
+      description: 'Tự động lưu CK vào STK: NV003 - Lê Quốc Thiên Ân (Tháng 10-11/2026)',
+      studentCode: 'NV003',
+      method: 'Chuyển khoản STK (Tự động)',
+      receiptUrl: '',
+      createdBy: 'Tự động từ STK (SePay)'
+    },
+    {
+      id: 'GD_DEMO_003',
+      date: '2026-10-22',
+      type: 'Thu',
+      category: 'Thu học phí',
+      amount: 800000,
+      description: 'Thu học phí Tháng 10-11/2026 - NV005 Vũ Hà My',
+      studentCode: 'NV005',
+      method: 'Chuyển khoản',
+      receiptUrl: '',
+      createdBy: 'Quản lý (Bản nháp)'
+    },
+    {
+      id: 'GD_DEMO_004',
+      date: '2026-10-21',
+      type: 'Chi',
+      category: 'Chi phí vận hành',
+      amount: 1450000,
+      description: 'In ấn tài liệu chuyên đề Luyện thi ĐH & Đề thi thử tháng 10',
+      studentCode: '',
+      method: 'Chuyển khoản',
+      receiptUrl: '',
+      createdBy: 'Quản lý (Bản nháp)'
+    },
+    {
+      id: 'GD_DEMO_005',
+      date: '2026-10-20',
+      type: 'Thu',
+      category: 'Thu học phí',
+      amount: 700000,
+      description: 'Thu học phí Tháng 10-11/2026 - NV015 Phan Bảo Ngọc (11B1)',
+      studentCode: 'NV015',
+      method: 'Chuyển khoản',
+      receiptUrl: '',
+      createdBy: 'Tự động từ STK (SePay)'
+    },
+    {
+      id: 'GD_DEMO_006',
+      date: '2026-10-19',
+      type: 'Chi',
+      category: 'Chi phí vận hành',
+      amount: 950000,
+      description: 'Thanh toán tiền điện, nước & Internet cáp quang phòng học',
+      studentCode: '',
+      method: 'Chuyển khoản',
+      receiptUrl: '',
+      createdBy: 'Quản lý (Bản nháp)'
+    },
+    {
+      id: 'GD_DEMO_007',
+      date: '2026-10-18',
+      type: 'Thu',
+      category: 'Thu học phí',
+      amount: 600000,
+      description: 'Thu học phí Tháng 10-11/2026 - NV021 Nguyễn Lê Thảo Vy (10C1)',
+      studentCode: 'NV021',
+      method: 'Chuyển khoản',
+      receiptUrl: '',
+      createdBy: 'Tự động từ STK (SePay)'
+    }
+  ];
+
+  return {
+    settings: {
+      centerName: 'TRUNG TÂM GIÁO DỤC ALPHA (BẢN NHÁP)',
+      bankBin: 'MB',
+      bankAccountNo: '0999888777',
+      bankAccountName: 'TRUNG TAM GIAO DUC ALPHA DEMO',
+      defaultPeriod: 'Tháng 10-11/2026',
+      adminPassword: '123456',
+      teacherPhone: '0901234567',
+      customQrUrl: '',
+      sepayBalance: '45600000',
+      classSchedulesJson: JSON.stringify(sampleClassesConfig),
+      classHistoryJson: JSON.stringify(sampleHistory),
+      studentMetaJson: JSON.stringify(metaMap)
+    },
+    students,
+    paymentRequests,
+    transactions
+  };
+}
+
+function loadSandboxDraftStateFromLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SANDBOX_STATE);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.students) && parsed.settings) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  const initialDraft = getInitialSandboxDraftState();
+  localStorage.setItem(STORAGE_KEYS.SANDBOX_STATE, JSON.stringify(initialDraft));
+  return initialDraft;
+}
+
+function checkIsSandboxUrlRequested() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const modeParam = (params.get('mode') || params.get('tab') || '').toLowerCase();
+    const hash = (window.location.hash || '').toLowerCase();
+    return (
+      modeParam === 'nhap' ||
+      modeParam === 'demo' ||
+      modeParam === 'sandbox' ||
+      hash === '#nhap' ||
+      hash === '#demo'
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
 // Biến trạng thái toàn cục
-let appState = loadStateFromLocal();
+let isSandboxDraftMode = false;
+let isOpenedViaFriendSandboxUrl = checkIsSandboxUrlRequested();
+let realAppStateBackup = null;
+let appState = isOpenedViaFriendSandboxUrl ? loadSandboxDraftStateFromLocal() : loadStateFromLocal();
+if (isOpenedViaFriendSandboxUrl) {
+  isSandboxDraftMode = true;
+}
 let lastCommittedStateJson = JSON.stringify(appState);
 let actionUndoStack = [];
 let actionRedoStack = [];
@@ -3125,10 +3543,223 @@ let uploadedReceiptBase64 = '';
 let financeBarChartInstance = null;
 let tuitionPieChartInstance = null;
 
+function updateSandboxModeButtonsUI() {
+  const banner = document.getElementById('sandbox-draft-banner');
+  const topBtn = document.getElementById('btn-mode-sandbox');
+  const sideBtn = document.getElementById('side-nav-sandbox');
+  const sideLabel = document.getElementById('side-nav-sandbox-label');
+  const tabBtn = document.getElementById('tab-btn-sandbox');
+  const tabLabel = document.getElementById('tab-btn-sandbox-label');
+
+  if (banner) {
+    if (isSandboxDraftMode) {
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  }
+
+  if (topBtn) {
+    if (isSandboxDraftMode) {
+      topBtn.className =
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white shadow-sm transition cursor-pointer';
+      topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5"></i><span>Đang ở Tab Nháp</span>`;
+    } else {
+      topBtn.className =
+        'mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer';
+      topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16]"></i><span>Tab Nháp</span>`;
+    }
+  }
+
+  if (sideBtn && sideLabel) {
+    if (isSandboxDraftMode) {
+      sideBtn.className = 'tc-nav-item is-active';
+      sideLabel.textContent = 'Đang ở Tab Nháp';
+      sideLabel.className = 'tc-sidebar-label truncate text-white font-extrabold';
+    } else {
+      sideBtn.className = 'tc-nav-item border border-dashed border-[#FF4B16]/40 bg-[#FFF3EE]/60';
+      sideLabel.textContent = 'Tab Nháp (Dùng thử)';
+      sideLabel.className = 'tc-sidebar-label truncate text-[#FF4B16] font-extrabold';
+    }
+  }
+
+  if (tabBtn && tabLabel) {
+    if (isSandboxDraftMode) {
+      tabBtn.className =
+        'flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold transition bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white cursor-pointer shadow-sm';
+      tabLabel.textContent = 'Đang ở Tab Nháp (Bấm để về Dữ liệu thật)';
+    } else {
+      tabBtn.className =
+        'flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs';
+      tabLabel.textContent = 'Tab Nháp (Dùng Thử Cho Bạn Bè)';
+    }
+  }
+}
+
+function enterSandboxDraftMode(silent = false) {
+  if (!isSandboxDraftMode) {
+    realAppStateBackup = JSON.stringify(appState);
+  }
+  isSandboxDraftMode = true;
+  if (typeof livePollingTimer !== 'undefined' && livePollingTimer) {
+    clearInterval(livePollingTimer);
+    livePollingTimer = null;
+  }
+
+  appState = loadSandboxDraftStateFromLocal();
+  lastCommittedStateJson = JSON.stringify(appState);
+  actionUndoStack = [];
+  actionRedoStack = [];
+
+  const clsMap = getClassSchedulesMap();
+  selectedClassbookClass = Object.keys(clsMap)[0] || '';
+  selectedClassbookGradeFilter = 'ALL';
+  selectedAllStuGradeFilter = 'ALL';
+
+  // Mở sẵn quyền xem trang Quản lý cho Tab Nháp để bạn bè trải nghiệm đầy đủ tính năng
+  sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+
+  try {
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('mode', 'nhap');
+    window.history.replaceState({}, '', newUrl.toString());
+  } catch (e) {}
+
+  updateSandboxModeButtonsUI();
+  updateSyncStatusBanner();
+  populateSettingsForm();
+  switchAppMode('admin');
+  refreshAllViews();
+
+  if (!silent) {
+    showToast(
+      '🧪 Đã chuyển sang Tab Nháp (Dùng Thử)! Mọi thao tác tại đây hoàn toàn tách biệt với dữ liệu thật của bạn.',
+      'success'
+    );
+  }
+}
+
+function exitSandboxDraftMode() {
+  // Nếu đường link được mở trực tiếp từ ?mode=nhap (dành cho bạn bè), yêu cầu mật khẩu chủ hệ thống trước khi cho xem dữ liệu thật
+  if (isOpenedViaFriendSandboxUrl) {
+    const realStateCandidate = loadStateFromLocal();
+    const ownerPass = String(realStateCandidate?.settings?.adminPassword || '123456').trim();
+    const entered = prompt(
+      '🔒 Khu vực Dữ Liệu Thật dành riêng cho Chủ hệ thống (LỚP TOÁN ANH CHÍ).\nNhập mật khẩu quản lý để chuyển về dữ liệu thật (Nếu bạn đang dùng thử, hãy bấm Cancel để tiếp tục ở Tab Nháp):'
+    );
+    if (entered === null) return;
+    if (entered.trim() !== ownerPass) {
+      showToast('Mật khẩu chủ hệ thống không đúng! Bạn vẫn đang ở Tab Nháp Dùng Thử.', 'warning');
+      return;
+    }
+    isOpenedViaFriendSandboxUrl = false;
+  }
+
+  isSandboxDraftMode = false;
+  if (realAppStateBackup) {
+    try {
+      appState = JSON.parse(realAppStateBackup);
+    } catch (e) {
+      appState = loadStateFromLocal();
+    }
+  } else {
+    appState = loadStateFromLocal();
+  }
+
+  lastCommittedStateJson = JSON.stringify(appState);
+  actionUndoStack = [];
+  actionRedoStack = [];
+
+  const clsMap = getClassSchedulesMap();
+  selectedClassbookClass = Object.keys(clsMap)[0] || '';
+  selectedClassbookGradeFilter = 'ALL';
+  selectedAllStuGradeFilter = 'ALL';
+
+  try {
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('mode');
+    newUrl.searchParams.delete('tab');
+    window.history.replaceState({}, '', newUrl.toString());
+  } catch (e) {}
+
+  updateSandboxModeButtonsUI();
+  updateSyncStatusBanner();
+  populateSettingsForm();
+  refreshAllViews();
+
+  const gasUrl = getGasUrl();
+  if (gasUrl) {
+    syncFromGoogleSheet(false);
+    startLiveBankPolling();
+  }
+
+  showToast('✅ Đã quay về Dữ Liệu Thật của bạn (LỚP TOÁN ANH CHÍ)!', 'success');
+}
+
+function toggleSandboxDraftMode() {
+  if (isSandboxDraftMode) {
+    exitSandboxDraftMode();
+  } else {
+    enterSandboxDraftMode(false);
+  }
+}
+
+function resetSandboxDraftData() {
+  if (!isSandboxDraftMode) {
+    enterSandboxDraftMode(true);
+  }
+  const freshDraft = getInitialSandboxDraftState();
+  localStorage.setItem(STORAGE_KEYS.SANDBOX_STATE, JSON.stringify(freshDraft));
+  appState = freshDraft;
+  lastCommittedStateJson = JSON.stringify(appState);
+  actionUndoStack = [];
+  actionRedoStack = [];
+
+  const clsMap = getClassSchedulesMap();
+  selectedClassbookClass = Object.keys(clsMap)[0] || '';
+  selectedClassbookGradeFilter = 'ALL';
+  selectedAllStuGradeFilter = 'ALL';
+
+  populateSettingsForm();
+  refreshAllViews();
+  showToast('🔄 Đã tạo lại bộ dữ liệu nháp mẫu mới (36 Học sinh • 6 Lớp học • Sổ Thu Chi mẫu)!', 'success');
+}
+
+async function copySandboxShareLink() {
+  let shareUrl = 'https://thanhchi113.github.io/quan-ly-hoc-sinh-thu-chi/?mode=nhap';
+  try {
+    if (window.location.origin && window.location.origin.startsWith('http')) {
+      const u = new URL(window.location.origin + window.location.pathname);
+      u.searchParams.set('mode', 'nhap');
+      shareUrl = u.toString();
+    }
+  } catch (e) {}
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    showToast(
+      `📋 Đã copy Link Tab Nháp (${shareUrl})! Bạn chỉ việc dán (Ctrl+V) gửi cho bạn bè dùng thử ngay!`,
+      'success'
+    );
+  } catch (e) {
+    prompt('Copy đường link Tab Nháp bên dưới để gửi cho bạn bè dùng thử:', shareUrl);
+  }
+}
+
 function bootstrapApp() {
   initThemeSystem();
   enableSourceProtection();
   lucide.createIcons();
+
+  if (isSandboxDraftMode) {
+    enterSandboxDraftMode(true);
+    showToast(
+      '🧪 Chào mừng bạn đến với Phiên Bản Dùng Thử (Tab Nháp)! Bạn có thể thoải mái trải nghiệm mọi tính năng.',
+      'info'
+    );
+    return;
+  }
+
   initAppUI();
 
   // Nếu đã cấu hình link Google Sheet thì tự động tải dữ liệu mới nhất về & bật lắng nghe biến động số dư
@@ -3403,15 +4034,18 @@ function saveStateToLocal() {
     actionRedoStack = [];
   }
   lastCommittedStateJson = currentJson;
-  localStorage.setItem(STORAGE_KEYS.STATE, currentJson);
+  const targetStorageKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_STATE : STORAGE_KEYS.STATE;
+  localStorage.setItem(targetStorageKey, currentJson);
   refreshAllViews();
 }
 
 function getGasUrl() {
+  if (isSandboxDraftMode) return '';
   return (localStorage.getItem(STORAGE_KEYS.GAS_URL) || DEFAULT_GAS_WEBAPP_URL || '').trim();
 }
 
 function isAutoSyncEnabled() {
+  if (isSandboxDraftMode) return false;
   const val = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
   return val === null ? true : val === 'true';
 }
@@ -3428,6 +4062,11 @@ function initAppUI() {
 }
 
 function refreshAllViews() {
+  // Cập nhật nút & banner Tab Nháp nếu đang bật
+  if (typeof updateSandboxModeButtonsUI === 'function') {
+    updateSandboxModeButtonsUI();
+  }
+
   // Header
   const centerNameEl = document.getElementById('header-center-name');
   if (centerNameEl) {
@@ -6761,25 +7400,45 @@ function saveGeneralSettings(event) {
 }
 
 function updateSyncStatusBanner(lastSyncTimeStr = '') {
-  const url = getGasUrl();
   const dot = document.getElementById('sync-status-dot');
   const text = document.getElementById('sync-status-text');
   const quickBtn = document.getElementById('btn-quick-sync');
 
+  if (isSandboxDraftMode) {
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-[#FF4B16] inline-block';
+    if (text) text.textContent = 'Đang ở Tab Nháp (Dữ liệu mẫu độc lập)';
+    if (quickBtn) quickBtn.classList.add('hidden');
+    return;
+  }
+
+  const url = getGasUrl();
   if (url) {
-    dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block';
-    text.textContent = lastSyncTimeStr
-      ? `Đã đồng bộ Google Sheet (${lastSyncTimeStr})`
-      : 'Đã kết nối Google Sheet (2 chiều)';
-    quickBtn.classList.remove('hidden');
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block';
+    if (text) {
+      text.textContent = lastSyncTimeStr
+        ? `Đã đồng bộ Google Sheet (${lastSyncTimeStr})`
+        : 'Đã kết nối Google Sheet (2 chiều)';
+    }
+    if (quickBtn) quickBtn.classList.remove('hidden');
   } else {
-    dot.className = 'w-2 h-2 rounded-full bg-amber-500 inline-block';
-    text.textContent = 'Chế độ Local Demo (Vào Quản lý -> Cài đặt để gắn Google Sheet)';
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 inline-block';
+    if (text) text.textContent = 'Chế độ Local Demo (Vào Quản lý -> Cài đặt để gắn Google Sheet)';
   }
 }
 
 // Đọc dữ liệu từ Google Sheet về Web App (Pull)
 async function syncFromGoogleSheet(showUserToast = true) {
+  if (isSandboxDraftMode) {
+    if (showUserToast) {
+      showToast(
+        '🧪 Đang ở Tab Nháp (Dùng Thử): Đã làm mới dữ liệu nháp! (Tách biệt 100%, không kết nối Google Sheet thật của bạn)',
+        'info'
+      );
+      refreshAllViews();
+    }
+    return;
+  }
+
   const gasUrl = getGasUrl();
   if (!gasUrl) {
     if (showUserToast) {
@@ -6841,6 +7500,16 @@ async function syncFromGoogleSheet(showUserToast = true) {
 
 // Đẩy toàn bộ dữ liệu từ Web App lên Google Sheet (Push)
 async function syncAllToGoogleSheet(showUserToast = true) {
+  if (isSandboxDraftMode) {
+    if (showUserToast) {
+      showToast(
+        '🧪 Đang ở Tab Nháp (Dùng Thử): Đã lưu dữ liệu nháp trên trình duyệt! (Không ghi đè lên Google Sheet thật của bạn)',
+        'success'
+      );
+    }
+    return;
+  }
+
   const gasUrl = getGasUrl();
   if (!gasUrl) {
     if (showUserToast) {
