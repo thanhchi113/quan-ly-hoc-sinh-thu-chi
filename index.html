@@ -1597,23 +1597,23 @@
             </div>
           </div>
 
-          <!-- Transactions Table -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <!-- Transactions Table (Cân đối cột, đồng bộ chuẩn Modern Sheet Card) -->
+          <div class="modern-sheet-card bg-white overflow-hidden">
             <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse">
+              <table class="sheet-table w-full text-left border-collapse">
                 <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <th class="py-3.5 px-4">Mã GD / Ngày</th>
-                    <th class="py-3.5 px-4">Loại</th>
-                    <th class="py-3.5 px-4">Danh mục</th>
-                    <th class="py-3.5 px-4">Nội dung chi tiết</th>
-                    <th class="py-3.5 px-4 text-right">Số tiền</th>
-                    <th class="py-3.5 px-4 text-center">Phương thức</th>
-                    <th class="py-3.5 px-4 text-center">Chứng từ</th>
-                    <th class="py-3.5 px-4 text-right">Thao tác</th>
+                  <tr class="sheet-navy-header text-xs font-extrabold uppercase tracking-wider whitespace-nowrap">
+                    <th class="py-3.5 px-4 w-[185px] text-left">Mã GD / Ngày</th>
+                    <th class="py-3.5 px-3 w-[105px] text-center">Loại</th>
+                    <th class="py-3.5 px-3.5 w-[150px] text-center">Danh mục</th>
+                    <th class="py-3.5 px-4 min-w-[300px] text-left">Nội dung chi tiết</th>
+                    <th class="py-3.5 px-4 w-[145px] text-right">Số tiền</th>
+                    <th class="py-3.5 px-3.5 w-[185px] text-center">Phương thức</th>
+                    <th class="py-3.5 px-3 w-[105px] text-center">Chứng từ</th>
+                    <th class="py-3.5 px-3 w-[85px] text-center">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody id="admin-transactions-tbody" class="divide-y divide-slate-100 text-sm">
+                <tbody id="admin-transactions-tbody" class="divide-y divide-slate-200 text-xs sm:text-sm">
                   <!-- Rendered by JS -->
                 </tbody>
               </table>
