@@ -489,6 +489,16 @@
                 <span>+ Tạo Khối</span>
               </button>
               <button
+                type="button"
+                id="btn-classbook-delete-grade"
+                onclick="handleToolbarDeleteGrade('classbook')"
+                title="Xóa Khối đang chọn hoặc chọn Khối cần xóa khỏi hệ thống"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span id="btn-classbook-delete-grade-label">🗑️ Xóa Khối</span>
+              </button>
+              <button
                 onclick="openClassScheduleModal(true)"
                 class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
               >
@@ -1072,6 +1082,16 @@
                 >
                   <i data-lucide="layers" class="w-4 h-4"></i>
                   <span>+ Tạo Khối</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-students-delete-grade"
+                  onclick="handleToolbarDeleteGrade('students')"
+                  title="Xóa Khối đang chọn hoặc chọn Khối cần xóa khỏi hệ thống"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  <span id="btn-students-delete-grade-label">🗑️ Xóa Khối</span>
                 </button>
                 <button
                   onclick="openStudentModal()"
@@ -3243,8 +3263,8 @@
             <i data-lucide="layers" class="w-5 h-5 text-amber-300"></i>
           </div>
           <div>
-            <h3 class="font-extrabold text-base sm:text-lg text-white">Tạo Khối Mới &amp; Quản Lý Khối Lớp</h3>
-            <p class="text-xs text-indigo-100">Thêm các Khối lớp (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) lên thanh chọn nhanh</p>
+            <h3 class="font-extrabold text-base sm:text-lg text-white">Tạo Khối Mới &amp; Xóa / Quản Lý Khối Lớp</h3>
+            <p class="text-xs text-indigo-100">Thêm Khối mới hoặc bấm "🗑️ Xóa Khối" để xóa bất kỳ Khối nào khỏi hệ thống</p>
           </div>
         </div>
         <button onclick="closeGradeManagerModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
