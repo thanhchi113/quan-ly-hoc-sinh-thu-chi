@@ -397,6 +397,24 @@ function doPost(e) {
   }
 }
 
+function normalizeMoneyVnd(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') {
+    if (!isFinite(val) || val === 0) return 0;
+    const abs = Math.abs(Math.round(val));
+    return (abs >= 20000 && abs % 1000 === 0) ? Math.round(val) : Math.round(val * 1000);
+  }
+  const s = String(val).trim();
+  if (!s) return 0;
+  const isNeg = s.startsWith('-');
+  const digits = s.replace(/[^0-9]/g, '');
+  if (!digits) return 0;
+  const num = Number(digits);
+  if (!isFinite(num) || num === 0) return 0;
+  const full = (num >= 20000 && num % 1000 === 0) ? Math.round(num) : Math.round(num * 1000);
+  return isNeg ? -full : full;
+}
+
 /**
  * Đọc toàn bộ 4 bảng trong Google Sheet
  */
@@ -418,7 +436,7 @@ function getAllSheetData() {
       parentName: String(r[4] || '').trim(),
       parentPhone: String(r[5] || '').replace(/^'/, '').trim(),
       period: String(r[6] || '').trim(),
-      tuitionFee: Number(r[7]) || 0,
+      tuitionFee: normalizeMoneyVnd(r[7]),
       status: String(r[8] || 'Chưa đóng').trim(),
       receiptUrl: String(r[9] || '').trim(),
       updatedAt: String(r[10] || '').trim(),
@@ -438,7 +456,7 @@ function getAllSheetData() {
       date: formatDateValue(r[1]),
       type: String(r[2] || 'Thu').trim(),
       category: String(r[3] || '').trim(),
-      amount: Number(r[4]) || 0,
+      amount: normalizeMoneyVnd(r[4]),
       description: String(r[5] || '').trim(),
       studentCode: String(r[6] || '').trim(),
       method: String(r[7] || 'Chuyển khoản').trim(),
@@ -462,7 +480,7 @@ function getAllSheetData() {
       studentName: String(r[4] || '').trim(),
       className: String(r[5] || '').trim(),
       period: String(r[6] || '').trim(),
-      amount: Number(r[7]) || 0,
+      amount: normalizeMoneyVnd(r[7]),
       parentPhone: String(r[8] || '').replace(/^'/, '').trim(),
       payerName: String(r[9] || '').trim(),
       note: String(r[10] || '').trim(),
@@ -525,7 +543,7 @@ function writeStudentsToSheet(sheet, students) {
     s.parentName || '',
     "'" + (s.parentPhone || ''),
     s.period || '',
-    Number(s.tuitionFee) || 0,
+    normalizeMoneyVnd(s.tuitionFee),
     s.status || 'Chưa đóng',
     s.receiptUrl || '',
     s.updatedAt || '',
@@ -544,7 +562,7 @@ function writeTransactionsToSheet(sheet, transactions) {
     t.date || '',
     t.type || 'Thu',
     t.category || '',
-    Number(t.amount) || 0,
+    normalizeMoneyVnd(t.amount),
     t.description || '',
     t.studentCode || '',
     t.method || 'Chuyển khoản',
@@ -567,7 +585,7 @@ function writeRequestsToSheet(sheet, requests) {
     r.studentName || '',
     r.className || '',
     r.period || '',
-    Number(r.amount) || 0,
+    normalizeMoneyVnd(r.amount),
     "'" + (r.parentPhone || ''),
     r.payerName || '',
     r.note || '',
