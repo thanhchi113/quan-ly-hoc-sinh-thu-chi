@@ -29,7 +29,7 @@
         </div>
         <div class="truncate">
           <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0">
+            <span id="header-brand-badge" class="px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0">
               THANH CHÍ EDU
             </span>
             <h1 id="header-center-name" class="font-extrabold text-[#25214C] group-hover:text-[#5B55FF] transition text-sm sm:text-base leading-tight truncate">
@@ -168,10 +168,11 @@
         <!-- Circular Administrator Avatar -->
         <div
           onclick="switchAppMode('admin')"
+          id="header-avatar-box"
           title="Quản trị viên — THANH CHÍ EDU"
           class="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-[#5B55FF] via-[#7C6BFF] to-[#FF4B16] p-0.5 shadow-sm cursor-pointer shrink-0"
         >
-          <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-[11px] font-black text-[#25214C]">
+          <div id="header-avatar-initials" class="w-full h-full rounded-full bg-white flex items-center justify-center text-[11px] font-black text-[#25214C]">
             TC
           </div>
         </div>
@@ -397,8 +398,8 @@
                     <i data-lucide="sparkles" class="w-4 h-4"></i>
                   </div>
                   <div class="truncate">
-                    <div class="text-xs font-extrabold text-[#25214C] tracking-tight leading-none">THANH CHÍ EDU</div>
-                    <div class="text-[10px] font-semibold text-[#8986A6] mt-0.5">Hệ thống Quản trị</div>
+                    <div id="sidebar-brand-title" class="text-xs font-extrabold text-[#25214C] tracking-tight leading-none">THANH CHÍ EDU</div>
+                    <div id="sidebar-brand-subtitle" class="text-[10px] font-semibold text-[#8986A6] mt-0.5">Hệ thống Quản trị</div>
                   </div>
                 </div>
                 <button
@@ -578,7 +579,7 @@
                       <h2 id="workspace-page-title" class="text-base sm:text-lg font-extrabold text-[#25214C] leading-tight">
                         Sổ Theo Dõi Lớp &amp; Lịch Dạy
                       </h2>
-                      <span class="hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[10px] font-extrabold">
+                      <span id="workspace-brand-badge" class="hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[10px] font-extrabold">
                         THANH CHÍ EDU
                       </span>
                     </div>
@@ -616,12 +617,14 @@
                   </div>
 
                   <a
+                    id="btn-open-google-sheet-top"
                     href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+                    onclick="return handleOpenGoogleSheetLink(event)"
                     target="_blank"
                     class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer shadow-2xs whitespace-nowrap"
                   >
                     <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                    <span>Mở Google Sheet</span>
+                    <span id="btn-open-google-sheet-top-label">Mở Google Sheet</span>
                   </a>
                   <button
                     onclick="syncFromGoogleSheet(true)"
@@ -2360,6 +2363,7 @@
                   <div class="flex items-center gap-1.5">
                     <a
                       href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+                      onclick="return handleOpenGoogleSheetLink(event)"
                       target="_blank"
                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition cursor-pointer"
                     >
@@ -3572,6 +3576,7 @@
               </button>
               <a
                 href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+                onclick="return handleOpenGoogleSheetLink(event)"
                 target="_blank"
                 class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
