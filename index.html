@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>EduPay & SheetSync - Quản Lý Học Sinh, Học Phí & Thu Chi</title>
+  <title>THANH CHÍ EDU — Quản Lý Học Sinh, Học Phí &amp; Tài Chính</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -15,30 +15,62 @@
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
-  <!-- TOP NAVIGATION BAR -->
-  <header class="sticky top-0 z-40 glass-nav border-b border-slate-200 shadow-xs">
-    <div class="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+  <!-- TOP NAVIGATION BAR (THANH CHÍ EDU — SOFT PREMIUM SAAS HEADER) -->
+  <header class="sticky top-0 z-40 glass-nav">
+    <div class="max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2.5">
       <!-- Brand (Bấm để quay lại trang đầu) -->
       <div
         onclick="handleGoToHomePage()"
-        title="Bấm để quay lại trang đầu"
-        class="flex items-center gap-3 min-w-0 cursor-pointer group"
+        title="Bấm để quay lại trang đầu — THANH CHÍ EDU"
+        class="flex items-center gap-3 min-w-0 cursor-pointer group shrink-0"
       >
-        <div class="w-10 h-10 rounded-xl bg-blue-600 theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
-          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+        <div class="w-10 h-10 rounded-2xl theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
+          <i data-lucide="graduation-cap" class="w-5 h-5"></i>
         </div>
         <div class="truncate">
-          <h1 id="header-center-name" class="font-bold text-slate-900 group-hover:text-blue-600 transition text-base sm:text-lg leading-tight truncate">
-            Quản Lý Lớp Học & Học Phí
-          </h1>
-          <div class="flex items-center gap-1.5 text-xs text-slate-500">
-            <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-            <span id="sync-status-text" class="truncate">Chế độ Local (Chưa gắn link Sheet)</span>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0">
+              THANH CHÍ EDU
+            </span>
+            <h1 id="header-center-name" class="font-extrabold text-[#25214C] group-hover:text-[#5B55FF] transition text-sm sm:text-base leading-tight truncate">
+              LỚP TOÁN ANH CHÍ
+            </h1>
+          </div>
+          <div class="flex items-center gap-1.5 text-[11px] text-[#8986A6] mt-0.5">
+            <span class="hidden sm:inline font-semibold text-[#25214C]/75">Quản lý học sinh và tài chính</span>
+            <span class="hidden sm:inline text-slate-300">•</span>
+            <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0"></span>
+            <span id="sync-status-text" class="truncate">Đã kết nối Google Sheet (2 chiều)</span>
           </div>
         </div>
       </div>
 
-      <!-- Mode Switcher, Theme Customizer & Quick Sync -->
+      <!-- Global Search Field & Date Range Selector (Desktop SaaS Header) -->
+      <div class="hidden xl:flex items-center gap-2.5 flex-1 max-w-md mx-2">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 text-[#8986A6] absolute left-3.5 top-2.5 pointer-events-none"></i>
+          <input
+            id="global-header-search"
+            type="text"
+            oninput="handleGlobalHeaderSearch(this.value, false)"
+            onkeyup="if(event.key==='Enter') handleGlobalHeaderSearch(this.value, true)"
+            placeholder="Tìm nhanh học sinh, mã HS, lớp hoặc giao dịch..."
+            class="w-full pl-9 pr-3.5 py-1.5 rounded-full bg-[#FAFAFC] border border-[#EBECF3] text-xs font-semibold text-[#25214C] placeholder-[#8986A6] focus:outline-none focus:ring-2 focus:ring-[#5B55FF]/30 focus:border-[#5B55FF] transition shadow-2xs"
+          />
+        </div>
+        <button
+          type="button"
+          id="header-date-range-pill"
+          onclick="handleHeaderPeriodClick()"
+          title="Kỳ thu học phí & Lịch dạy đang hoạt động"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAFAFC] hover:bg-[#F3F1FF] border border-[#EBECF3] text-xs font-bold text-[#25214C] transition cursor-pointer whitespace-nowrap shrink-0 shadow-2xs"
+        >
+          <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-[#5B55FF]"></i>
+          <span id="header-active-period-text">Tháng 9-10/2026</span>
+        </button>
+      </div>
+
+      <!-- Mode Switcher, Theme Customizer, Notifications, Avatar & Quick Sync -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <!-- Nút Quay lại Trang đầu -->
         <button
@@ -46,21 +78,22 @@
           type="button"
           onclick="handleGoToHomePage()"
           title="Quay lại trang đầu & cuộn lên đỉnh trang"
-          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition cursor-pointer whitespace-nowrap"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white border border-[#E6E1FF] transition cursor-pointer whitespace-nowrap"
         >
           <i data-lucide="home" class="w-3.5 h-3.5"></i>
-          <span>Trang đầu</span>
+          <span class="hidden sm:inline">Trang đầu</span>
         </button>
+
         <!-- Nút chuyển nhanh Sáng / Tối -->
         <button
           id="btn-darkmode-toggle"
           type="button"
           onclick="toggleDarkModeQuick()"
           title="Chuyển đổi nhanh Chế độ Sáng / Tối (Light / Dark Mode)"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition cursor-pointer"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#EFEFF7] text-[#25214C] border border-[#EBECF3] transition cursor-pointer"
         >
           <span id="darkmode-toggle-icon" class="inline-flex items-center">
-            <i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-600"></i>
+            <i data-lucide="moon" class="w-3.5 h-3.5 text-[#5B55FF]"></i>
           </span>
           <span id="darkmode-toggle-label" class="hidden md:inline">Tối</span>
         </button>
@@ -71,52 +104,74 @@
           type="button"
           onclick="openThemeCustomizerModal()"
           title="Tùy chỉnh màu sắc giao diện & chế độ Sáng / Tối"
-          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer"
+          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#F3F1FF] text-[#25214C] border border-[#EBECF3] transition cursor-pointer"
         >
-          <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+          <i data-lucide="palette" class="w-3.5 h-3.5 text-[#7C6BFF]"></i>
           <span class="hidden sm:inline">Màu sắc</span>
-          <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#1f3d6e] border border-white shadow-2xs"></span>
+          <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#5B55FF] border border-white shadow-2xs"></span>
         </button>
 
         <button
           id="btn-quick-sync"
           onclick="syncFromGoogleSheet(true)"
           title="Lấy dữ liệu mới nhất từ Google Sheet về ứng dụng"
-          class="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+          class="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
         >
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="icon-quick-sync"></i>
           <span>Đồng bộ Sheet</span>
         </button>
 
+        <!-- Notification Bell Icon -->
+        <button
+          type="button"
+          onclick="handleHeaderNotificationClick()"
+          title="Thông báo duyệt học phí & biến động số dư SePay"
+          class="relative w-8 h-8 rounded-full bg-[#FAFAFC] hover:bg-[#F3F1FF] border border-[#EBECF3] flex items-center justify-center text-[#25214C] transition cursor-pointer shrink-0"
+        >
+          <i data-lucide="bell" class="w-4 h-4 text-[#5B55FF]"></i>
+          <span id="header-bell-dot" class="w-2 h-2 rounded-full bg-[#FF4B16] absolute top-1.5 right-1.5"></span>
+        </button>
+
         <!-- Role Toggle Pill -->
-        <div class="role-switch-pill p-1 rounded-xl flex items-center">
+        <div class="role-switch-pill flex items-center">
           <button
             id="btn-mode-parent"
             onclick="switchAppMode('parent')"
-            class="mode-pill-active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer"
+            class="mode-pill-active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer"
           >
-            <i data-lucide="users" class="w-4 h-4"></i>
+            <i data-lucide="users" class="w-3.5 h-3.5"></i>
             <span>Phụ huynh / HS</span>
           </button>
           <button
             id="btn-mode-admin"
             onclick="switchAppMode('admin')"
-            class="mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm transition cursor-pointer"
+            class="mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer"
           >
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
             <span>Quản lý</span>
             <span
               id="nav-pending-badge"
-              class="hidden ml-0.5 px-1.5 py-0.2 bg-amber-500 text-white text-[11px] font-bold rounded-full"
+              class="hidden ml-0.5 px-1.5 py-0.2 bg-[#FF4B16] text-white text-[10px] font-bold rounded-full"
             >0</span>
           </button>
+        </div>
+
+        <!-- Circular Administrator Avatar -->
+        <div
+          onclick="switchAppMode('admin')"
+          title="Quản trị viên — THANH CHÍ EDU"
+          class="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-[#5B55FF] via-[#7C6BFF] to-[#FF4B16] p-0.5 shadow-sm cursor-pointer shrink-0"
+        >
+          <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-[11px] font-black text-[#25214C]">
+            TC
+          </div>
         </div>
       </div>
     </div>
   </header>
 
   <!-- MAIN CONTENT AREA -->
-  <main class="flex-1 max-w-[1520px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <main class="flex-1 max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
     <!-- =================================================================== -->
     <!-- PHÂN HỆ 1: CỔNG PHỤ HUYNH & HỌC SINH (TRA CỨU & GỬI BIÊN LAI CK)    -->
@@ -249,128 +304,322 @@
         </form>
       </div>
 
-      <!-- Admin Main Workspace (Shown after login) -->
-      <div id="admin-workspace" class="hidden space-y-6">
+      <!-- Admin Main Workspace (Shown after login — Desktop SaaS Layout with Left Sidebar) -->
+      <div id="admin-workspace" class="hidden">
+        <div class="flex flex-col lg:flex-row items-start gap-5">
 
-        <!-- Desktop Sub-navigation & Sync Bar -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-2 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
-          <div class="flex flex-wrap items-center gap-1">
-            <button
-              onclick="switchAdminTab('classbook')"
-              id="tab-btn-classbook"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition bg-blue-600 text-white"
-            >
-              <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
-              <span>Sổ Theo Dõi Lớp & Lịch Dạy</span>
-            </button>
+          <!-- ============================================================= -->
+          <!-- COMPACT ELEGANT LEFT NAVIGATION SIDEBAR (THANH CHÍ EDU)       -->
+          <!-- ============================================================= -->
+          <aside
+            id="admin-left-sidebar"
+            class="tc-sidebar w-full lg:w-[218px] lg:sticky lg:top-20 shrink-0 p-3.5 flex flex-col justify-between gap-4"
+          >
+            <div class="space-y-3">
+              <!-- Sidebar Brand Header + Collapse Toggle -->
+              <div class="flex items-center justify-between gap-2 px-1.5 pt-0.5 pb-2 border-b border-[#EBECF3]">
+                <div class="flex items-center gap-2.5 min-w-0 tc-sidebar-brand-text">
+                  <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#5B55FF] to-[#7C6BFF] text-white flex items-center justify-center shadow-xs shrink-0">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                  </div>
+                  <div class="truncate">
+                    <div class="text-xs font-extrabold text-[#25214C] tracking-tight leading-none">THANH CHÍ EDU</div>
+                    <div class="text-[10px] font-semibold text-[#8986A6] mt-0.5">Hệ thống Quản trị</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onclick="toggleAdminSidebar()"
+                  title="Thu gọn / Mở rộng thanh điều hướng bên trái"
+                  class="hidden lg:inline-flex p-1.5 rounded-xl bg-[#FAFAFC] hover:bg-[#F3F1FF] text-[#8986A6] hover:text-[#5B55FF] border border-[#EBECF3] transition cursor-pointer shrink-0"
+                >
+                  <i data-lucide="panel-left-close" class="w-4 h-4" id="sidebar-collapse-icon"></i>
+                </button>
+              </div>
 
-            <button
-              onclick="switchAdminTab('history')"
-              id="tab-btn-history"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
-            >
-              <i data-lucide="history" class="w-4 h-4"></i>
-              <span>Lịch Sử Các Đợt</span>
-              <span id="tab-history-count" class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 font-extrabold">0</span>
-            </button>
+              <!-- 9 Vietnamese Navigation Items (Exact Prompt Spec + Linked to Features) -->
+              <nav class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-1 gap-1.5" id="tc-sidebar-nav-list">
+                <button
+                  type="button"
+                  id="side-nav-dashboard"
+                  onclick="navigateSidebarSection('dashboard')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="layout-grid" class="w-4 h-4 text-[#5B55FF] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Tổng quan</span>
+                  </span>
+                  <span class="tc-sidebar-badge w-2 h-2 rounded-full bg-[#7C6BFF] shrink-0"></span>
+                </button>
 
-            <button
-              onclick="switchAdminTab('dashboard')"
-              id="tab-btn-dashboard"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
-            >
-              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-              <span>Tổng quan & Duyệt CK</span>
-              <span id="tab-pending-count" class="px-1.5 py-0.2 text-xs rounded-full bg-amber-400 text-slate-950 font-bold hidden">0</span>
-            </button>
+                <button
+                  type="button"
+                  id="side-nav-students"
+                  onclick="navigateSidebarSection('students')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="users" class="w-4 h-4 text-[#7C6BFF] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Học sinh</span>
+                  </span>
+                  <span id="sidebar-students-badge" class="tc-sidebar-badge px-1.5 py-0.2 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold shrink-0">130</span>
+                </button>
 
-            <button
-              onclick="switchAdminTab('students')"
-              id="tab-btn-students"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
-            >
-              <i data-lucide="graduation-cap" class="w-4 h-4"></i>
-              <span>Thống Kê Tất Cả Học Sinh</span>
-              <span id="tab-all-students-count" class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 font-extrabold">0</span>
-            </button>
+                <button
+                  type="button"
+                  id="side-nav-classbook"
+                  onclick="navigateSidebarSection('classbook')"
+                  class="tc-nav-item is-active"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="school" class="w-4 h-4 text-[#5B55FF] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Lớp học</span>
+                  </span>
+                  <span id="sidebar-classes-badge" class="tc-sidebar-badge px-1.5 py-0.2 rounded-full bg-white/25 text-[10px] font-extrabold shrink-0">17</span>
+                </button>
 
-            <button
-              onclick="switchAdminTab('finance')"
-              id="tab-btn-finance"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
-            >
-              <i data-lucide="wallet" class="w-4 h-4"></i>
-              <span>Sổ Thu - Chi</span>
-            </button>
+                <button
+                  type="button"
+                  id="side-nav-attendance"
+                  onclick="navigateSidebarSection('attendance')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="calendar-check-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Điểm danh</span>
+                  </span>
+                </button>
 
-            <button
-              onclick="switchAdminTab('settings')"
-              id="tab-btn-settings"
-              class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition text-slate-600 hover:bg-slate-100"
-            >
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-              <span>Google Sheet & Cài đặt QR</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  id="side-nav-tuition"
+                  onclick="navigateSidebarSection('tuition')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="credit-card" class="w-4 h-4 text-[#FF4B16] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Học phí</span>
+                  </span>
+                  <span id="sidebar-pending-badge" class="tc-sidebar-badge hidden px-1.5 py-0.2 rounded-full bg-[#FF4B16] text-white text-[10px] font-extrabold shrink-0">0</span>
+                </button>
 
-          <div class="flex flex-wrap items-center gap-1.5 pr-1">
-            <!-- Nút Quay lại thao tác trước (Undo) & Làm lại (Redo) toàn hệ thống -->
-            <div class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 p-0.5 shadow-2xs">
-              <button
-                type="button"
-                id="btn-global-undo"
-                onclick="undoLastAction()"
-                disabled
-                title="Quay lại thao tác vừa làm trước đó (Phím tắt: Ctrl + Z)"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-extrabold text-amber-900 hover:bg-amber-200/70 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
-              >
-                <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
-                <span>Quay lại thao tác</span>
-                <span id="badge-undo-count" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">0</span>
-              </button>
-              <button
-                type="button"
-                id="btn-global-redo"
-                onclick="redoLastAction()"
-                disabled
-                title="Làm lại thao tác vừa hoàn tác (Phím tắt: Ctrl + Y)"
-                class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-amber-200/70 disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap border-l border-amber-200/80"
-              >
-                <i data-lucide="redo-2" class="w-3.5 h-3.5"></i>
-              </button>
+                <button
+                  type="button"
+                  id="side-nav-finance"
+                  onclick="navigateSidebarSection('finance')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="wallet" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Thu chi</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  id="side-nav-transactions"
+                  onclick="navigateSidebarSection('transactions')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="arrow-left-right" class="w-4 h-4 text-[#5B55FF] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Giao dịch</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  id="side-nav-history"
+                  onclick="navigateSidebarSection('history')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-[#7C6BFF] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Báo cáo</span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  id="side-nav-settings"
+                  onclick="navigateSidebarSection('settings')"
+                  class="tc-nav-item"
+                >
+                  <span class="flex items-center gap-2.5 min-w-0">
+                    <i data-lucide="settings" class="w-4 h-4 text-[#8986A6] shrink-0"></i>
+                    <span class="tc-sidebar-label truncate">Cài đặt</span>
+                  </span>
+                </button>
+              </nav>
             </div>
 
-            <a
-              href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
-              target="_blank"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition cursor-pointer shadow-2xs whitespace-nowrap"
-            >
-              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-              <span>Mở Google Sheet</span>
-            </a>
-            <button
-              onclick="syncFromGoogleSheet(true)"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer whitespace-nowrap"
-            >
-              <i data-lucide="cloud-download" class="w-4 h-4"></i>
-              <span>Tải từ Sheet</span>
-            </button>
-            <button
-              onclick="syncAllToGoogleSheet(true)"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer whitespace-nowrap"
-            >
-              <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-              <span>Cập nhật lên Sheet</span>
-            </button>
-            <button
-              onclick="handleAdminLogout()"
-              title="Đăng xuất Quản lý"
-              class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-            >
-              <i data-lucide="log-out" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
+            <!-- Sidebar Footer Card -->
+            <div class="tc-sidebar-footer-card hidden lg:block p-3 rounded-2xl bg-gradient-to-br from-[#F3F1FF] to-[#FFF4F0] border border-[#E6E1FF] space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#5B55FF]">Đồng bộ Đám mây</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              </div>
+              <p class="text-[11px] font-bold text-[#25214C] leading-snug">
+                Google Sheet &amp; VietQR SePay 24/7
+              </p>
+              <button
+                type="button"
+                onclick="syncFromGoogleSheet(true)"
+                class="w-full py-1.5 px-2.5 rounded-full bg-white hover:bg-[#5B55FF] text-[#25214C] hover:text-white border border-[#E6E1FF] text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                <span>Làm mới dữ liệu</span>
+              </button>
+            </div>
+          </aside>
+
+          <!-- ============================================================= -->
+          <!-- MAIN WORKSPACE COLUMN                                         -->
+          <!-- ============================================================= -->
+          <div class="flex-1 min-w-0 w-full space-y-5">
+
+            <!-- Top Page Title Banner + Desktop Sub-navigation & Sync Bar -->
+            <div class="bento-card p-3 sm:px-5 sm:py-3.5 flex flex-col gap-3">
+              <!-- Row 1: Page Title & Subtitle (Left) + Global Undo / Sheet Sync Actions (Right) -->
+              <div class="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-[#EBECF3]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-2xl bg-[#F3F1FF] border border-[#E6E1FF] text-[#5B55FF] flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h2 id="workspace-page-title" class="text-base sm:text-lg font-extrabold text-[#25214C] leading-tight">
+                        Sổ Theo Dõi Lớp &amp; Lịch Dạy
+                      </h2>
+                      <span class="hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[10px] font-extrabold">
+                        THANH CHÍ EDU
+                      </span>
+                    </div>
+                    <p id="workspace-page-subtitle" class="text-xs font-medium text-[#8986A6]">
+                      Quản lý học sinh và tài chính • Đồng bộ thời gian thực
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <!-- Nút Quay lại thao tác trước (Undo) & Làm lại (Redo) toàn hệ thống -->
+                  <div class="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 p-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      id="btn-global-undo"
+                      onclick="undoLastAction()"
+                      disabled
+                      title="Quay lại thao tác vừa làm trước đó (Phím tắt: Ctrl + Z)"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold text-amber-900 hover:bg-amber-200/70 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+                    >
+                      <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                      <span>Quay lại thao tác</span>
+                      <span id="badge-undo-count" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">0</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-global-redo"
+                      onclick="redoLastAction()"
+                      disabled
+                      title="Làm lại thao tác vừa hoàn tác (Phím tắt: Ctrl + Y)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold text-slate-700 hover:bg-amber-200/70 disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap border-l border-amber-200/80"
+                    >
+                      <i data-lucide="redo-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+
+                  <a
+                    href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
+                    target="_blank"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer shadow-2xs whitespace-nowrap"
+                  >
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    <span>Mở Google Sheet</span>
+                  </a>
+                  <button
+                    onclick="syncFromGoogleSheet(true)"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer whitespace-nowrap"
+                  >
+                    <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i>
+                    <span>Tải từ Sheet</span>
+                  </button>
+                  <button
+                    onclick="syncAllToGoogleSheet(true)"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] hover:bg-[#E6E1FF] transition cursor-pointer whitespace-nowrap"
+                  >
+                    <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                    <span>Cập nhật lên Sheet</span>
+                  </button>
+                  <button
+                    onclick="handleAdminLogout()"
+                    title="Đăng xuất Quản lý"
+                    class="p-2 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  >
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Row 2: Horizontal Pill Tabs -->
+              <div class="flex flex-wrap items-center gap-1.5">
+                <button
+                  onclick="switchAdminTab('classbook')"
+                  id="tab-btn-classbook"
+                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition bg-blue-600 text-white cursor-pointer"
+                >
+                  <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                  <span>Sổ Theo Dõi Lớp &amp; Lịch Dạy</span>
+                </button>
+
+                <button
+                  onclick="switchAdminTab('dashboard')"
+                  id="tab-btn-dashboard"
+                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                >
+                  <i data-lucide="layout-grid" class="w-4 h-4 text-[#5B55FF]"></i>
+                  <span>Tổng quan (Bento) &amp; Duyệt CK</span>
+                  <span id="tab-pending-count" class="px-1.5 py-0.2 text-xs rounded-full bg-[#FF4B16] text-white font-bold hidden">0</span>
+                </button>
+
+                <button
+                  onclick="switchAdminTab('students')"
+                  id="tab-btn-students"
+                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                >
+                  <i data-lucide="graduation-cap" class="w-4 h-4 text-[#7C6BFF]"></i>
+                  <span>Thống Kê Tất Cả Học Sinh</span>
+                  <span id="tab-all-students-count" class="px-2 py-0.5 text-xs rounded-full bg-[#E6E1FF] text-[#5B55FF] font-extrabold">0</span>
+                </button>
+
+                <button
+                  onclick="switchAdminTab('finance')"
+                  id="tab-btn-finance"
+                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                >
+                  <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
+                  <span>Sổ Thu - Chi</span>
+                </button>
+
+                <button
+                  onclick="switchAdminTab('history')"
+                  id="tab-btn-history"
+                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                >
+                  <i data-lucide="history" class="w-4 h-4 text-purple-600"></i>
+                  <span>Lịch Sử Các Đợt</span>
+                  <span id="tab-history-count" class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 font-extrabold">0</span>
+                </button>
+
+                <button
+                  onclick="switchAdminTab('settings')"
+                  id="tab-btn-settings"
+                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                >
+                  <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#8986A6]"></i>
+                  <span>Google Sheet &amp; Cài đặt QR</span>
+                </button>
+              </div>
+            </div>
 
         <!-- =============================================================== -->
         <!-- SEPAY LIVE BANK BALANCE & REALTIME NOTIFICATION BAR (BALANCED)  -->
@@ -959,106 +1208,379 @@
         </div>
 
         <!-- =============================================================== -->
-        <!-- TAB 1: DASHBOARD & DUYỆT XÁC NHẬN CHUYỂN KHOẢN                  -->
+        <!-- TAB 1: THANH CHÍ EDU — SOFT PREMIUM 6-CARD BENTO DASHBOARD      -->
         <!-- =============================================================== -->
-        <div id="admin-tab-dashboard" class="hidden space-y-6">
-          <!-- KPI Summary Cards (Modern Bento) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Total Income -->
-            <div class="modern-kpi-card modern-kpi-emerald">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Tổng Thu (Sổ Quỹ)</span>
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
-                  <i data-lucide="trending-up" class="w-5 h-5"></i>
-                </div>
-              </div>
-              <p id="kpi-total-income" class="modern-kpi-value text-2xl font-extrabold text-emerald-600 mt-2">0 ₫</p>
-              <p id="kpi-income-sub" class="text-xs font-medium text-slate-500 mt-1">0 giao dịch thu</p>
-            </div>
+        <div id="admin-tab-dashboard" class="hidden space-y-5">
 
-            <!-- Total Expense -->
-            <div class="modern-kpi-card modern-kpi-rose">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Tổng Chi</span>
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center">
-                  <i data-lucide="trending-down" class="w-5 h-5"></i>
-                </div>
-              </div>
-              <p id="kpi-total-expense" class="modern-kpi-value text-2xl font-extrabold text-rose-600 mt-2">0 ₫</p>
-              <p id="kpi-expense-sub" class="text-xs font-medium text-slate-500 mt-1">0 giao dịch chi</p>
-            </div>
+          <!-- BENTO ROW 1: CARD A (STUDENT ANALYTICS) | CARD B (TUITION COLLECTION) | CARD D (ATTENDANCE OVERVIEW) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
 
-            <!-- Net Balance -->
-            <div class="modern-kpi-card modern-kpi-blue">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Tồn Quỹ Thực Tế</span>
-                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center">
-                  <i data-lucide="landmark" class="w-5 h-5"></i>
-                </div>
-              </div>
-              <p id="kpi-net-balance" class="modern-kpi-value text-2xl font-extrabold text-blue-600 mt-2">0 ₫</p>
-              <p class="text-xs font-medium text-slate-500 mt-1">Tổng Thu trừ Tổng Chi</p>
-            </div>
-
-            <!-- Tuition Progress -->
-            <div class="modern-kpi-card modern-kpi-indigo">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Tình Trạng Học Phí</span>
-                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center">
-                  <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-                </div>
-              </div>
-              <p id="kpi-tuition-progress" class="modern-kpi-value text-2xl font-extrabold text-slate-900 mt-2">0 / 0 HS</p>
-              <p id="kpi-tuition-sub" class="text-xs font-medium text-slate-500 mt-1">0 chờ duyệt • 0 chưa đóng</p>
-            </div>
-          </div>
-
-          <!-- Pending Payment Approvals Box -->
-          <div class="bg-white rounded-2xl border border-amber-200 shadow-xs overflow-hidden">
-            <div class="bg-amber-50/80 px-5 py-4 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center">
-                  <i data-lucide="bell-ring" class="w-4 h-4"></i>
-                </div>
+            <!-- CARD A — STUDENT ANALYTICS ("Tổng quan học sinh") -->
+            <div class="lg:col-span-4 bento-card bento-glow-violet flex flex-col justify-between gap-4">
+              <div class="relative z-10 flex items-start justify-between gap-2">
                 <div>
-                  <h3 class="font-bold text-slate-900 text-sm sm:text-base">
-                    Yêu cầu xác nhận chuyển khoản từ Phụ huynh / Học sinh
-                  </h3>
-                  <p class="text-xs text-slate-600">
-                    Khi bấm <strong>"Duyệt đã nhận"</strong>, hệ thống tự động đổi trạng thái học sinh sang <strong>Đã hoàn thành</strong>, ghi vào <strong>Sổ Thu Chi</strong> và cập nhật lên <strong>Google Sheet</strong>.
-                  </p>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#5B55FF] flex items-center justify-center border border-[#E6E1FF]">
+                      <i data-lucide="users" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-base font-extrabold text-[#25214C]">Tổng quan học sinh</h3>
+                  </div>
+                  <p class="text-xs text-[#8986A6] mt-1">Quy mô sĩ số &amp; biến động học sinh toàn trung tâm</p>
+                </div>
+                <span id="bento-stu-growth-badge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold shrink-0">
+                  <i data-lucide="trending-up" class="w-3 h-3"></i>
+                  <span>+6,8%</span>
+                </span>
+              </div>
+
+              <!-- 3 Key Metrics: Tổng học sinh | Đang học | Học sinh mới -->
+              <div class="relative z-10 grid grid-cols-3 gap-2.5">
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Tổng học sinh</span>
+                  <div id="bento-stu-total" class="bento-metric-value text-2xl font-black text-[#25214C] mt-1">130</div>
+                  <span class="text-[10px] font-bold text-[#5B55FF]">Toàn trung tâm</span>
+                </div>
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Đang học</span>
+                  <div id="bento-stu-active" class="bento-metric-value text-2xl font-black text-[#5B55FF] mt-1">122</div>
+                  <span class="text-[10px] font-bold text-emerald-600">Đang theo lớp</span>
+                </div>
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Học sinh mới</span>
+                  <div id="bento-stu-new" class="bento-metric-value text-2xl font-black text-[#FF4B16] mt-1">08</div>
+                  <span class="text-[10px] font-bold text-[#FF4B16]">Trong kỳ này</span>
                 </div>
               </div>
-              <span id="pending-box-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-white">
-                0 chờ duyệt
-              </span>
+
+              <!-- Thin Segmented Progress Indicators (Violet & Orange highlights) -->
+              <div class="relative z-10 space-y-2 pt-1">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-bold text-[#25214C]">Phân bổ học sinh đang học &amp; mới nhập học</span>
+                  <span id="bento-stu-active-pct" class="font-extrabold text-[#5B55FF]">93,8% duy trì</span>
+                </div>
+                <div id="bento-stu-segmented-bar" class="segmented-bar-grid">
+                  <!-- Rendered dynamically by JS -->
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-[#8986A6] pt-1">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#5B55FF]"></span>
+                    <span>Đang học ổn định</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16]"></span>
+                    <span>Học sinh mới</span>
+                  </span>
+                  <button
+                    type="button"
+                    onclick="switchAdminTab('students')"
+                    class="text-[#5B55FF] hover:underline font-extrabold cursor-pointer"
+                  >
+                    Chi tiết &rarr;
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div id="pending-requests-list" class="divide-y divide-slate-100 p-4 space-y-3">
-              <!-- Rendered by JS -->
+            <!-- CARD B — TUITION COLLECTION ("Tình hình học phí") -->
+            <div class="lg:col-span-4 bento-card bento-glow-orange flex flex-col justify-between gap-4">
+              <div class="relative z-10 flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-2xl bg-[#FFF3EE] text-[#FF4B16] flex items-center justify-center border border-[#FFD9CC]">
+                      <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-base font-extrabold text-[#25214C]">Tình hình học phí</h3>
+                  </div>
+                  <p id="kpi-tuition-sub" class="text-xs text-[#8986A6] mt-1">Tiến độ hoàn thành học phí các lớp</p>
+                </div>
+                <span id="kpi-tuition-progress" class="px-2.5 py-1 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold shrink-0">
+                  0 / 0 HS
+                </span>
+              </div>
+
+              <!-- Circular Donut Chart + Center Percentage + Floating Metric Card -->
+              <div class="relative z-10 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                <div class="sm:col-span-5 relative h-40 flex items-center justify-center">
+                  <canvas id="tuitionPieChart"></canvas>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span id="bento-tuition-rate" class="text-xl font-black text-[#25214C] leading-none">88%</span>
+                    <span class="text-[10px] font-bold text-[#8986A6] mt-0.5">Hoàn thành</span>
+                  </div>
+                </div>
+
+                <!-- Softly Glowing Floating Metric Card -->
+                <div class="sm:col-span-7 space-y-2">
+                  <div class="bento-inner-tile border-l-4 border-l-[#7C6BFF]">
+                    <div class="flex items-center justify-between text-[11px]">
+                      <span class="font-semibold text-[#8986A6]">Đã thu học phí</span>
+                      <span class="w-2 h-2 rounded-full bg-[#7C6BFF]"></span>
+                    </div>
+                    <div id="bento-tuition-collected" class="text-base sm:text-lg font-black text-[#25214C] mt-0.5">0 ₫</div>
+                  </div>
+                  <div class="bento-inner-tile border-l-4 border-l-[#FF4B16]">
+                    <div class="flex items-center justify-between text-[11px]">
+                      <span class="font-semibold text-[#8986A6]">Chưa thu (Còn thiếu)</span>
+                      <span class="w-2 h-2 rounded-full bg-[#FF4B16]"></span>
+                    </div>
+                    <div id="bento-tuition-unpaid" class="text-base sm:text-lg font-black text-[#FF4B16] mt-0.5">0 ₫</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="relative z-10 flex items-center justify-between text-xs pt-1 border-t border-[#EBECF3]">
+                <span class="text-[#8986A6] font-semibold">Tỷ lệ hoàn thành đợt: <strong id="bento-tuition-rate-text" class="text-[#5B55FF]">88%</strong></span>
+                <button
+                  type="button"
+                  onclick="switchAdminTab('classbook')"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white font-extrabold text-[11px] transition cursor-pointer"
+                >
+                  <span>Mở Sổ Học Phí</span>
+                  <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                </button>
+              </div>
             </div>
+
+            <!-- CARD D — ATTENDANCE OVERVIEW ("Tình hình chuyên cần") -->
+            <div class="lg:col-span-4 bento-card bento-glow-violet flex flex-col justify-between gap-4">
+              <div class="relative z-10 flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+                      <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-base font-extrabold text-[#25214C]">Tình hình chuyên cần</h3>
+                  </div>
+                  <p class="text-xs text-[#8986A6] mt-1">Theo dõi điểm danh học sinh &amp; lịch buổi dạy</p>
+                </div>
+                <span id="bento-attendance-sessions-badge" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold shrink-0">
+                  17 lớp đang học
+                </span>
+              </div>
+
+              <!-- Attendance Rate + Present / Absent Tiles -->
+              <div class="relative z-10 grid grid-cols-3 gap-2.5 items-center">
+                <div class="bento-inner-tile bg-gradient-to-br from-[#F3F1FF] to-white border-[#E6E1FF]">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Chuyên cần</span>
+                  <div id="bento-attendance-rate" class="text-xl sm:text-2xl font-black text-[#5B55FF] mt-1">94,8%</div>
+                  <span class="text-[10px] font-bold text-emerald-600">Rất tốt</span>
+                </div>
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Có mặt</span>
+                  <div id="bento-attendance-present" class="text-xl sm:text-2xl font-black text-[#25214C] mt-1">124</div>
+                  <span class="text-[10px] font-bold text-[#7C6BFF]">Học sinh đi học</span>
+                </div>
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Vắng mặt</span>
+                  <div id="bento-attendance-absent" class="text-xl sm:text-2xl font-black text-[#FF4B16] mt-1">06</div>
+                  <span class="text-[10px] font-bold text-[#FF4B16]">Nghỉ có phép/bù</span>
+                </div>
+              </div>
+
+              <!-- Horizontal Segmented Bar Visualization -->
+              <div class="relative z-10 space-y-2 pt-1">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-bold text-[#25214C]">Biểu đồ phân đoạn chuyên cần &amp; buổi học</span>
+                  <span id="bento-attendance-taught-count" class="font-extrabold text-emerald-600">Đã dạy 192 buổi</span>
+                </div>
+                <div id="bento-attendance-segmented-bar" class="segmented-bar-grid">
+                  <!-- Rendered dynamically by JS -->
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-[#8986A6] pt-1">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#7C6BFF]"></span>
+                    <span>Có mặt đầy đủ</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16]"></span>
+                    <span>Vắng / Dạy bù</span>
+                  </span>
+                  <button
+                    type="button"
+                    onclick="navigateSidebarSection('attendance')"
+                    class="text-[#5B55FF] hover:underline font-extrabold cursor-pointer"
+                  >
+                    Điểm danh &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Charts Row -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-slate-800 text-sm sm:text-base">Biểu đồ Thu - Chi & Dòng tiền</h3>
-                <span class="text-xs text-slate-400">Đơn vị: VNĐ</span>
+          <!-- BENTO ROW 2: CARD C (INCOME & EXPENSE ANALYTICS) | CARD E (RECENT TRANSACTIONS) | CARD F (FINANCIAL FORECASTING) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+
+            <!-- CARD C — INCOME & EXPENSE ANALYTICS ("Phân tích thu chi") -->
+            <div class="lg:col-span-5 bento-card bento-glow-dual flex flex-col justify-between gap-4">
+              <div class="relative z-10 flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#5B55FF] flex items-center justify-center border border-[#E6E1FF]">
+                      <i data-lucide="activity" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-base font-extrabold text-[#25214C]">Phân tích thu chi</h3>
+                  </div>
+                  <p class="text-xs text-[#8986A6] mt-1">Biểu đồ đường đôi mượt mà phân tích dòng tiền Thu &amp; Chi</p>
+                </div>
+                <div class="flex items-center gap-3 text-[11px] font-bold">
+                  <span class="inline-flex items-center gap-1.5 text-[#5B55FF]">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#7C6BFF]"></span>
+                    <span>Tổng thu</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1.5 text-[#FF4B16]">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16]"></span>
+                    <span>Tổng chi</span>
+                  </span>
+                </div>
               </div>
-              <div class="h-64">
+
+              <!-- 3 Financial Summary Metrics: Tổng thu | Tổng chi | Chênh lệch thu chi -->
+              <div class="relative z-10 grid grid-cols-3 gap-2.5">
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Tổng thu</span>
+                  <p id="kpi-total-income" class="modern-kpi-value text-lg sm:text-xl font-black text-[#5B55FF] mt-1">0 ₫</p>
+                  <p id="kpi-income-sub" class="text-[10px] font-semibold text-[#8986A6] mt-0.5">0 phiếu thu</p>
+                </div>
+                <div class="bento-inner-tile">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Tổng chi</span>
+                  <p id="kpi-total-expense" class="modern-kpi-value text-lg sm:text-xl font-black text-[#FF4B16] mt-1">0 ₫</p>
+                  <p id="kpi-expense-sub" class="text-[10px] font-semibold text-[#8986A6] mt-0.5">0 phiếu chi</p>
+                </div>
+                <div class="bento-inner-tile bg-gradient-to-br from-[#F3F1FF]/70 to-white">
+                  <span class="text-[11px] font-semibold text-[#8986A6] block">Chênh lệch thu chi</span>
+                  <p id="kpi-net-balance" class="modern-kpi-value text-lg sm:text-xl font-black text-[#25214C] mt-1">0 ₫</p>
+                  <p class="text-[10px] font-semibold text-emerald-600 mt-0.5">Tồn quỹ thực tế</p>
+                </div>
+              </div>
+
+              <!-- Smooth Dual-Line Chart -->
+              <div class="relative z-10 h-52 pt-1">
                 <canvas id="financeBarChart"></canvas>
               </div>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-slate-800 text-sm sm:text-base">Tỷ lệ hoàn thành học phí</h3>
-                <span class="text-xs text-slate-400">Theo số học sinh</span>
+            <!-- CARD E — BANKING & TRANSACTIONS ("Giao dịch gần đây") -->
+            <div class="lg:col-span-4 bento-card flex flex-col justify-between gap-3.5">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#7C6BFF] flex items-center justify-center border border-[#E6E1FF]">
+                      <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-base font-extrabold text-[#25214C]">Giao dịch gần đây</h3>
+                  </div>
+                  <p class="text-xs text-[#8986A6] mt-1">Đối soát tự động VietQR SePay &amp; Sổ quỹ</p>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onclick="openTransactionModal('Thu')"
+                    class="px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-[11px] font-extrabold transition cursor-pointer"
+                  >
+                    + Thu
+                  </button>
+                  <button
+                    type="button"
+                    onclick="openTransactionModal('Chi')"
+                    class="px-2.5 py-1 rounded-full bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] text-[11px] font-extrabold transition cursor-pointer"
+                  >
+                    − Chi
+                  </button>
+                </div>
               </div>
-              <div class="h-64 flex items-center justify-center">
-                <canvas id="tuitionPieChart"></canvas>
+
+              <!-- Floating Transaction Rows -->
+              <div id="bento-recent-transactions" class="space-y-2 max-h-[255px] overflow-y-auto pr-1">
+                <!-- Rendered dynamically by JS -->
               </div>
+
+              <div class="flex items-center justify-between text-xs pt-2 border-t border-[#EBECF3]">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8986A6]">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>Đã đối soát tự động</span>
+                </span>
+                <button
+                  type="button"
+                  onclick="switchAdminTab('finance')"
+                  class="inline-flex items-center gap-1 text-[#5B55FF] hover:underline font-extrabold text-xs cursor-pointer"
+                >
+                  <span>Xem toàn bộ Sổ Thu Chi</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- CARD F — FINANCIAL FORECASTING ("Dự báo tài chính") -->
+            <div class="lg:col-span-3 bento-card bento-glow-orange flex flex-col justify-between gap-3">
+              <div class="relative z-10 flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-2xl bg-[#FFF3EE] text-[#FF4B16] flex items-center justify-center border border-[#FFD9CC]">
+                      <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    </span>
+                    <h3 class="text-base font-extrabold text-[#25214C]">Dự báo tài chính</h3>
+                  </div>
+                  <p class="text-xs text-[#8986A6] mt-1">Mô hình dự phóng doanh thu kỳ tới</p>
+                </div>
+              </div>
+
+              <!-- Concentric-Circle Visualization -->
+              <div class="relative z-10 py-1 flex items-center justify-center">
+                <div class="forecast-concentric-stage">
+                  <div class="forecast-ring forecast-ring-outer"></div>
+                  <div class="forecast-ring forecast-ring-mid"></div>
+                  <div class="forecast-ring-inner">
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#8986A6]">
+                      Dự thu tháng tới
+                    </span>
+                    <div id="bento-forecast-amount" class="text-base sm:text-lg font-black text-[#25214C] mt-1 leading-tight">
+                      145.000.000đ
+                    </div>
+                    <span id="bento-forecast-growth" class="mt-1 px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[10px] font-extrabold">
+                      +12,4% kỳ tới
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Small Floating Financial Summary Tiles -->
+              <div class="relative z-10 grid grid-cols-2 gap-2">
+                <div class="bento-inner-tile py-2 px-2.5">
+                  <span class="text-[10px] font-semibold text-[#8986A6] block">Tổng kỳ vọng hiện tại</span>
+                  <span id="bento-forecast-current-expected" class="text-xs font-extrabold text-[#25214C]">78.000.000đ</span>
+                </div>
+                <div class="bento-inner-tile py-2 px-2.5">
+                  <span class="text-[10px] font-semibold text-[#8986A6] block">Quỹ dự phòng (15%)</span>
+                  <span id="bento-forecast-reserve" class="text-xs font-extrabold text-[#5B55FF]">21.750.000đ</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Pending Payment Approvals Box (Soft Premium Card) -->
+          <div id="dashboard-pending-approvals-card" class="bento-card p-0 overflow-hidden">
+            <div class="bg-gradient-to-r from-[#F3F1FF] via-[#FAFAFC] to-[#FFF3EE] px-5 py-4 border-b border-[#EBECF3] flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-2xl bg-[#FF4B16] text-white flex items-center justify-center shadow-xs">
+                  <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-[#25214C] text-sm sm:text-base">
+                    Yêu cầu xác nhận chuyển khoản từ Phụ huynh / Học sinh
+                  </h3>
+                  <p class="text-xs text-[#8986A6]">
+                    Khi bấm <strong>"Duyệt đã nhận"</strong>, hệ thống tự động đổi trạng thái học sinh sang <strong>Đã hoàn thành</strong>, ghi vào <strong>Sổ Thu Chi</strong> và cập nhật lên <strong>Google Sheet</strong>.
+                  </p>
+                </div>
+              </div>
+              <span id="pending-box-badge" class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-[#FF4B16] text-white shadow-2xs">
+                0 chờ duyệt
+              </span>
+            </div>
+
+            <div id="pending-requests-list" class="divide-y divide-[#EBECF3] p-4 space-y-3">
+              <!-- Rendered by JS -->
             </div>
           </div>
         </div>
@@ -2087,6 +2609,8 @@
           </div>
         </div>
 
+          </div>
+        </div>
       </div>
     </section>
 
