@@ -103,8 +103,21 @@ function getExactAmountsMap(stateObj) {
 }
 
 function recordExactSmallAmount(stateObj, idKey, codeKey, vndAmount) {
+  // Hỗ trợ cách gọi rút gọn recordExactSmallAmount(idKey, vndAmount) để tránh lỗi TypeError làm hỏng thao tác lưu
+  if (stateObj === null || typeof stateObj !== 'object') {
+    if (codeKey === undefined && vndAmount === undefined) {
+      vndAmount = idKey;
+      idKey = stateObj;
+      codeKey = '';
+    } else {
+      vndAmount = codeKey;
+      codeKey = idKey;
+      idKey = stateObj;
+    }
+    stateObj = appState;
+  }
   const target = stateObj || appState;
-  if (!target) return;
+  if (!target || typeof target !== 'object') return;
   if (!target.settings) target.settings = {};
   const map = getExactAmountsMap(target);
   const num = Number(vndAmount) || 0;
@@ -415,8 +428,17 @@ function purgeDraftDataFromState(state) {
         ) {
           alertObj.isTest = true;
           alertObj.testTag = '🧪 TEST THỬ STK (Không cộng tiền vào Web)';
+          // Chỉ hoàn lại 1 lần duy nhất phần tiền Test nếu webhook Test đã lỡ cộng vào số dư (không ghi đè số dư Quản lý đã sửa tay)
+          if (
+            !alertObj.balanceReverted &&
+            alertObj.balance !== undefined &&
+            String(state.settings.sepayBalance || '') === String(alertObj.balance)
+          ) {
+            const reverted = Number(alertObj.balance) - (Number(alertObj.amount) || 0);
+            if (isFinite(reverted)) state.settings.sepayBalance = String(Math.max(0, reverted));
+          }
+          alertObj.balanceReverted = true;
           state.settings.lastBankAlertJson = JSON.stringify(alertObj);
-          state.settings.sepayBalance = '0';
         } else if (alertObj) {
           state.settings.lastBankAlertJson = JSON.stringify(alertObj);
         }
@@ -4586,23 +4608,23 @@ let activeSidebarKey = 'classbook';
 const WORKSPACE_PAGE_META = {
   dashboard: {
     title: 'Tổng quan',
-    subtitle: 'Quản lý học sinh và tài chính • Bảng điều khiển Bento thời gian thực'
+    subtitle: 'Quản lý học sinh và tài chính • Bảng điều khiển thời gian thực'
   },
   students: {
     title: 'Thống kê tất cả học sinh',
     subtitle: 'Quản lý danh sách học sinh, ngày bắt đầu học và lũy kế các đợt học phí'
   },
   classbook: {
-    title: 'Sổ theo dõi lớp & Lịch dạy',
-    subtitle: 'Quản lý sĩ số lớp, học phí theo đợt và điểm danh buổi học trực tiếp'
+    title: 'Lớp học',
+    subtitle: 'Quản lý sĩ số lớp, học phí theo đợt, duyệt học phí và lịch dạy trực tiếp'
   },
   attendance: {
     title: 'Điểm danh & Lịch buổi học',
     subtitle: 'Tích chọn buổi dạy, theo dõi chuyên cần và chụp ảnh lịch học nhanh'
   },
   tuition: {
-    title: 'Quản lý học phí',
-    subtitle: 'Theo dõi tình hình đóng học phí của học sinh trong từng lớp'
+    title: 'Lớp học',
+    subtitle: 'Quản lý sĩ số lớp, học phí theo đợt, duyệt học phí và lịch dạy trực tiếp'
   },
   finance: {
     title: 'Quản lý Thu - Chi & Giao dịch',
@@ -6121,7 +6143,7 @@ async function handleReviewPaymentRequest(requestId, decision) {
 
     const txId = 'GD_' + Date.now();
     if (finalAmt > 0 && finalAmt < 20000) {
-      recordExactSmallAmount(txId, finalAmt);
+      recordExactSmallAmount(appState, txId, '', finalAmt);
     }
 
     // Tự động ghi 1 phiếu Thu vào Sổ Thu - Chi
@@ -8552,7 +8574,7 @@ async function saveBulkEditTransactionsForm(event) {
     if (newCategory) tx.category = newCategory;
     if (hasNewAmt && parsedAmt >= 0) {
       tx.amount = parsedAmt;
-      recordExactSmallAmount(tx.id, parsedAmt);
+      recordExactSmallAmount(appState, tx.id, '', parsedAmt);
     }
     if (newMethod) tx.method = newMethod;
     if (newDesc) tx.description = newDesc;
@@ -8705,7 +8727,7 @@ function saveTransactionForm(event) {
     const existingIdx = (appState.transactions || []).findIndex(t => t.id === editId);
     if (existingIdx !== -1) {
       const oldTx = appState.transactions[existingIdx];
-      recordExactSmallAmount(editId, amount);
+      recordExactSmallAmount(appState, editId, '', amount);
       appState.transactions[existingIdx] = {
         ...oldTx,
         date,
@@ -8724,7 +8746,7 @@ function saveTransactionForm(event) {
   }
 
   const newTxId = 'GD_' + Date.now();
-  recordExactSmallAmount(newTxId, amount);
+  recordExactSmallAmount(appState, newTxId, '', amount);
   appState.transactions.unshift({
     id: newTxId,
     date,
@@ -10431,8 +10453,7 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
   }
 
   s.tuitionFee = newFee;
-  recordExactSmallAmount(s.id, newFee);
-  recordExactSmallAmount(s.studentCode, newFee);
+  recordExactSmallAmount(appState, s.id, s.studentCode, newFee);
   s.updatedAt = getCurrentDateTimeString();
   saveStateToLocal();
   await triggerAutoSyncIfNeeded(`Đã cập nhật học phí của ${s.fullName} thành ${formatCurrency(newFee)}!`);
@@ -10488,8 +10509,7 @@ async function quickAddStudentInClassbook(event) {
   const newCode = generateNextStudentCode();
   const newId = 'ST_' + Date.now();
 
-  recordExactSmallAmount(newId, tuitionFee);
-  recordExactSmallAmount(newCode, tuitionFee);
+  recordExactSmallAmount(appState, newId, newCode, tuitionFee);
 
   const metaMap = getStudentMetaMap();
   metaMap[newCode] = {
@@ -13697,22 +13717,109 @@ async function promptAddReceivingBankAccount() {
   await selectReceivingBankAccount(newId, false);
 }
 
+// Số dư tính theo thống kê của Web: Tổng Thu thực tế - Tổng Chi thực tế (không tính giao dịch Test STK)
+function getWebStatsBalanceBreakdown() {
+  const realTransactions = (appState.transactions || []).filter(t => t && !isSimulatedBankTestItem(t));
+  const totalIn = realTransactions
+    .filter(t => t.type === 'Thu')
+    .reduce((s, t) => s + (normalizeStoredVnd(t.amount) || 0), 0);
+  const totalOut = realTransactions
+    .filter(t => t.type === 'Chi')
+    .reduce((s, t) => s + (normalizeStoredVnd(t.amount) || 0), 0);
+  return {
+    totalIn,
+    totalOut,
+    net: totalIn - totalOut,
+    countIn: realTransactions.filter(t => t.type === 'Thu').length,
+    countOut: realTransactions.filter(t => t.type === 'Chi').length
+  };
+}
+
+function isSepayBalanceAutoByWebStats() {
+  return String(appState.settings?.sepayBalanceMode || '') === 'auto';
+}
+
 function getComputedSepayBalance() {
   const stg = appState.settings || {};
-  const realTransactions = (appState.transactions || []).filter(t => !isSimulatedBankTestItem(t));
-  const totalIn = realTransactions.filter(t => t.type === 'Thu').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const totalOut = realTransactions.filter(t => t.type === 'Chi').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const netBalance = totalIn - totalOut;
+  const netBalance = getWebStatsBalanceBreakdown().net;
+
+  // Chế độ Tự động: Số dư luôn bằng thống kê Thu - Chi trên Web
+  if (isSepayBalanceAutoByWebStats()) {
+    return netBalance;
+  }
 
   if (stg.sepayBalance !== undefined && stg.sepayBalance !== '' && !isNaN(Number(stg.sepayBalance))) {
     const savedBal = Number(stg.sepayBalance);
-    // Nếu sepayBalance đang là 0 mặc định nhưng hệ thống đã có phiếu thu học phí thực tế, hiển thị tổng thực thu
+    // Nếu Quản lý đã chủ động sửa số dư (kể cả sửa về 0) thì luôn hiển thị đúng số đã sửa
+    if (stg.sepayBalanceManualAt) {
+      return savedBal;
+    }
+    // Dữ liệu cũ: sepayBalance đang là 0 mặc định nhưng hệ thống đã có phiếu thu thực tế -> hiển thị theo thống kê Web
     if (savedBal === 0 && netBalance !== 0) {
       return netBalance;
     }
     return savedBal;
   }
   return netBalance;
+}
+
+function updateSepayBalanceModeUI() {
+  const isAuto = isSepayBalanceAutoByWebStats();
+  const autoBtn = document.getElementById('btn-sepay-balance-auto-toggle');
+  const autoLabel = document.getElementById('sepay-balance-auto-label');
+  const modeBadge = document.getElementById('sepay-balance-mode-badge');
+  if (autoBtn) {
+    autoBtn.className = isAuto
+      ? 'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 border border-emerald-300/60 text-[11px] font-extrabold text-white transition cursor-pointer whitespace-nowrap'
+      : 'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-semibold text-blue-100 hover:text-white transition cursor-pointer whitespace-nowrap';
+  }
+  if (autoLabel) autoLabel.textContent = isAuto ? 'Tự động theo Web: BẬT' : 'Tự động theo Web: TẮT';
+  if (modeBadge) {
+    const stg = appState.settings || {};
+    modeBadge.textContent = isAuto
+      ? '🔄 Đang tự động theo thống kê Thu - Chi của Web'
+      : stg.sepayBalanceManualAt
+      ? `✏️ Sửa tay lúc ${stg.sepayBalanceManualAt}`
+      : '🏦 Theo SePay / số dư gốc';
+  }
+}
+
+async function syncSepayBalanceWithWebStats() {
+  const b = getWebStatsBalanceBreakdown();
+  const currentBal = getComputedSepayBalance();
+  const ok = confirm(
+    `🔄 CẬP NHẬT SỐ DƯ THEO THỐNG KÊ CỦA WEB\n\n` +
+      `• Tổng Thu thực tế: +${formatCurrency(b.totalIn)} (${b.countIn} phiếu)\n` +
+      `• Tổng Chi thực tế: -${formatCurrency(b.totalOut)} (${b.countOut} phiếu)\n` +
+      `• Số dư theo Web: ${formatCurrency(b.net)}\n\n` +
+      `Số dư đang hiển thị: ${formatCurrency(currentBal)}\n\n` +
+      `Nhấn OK để cập nhật số dư = ${formatCurrency(b.net)} (không tính các giao dịch Test STK).`
+  );
+  if (!ok) return;
+  if (!appState.settings) appState.settings = {};
+  appState.settings.sepayBalance = String(b.net);
+  appState.settings.sepayBalanceManualAt = getCurrentDateTimeString();
+  saveStateToLocal();
+  renderSepayBalanceBanner();
+  await triggerAutoSyncIfNeeded(`✅ Đã cập nhật số dư theo thống kê Web: ${formatCurrency(b.net)}!`);
+}
+
+async function toggleSepayBalanceAutoMode() {
+  if (!appState.settings) appState.settings = {};
+  const nextAuto = !isSepayBalanceAutoByWebStats();
+  appState.settings.sepayBalanceMode = nextAuto ? 'auto' : 'manual';
+  if (!nextAuto) {
+    // Khi tắt tự động, giữ nguyên con số đang hiển thị làm số dư gốc để không bị nhảy số
+    appState.settings.sepayBalance = String(getWebStatsBalanceBreakdown().net);
+    appState.settings.sepayBalanceManualAt = getCurrentDateTimeString();
+  }
+  saveStateToLocal();
+  renderSepayBalanceBanner();
+  await triggerAutoSyncIfNeeded(
+    nextAuto
+      ? `🔄 Đã BẬT tự động cập nhật số dư theo thống kê Thu - Chi của Web (${formatCurrency(getComputedSepayBalance())})!`
+      : '✏️ Đã TẮT tự động — Số dư sẽ giữ theo số bạn sửa tay / SePay báo về.'
+  );
 }
 
 function renderSepayBalanceBanner() {
@@ -13741,6 +13848,7 @@ function renderSepayBalanceBanner() {
   if (balanceEl) {
     balanceEl.textContent = formatCurrency(getComputedSepayBalance());
   }
+  updateSepayBalanceModeUI();
 
   const connLabel = `Đã tự kết nối SePay (${curBin} • ${curAcc}${isTestAcc ? ' - Nháp Test' : ''})`;
   if (connTextEl) connTextEl.textContent = connLabel;
@@ -13834,7 +13942,11 @@ async function promptEditSepayBalance() {
   }
   if (!appState.settings) appState.settings = {};
   appState.settings.sepayBalance = String(cleaned);
+  appState.settings.sepayBalanceManualAt = getCurrentDateTimeString();
+  // Sửa tay thì tự động tắt chế độ "Tự động theo Web" để con số vừa sửa được giữ nguyên
+  appState.settings.sepayBalanceMode = 'manual';
   saveStateToLocal();
+  renderSepayBalanceBanner();
   await triggerAutoSyncIfNeeded(`Đã cập nhật số dư ngân hàng hiện tại: ${formatCurrency(cleaned)}!`);
 }
 
