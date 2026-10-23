@@ -7574,40 +7574,30 @@ function renderClassbookScheduleTable(cfg) {
 
   thead.innerHTML = `
     <tr class="sheet-navy-header">
-      <th colspan="${colCount}" class="py-2.5 px-3.5 border-b border-blue-900/60">
-        <div class="flex items-center justify-between gap-2">
-          <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide text-left">
+      <th colspan="${colCount}" class="py-3 px-4 border-b border-blue-900/60">
+        <div class="flex items-center justify-between gap-2.5">
+          <span class="font-extrabold text-sm sm:text-base uppercase tracking-wide text-left leading-tight">
             SỐ BUỔI HỌC CỦA ${escapeHtml(cleanPeriod)}
           </span>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onclick="captureCurrentScheduleToClipboard(this)"
-              title="Chụp hình bảng Số buổi học lưu vào bộ nhớ tạm (chỉ việc nhấn Ctrl+V để dán)"
-              class="px-2 py-0.5 rounded-md bg-white/15 hover:bg-white/25 text-white border border-white/25 font-extrabold text-[11px] inline-flex items-center gap-1 transition cursor-pointer"
-            >
-              <span>📸 Chụp</span>
-            </button>
-            <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase shrink-0 shadow-2xs">
-              ${escapeHtml(batchText)}
-            </span>
-          </div>
+          <span class="px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-sm sm:text-base uppercase tracking-wider shrink-0 shadow-sm">
+            ${escapeHtml(batchText)}
+          </span>
         </div>
       </th>
     </tr>
     <tr class="bg-slate-100 border-b-2 border-slate-300">
-      <td colspan="${colCount}" class="py-2 px-3.5">
-        <div class="flex items-center justify-between gap-2">
-          <span class="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+      <td colspan="${colCount}" class="py-2.5 px-4">
+        <div class="flex items-center justify-between gap-2.5">
+          <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wider text-slate-800">
             TỔNG CỘNG SỐ BUỔI DẠY
           </span>
-          <span class="px-3 py-0.5 rounded-full bg-blue-600 text-white font-extrabold text-xs shadow-2xs">
+          <span class="px-4 py-1 rounded-full bg-blue-600 text-white font-black text-sm sm:text-base shadow-sm shrink-0">
             ${checkedSessions} buổi
           </span>
         </div>
       </td>
     </tr>
-    <tr class="bg-[#25477d] text-white font-extrabold text-xs uppercase tracking-wider">
+    <tr class="bg-[#25477d] text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider">
       ${orderedCols
         .map(d => `<th style="width: ${colWidthPct}" class="py-2.5 px-1.5 border border-slate-300/40">${DAY_LABELS[d]}</th>`)
         .join('')}
@@ -7741,14 +7731,14 @@ function renderScheduleConfigToCanvas(cfg) {
       .trim() || 'THÁNG HIỆN TẠI'
   ).toUpperCase();
 
-  // Kích thước chuẩn theo đúng ảnh mẫu người dùng gửi (vẽ ở độ phân giải 3x Retina siêu nét)
+  // Kích thước chuẩn theo đúng ảnh mẫu người dùng gửi (vẽ ở độ phân giải 3x Retina siêu nét, tăng kích thước Đợt & Số buổi)
   const scale = 3;
   const pad = 14;
-  const cardW = 600;
-  const headerH = 56;
-  const subH = 48;
-  const weekdayH = 46;
-  const rowH = 52;
+  const cardW = 620;
+  const headerH = 66;
+  const subH = 58;
+  const weekdayH = 48;
+  const rowH = 54;
   const weekRowsCount = Math.max(1, weeks.length);
   const cardH = headerH + subH + weekdayH + weekRowsCount * rowH;
   const totalW = cardW + pad * 2;
@@ -7781,7 +7771,7 @@ function renderScheduleConfigToCanvas(cfg) {
   drawRoundedRectPath(ctx, pad, pad, cardW, cardH, cornerRadius);
   ctx.clip();
 
-  // 1. HÀNG TIÊU ĐỀ TRÊN CÙNG (Gradient Xanh Tím Đậm + Nhãn Vàng ĐỢT)
+  // 1. HÀNG TIÊU ĐỀ TRÊN CÙNG (Gradient Xanh Tím Đậm + Nhãn Vàng ĐỢT LỚN NỔI BẬT)
   const headerGrad = ctx.createLinearGradient(pad, pad, pad + cardW, pad + headerH);
   headerGrad.addColorStop(0, '#1e1b4b');
   headerGrad.addColorStop(0.5, '#312e81');
@@ -7790,27 +7780,27 @@ function renderScheduleConfigToCanvas(cfg) {
   ctx.fillRect(pad, pad, cardW, headerH);
 
   // Chữ tiêu đề trái: SỐ BUỔI HỌC CỦA THÁNG ...
-  ctx.font = '800 17px "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.font = '800 18.5px "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.fillText(`SỐ BUỔI HỌC CỦA ${cleanPeriod}`, pad + 20, pad + headerH / 2 + 0.5);
 
-  // Nhãn Vàng góc phải: ĐỢT 5
-  ctx.font = '800 13px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+  // Nhãn Vàng góc phải (Lớn & Đậm): ĐỢT 5
+  ctx.font = '900 17.5px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
   const batchTextW = ctx.measureText(batchText).width;
-  const badgeW = Math.max(66, batchTextW + 24);
-  const badgeH = 28;
+  const badgeW = Math.max(96, batchTextW + 34);
+  const badgeH = 38;
   const badgeX = pad + cardW - 18 - badgeW;
   const badgeY = pad + (headerH - badgeH) / 2;
-  drawRoundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 7);
+  drawRoundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 10);
   ctx.fillStyle = '#fbbf24';
   ctx.fill();
   ctx.fillStyle = '#0f172a';
   ctx.textAlign = 'center';
   ctx.fillText(batchText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 0.5);
 
-  // 2. HÀNG TỔNG CỘNG SỐ BUỔI DẠY
+  // 2. HÀNG TỔNG CỘNG SỐ BUỔI DẠY (Pill Số buổi lớn & nổi bật)
   const subY = pad + headerH;
   ctx.fillStyle = '#f1f5f9';
   ctx.fillRect(pad, subY, cardW, subH);
@@ -7822,20 +7812,20 @@ function renderScheduleConfigToCanvas(cfg) {
   ctx.lineTo(pad + cardW, subY + subH);
   ctx.stroke();
 
-  ctx.font = '800 14px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
-  ctx.fillStyle = '#334155';
+  ctx.font = '800 15.5px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+  ctx.fillStyle = '#1e293b';
   ctx.textAlign = 'left';
   ctx.fillText('TỔNG CỘNG SỐ BUỔI DẠY', pad + 20, subY + subH / 2 + 0.5);
 
-  // Pill Xanh dương: 12 buổi
+  // Pill Xanh dương Lớn: 12 buổi
   const sessionCountText = `${checkedSessions} buổi`;
-  ctx.font = '800 13.5px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+  ctx.font = '900 18px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
   const sessTextW = ctx.measureText(sessionCountText).width;
-  const pillW = Math.max(84, sessTextW + 30);
-  const pillH = 27;
+  const pillW = Math.max(114, sessTextW + 38);
+  const pillH = 38;
   const pillX = pad + cardW - 18 - pillW;
   const pillY = subY + (subH - pillH) / 2;
-  drawRoundedRectPath(ctx, pillX, pillY, pillW, pillH, 13.5);
+  drawRoundedRectPath(ctx, pillX, pillY, pillW, pillH, 19);
   ctx.fillStyle = '#1d4ed8';
   ctx.fill();
   ctx.fillStyle = '#ffffff';
@@ -9100,24 +9090,24 @@ function renderAdminHistory() {
                   <table class="sheet-table table-fixed w-full text-xs sm:text-sm text-center">
                     <thead>
                       <tr class="sheet-navy-header">
-                        <th colspan="${colCount}" class="py-2.5 px-3.5 border-b border-blue-900/60">
-                          <div class="flex items-center justify-between gap-2">
-                            <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide text-left">
+                        <th colspan="${colCount}" class="py-3 px-4 border-b border-blue-900/60">
+                          <div class="flex items-center justify-between gap-2.5">
+                            <span class="font-extrabold text-sm sm:text-base uppercase tracking-wide text-left">
                               SỐ BUỔI HỌC CỦA ${escapeHtml(histCleanPeriod)}
                             </span>
-                            <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase shrink-0">
+                            <span class="px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-sm sm:text-base uppercase tracking-wider shrink-0 shadow-sm">
                               ${escapeHtml(hist.batchLabel)}
                             </span>
                           </div>
                         </th>
                       </tr>
                       <tr class="bg-slate-100 border-b-2 border-slate-300">
-                        <td colspan="${colCount}" class="py-2 px-3.5">
-                          <div class="flex items-center justify-between gap-2">
-                            <span class="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+                        <td colspan="${colCount}" class="py-2.5 px-4">
+                          <div class="flex items-center justify-between gap-2.5">
+                            <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wider text-slate-800">
                               TỔNG CỘNG SỐ BUỔI DẠY
                             </span>
-                            <span class="px-3 py-0.5 rounded-full bg-blue-600 text-white font-extrabold text-xs">
+                            <span class="px-4 py-1 rounded-full bg-blue-600 text-white font-black text-sm sm:text-base shadow-sm shrink-0">
                               ${checkedSessions} buổi
                             </span>
                           </div>
