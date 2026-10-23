@@ -5942,53 +5942,65 @@ function renderAdminTransactions() {
     .map(t => {
       const isIncome = t.type === 'Thu';
       return `
-        <tr class="hover:bg-slate-50/80 transition">
-          <td class="py-3.5 px-4">
-            <div class="font-mono font-bold text-xs text-slate-700">${escapeHtml(t.id)}</div>
-            <div class="text-xs text-slate-400">${escapeHtml(t.date)}</div>
+        <tr class="hover:bg-slate-50/80 transition align-middle">
+          <td class="py-3 px-4 whitespace-nowrap align-middle">
+            <div class="font-mono font-bold text-xs text-slate-800 truncate max-w-[175px]" title="${escapeAttr(t.id)}">${escapeHtml(t.id)}</div>
+            <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${escapeHtml(t.date)}</div>
           </td>
-          <td class="py-3.5 px-4">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-              isIncome ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
+            <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-extrabold whitespace-nowrap border ${
+              isIncome
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-rose-100 text-rose-800 border-rose-300'
             }">
               ${isIncome ? '+ Thu' : '- Chi'}
             </span>
           </td>
-          <td class="py-3.5 px-4 font-semibold text-xs text-slate-700">
-            ${escapeHtml(t.category)}
+          <td class="py-3 px-3.5 text-center whitespace-nowrap align-middle">
+            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs whitespace-nowrap">
+              ${escapeHtml(t.category)}
+            </span>
           </td>
-          <td class="py-3.5 px-4">
-            <div class="text-slate-900 font-medium text-xs sm:text-sm">${escapeHtml(t.description)}</div>
-            ${
-              t.studentCode
-                ? `<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-mono text-[11px]">Mã HS: ${escapeHtml(t.studentCode)}</span>`
-                : ''
-            }
+          <td class="py-3 px-4 align-middle">
+            <div class="flex items-center justify-between gap-2.5">
+              <span class="text-slate-900 font-semibold text-xs sm:text-sm leading-snug">${escapeHtml(t.description)}</span>
+              ${
+                t.studentCode
+                  ? `<span class="shrink-0 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-mono font-bold text-[11px] whitespace-nowrap">Mã HS: ${escapeHtml(t.studentCode)}</span>`
+                  : ''
+              }
+            </div>
           </td>
-          <td class="py-3.5 px-4 text-right font-extrabold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">
+          <td class="py-3 px-4 text-right font-mono font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
+            isIncome ? 'text-emerald-600' : 'text-rose-600'
+          }">
             ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
           </td>
-          <td class="py-3.5 px-4 text-center text-xs text-slate-600">
-            ${escapeHtml(t.method || 'Chuyển khoản')}
+          <td class="py-3 px-3.5 text-center whitespace-nowrap align-middle">
+            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold whitespace-nowrap">
+              ${escapeHtml(t.method || 'Chuyển khoản')}
+            </span>
           </td>
-          <td class="py-3.5 px-4 text-center">
+          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
             ${
               t.receiptUrl
                 ? `<button
+                    type="button"
                     onclick="openReceiptViewer('${escapeAttr(t.receiptUrl)}', 'Chứng từ ${escapeAttr(t.id)}')"
-                    class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold cursor-pointer"
+                    class="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-600 hover:text-white text-xs font-extrabold cursor-pointer whitespace-nowrap transition"
                   >
                     <i data-lucide="image" class="w-3.5 h-3.5"></i>
                     <span>Xem</span>
                   </button>`
-                : `<span class="text-xs text-slate-300">---</span>`
+                : `<span class="text-xs font-bold text-slate-400">---</span>`
             }
           </td>
-          <td class="py-3.5 px-4 text-right">
+          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
             <button
+              type="button"
               onclick="deleteTransactionRecord('${t.id}')"
               title="Xóa phiếu thu/chi"
-              class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              class="inline-flex items-center justify-center p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition cursor-pointer"
             >
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
