@@ -4718,10 +4718,10 @@ function setStuStatTimeMode(mode) {
     if (btn) {
       if (m === selectedStuStatTimeMode) {
         btn.className =
-          'px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-blue-600 text-white border-blue-600 shadow-2xs whitespace-nowrap';
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-blue-600 text-white border-blue-600 shadow-2xs whitespace-nowrap';
       } else {
         btn.className =
-          'px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap';
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 whitespace-nowrap';
       }
     }
     const ctrl = document.getElementById('stu-stat-ctrl-' + m);
@@ -5324,10 +5324,11 @@ function renderAdminStudents() {
         } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
       >
         <div class="flex items-center justify-between gap-2 w-full">
-          <span class="font-extrabold text-xs sm:text-sm truncate ${
+          <span class="font-extrabold text-xs sm:text-sm truncate inline-flex items-center gap-1.5 ${
             isAllSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
           }">
-            🌐 Tất cả các lớp
+            <i data-lucide="layers" class="w-3.5 h-3.5 shrink-0"></i>
+            <span>Tất cả các lớp</span>
           </span>
           <span class="px-2 py-0.5 rounded-full text-[11px] shrink-0 whitespace-nowrap ${
             isAllSelected
@@ -5469,10 +5470,11 @@ function renderAdminStudents() {
             title="Bấm để lọc riêng học sinh thuộc kỳ ${escapeAttr(g.period)}"
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="font-extrabold text-xs truncate ${
+              <span class="font-extrabold text-xs truncate inline-flex items-center gap-1.5 ${
                 isSelected ? 'text-white' : 'text-indigo-700'
               }">
-                🗓️ ${escapeHtml(g.period)}
+                <i data-lucide="calendar-days" class="w-3.5 h-3.5 shrink-0"></i>
+                <span>${escapeHtml(g.period)}</span>
               </span>
               <span class="px-2 py-0.2 rounded-full text-[11px] font-extrabold whitespace-nowrap ${
                 isSelected ? 'bg-amber-300 text-slate-950' : 'bg-slate-100 text-slate-700 border border-slate-300'
@@ -5600,7 +5602,7 @@ function renderAdminStudents() {
               class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
             >
               ${getPresetTuitionOptionsHtml(s.tuitionFee)}
-              <option value="CUSTOM">✏️ Số khác...</option>
+              <option value="CUSTOM">+ Số khác...</option>
             </select>
           </td>
           <td class="py-2 px-2 text-center whitespace-nowrap ${statusCellClass}">
@@ -6731,22 +6733,42 @@ function showToast(message, type = 'info') {
   if (!container) return;
 
   const colors = {
-    success: 'bg-emerald-600 text-white',
-    error: 'bg-rose-600 text-white',
-    warning: 'bg-amber-500 text-white',
-    info: 'bg-slate-900 text-white'
+    success: 'bg-emerald-600 text-white border border-emerald-400/40',
+    error: 'bg-rose-600 text-white border border-rose-400/40',
+    warning: 'bg-amber-500 text-white border border-amber-300/40',
+    info: 'bg-slate-900 text-white border border-slate-700'
   };
 
+  const icons = {
+    success: 'check-circle-2',
+    error: 'alert-octagon',
+    warning: 'alert-triangle',
+    info: 'sparkles'
+  };
+
+  // Loại bỏ các emoji thô đầu chuỗi để đồng bộ với icon vector chuyên nghiệp
+  const cleanMsg = String(message || '')
+    .replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{FE0F}\s]+/u, '')
+    .trim();
+
   const toast = document.createElement('div');
-  toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 animate-fade-in ${
+  toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 animate-fade-in ${
     colors[type] || colors.info
   }`;
   toast.innerHTML = `
-    <span>${escapeHtml(message)}</span>
-    <button onclick="this.parentElement.remove()" class="opacity-75 hover:opacity-100 text-xs font-bold cursor-pointer">✕</button>
+    <div class="flex items-center gap-2.5 min-w-0">
+      <i data-lucide="${icons[type] || icons.info}" class="w-4 h-4 shrink-0"></i>
+      <span class="leading-snug">${escapeHtml(cleanMsg || message)}</span>
+    </div>
+    <button onclick="this.parentElement.remove()" class="opacity-75 hover:opacity-100 p-1 rounded-lg hover:bg-white/15 transition cursor-pointer shrink-0">
+      <i data-lucide="x" class="w-3.5 h-3.5"></i>
+    </button>
   `;
 
   container.appendChild(toast);
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons({ nodes: [toast] });
+  }
   setTimeout(() => {
     if (toast.parentElement) toast.remove();
   }, 4200);
@@ -7312,7 +7334,7 @@ function renderAdminClassbook() {
                 class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
               >
                 ${getPresetTuitionOptionsHtml(s.tuitionFee)}
-                <option value="CUSTOM">✏️ Nhập số khác...</option>
+                <option value="CUSTOM">+ Nhập số khác...</option>
               </select>
             </td>
             <td class="py-2 px-2 text-center">
@@ -7968,8 +7990,12 @@ function flashScheduleCaptureButtonSuccess(btnEl) {
   if (!btnEl.dataset.origHtml) {
     btnEl.dataset.origHtml = btnEl.innerHTML;
   }
-  btnEl.innerHTML = `<span>✅ Đã Copy ảnh! Chỉ việc nhấn Ctrl+V để dán</span>`;
+  btnEl.innerHTML = `
+    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-300 shrink-0"></i>
+    <span>Đã Copy ảnh! Chỉ việc nhấn Ctrl+V để dán</span>
+  `;
   btnEl.classList.add('ring-2', 'ring-emerald-400');
+  lucide.createIcons();
   setTimeout(() => {
     if (btnEl && btnEl.dataset.origHtml) {
       btnEl.innerHTML = btnEl.dataset.origHtml;
@@ -8909,7 +8935,7 @@ function renderAdminHistory() {
                 class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
                 <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-                <span>📸 Chụp Số buổi học</span>
+                <span>Chụp Số buổi học</span>
               </button>
               <button
                 type="button"
@@ -9030,7 +9056,7 @@ function renderAdminHistory() {
                 class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition cursor-pointer flex items-center gap-1 shadow-2xs"
               >
                 <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-                <span>📸 Chụp hình Số buổi học (Chỉ việc dán)</span>
+                <span>Chụp hình Số buổi học (Chỉ việc dán)</span>
               </button>
               <button
                 type="button"
@@ -9794,7 +9820,14 @@ function updateDarkModeHeaderUI(isDark) {
 
   const iconEl = document.getElementById('darkmode-toggle-icon');
   const labelEl = document.getElementById('darkmode-toggle-label');
-  if (iconEl) iconEl.textContent = isDark ? '☀️' : '🌙';
+  if (iconEl) {
+    iconEl.innerHTML = isDark
+      ? `<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>`
+      : `<i data-lucide="moon" class="w-3.5 h-3.5 text-indigo-600"></i>`;
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons({ nodes: [iconEl] });
+    }
+  }
   if (labelEl) labelEl.textContent = isDark ? 'Sáng' : 'Tối';
 }
 
