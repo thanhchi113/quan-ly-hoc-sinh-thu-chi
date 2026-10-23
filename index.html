@@ -656,18 +656,28 @@
                 <button
                   onclick="switchAdminTab('classbook')"
                   id="tab-btn-classbook"
-                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition bg-blue-600 text-white cursor-pointer"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition bg-blue-600 text-white cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                  <i data-lucide="book-open-check" class="w-4 h-4 shrink-0"></i>
                   <span>Sổ Theo Dõi Lớp &amp; Lịch Dạy</span>
+                </button>
+
+                <button
+                  onclick="switchAdminTab('attendance')"
+                  id="tab-btn-attendance"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="calendar-check-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                  <span>Điểm Danh Học Sinh</span>
+                  <span id="tab-attendance-auto-badge" class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-800 font-extrabold whitespace-nowrap">Tự động: BẬT</span>
                 </button>
 
                 <button
                   onclick="switchAdminTab('dashboard')"
                   id="tab-btn-dashboard"
-                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="layout-grid" class="w-4 h-4 text-[#5B55FF]"></i>
+                  <i data-lucide="layout-grid" class="w-4 h-4 text-[#5B55FF] shrink-0"></i>
                   <span>Tổng quan (Bento) &amp; Duyệt CK</span>
                   <span id="tab-pending-count" class="px-1.5 py-0.2 text-xs rounded-full bg-[#FF4B16] text-white font-bold hidden">0</span>
                 </button>
@@ -675,38 +685,38 @@
                 <button
                   onclick="switchAdminTab('students')"
                   id="tab-btn-students"
-                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="graduation-cap" class="w-4 h-4 text-[#7C6BFF]"></i>
+                  <i data-lucide="graduation-cap" class="w-4 h-4 text-[#7C6BFF] shrink-0"></i>
                   <span>Thống Kê Tất Cả Học Sinh</span>
-                  <span id="tab-all-students-count" class="px-2 py-0.5 text-xs rounded-full bg-[#E6E1FF] text-[#5B55FF] font-extrabold">0</span>
+                  <span id="tab-all-students-count" class="px-2 py-0.5 text-xs rounded-full bg-[#E6E1FF] text-[#5B55FF] font-extrabold whitespace-nowrap">0</span>
                 </button>
 
                 <button
                   onclick="switchAdminTab('finance')"
                   id="tab-btn-finance"
-                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
+                  <i data-lucide="wallet" class="w-4 h-4 text-emerald-600 shrink-0"></i>
                   <span>Sổ Thu - Chi</span>
                 </button>
 
                 <button
                   onclick="switchAdminTab('history')"
                   id="tab-btn-history"
-                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="history" class="w-4 h-4 text-purple-600"></i>
+                  <i data-lucide="history" class="w-4 h-4 text-purple-600 shrink-0"></i>
                   <span>Lịch Sử Các Đợt</span>
-                  <span id="tab-history-count" class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 font-extrabold">0</span>
+                  <span id="tab-history-count" class="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 font-extrabold whitespace-nowrap">0</span>
                 </button>
 
                 <button
                   onclick="switchAdminTab('settings')"
                   id="tab-btn-settings"
-                  class="admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer"
+                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#8986A6]"></i>
+                  <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#8986A6] shrink-0"></i>
                   <span>Google Sheet &amp; Cài đặt QR</span>
                 </button>
 
@@ -715,9 +725,9 @@
                   onclick="toggleSandboxDraftMode()"
                   id="tab-btn-sandbox"
                   title="Chuyển sang Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử"
-                  class="flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs"
+                  class="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs whitespace-nowrap"
                 >
-                  <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                  <i data-lucide="flask-conical" class="w-4 h-4 shrink-0"></i>
                   <span id="tab-btn-sandbox-label">Tab Nháp (Dùng Thử Cho Bạn Bè)</span>
                 </button>
               </div>
@@ -1014,65 +1024,65 @@
             <div class="p-4 sm:p-5 space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <!-- Sĩ số lớp -->
-                <div class="modern-kpi-card modern-kpi-blue flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-blue flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       SĨ SỐ LỚP HIỆN TẠI
                     </span>
-                    <div id="cb-kpi-total-students" class="modern-kpi-value mt-1 text-2xl sm:text-3xl font-extrabold text-blue-600">
+                    <div id="cb-kpi-total-students" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-blue-600 whitespace-nowrap">
                       0
                     </div>
-                    <span class="text-[11px] font-semibold text-slate-400">Học sinh đang theo học</span>
+                    <span class="text-[11px] font-semibold text-slate-400 block whitespace-nowrap truncate">Học sinh đang theo học</span>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0">
                     <i data-lucide="users" class="w-5 h-5"></i>
                   </div>
                 </div>
 
                 <!-- Tỷ lệ đã nộp -->
-                <div class="modern-kpi-card modern-kpi-indigo flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-indigo flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       TỶ LỆ ĐÃ NỘP
                     </span>
-                    <div id="cb-kpi-paid-rate" class="modern-kpi-value mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900">
+                    <div id="cb-kpi-paid-rate" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-slate-900 whitespace-nowrap">
                       0%
                     </div>
-                    <span class="text-[11px] font-semibold text-indigo-600">Tiến độ hoàn thành kỳ này</span>
+                    <span class="text-[11px] font-semibold text-indigo-600 block whitespace-nowrap truncate">Tiến độ hoàn thành kỳ này</span>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0">
                     <i data-lucide="pie-chart" class="w-5 h-5"></i>
                   </div>
                 </div>
 
                 <!-- Tổng thực thu -->
-                <div class="modern-kpi-card modern-kpi-emerald flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-emerald flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       TỔNG THỰC THU
                     </span>
-                    <div id="cb-kpi-collected" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-emerald-600">
-                      0 ₫
+                    <div id="cb-kpi-collected" class="modern-kpi-value mt-1 text-lg sm:text-xl font-extrabold text-emerald-600 whitespace-nowrap">
+                      0&nbsp;₫
                     </div>
-                    <span class="text-[11px] font-semibold text-emerald-600">Đã xác nhận hoàn thành</span>
+                    <span class="text-[11px] font-semibold text-emerald-600 block whitespace-nowrap truncate">Đã xác nhận hoàn thành</span>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
                     <i data-lucide="wallet" class="w-5 h-5"></i>
                   </div>
                 </div>
 
                 <!-- Khoản còn thiếu -->
-                <div class="modern-kpi-card modern-kpi-rose flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-rose flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       KHOẢN CÒN THIẾU
                     </span>
-                    <div id="cb-kpi-missing" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-rose-600">
-                      0 ₫
+                    <div id="cb-kpi-missing" class="modern-kpi-value mt-1 text-lg sm:text-xl font-extrabold text-rose-600 whitespace-nowrap">
+                      0&nbsp;₫
                     </div>
-                    <span class="text-[11px] font-semibold text-rose-600">Cần thu thêm trong đợt</span>
+                    <span class="text-[11px] font-semibold text-rose-600 block whitespace-nowrap truncate">Cần thu thêm trong đợt</span>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
                     <i data-lucide="alert-circle" class="w-5 h-5"></i>
                   </div>
                 </div>
@@ -1266,6 +1276,346 @@
         </div>
 
         <!-- =============================================================== -->
+        <!-- TAB ĐIỂM DANH HỌC SINH CHUYÊN BIỆT THEO LỚP & TỰ ĐỘNG QUA NGÀY  -->
+        <!-- =============================================================== -->
+        <div id="admin-tab-attendance" class="hidden space-y-4">
+          <!-- KHUNG 1: CHỌN LỚP ĐIỂM DANH, LỌC KHỐI & CƠ CHẾ TỰ ĐỘNG ĐIỂM DANH KHI SANG NGÀY HÔM SAU -->
+          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3.5">
+            <!-- Tầng 1: Tiêu đề + Chuyển nhanh Lớp (Trái) & Cụm nút Quản lý Lịch / Hoàn tác (Phải) -->
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs whitespace-nowrap">
+                  <i data-lucide="calendar-check-2" class="w-4 h-4 text-emerald-300"></i>
+                  <span>Chọn Lớp Điểm Danh</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Lớp đang chọn:</span>
+                  <select
+                    id="att-class-dropdown"
+                    onchange="selectAttendanceClass(this.value)"
+                    class="h-9 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[220px] sm:min-w-[260px]"
+                  >
+                    <!-- Rendered by JS -->
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-attendance-undo"
+                  onclick="undoLastAction()"
+                  disabled
+                  title="Quay lại thao tác vừa làm trước đó (Ctrl + Z)"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                  <span>Quay lại</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="openClassScheduleModal(false)"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>
+                  <span>Cài đặt Lịch buổi học</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="openStudentModalForCurrentClass()"
+                  class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                  <span>+ Thêm Học Sinh</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="switchAdminTab('classbook')"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="book-open-check" class="w-3.5 h-3.5"></i>
+                  <span>Mở Sổ Học Phí Lớp Này</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tầng 2: Hộp Điều Khiển Cơ Chế Tự Động Điểm Danh Khi Sang Ngày Hôm Sau (Bật / Tắt) -->
+            <div id="att-auto-mechanism-banner" class="p-3.5 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/90 via-white to-indigo-50/70 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-2xs">
+              <div class="flex items-start sm:items-center gap-3 min-w-0">
+                <div id="att-auto-icon-box" class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-extrabold text-xs sm:text-sm text-slate-900">
+                      Cơ Chế Tự Động Điểm Danh Khi Sang Ngày Hôm Sau
+                    </span>
+                    <span id="att-auto-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-600 text-white whitespace-nowrap">
+                      ĐANG BẬT (Tự động)
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-0.5 leading-snug">
+                    Nếu có buổi học trong lịch của lớp mà <strong>sang ngày hôm sau bạn chưa bấm điểm danh</strong>, hệ thống tự động đánh dấu <strong>Có mặt (✓)</strong> cho học sinh của buổi đã qua (vẫn giữ nguyên các ô Vắng / Có phép bạn đã tích riêng).
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                <label class="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white border border-slate-300 hover:border-emerald-500 cursor-pointer select-none shadow-2xs">
+                  <input
+                    id="att-auto-nextday-toggle"
+                    type="checkbox"
+                    checked
+                    onchange="toggleAutoAttendanceNextDay(this.checked)"
+                    class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                  <span id="att-auto-toggle-label" class="text-xs font-extrabold text-emerald-700 whitespace-nowrap">
+                    Bật tự động điểm danh qua ngày
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  onclick="commitAutoAttendanceForCurrentClass()"
+                  title="Chốt cố định toàn bộ các buổi đã tự động điểm danh của lớp này vào dữ liệu chính"
+                  class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-full text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-2xs whitespace-nowrap"
+                >
+                  <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                  <span>Chốt lưu các buổi tự động</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tầng 3: Lọc theo Khối lớp -->
+            <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-y border-slate-200/80">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+                  <span>Khối lớp:</span>
+                </span>
+                <div id="att-grade-filters" class="flex flex-wrap items-center gap-1.5">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+              <span id="att-today-label" class="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 whitespace-nowrap">
+                Hôm nay: --/--/----
+              </span>
+            </div>
+
+            <!-- Tầng 4: Lưới chọn nhanh các Lớp học (hiển thị Sĩ số & Tiến độ điểm danh của từng lớp) -->
+            <div id="att-class-pills" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- KHUNG 2: BẢNG MA TRẬN ĐIỂM DANH TOÀN BỘ HOẶC RIÊNG BIỆT TỪNG BUỔI CỦA HỌC SINH THEO LỚP -->
+          <div class="modern-sheet-card bg-white">
+            <!-- Navy Title Banner -->
+            <div class="sheet-navy-header py-3.5 px-5 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-emerald-300">
+                  <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                </span>
+                <div>
+                  <span class="font-extrabold text-sm sm:text-base tracking-wide uppercase block">
+                    SỔ ĐIỂM DANH CHI TIẾT TỪNG BUỔI HỌC — LỚP: <span id="att-meta-classname" class="text-amber-300">12 2K9</span>
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="att-meta-period" class="px-3 py-1 rounded-full bg-white/15 text-blue-100 text-[11px] font-bold whitespace-nowrap">
+                  Tháng 9-10/2026
+                </span>
+                <span id="att-meta-schedule-days" class="px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black whitespace-nowrap">
+                  ĐỢT 5
+                </span>
+              </div>
+            </div>
+
+            <div class="p-4 sm:p-5 space-y-4">
+              <!-- 4 Ô KPI Chuyên Cần Của Lớp Đang Chọn -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div class="modern-kpi-card modern-kpi-blue flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
+                      TIẾN ĐỘ BUỔI ĐIỂM DANH
+                    </span>
+                    <div id="att-kpi-sessions" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-blue-600 whitespace-nowrap">
+                      0 / 0 buổi
+                    </div>
+                    <span id="att-kpi-students-sub" class="text-[11px] font-semibold text-slate-500 block whitespace-nowrap truncate">
+                      0 học sinh trong lớp
+                    </span>
+                  </div>
+                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0">
+                    <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                  </div>
+                </div>
+
+                <div class="modern-kpi-card modern-kpi-indigo flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
+                      TỶ LỆ CHUYÊN CẦN LỚP
+                    </span>
+                    <div id="att-kpi-rate" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-indigo-600 whitespace-nowrap">
+                      100%
+                    </div>
+                    <span id="att-kpi-rate-sub" class="text-[11px] font-semibold text-emerald-600 block whitespace-nowrap truncate">
+                      Duy trì đi học tốt
+                    </span>
+                  </div>
+                  <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0">
+                    <i data-lucide="award" class="w-5 h-5"></i>
+                  </div>
+                </div>
+
+                <div class="modern-kpi-card modern-kpi-emerald flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
+                      TỔNG LƯỢT CÓ MẶT (✓)
+                    </span>
+                    <div id="att-kpi-present" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-emerald-600 whitespace-nowrap">
+                      0 lượt
+                    </div>
+                    <span id="att-kpi-auto-sub" class="text-[11px] font-semibold text-teal-600 block whitespace-nowrap truncate">
+                      Tự động qua ngày: 0 buổi
+                    </span>
+                  </div>
+                  <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
+                    <i data-lucide="user-check" class="w-5 h-5"></i>
+                  </div>
+                </div>
+
+                <div class="modern-kpi-card modern-kpi-rose flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
+                      VẮNG / NGHỈ CÓ PHÉP
+                    </span>
+                    <div id="att-kpi-absent" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-rose-600 whitespace-nowrap">
+                      0 lượt
+                    </div>
+                    <span id="att-kpi-absent-sub" class="text-[11px] font-semibold text-rose-600 block whitespace-nowrap truncate">
+                      0 vắng • 0 có phép
+                    </span>
+                  </div>
+                  <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
+                    <i data-lucide="user-x" class="w-5 h-5"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Thanh Công Cụ Điểm Danh Toàn Bộ & Chế Độ Bút Bấm Riêng Từng Buổi -->
+              <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
+                <!-- Hàng 1: Các nút Điểm Danh Toàn Bộ (1-Click Bulk Actions) -->
+                <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-200">
+                  <div class="flex items-center gap-2 text-xs font-extrabold text-slate-800">
+                    <i data-lucide="check-square" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                    <span>Điểm danh toàn bộ nhanh cho lớp đang chọn:</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onclick="markAllAttendanceLatestSession()"
+                      class="h-8 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition cursor-pointer whitespace-nowrap"
+                    >
+                      <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                      <span>✓ Điểm danh Toàn bộ Buổi Hôm Nay / Gần Nhất</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="markAllAttendanceUpToToday()"
+                      class="h-8 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-extrabold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition cursor-pointer whitespace-nowrap"
+                    >
+                      <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                      <span>✓✓ Điểm danh Tất Cả Buổi Đã Qua (Đến Hôm Nay)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="markAllAttendanceEntireBatch()"
+                      class="h-8 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-extrabold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition cursor-pointer whitespace-nowrap"
+                    >
+                      <i data-lucide="calendar-check" class="w-3.5 h-3.5"></i>
+                      <span>✓ Điểm danh Toàn Bộ Cả Đợt</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="clearAllAttendanceForCurrentClass()"
+                      class="h-8 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-extrabold bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 transition cursor-pointer whitespace-nowrap"
+                    >
+                      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                      <span>Đặt lại lớp này</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Hàng 2: Chế độ bấm riêng từng buổi của học sinh -->
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div class="flex items-center gap-2 font-semibold text-slate-600">
+                    <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                    <span>Chế độ bấm riêng từng ô buổi học của học sinh (Hoặc bấm nút <strong>"✓ Cả lớp"</strong> trên đầu mỗi cột buổi học):</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      id="att-brush-btn-cycle"
+                      onclick="setAttendanceBrush('cycle')"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold transition cursor-pointer bg-slate-900 text-white border-slate-900 ring-2 ring-offset-1 ring-blue-600 whitespace-nowrap"
+                    >
+                      <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                      <span>Đổi tuần tự (✓ → ✗ → P → Trống)</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="att-brush-btn-1"
+                      onclick="setAttendanceBrush(1)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold transition cursor-pointer bg-emerald-600 text-white border-emerald-700 opacity-80 hover:opacity-100 whitespace-nowrap"
+                    >
+                      <span>✓ Có mặt</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="att-brush-btn-2"
+                      onclick="setAttendanceBrush(2)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold transition cursor-pointer bg-rose-600 text-white border-rose-700 opacity-80 hover:opacity-100 whitespace-nowrap"
+                    >
+                      <span>✗ Vắng</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="att-brush-btn-3"
+                      onclick="setAttendanceBrush(3)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold transition cursor-pointer bg-amber-500 text-white border-amber-600 opacity-80 hover:opacity-100 whitespace-nowrap"
+                    >
+                      <span>P Có phép / Bù</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="att-brush-btn-0"
+                      onclick="setAttendanceBrush(0)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold transition cursor-pointer bg-white text-slate-700 border-slate-300 opacity-80 hover:opacity-100 whitespace-nowrap"
+                    >
+                      <span>— Xóa ô</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BẢNG MA TRẬN ĐIỂM DANH TỪNG HỌC SINH × TỪNG BUỔI HỌC -->
+              <div class="overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs">
+                <table id="att-matrix-table" class="sheet-table w-full text-xs sm:text-sm border-collapse">
+                  <thead id="att-matrix-thead">
+                    <!-- Rendered by JS -->
+                  </thead>
+                  <tbody id="att-matrix-tbody">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =============================================================== -->
         <!-- TAB LỊCH SỬ CÁC ĐỢT / THÁNG ĐÃ HỌC (ARCHIVE & HISTORY)          -->
         <!-- =============================================================== -->
         <div id="admin-tab-history" class="hidden space-y-5">
@@ -1320,62 +1670,62 @@
             <!-- CARD A — STUDENT ANALYTICS ("Tổng quan học sinh") -->
             <div class="lg:col-span-4 bento-card bento-glow-violet flex flex-col justify-between gap-4">
               <div class="relative z-10 flex items-start justify-between gap-2">
-                <div>
+                <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#5B55FF] flex items-center justify-center border border-[#E6E1FF]">
+                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#5B55FF] flex items-center justify-center border border-[#E6E1FF] shrink-0">
                       <i data-lucide="users" class="w-4 h-4"></i>
                     </span>
-                    <h3 class="text-base font-extrabold text-[#25214C]">Tổng quan học sinh</h3>
+                    <h3 class="text-base font-extrabold text-[#25214C] truncate">Tổng quan học sinh</h3>
                   </div>
-                  <p class="text-xs text-[#8986A6] mt-1">Quy mô sĩ số &amp; biến động học sinh toàn trung tâm</p>
+                  <p class="text-xs text-[#8986A6] mt-1 truncate">Quy mô sĩ số &amp; biến động học sinh toàn trung tâm</p>
                 </div>
-                <span id="bento-stu-growth-badge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold shrink-0">
+                <span id="bento-stu-growth-badge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold shrink-0 whitespace-nowrap">
                   <i data-lucide="trending-up" class="w-3 h-3"></i>
                   <span>+6,8%</span>
                 </span>
               </div>
 
               <!-- 3 Key Metrics: Tổng học sinh | Đang học | Học sinh mới -->
-              <div class="relative z-10 grid grid-cols-3 gap-2.5">
+              <div class="relative z-10 grid grid-cols-3 gap-2">
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Tổng học sinh</span>
-                  <div id="bento-stu-total" class="bento-metric-value text-2xl font-black text-[#25214C] mt-1">130</div>
-                  <span class="text-[10px] font-bold text-[#5B55FF]">Toàn trung tâm</span>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Tổng học sinh</span>
+                  <div id="bento-stu-total" class="bento-metric-value text-xl sm:text-2xl font-black text-[#25214C] mt-1 whitespace-nowrap">130</div>
+                  <span class="text-[10px] font-bold text-[#5B55FF] block whitespace-nowrap truncate">Toàn trung tâm</span>
                 </div>
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Đang học</span>
-                  <div id="bento-stu-active" class="bento-metric-value text-2xl font-black text-[#5B55FF] mt-1">122</div>
-                  <span class="text-[10px] font-bold text-emerald-600">Đang theo lớp</span>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Đang học</span>
+                  <div id="bento-stu-active" class="bento-metric-value text-xl sm:text-2xl font-black text-[#5B55FF] mt-1 whitespace-nowrap">122</div>
+                  <span class="text-[10px] font-bold text-emerald-600 block whitespace-nowrap truncate">Đang theo lớp</span>
                 </div>
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Học sinh mới</span>
-                  <div id="bento-stu-new" class="bento-metric-value text-2xl font-black text-[#FF4B16] mt-1">08</div>
-                  <span class="text-[10px] font-bold text-[#FF4B16]">Trong kỳ này</span>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Học sinh mới</span>
+                  <div id="bento-stu-new" class="bento-metric-value text-xl sm:text-2xl font-black text-[#FF4B16] mt-1 whitespace-nowrap">08</div>
+                  <span class="text-[10px] font-bold text-[#FF4B16] block whitespace-nowrap truncate">Trong kỳ này</span>
                 </div>
               </div>
 
               <!-- Thin Segmented Progress Indicators (Violet & Orange highlights) -->
               <div class="relative z-10 space-y-2 pt-1">
-                <div class="flex items-center justify-between text-[11px]">
-                  <span class="font-bold text-[#25214C]">Phân bổ học sinh đang học &amp; mới nhập học</span>
-                  <span id="bento-stu-active-pct" class="font-extrabold text-[#5B55FF]">93,8% duy trì</span>
+                <div class="flex items-center justify-between gap-2 text-[11px]">
+                  <span class="font-bold text-[#25214C] truncate">Phân bổ học sinh đang học &amp; mới</span>
+                  <span id="bento-stu-active-pct" class="font-extrabold text-[#5B55FF] whitespace-nowrap shrink-0">93,8% duy trì</span>
                 </div>
                 <div id="bento-stu-segmented-bar" class="segmented-bar-grid">
                   <!-- Rendered dynamically by JS -->
                 </div>
                 <div class="flex items-center justify-between text-[11px] text-[#8986A6] pt-1">
-                  <span class="inline-flex items-center gap-1.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#5B55FF]"></span>
-                    <span>Đang học ổn định</span>
+                  <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#5B55FF] shrink-0"></span>
+                    <span>Đang học</span>
                   </span>
-                  <span class="inline-flex items-center gap-1.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16]"></span>
-                    <span>Học sinh mới</span>
+                  <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16] shrink-0"></span>
+                    <span>HS mới</span>
                   </span>
                   <button
                     type="button"
                     onclick="switchAdminTab('students')"
-                    class="text-[#5B55FF] hover:underline font-extrabold cursor-pointer"
+                    class="text-[#5B55FF] hover:underline font-extrabold cursor-pointer whitespace-nowrap"
                   >
                     Chi tiết &rarr;
                   </button>
@@ -1386,55 +1736,55 @@
             <!-- CARD B — TUITION COLLECTION ("Tình hình học phí") -->
             <div class="lg:col-span-4 bento-card bento-glow-orange flex flex-col justify-between gap-4">
               <div class="relative z-10 flex items-start justify-between gap-2">
-                <div>
+                <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-2xl bg-[#FFF3EE] text-[#FF4B16] flex items-center justify-center border border-[#FFD9CC]">
+                    <span class="w-8 h-8 rounded-2xl bg-[#FFF3EE] text-[#FF4B16] flex items-center justify-center border border-[#FFD9CC] shrink-0">
                       <i data-lucide="credit-card" class="w-4 h-4"></i>
                     </span>
-                    <h3 class="text-base font-extrabold text-[#25214C]">Tình hình học phí</h3>
+                    <h3 class="text-base font-extrabold text-[#25214C] truncate">Tình hình học phí</h3>
                   </div>
-                  <p id="kpi-tuition-sub" class="text-xs text-[#8986A6] mt-1">Tiến độ hoàn thành học phí các lớp</p>
+                  <p id="kpi-tuition-sub" class="text-xs text-[#8986A6] mt-1 truncate">Tiến độ hoàn thành học phí các lớp</p>
                 </div>
-                <span id="kpi-tuition-progress" class="px-2.5 py-1 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold shrink-0">
+                <span id="kpi-tuition-progress" class="px-2.5 py-1 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[11px] font-extrabold shrink-0 whitespace-nowrap">
                   0 / 0 HS
                 </span>
               </div>
 
               <!-- Circular Donut Chart + Center Percentage + Floating Metric Card -->
               <div class="relative z-10 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                <div class="sm:col-span-5 relative h-40 flex items-center justify-center">
+                <div class="sm:col-span-5 relative h-36 flex items-center justify-center">
                   <canvas id="tuitionPieChart"></canvas>
                   <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span id="bento-tuition-rate" class="text-xl font-black text-[#25214C] leading-none">88%</span>
-                    <span class="text-[10px] font-bold text-[#8986A6] mt-0.5">Hoàn thành</span>
+                    <span id="bento-tuition-rate" class="text-xl font-black text-[#25214C] leading-none whitespace-nowrap">88%</span>
+                    <span class="text-[10px] font-bold text-[#8986A6] mt-0.5 whitespace-nowrap">Hoàn thành</span>
                   </div>
                 </div>
 
                 <!-- Softly Glowing Floating Metric Card -->
-                <div class="sm:col-span-7 space-y-2">
+                <div class="sm:col-span-7 space-y-2 min-w-0">
                   <div class="bento-inner-tile border-l-4 border-l-[#7C6BFF]">
                     <div class="flex items-center justify-between text-[11px]">
-                      <span class="font-semibold text-[#8986A6]">Đã thu học phí</span>
-                      <span class="w-2 h-2 rounded-full bg-[#7C6BFF]"></span>
+                      <span class="font-semibold text-[#8986A6] whitespace-nowrap truncate">Đã thu học phí</span>
+                      <span class="w-2 h-2 rounded-full bg-[#7C6BFF] shrink-0"></span>
                     </div>
-                    <div id="bento-tuition-collected" class="text-base sm:text-lg font-black text-[#25214C] mt-0.5">0 ₫</div>
+                    <div id="bento-tuition-collected" class="text-sm sm:text-base font-black text-[#25214C] mt-0.5 whitespace-nowrap">0&nbsp;₫</div>
                   </div>
                   <div class="bento-inner-tile border-l-4 border-l-[#FF4B16]">
                     <div class="flex items-center justify-between text-[11px]">
-                      <span class="font-semibold text-[#8986A6]">Chưa thu (Còn thiếu)</span>
-                      <span class="w-2 h-2 rounded-full bg-[#FF4B16]"></span>
+                      <span class="font-semibold text-[#8986A6] whitespace-nowrap truncate">Chưa thu (Còn thiếu)</span>
+                      <span class="w-2 h-2 rounded-full bg-[#FF4B16] shrink-0"></span>
                     </div>
-                    <div id="bento-tuition-unpaid" class="text-base sm:text-lg font-black text-[#FF4B16] mt-0.5">0 ₫</div>
+                    <div id="bento-tuition-unpaid" class="text-sm sm:text-base font-black text-[#FF4B16] mt-0.5 whitespace-nowrap">0&nbsp;₫</div>
                   </div>
                 </div>
               </div>
 
-              <div class="relative z-10 flex items-center justify-between text-xs pt-1 border-t border-[#EBECF3]">
-                <span class="text-[#8986A6] font-semibold">Tỷ lệ hoàn thành đợt: <strong id="bento-tuition-rate-text" class="text-[#5B55FF]">88%</strong></span>
+              <div class="relative z-10 flex items-center justify-between gap-2 text-xs pt-1 border-t border-[#EBECF3]">
+                <span class="text-[#8986A6] font-semibold whitespace-nowrap truncate">Hoàn thành đợt: <strong id="bento-tuition-rate-text" class="text-[#5B55FF]">88%</strong></span>
                 <button
                   type="button"
                   onclick="switchAdminTab('classbook')"
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white font-extrabold text-[11px] transition cursor-pointer"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white font-extrabold text-[11px] transition cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <span>Mở Sổ Học Phí</span>
                   <i data-lucide="arrow-right" class="w-3 h-3"></i>
@@ -1445,63 +1795,63 @@
             <!-- CARD D — ATTENDANCE OVERVIEW ("Tình hình chuyên cần") -->
             <div class="lg:col-span-4 bento-card bento-glow-violet flex flex-col justify-between gap-4">
               <div class="relative z-10 flex items-start justify-between gap-2">
-                <div>
+                <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+                    <span class="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shrink-0">
                       <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
                     </span>
-                    <h3 class="text-base font-extrabold text-[#25214C]">Tình hình chuyên cần</h3>
+                    <h3 class="text-base font-extrabold text-[#25214C] truncate">Tình hình chuyên cần</h3>
                   </div>
-                  <p class="text-xs text-[#8986A6] mt-1">Theo dõi điểm danh học sinh &amp; lịch buổi dạy</p>
+                  <p class="text-xs text-[#8986A6] mt-1 truncate">Theo dõi điểm danh học sinh &amp; lịch buổi dạy</p>
                 </div>
-                <span id="bento-attendance-sessions-badge" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold shrink-0">
+                <span id="bento-attendance-sessions-badge" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-extrabold shrink-0 whitespace-nowrap">
                   17 lớp đang học
                 </span>
               </div>
 
               <!-- Attendance Rate + Present / Absent Tiles -->
-              <div class="relative z-10 grid grid-cols-3 gap-2.5 items-center">
+              <div class="relative z-10 grid grid-cols-3 gap-2 items-center">
                 <div class="bento-inner-tile bg-gradient-to-br from-[#F3F1FF] to-white border-[#E6E1FF]">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Chuyên cần</span>
-                  <div id="bento-attendance-rate" class="text-xl sm:text-2xl font-black text-[#5B55FF] mt-1">94,8%</div>
-                  <span class="text-[10px] font-bold text-emerald-600">Rất tốt</span>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Chuyên cần</span>
+                  <div id="bento-attendance-rate" class="text-lg sm:text-xl font-black text-[#5B55FF] mt-1 whitespace-nowrap">94,8%</div>
+                  <span class="text-[10px] font-bold text-emerald-600 block whitespace-nowrap truncate">Rất tốt</span>
                 </div>
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Có mặt</span>
-                  <div id="bento-attendance-present" class="text-xl sm:text-2xl font-black text-[#25214C] mt-1">124</div>
-                  <span class="text-[10px] font-bold text-[#7C6BFF]">Học sinh đi học</span>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Có mặt</span>
+                  <div id="bento-attendance-present" class="text-lg sm:text-xl font-black text-[#25214C] mt-1 whitespace-nowrap">124</div>
+                  <span class="text-[10px] font-bold text-[#7C6BFF] block whitespace-nowrap truncate">HS đi học</span>
                 </div>
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Vắng mặt</span>
-                  <div id="bento-attendance-absent" class="text-xl sm:text-2xl font-black text-[#FF4B16] mt-1">06</div>
-                  <span class="text-[10px] font-bold text-[#FF4B16]">Nghỉ có phép/bù</span>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Vắng mặt</span>
+                  <div id="bento-attendance-absent" class="text-lg sm:text-xl font-black text-[#FF4B16] mt-1 whitespace-nowrap">06</div>
+                  <span class="text-[10px] font-bold text-[#FF4B16] block whitespace-nowrap truncate">Vắng / Có phép</span>
                 </div>
               </div>
 
               <!-- Horizontal Segmented Bar Visualization -->
               <div class="relative z-10 space-y-2 pt-1">
-                <div class="flex items-center justify-between text-[11px]">
-                  <span class="font-bold text-[#25214C]">Biểu đồ phân đoạn chuyên cần &amp; buổi học</span>
-                  <span id="bento-attendance-taught-count" class="font-extrabold text-emerald-600">Đã dạy 192 buổi</span>
+                <div class="flex items-center justify-between gap-2 text-[11px]">
+                  <span class="font-bold text-[#25214C] truncate">Biểu đồ chuyên cần &amp; buổi học</span>
+                  <span id="bento-attendance-taught-count" class="font-extrabold text-emerald-600 whitespace-nowrap shrink-0">Đã dạy 192 buổi</span>
                 </div>
                 <div id="bento-attendance-segmented-bar" class="segmented-bar-grid">
                   <!-- Rendered dynamically by JS -->
                 </div>
                 <div class="flex items-center justify-between text-[11px] text-[#8986A6] pt-1">
-                  <span class="inline-flex items-center gap-1.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#7C6BFF]"></span>
-                    <span>Có mặt đầy đủ</span>
+                  <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#7C6BFF] shrink-0"></span>
+                    <span>Có mặt</span>
                   </span>
-                  <span class="inline-flex items-center gap-1.5">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16]"></span>
-                    <span>Vắng / Dạy bù</span>
+                  <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16] shrink-0"></span>
+                    <span>Vắng / Bù</span>
                   </span>
                   <button
                     type="button"
                     onclick="navigateSidebarSection('attendance')"
-                    class="text-[#5B55FF] hover:underline font-extrabold cursor-pointer"
+                    class="text-[#5B55FF] hover:underline font-extrabold cursor-pointer whitespace-nowrap"
                   >
-                    Điểm danh &rarr;
+                    Mở Điểm danh &rarr;
                   </button>
                 </div>
               </div>
@@ -1515,21 +1865,21 @@
             <!-- CARD C — INCOME & EXPENSE ANALYTICS ("Phân tích thu chi") -->
             <div class="lg:col-span-5 bento-card bento-glow-dual flex flex-col justify-between gap-4">
               <div class="relative z-10 flex flex-wrap items-start justify-between gap-2">
-                <div>
+                <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#5B55FF] flex items-center justify-center border border-[#E6E1FF]">
+                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#5B55FF] flex items-center justify-center border border-[#E6E1FF] shrink-0">
                       <i data-lucide="activity" class="w-4 h-4"></i>
                     </span>
-                    <h3 class="text-base font-extrabold text-[#25214C]">Phân tích thu chi</h3>
+                    <h3 class="text-base font-extrabold text-[#25214C] truncate">Phân tích thu chi</h3>
                   </div>
-                  <p class="text-xs text-[#8986A6] mt-1">Biểu đồ đường đôi mượt mà phân tích dòng tiền Thu &amp; Chi</p>
+                  <p class="text-xs text-[#8986A6] mt-1 truncate">Biểu đồ đường đôi mượt mà phân tích dòng tiền Thu &amp; Chi</p>
                 </div>
-                <div class="flex items-center gap-3 text-[11px] font-bold">
-                  <span class="inline-flex items-center gap-1.5 text-[#5B55FF]">
+                <div class="flex items-center gap-3 text-[11px] font-bold shrink-0">
+                  <span class="inline-flex items-center gap-1.5 text-[#5B55FF] whitespace-nowrap">
                     <span class="w-2.5 h-2.5 rounded-full bg-[#7C6BFF]"></span>
                     <span>Tổng thu</span>
                   </span>
-                  <span class="inline-flex items-center gap-1.5 text-[#FF4B16]">
+                  <span class="inline-flex items-center gap-1.5 text-[#FF4B16] whitespace-nowrap">
                     <span class="w-2.5 h-2.5 rounded-full bg-[#FF4B16]"></span>
                     <span>Tổng chi</span>
                   </span>
@@ -1537,21 +1887,21 @@
               </div>
 
               <!-- 3 Financial Summary Metrics: Tổng thu | Tổng chi | Chênh lệch thu chi -->
-              <div class="relative z-10 grid grid-cols-3 gap-2.5">
+              <div class="relative z-10 grid grid-cols-3 gap-2">
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Tổng thu</span>
-                  <p id="kpi-total-income" class="modern-kpi-value text-lg sm:text-xl font-black text-[#5B55FF] mt-1">0 ₫</p>
-                  <p id="kpi-income-sub" class="text-[10px] font-semibold text-[#8986A6] mt-0.5">0 phiếu thu</p>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Tổng thu</span>
+                  <p id="kpi-total-income" class="modern-kpi-value text-xs sm:text-sm xl:text-[15px] font-black text-[#5B55FF] mt-1 whitespace-nowrap">0&nbsp;₫</p>
+                  <p id="kpi-income-sub" class="text-[10px] font-semibold text-[#8986A6] mt-0.5 whitespace-nowrap truncate">0 phiếu thu</p>
                 </div>
                 <div class="bento-inner-tile">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Tổng chi</span>
-                  <p id="kpi-total-expense" class="modern-kpi-value text-lg sm:text-xl font-black text-[#FF4B16] mt-1">0 ₫</p>
-                  <p id="kpi-expense-sub" class="text-[10px] font-semibold text-[#8986A6] mt-0.5">0 phiếu chi</p>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Tổng chi</span>
+                  <p id="kpi-total-expense" class="modern-kpi-value text-xs sm:text-sm xl:text-[15px] font-black text-[#FF4B16] mt-1 whitespace-nowrap">0&nbsp;₫</p>
+                  <p id="kpi-expense-sub" class="text-[10px] font-semibold text-[#8986A6] mt-0.5 whitespace-nowrap truncate">0 phiếu chi</p>
                 </div>
                 <div class="bento-inner-tile bg-gradient-to-br from-[#F3F1FF]/70 to-white">
-                  <span class="text-[11px] font-semibold text-[#8986A6] block">Chênh lệch thu chi</span>
-                  <p id="kpi-net-balance" class="modern-kpi-value text-lg sm:text-xl font-black text-[#25214C] mt-1">0 ₫</p>
-                  <p class="text-[10px] font-semibold text-emerald-600 mt-0.5">Tồn quỹ thực tế</p>
+                  <span class="text-[10.5px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Chênh lệch thu chi</span>
+                  <p id="kpi-net-balance" class="modern-kpi-value text-xs sm:text-sm xl:text-[15px] font-black text-[#25214C] mt-1 whitespace-nowrap">0&nbsp;₫</p>
+                  <p class="text-[10px] font-semibold text-emerald-600 mt-0.5 whitespace-nowrap truncate">Tồn quỹ thực tế</p>
                 </div>
               </div>
 
@@ -1564,27 +1914,27 @@
             <!-- CARD E — BANKING & TRANSACTIONS ("Giao dịch gần đây") -->
             <div class="lg:col-span-4 bento-card flex flex-col justify-between gap-3.5">
               <div class="flex items-start justify-between gap-2">
-                <div>
+                <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#7C6BFF] flex items-center justify-center border border-[#E6E1FF]">
+                    <span class="w-8 h-8 rounded-2xl bg-[#F3F1FF] text-[#7C6BFF] flex items-center justify-center border border-[#E6E1FF] shrink-0">
                       <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
                     </span>
-                    <h3 class="text-base font-extrabold text-[#25214C]">Giao dịch gần đây</h3>
+                    <h3 class="text-base font-extrabold text-[#25214C] truncate">Giao dịch gần đây</h3>
                   </div>
-                  <p class="text-xs text-[#8986A6] mt-1">Đối soát tự động VietQR SePay &amp; Sổ quỹ</p>
+                  <p class="text-xs text-[#8986A6] mt-1 truncate">Đối soát tự động VietQR SePay &amp; Sổ quỹ</p>
                 </div>
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
                     onclick="openTransactionModal('Thu')"
-                    class="px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-[11px] font-extrabold transition cursor-pointer"
+                    class="px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap"
                   >
                     + Thu
                   </button>
                   <button
                     type="button"
                     onclick="openTransactionModal('Chi')"
-                    class="px-2.5 py-1 rounded-full bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] text-[11px] font-extrabold transition cursor-pointer"
+                    class="px-2.5 py-1 rounded-full bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap"
                   >
                     − Chi
                   </button>
@@ -1596,17 +1946,17 @@
                 <!-- Rendered dynamically by JS -->
               </div>
 
-              <div class="flex items-center justify-between text-xs pt-2 border-t border-[#EBECF3]">
-                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8986A6]">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <div class="flex items-center justify-between gap-2 text-xs pt-2 border-t border-[#EBECF3]">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8986A6] whitespace-nowrap">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                   <span>Đã đối soát tự động</span>
                 </span>
                 <button
                   type="button"
                   onclick="switchAdminTab('finance')"
-                  class="inline-flex items-center gap-1 text-[#5B55FF] hover:underline font-extrabold text-xs cursor-pointer"
+                  class="inline-flex items-center gap-1 text-[#5B55FF] hover:underline font-extrabold text-xs cursor-pointer whitespace-nowrap"
                 >
-                  <span>Xem toàn bộ Sổ Thu Chi</span>
+                  <span>Xem Sổ Thu Chi</span>
                   <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -1615,14 +1965,14 @@
             <!-- CARD F — FINANCIAL FORECASTING ("Dự báo tài chính") -->
             <div class="lg:col-span-3 bento-card bento-glow-orange flex flex-col justify-between gap-3">
               <div class="relative z-10 flex items-start justify-between gap-2">
-                <div>
+                <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-2xl bg-[#FFF3EE] text-[#FF4B16] flex items-center justify-center border border-[#FFD9CC]">
+                    <span class="w-8 h-8 rounded-2xl bg-[#FFF3EE] text-[#FF4B16] flex items-center justify-center border border-[#FFD9CC] shrink-0">
                       <i data-lucide="sparkles" class="w-4 h-4"></i>
                     </span>
-                    <h3 class="text-base font-extrabold text-[#25214C]">Dự báo tài chính</h3>
+                    <h3 class="text-base font-extrabold text-[#25214C] truncate">Dự báo tài chính</h3>
                   </div>
-                  <p class="text-xs text-[#8986A6] mt-1">Mô hình dự phóng doanh thu kỳ tới</p>
+                  <p class="text-xs text-[#8986A6] mt-1 truncate">Mô hình dự phóng doanh thu kỳ tới</p>
                 </div>
               </div>
 
@@ -1632,13 +1982,13 @@
                   <div class="forecast-ring forecast-ring-outer"></div>
                   <div class="forecast-ring forecast-ring-mid"></div>
                   <div class="forecast-ring-inner">
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[#8986A6]">
-                      Dự thu tháng tới
+                    <span class="text-[9.5px] font-extrabold uppercase tracking-normal text-[#8986A6] whitespace-nowrap">
+                      Dự thu kỳ tới
                     </span>
-                    <div id="bento-forecast-amount" class="text-base sm:text-lg font-black text-[#25214C] mt-1 leading-tight">
-                      145.000.000đ
+                    <div id="bento-forecast-amount" class="text-xs sm:text-[13.5px] font-black text-[#25214C] mt-1 leading-tight whitespace-nowrap">
+                      145.000.000&nbsp;₫
                     </div>
-                    <span id="bento-forecast-growth" class="mt-1 px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[10px] font-extrabold">
+                    <span id="bento-forecast-growth" class="mt-1 px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[9.5px] font-extrabold whitespace-nowrap">
                       +12,4% kỳ tới
                     </span>
                   </div>
@@ -1647,13 +1997,13 @@
 
               <!-- Small Floating Financial Summary Tiles -->
               <div class="relative z-10 grid grid-cols-2 gap-2">
-                <div class="bento-inner-tile py-2 px-2.5">
-                  <span class="text-[10px] font-semibold text-[#8986A6] block">Tổng kỳ vọng hiện tại</span>
-                  <span id="bento-forecast-current-expected" class="text-xs font-extrabold text-[#25214C]">78.000.000đ</span>
+                <div class="bento-inner-tile py-2 px-2">
+                  <span class="text-[10px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Kỳ vọng hiện tại</span>
+                  <span id="bento-forecast-current-expected" class="text-[11px] sm:text-xs font-extrabold text-[#25214C] block mt-0.5 whitespace-nowrap">78.000.000&nbsp;₫</span>
                 </div>
-                <div class="bento-inner-tile py-2 px-2.5">
-                  <span class="text-[10px] font-semibold text-[#8986A6] block">Quỹ dự phòng (15%)</span>
-                  <span id="bento-forecast-reserve" class="text-xs font-extrabold text-[#5B55FF]">21.750.000đ</span>
+                <div class="bento-inner-tile py-2 px-2">
+                  <span class="text-[10px] font-semibold text-[#8986A6] block whitespace-nowrap truncate">Quỹ dự phòng 15%</span>
+                  <span id="bento-forecast-reserve" class="text-[11px] sm:text-xs font-extrabold text-[#5B55FF] block mt-0.5 whitespace-nowrap">21.750.000&nbsp;₫</span>
                 </div>
               </div>
             </div>
@@ -2064,73 +2414,73 @@
               <!-- 4 Ô Bento KPI Lớn Hiện Đại -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <!-- Ô 1: Sĩ số học sinh -->
-                <div class="modern-kpi-card modern-kpi-blue flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-blue flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       SĨ SỐ HỌC SINH (ĐANG XEM)
                     </span>
-                    <div id="all-stu-kpi-total" class="modern-kpi-value mt-1 text-2xl sm:text-3xl font-extrabold text-blue-600">
+                    <div id="all-stu-kpi-total" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-blue-600 whitespace-nowrap">
                       0 HS
                     </div>
-                    <div id="all-stu-kpi-sub-classes" class="mt-0.5 text-[11px] font-semibold text-slate-500">
+                    <div id="all-stu-kpi-sub-classes" class="mt-0.5 text-[11px] font-semibold text-slate-500 whitespace-nowrap truncate">
                       Trên tổng số 17 lớp
                     </div>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center shrink-0">
                     <i data-lucide="graduation-cap" class="w-5 h-5"></i>
                   </div>
                 </div>
 
                 <!-- Ô 2: Đã hoàn thành & Tỷ lệ -->
-                <div class="modern-kpi-card modern-kpi-indigo flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-indigo flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       ĐÃ HOÀN THÀNH HỌC PHÍ
                     </span>
-                    <div id="all-stu-kpi-paid" class="modern-kpi-value mt-1 text-2xl sm:text-3xl font-extrabold text-emerald-600">
+                    <div id="all-stu-kpi-paid" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-emerald-600 whitespace-nowrap">
                       0 HS
                     </div>
-                    <div id="all-stu-kpi-pending" class="mt-0.5 text-[11px] font-semibold text-amber-600">
+                    <div id="all-stu-kpi-pending" class="mt-0.5 text-[11px] font-semibold text-amber-600 whitespace-nowrap truncate">
                       0 chờ duyệt
                     </div>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center shrink-0">
                     <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                   </div>
                 </div>
 
                 <!-- Ô 3: Tổng thực thu -->
-                <div class="modern-kpi-card modern-kpi-emerald flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-emerald flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       TỔNG THỰC THU (ĐÃ ĐÓNG)
                     </span>
-                    <div id="all-stu-kpi-paid-sum" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-emerald-600">
-                      0 ₫
+                    <div id="all-stu-kpi-paid-sum" class="modern-kpi-value mt-1 text-lg sm:text-xl font-extrabold text-emerald-600 whitespace-nowrap">
+                      0&nbsp;₫
                     </div>
-                    <div id="all-stu-kpi-alltime-sum" class="mt-0.5 text-[11px] font-semibold text-slate-500">
-                      Lũy kế các đợt: 0 ₫
+                    <div id="all-stu-kpi-alltime-sum" class="mt-0.5 text-[11px] font-semibold text-slate-500 whitespace-nowrap truncate">
+                      Lũy kế các đợt: 0&nbsp;₫
                     </div>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
                     <i data-lucide="wallet" class="w-5 h-5"></i>
                   </div>
                 </div>
 
                 <!-- Ô 4: Khoản còn thiếu -->
-                <div class="modern-kpi-card modern-kpi-rose flex items-center justify-between gap-3">
-                  <div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+                <div class="modern-kpi-card modern-kpi-rose flex items-center justify-between gap-2.5">
+                  <div class="min-w-0 flex-1">
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block whitespace-nowrap truncate">
                       CHƯA ĐÓNG / CÒN THIẾU
                     </span>
-                    <div id="all-stu-kpi-unpaid-sum" class="modern-kpi-value mt-1 text-xl sm:text-2xl font-extrabold text-rose-600">
-                      0 ₫
+                    <div id="all-stu-kpi-unpaid-sum" class="modern-kpi-value mt-1 text-lg sm:text-xl font-extrabold text-rose-600 whitespace-nowrap">
+                      0&nbsp;₫
                     </div>
-                    <div id="all-stu-kpi-unpaid" class="mt-0.5 text-[11px] font-semibold text-rose-600">
+                    <div id="all-stu-kpi-unpaid" class="mt-0.5 text-[11px] font-semibold text-rose-600 whitespace-nowrap truncate">
                       0 HS chưa đóng
                     </div>
                   </div>
-                  <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
+                  <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center shrink-0">
                     <i data-lucide="alert-circle" class="w-5 h-5"></i>
                   </div>
                 </div>
