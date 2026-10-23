@@ -522,10 +522,53 @@ html.dark-mode .mode-pill-inactive:hover {
 
 /* Tầng 1: Khung Card chính (.bg-white, .modern-sheet-card, .modern-kpi-card) */
 html.dark-mode .bg-white,
+html.dark-mode .bg-white\/95,
+html.dark-mode .bg-white\/90,
+html.dark-mode .bg-white\/85,
+html.dark-mode .bg-white\/80,
+html.dark-mode .bg-white\/75,
+html.dark-mode .bg-white\/70,
+html.dark-mode .bg-white\/60,
 html.dark-mode .modern-sheet-card {
   background-color: #0f172a !important;
   color: #f8fafc;
   border-color: #334155 !important;
+}
+
+/* 4 Hộp thông tin Lớp học / Môn học / Kỳ học / Trạng thái trong thanh Sub-bar */
+.sheet-meta-pill {
+  background-color: #ffffff;
+  border: 1.5px solid #dbe3ef;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+html.dark-mode .sheet-sub-bar {
+  background: linear-gradient(90deg, #0b1324 0%, #111c33 100%) !important;
+  color: #f8fafc !important;
+  border-bottom-color: #263449 !important;
+}
+
+html.dark-mode .sheet-meta-pill,
+html.dark-mode .sheet-sub-bar > div {
+  background: linear-gradient(145deg, #1e293b 0%, #172236 100%) !important;
+  border: 1.5px solid #3b4f6b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark-mode .sheet-meta-pill span,
+html.dark-mode .sheet-sub-bar > div span {
+  color: #cbd5e1 !important;
+}
+
+html.dark-mode .sheet-meta-pill strong,
+html.dark-mode .sheet-sub-bar > div strong {
+  color: #93c5fd !important;
+}
+
+html.dark-mode #cb-meta-status,
+html.dark-mode #stu-meta-batches {
+  color: #34d399 !important;
 }
 
 html.dark-mode .modern-kpi-card {
