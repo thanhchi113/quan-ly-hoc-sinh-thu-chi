@@ -3983,6 +3983,12 @@ function detectActionDescription(prevJson, nextJson) {
         return `Cập nhật thông tin học sinh ${b.fullName}`;
       }
     }
+    if (prev.settings?.studentAttendanceJson !== next.settings?.studentAttendanceJson) {
+      return 'Điểm danh buổi học của học sinh';
+    }
+    if (prev.settings?.autoAttendanceNextDay !== next.settings?.autoAttendanceNextDay) {
+      return 'Bật/Tắt tự động điểm danh qua ngày';
+    }
     if (prev.settings?.classSchedulesJson !== next.settings?.classSchedulesJson) {
       return 'Tích buổi dạy / Cập nhật lịch học';
     }
@@ -4002,7 +4008,7 @@ function updateUndoRedoButtonsUI() {
   const topUndo = undoCount > 0 ? actionUndoStack[undoCount - 1] : null;
   const topRedo = redoCount > 0 ? actionRedoStack[redoCount - 1] : null;
 
-  const undoBtnIds = ['btn-global-undo', 'btn-classbook-undo', 'btn-students-undo'];
+  const undoBtnIds = ['btn-global-undo', 'btn-classbook-undo', 'btn-attendance-undo', 'btn-students-undo'];
   undoBtnIds.forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
@@ -4221,10 +4227,13 @@ function refreshAllViews() {
   // Cập nhật các bộ lọc Lớp và Kỳ học phí
   populateStudentFilterDropdowns();
 
-  // Render Thanh Số Dư Ngân Hàng SePay, Sổ Theo Dõi Lớp Học, Lịch Sử, Dashboard, Bảng Học sinh, Bảng Thu Chi
+  // Render Thanh Số Dư Ngân Hàng SePay, Sổ Theo Dõi Lớp Học, Điểm Danh, Lịch Sử, Dashboard, Bảng Học sinh, Bảng Thu Chi
   updateUndoRedoButtonsUI();
   renderSepayBalanceBanner();
   renderAdminClassbook();
+  if (typeof renderAdminAttendance === 'function') {
+    renderAdminAttendance();
+  }
   renderAdminHistory();
   renderAdminDashboard();
   renderAdminStudents();
@@ -4387,7 +4396,7 @@ function navigateSidebarSection(sectionKey) {
     dashboard: 'dashboard',
     students: 'students',
     classbook: 'classbook',
-    attendance: 'classbook',
+    attendance: 'attendance',
     tuition: 'classbook',
     finance: 'finance',
     transactions: 'finance',
@@ -4397,13 +4406,8 @@ function navigateSidebarSection(sectionKey) {
   const targetTab = tabMap[sectionKey] || 'classbook';
   switchAdminTab(targetTab, sectionKey);
 
-  // Cuộn mượt tới đúng khu vực chức năng khi chọn Điểm danh / Học phí / Giao dịch
-  if (sectionKey === 'attendance') {
-    setTimeout(() => {
-      const el = document.getElementById('cb-schedule-capture-card');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 80);
-  } else if (sectionKey === 'tuition') {
+  // Cuộn mượt tới đúng khu vực chức năng khi chọn Học phí / Giao dịch
+  if (sectionKey === 'tuition') {
     setTimeout(() => {
       const el = document.getElementById('cb-students-table');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4486,17 +4490,17 @@ function handleHeaderNotificationClick() {
 
 function switchAdminTab(tabName, customSideKey = '') {
   currentAdminTab = tabName;
-  const tabs = ['classbook', 'history', 'dashboard', 'students', 'finance', 'settings'];
+  const tabs = ['classbook', 'attendance', 'history', 'dashboard', 'students', 'finance', 'settings'];
   tabs.forEach(t => {
     const contentEl = document.getElementById('admin-tab-' + t);
     const btnEl = document.getElementById('tab-btn-' + t);
     if (!contentEl || !btnEl) return;
     if (t === tabName) {
       contentEl.classList.remove('hidden');
-      btnEl.className = 'admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition bg-blue-600 text-white cursor-pointer';
+      btnEl.className = 'admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition bg-blue-600 text-white cursor-pointer whitespace-nowrap';
     } else {
       contentEl.classList.add('hidden');
-      btnEl.className = 'admin-tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer';
+      btnEl.className = 'admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap';
     }
   });
 
@@ -4504,6 +4508,10 @@ function switchAdminTab(tabName, customSideKey = '') {
 
   if (tabName === 'classbook') {
     renderAdminClassbook();
+  } else if (tabName === 'attendance') {
+    if (typeof renderAdminAttendance === 'function') {
+      renderAdminAttendance();
+    }
   } else if (tabName === 'history') {
     renderAdminHistory();
   } else if (tabName === 'dashboard') {
@@ -5115,20 +5123,20 @@ function renderAdminDashboard() {
   if (incomeEl) incomeEl.textContent = formatCurrency(totalIncome);
   const incomeSubEl = document.getElementById('kpi-income-sub');
   if (incomeSubEl) {
-    incomeSubEl.textContent = `${incomeList.length} phiếu thu (${formatCompactMillion(totalIncome)})`;
+    incomeSubEl.textContent = `${incomeList.length} phiếu (${formatCompactMillion(totalIncome)})`;
   }
 
   const expenseEl = document.getElementById('kpi-total-expense');
   if (expenseEl) expenseEl.textContent = formatCurrency(totalExpense);
   const expenseSubEl = document.getElementById('kpi-expense-sub');
   if (expenseSubEl) {
-    expenseSubEl.textContent = `${expenseList.length} phiếu chi (${formatCompactMillion(totalExpense)})`;
+    expenseSubEl.textContent = `${expenseList.length} phiếu (${formatCompactMillion(totalExpense)})`;
   }
 
   const netEl = document.getElementById('kpi-net-balance');
   if (netEl) {
     netEl.textContent = formatCurrency(netBalance);
-    netEl.className = `modern-kpi-value text-lg sm:text-xl font-black mt-1 ${
+    netEl.className = `modern-kpi-value text-xs sm:text-sm xl:text-[15px] font-black mt-1 whitespace-nowrap ${
       netBalance >= 0 ? 'text-[#25214C]' : 'text-[#FF4B16]'
     }`;
   }
@@ -5208,28 +5216,21 @@ function renderAdminDashboard() {
   if (bentoTuitionRateTextEl) bentoTuitionRateTextEl.textContent = `${tuitionCompletionPct}%`;
 
   // 4. CARD D — Tình hình chuyên cần (Attendance Overview)
-  let totalTaughtSessions = 0;
-  let totalOffSessions = 0;
-  const classNamesList = Object.keys(schedules);
-  classNamesList.forEach(cn => {
-    const sch = schedules[cn];
-    if (sch && sch.cells) {
-      Object.values(sch.cells).forEach(st => {
-        if (st === 'taught') totalTaughtSessions++;
-        else if (st === 'off') totalOffSessions++;
-      });
-    }
-  });
-  const totalTrackedSessions = totalTaughtSessions + totalOffSessions;
-  const attendanceRateNum =
-    totalTrackedSessions > 0
-      ? Math.min(99.5, Math.max(85, (totalTaughtSessions / totalTrackedSessions) * 100))
-      : 94.8;
-  const absentStudentsEst = Math.max(
-    0,
-    Math.min(totalStuCount, Math.round(totalStuCount * ((100 - attendanceRateNum) / 100)))
-  );
-  const presentStudentsEst = Math.max(0, totalStuCount - absentStudentsEst);
+  const attSummary =
+    typeof getGlobalAttendanceSummary === 'function'
+      ? getGlobalAttendanceSummary()
+      : {
+          classCount: Object.keys(schedules).length || 17,
+          taughtSessionsCount: 192,
+          attendanceRateNum: 96.2,
+          presentStudentsEst: Math.max(0, totalStuCount - 5),
+          absentStudentsEst: Math.min(totalStuCount, 5)
+        };
+
+  const attendanceRateNum = attSummary.attendanceRateNum;
+  const presentStudentsEst = attSummary.presentStudentsEst;
+  const absentStudentsEst = attSummary.absentStudentsEst;
+  const totalTaughtSessions = attSummary.taughtSessionsCount;
 
   const attRateEl = document.getElementById('bento-attendance-rate');
   if (attRateEl) attRateEl.textContent = `${attendanceRateNum.toFixed(1).replace('.', ',')}%`;
@@ -5238,7 +5239,7 @@ function renderAdminDashboard() {
   const attAbsentEl = document.getElementById('bento-attendance-absent');
   if (attAbsentEl) attAbsentEl.textContent = String(absentStudentsEst).padStart(2, '0');
   const attSessionsBadge = document.getElementById('bento-attendance-sessions-badge');
-  if (attSessionsBadge) attSessionsBadge.textContent = `${classNamesList.length || 17} lớp đang học`;
+  if (attSessionsBadge) attSessionsBadge.textContent = `${attSummary.classCount || 17} lớp đang học`;
   const attTaughtCountEl = document.getElementById('bento-attendance-taught-count');
   if (attTaughtCountEl) attTaughtCountEl.textContent = `Đã dạy ${totalTaughtSessions} buổi`;
 
@@ -8137,7 +8138,7 @@ function getStatusBadgeClass(status) {
 
 function formatCurrency(val) {
   const num = Number(val) || 0;
-  return num.toLocaleString('vi-VN') + ' ₫';
+  return num.toLocaleString('vi-VN') + '\u00A0₫';
 }
 
 // Rút gọn 3 số 000 cuối khi hiển thị trong ô nhập tiền (VD: 600000 -> 600)
@@ -9205,6 +9206,1045 @@ function toggleSessionDateState(className, dateKey) {
   map[className] = cfg;
   saveClassSchedulesMap(map);
 }
+
+// ============================================================================
+// PHÂN HỆ ĐIỂM DANH HỌC SINH CHUYÊN BIỆT THEO LỚP & TỰ ĐỘNG QUA NGÀY HÔM SAU
+// ============================================================================
+let currentAttendanceBrush = 'cycle';
+let selectedAttendanceGradeFilter = 'ALL';
+
+const SHORT_DAY_LABELS = {
+  1: 'T2',
+  2: 'T3',
+  3: 'T4',
+  4: 'T5',
+  5: 'T6',
+  6: 'T7',
+  0: 'CN'
+};
+
+function getTodayDateKey() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function isAutoAttendanceEnabled() {
+  const raw = appState?.settings?.autoAttendanceNextDay;
+  if (raw === false || raw === 'false' || raw === '0') return false;
+  return true;
+}
+
+function getStudentAttendanceMap() {
+  try {
+    if (appState?.settings?.studentAttendanceJson) {
+      return JSON.parse(appState.settings.studentAttendanceJson) || {};
+    }
+  } catch (e) {}
+  return {};
+}
+
+function saveStudentAttendanceMap(attMap, scheduleMap = null, syncMsg = '') {
+  if (!appState.settings) appState.settings = {};
+  appState.settings.studentAttendanceJson = JSON.stringify(attMap || {});
+  if (scheduleMap) {
+    appState.settings.classSchedulesJson = JSON.stringify(scheduleMap);
+  }
+  saveStateToLocal();
+  if (syncMsg) {
+    triggerAutoSyncIfNeeded(syncMsg);
+  } else {
+    const gasUrl = getGasUrl();
+    if (gasUrl && isAutoSyncEnabled()) {
+      syncAllToGoogleSheet(false);
+    }
+  }
+}
+
+function setAttendanceBrush(brushMode) {
+  currentAttendanceBrush = brushMode;
+  const modes = ['cycle', 1, 2, 3, 0];
+  modes.forEach(m => {
+    const btn = document.getElementById('att-brush-btn-' + m);
+    if (!btn) return;
+    if (String(m) === String(brushMode)) {
+      btn.classList.add('ring-2', 'ring-offset-1', 'ring-blue-600', 'opacity-100');
+      btn.classList.remove('opacity-80');
+    } else {
+      btn.classList.remove('ring-2', 'ring-offset-1', 'ring-blue-600', 'opacity-100');
+      btn.classList.add('opacity-80');
+    }
+  });
+}
+
+function setAttendanceGradeFilter(gradeKey) {
+  selectedAttendanceGradeFilter = gradeKey || 'ALL';
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  if (selectedAttendanceGradeFilter !== 'ALL') {
+    const matching = classNames.filter(c => getGradeCategoryForClassName(c) === selectedAttendanceGradeFilter);
+    if (matching.length > 0 && !matching.includes(selectedClassbookClass)) {
+      selectedClassbookClass = matching[0];
+    }
+  }
+  renderAdminAttendance();
+}
+
+function selectAttendanceClass(className) {
+  if (!className) return;
+  selectedClassbookClass = className;
+  renderAdminAttendance();
+  renderAdminClassbook();
+}
+
+function getScheduledSessionListForConfig(cfg) {
+  if (!cfg) return [];
+  const { orderedCols, weeks } = generateScheduleWeeks(cfg.startDate, cfg.endDate, cfg.daysOfWeek);
+  const sessions = [];
+  weeks.forEach(row => {
+    row.forEach((cell, colIdx) => {
+      if (cell && cell.inRange && cell.dateKey) {
+        const dayNum = orderedCols[colIdx] ?? 1;
+        sessions.push({
+          dateKey: cell.dateKey,
+          label: cell.label,
+          dayNum,
+          dayShort: SHORT_DAY_LABELS[dayNum] || 'T2'
+        });
+      }
+    });
+  });
+  sessions.sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  return sessions.map((item, idx) => ({
+    ...item,
+    sessionNumber: idx + 1
+  }));
+}
+
+function getEffectiveStudentSessionState(className, studentId, dateKey, cfg, attMap, todayKey, autoEnabled) {
+  const manualVal = attMap?.[className]?.[dateKey]?.[studentId];
+  if (manualVal !== undefined && manualVal !== null) {
+    return {
+      state: Number(manualVal) || 0,
+      isAuto: false
+    };
+  }
+
+  // Nếu giáo viên chưa bấm điểm danh và buổi học đã qua sang ngày hôm sau (dateKey < todayKey)
+  const sessionCalState = Number(cfg?.sessionStates?.[dateKey] || 0);
+  if (autoEnabled && dateKey < todayKey && sessionCalState !== 3) {
+    return {
+      state: 1, // Tự động điểm danh Có mặt
+      isAuto: true
+    };
+  }
+
+  return {
+    state: 0,
+    isAuto: false
+  };
+}
+
+function toggleAutoAttendanceNextDay(enabled) {
+  if (!appState.settings) appState.settings = {};
+  appState.settings.autoAttendanceNextDay = Boolean(enabled);
+  saveStateToLocal();
+  const msg = enabled
+    ? 'Đã BẬT cơ chế tự động điểm danh khi sang ngày hôm sau!'
+    : 'Đã TẮT cơ chế tự động điểm danh qua ngày (chỉ hiển thị các buổi điểm danh thủ công).';
+  triggerAutoSyncIfNeeded(msg);
+}
+
+function commitAutoAttendanceForCurrentClass() {
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  const targetClass = selectedClassbookClass || classNames[0] || '';
+  if (!targetClass) return;
+
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const sessions = getScheduledSessionListForConfig(cfg);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+  if (classStudents.length === 0 || sessions.length === 0) {
+    showToast('Lớp này chưa có học sinh hoặc lịch buổi học để chốt!', 'warning');
+    return;
+  }
+
+  const todayKey = getTodayDateKey();
+  const attMap = getStudentAttendanceMap();
+  if (!attMap[targetClass]) attMap[targetClass] = {};
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+
+  let committedSessions = 0;
+  sessions.forEach(sess => {
+    if (sess.dateKey < todayKey && Number(cfg.sessionStates[sess.dateKey] || 0) !== 3) {
+      if (!attMap[targetClass][sess.dateKey]) attMap[targetClass][sess.dateKey] = {};
+      let anyAutoInSession = false;
+      classStudents.forEach(stu => {
+        if (attMap[targetClass][sess.dateKey][stu.id] === undefined) {
+          attMap[targetClass][sess.dateKey][stu.id] = 1;
+          anyAutoInSession = true;
+        }
+      });
+      if (!cfg.sessionStates[sess.dateKey]) {
+        cfg.sessionStates[sess.dateKey] = 1;
+      }
+      if (anyAutoInSession) committedSessions++;
+    }
+  });
+
+  map[targetClass] = cfg;
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    committedSessions > 0
+      ? `Đã chốt cố định ${committedSessions} buổi điểm danh tự động cho lớp ${targetClass}!`
+      : `Tất cả các buổi đã qua của lớp ${targetClass} đều đã được chốt lưu!`
+  );
+}
+
+function syncSessionCalendarStateFromStudents(cfg, classStudents, classAttObj, dateKey) {
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+  const dayObj = classAttObj?.[dateKey] || {};
+  let hasPresentOrExcused = false;
+  let allExplicitZero = classStudents.length > 0;
+
+  classStudents.forEach(stu => {
+    const v = Number(dayObj[stu.id] || 0);
+    if (v === 1 || v === 3) hasPresentOrExcused = true;
+    if (v !== 0) allExplicitZero = false;
+  });
+
+  if (hasPresentOrExcused) {
+    if (!cfg.sessionStates[dateKey] || cfg.sessionStates[dateKey] === 3) {
+      cfg.sessionStates[dateKey] = 1;
+    }
+  } else if (allExplicitZero) {
+    delete cfg.sessionStates[dateKey];
+  }
+}
+
+function toggleStudentSessionAttendance(className, studentId, dateKey) {
+  if (!className || !studentId || !dateKey) return;
+  const map = getClassSchedulesMap();
+  const cfg = map[className] || getDefaultClassScheduleConfig(className);
+  const classStudents = (appState.students || []).filter(s => s.className === className);
+  const attMap = getStudentAttendanceMap();
+  const todayKey = getTodayDateKey();
+  const autoEnabled = isAutoAttendanceEnabled();
+
+  if (!attMap[className]) attMap[className] = {};
+  if (!attMap[className][dateKey]) attMap[className][dateKey] = {};
+
+  // Nếu buổi này đang là tự động điểm danh, khi giáo viên bấm sửa 1 học sinh thì giữ nguyên các bạn còn lại là Có mặt (1)
+  if (autoEnabled && dateKey < todayKey && Number(cfg.sessionStates?.[dateKey] || 0) !== 3) {
+    classStudents.forEach(stu => {
+      if (stu.id !== studentId && attMap[className][dateKey][stu.id] === undefined) {
+        attMap[className][dateKey][stu.id] = 1;
+      }
+    });
+  }
+
+  const eff = getEffectiveStudentSessionState(
+    className,
+    studentId,
+    dateKey,
+    cfg,
+    attMap,
+    todayKey,
+    autoEnabled
+  );
+
+  let nextState = 1;
+  if (currentAttendanceBrush === 'cycle') {
+    // 0 (Chưa ĐD) -> 1 (Có mặt) -> 2 (Vắng) -> 3 (Có phép) -> 0
+    nextState = (eff.state + 1) % 4;
+  } else {
+    const targetBrush = Number(currentAttendanceBrush) || 0;
+    nextState = eff.state === targetBrush && !eff.isAuto ? 0 : targetBrush;
+  }
+
+  attMap[className][dateKey][studentId] = nextState;
+  syncSessionCalendarStateFromStudents(cfg, classStudents, attMap[className], dateKey);
+  map[className] = cfg;
+  saveStudentAttendanceMap(attMap, map);
+}
+
+function toggleWholeSessionAttendance(className, dateKey) {
+  if (!className || !dateKey) return;
+  const map = getClassSchedulesMap();
+  const cfg = map[className] || getDefaultClassScheduleConfig(className);
+  const classStudents = (appState.students || []).filter(s => s.className === className);
+  if (classStudents.length === 0) {
+    showToast('Lớp này chưa có học sinh để điểm danh!', 'warning');
+    return;
+  }
+
+  const attMap = getStudentAttendanceMap();
+  if (!attMap[className]) attMap[className] = {};
+  if (!attMap[className][dateKey]) attMap[className][dateKey] = {};
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+
+  const allManualPresent = classStudents.every(stu => attMap[className][dateKey][stu.id] === 1);
+  const targetVal = allManualPresent ? 0 : 1;
+
+  classStudents.forEach(stu => {
+    attMap[className][dateKey][stu.id] = targetVal;
+  });
+
+  if (targetVal === 1) {
+    cfg.sessionStates[dateKey] = 1;
+  } else {
+    delete cfg.sessionStates[dateKey];
+  }
+
+  map[className] = cfg;
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    targetVal === 1
+      ? `Đã điểm danh Có mặt toàn bộ ${classStudents.length} HS cho buổi ngày ${formatShortDateVN(dateKey)}!`
+      : `Đã bỏ chọn điểm danh buổi ngày ${formatShortDateVN(dateKey)}.`
+  );
+}
+
+function markAllSessionsForSingleStudent(className, studentId) {
+  if (!className || !studentId) return;
+  const map = getClassSchedulesMap();
+  const cfg = map[className] || getDefaultClassScheduleConfig(className);
+  const sessions = getScheduledSessionListForConfig(cfg);
+  const stu = (appState.students || []).find(s => s.id === studentId);
+  if (!stu || sessions.length === 0) return;
+
+  const attMap = getStudentAttendanceMap();
+  if (!attMap[className]) attMap[className] = {};
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+
+  const allPresent = sessions.every(sess => attMap[className]?.[sess.dateKey]?.[studentId] === 1);
+  const targetVal = allPresent ? 0 : 1;
+
+  sessions.forEach(sess => {
+    if (!attMap[className][sess.dateKey]) attMap[className][sess.dateKey] = {};
+    attMap[className][sess.dateKey][studentId] = targetVal;
+    if (targetVal === 1 && !cfg.sessionStates[sess.dateKey]) {
+      cfg.sessionStates[sess.dateKey] = 1;
+    }
+  });
+
+  map[className] = cfg;
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    targetVal === 1
+      ? `Đã điểm danh Có mặt tất cả ${sessions.length} buổi cho học sinh ${stu.fullName}!`
+      : `Đã đặt lại điểm danh các buổi của học sinh ${stu.fullName}.`
+  );
+}
+
+function markAllAttendanceLatestSession() {
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  const targetClass = selectedClassbookClass || classNames[0] || '';
+  if (!targetClass) return;
+
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const sessions = getScheduledSessionListForConfig(cfg);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+  if (classStudents.length === 0 || sessions.length === 0) {
+    showToast('Vui lòng thêm học sinh và lịch buổi học trước khi điểm danh!', 'warning');
+    return;
+  }
+
+  const todayKey = getTodayDateKey();
+  // Ưu tiên buổi hôm nay, nếu không có thì lấy buổi gần nhất <= hôm nay, hoặc buổi đầu tiên
+  let targetSession = sessions.find(s => s.dateKey === todayKey);
+  if (!targetSession) {
+    const pastOrToday = sessions.filter(s => s.dateKey <= todayKey);
+    targetSession = pastOrToday.length > 0 ? pastOrToday[pastOrToday.length - 1] : sessions[0];
+  }
+
+  const attMap = getStudentAttendanceMap();
+  if (!attMap[targetClass]) attMap[targetClass] = {};
+  if (!attMap[targetClass][targetSession.dateKey]) attMap[targetClass][targetSession.dateKey] = {};
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+
+  classStudents.forEach(stu => {
+    attMap[targetClass][targetSession.dateKey][stu.id] = 1;
+  });
+  cfg.sessionStates[targetSession.dateKey] = 1;
+
+  map[targetClass] = cfg;
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    `Đã điểm danh Có mặt toàn bộ ${classStudents.length} HS cho Buổi ${targetSession.sessionNumber} (${targetSession.dayShort} ${targetSession.label})!`
+  );
+}
+
+function markAllAttendanceUpToToday() {
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  const targetClass = selectedClassbookClass || classNames[0] || '';
+  if (!targetClass) return;
+
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const sessions = getScheduledSessionListForConfig(cfg);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+  if (classStudents.length === 0 || sessions.length === 0) {
+    showToast('Vui lòng thêm học sinh và lịch buổi học trước khi điểm danh!', 'warning');
+    return;
+  }
+
+  const todayKey = getTodayDateKey();
+  let targetSessions = sessions.filter(s => s.dateKey <= todayKey);
+  if (targetSessions.length === 0) {
+    targetSessions = sessions;
+  }
+
+  const attMap = getStudentAttendanceMap();
+  if (!attMap[targetClass]) attMap[targetClass] = {};
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+
+  targetSessions.forEach(sess => {
+    if (!attMap[targetClass][sess.dateKey]) attMap[targetClass][sess.dateKey] = {};
+    classStudents.forEach(stu => {
+      const cur = attMap[targetClass][sess.dateKey][stu.id];
+      // Giữ nguyên nếu giáo viên đã đánh dấu Vắng (2) hoặc Có phép (3) thủ công
+      if (cur !== 2 && cur !== 3) {
+        attMap[targetClass][sess.dateKey][stu.id] = 1;
+      }
+    });
+    if (cfg.sessionStates[sess.dateKey] !== 3) {
+      cfg.sessionStates[sess.dateKey] = 1;
+    }
+  });
+
+  map[targetClass] = cfg;
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    `Đã điểm danh toàn bộ ${targetSessions.length} buổi tính đến hôm nay cho lớp ${targetClass}!`
+  );
+}
+
+function markAllAttendanceEntireBatch() {
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  const targetClass = selectedClassbookClass || classNames[0] || '';
+  if (!targetClass) return;
+
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const sessions = getScheduledSessionListForConfig(cfg);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+  if (classStudents.length === 0 || sessions.length === 0) {
+    showToast('Vui lòng thêm học sinh và lịch buổi học trước khi điểm danh!', 'warning');
+    return;
+  }
+
+  const attMap = getStudentAttendanceMap();
+  if (!attMap[targetClass]) attMap[targetClass] = {};
+  if (!cfg.sessionStates) cfg.sessionStates = {};
+
+  sessions.forEach(sess => {
+    if (!attMap[targetClass][sess.dateKey]) attMap[targetClass][sess.dateKey] = {};
+    classStudents.forEach(stu => {
+      attMap[targetClass][sess.dateKey][stu.id] = 1;
+    });
+    cfg.sessionStates[sess.dateKey] = 1;
+  });
+
+  map[targetClass] = cfg;
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    `Đã điểm danh Có mặt toàn bộ cả đợt (${sessions.length} buổi × ${classStudents.length} HS) cho lớp ${targetClass}!`
+  );
+}
+
+function clearAllAttendanceForCurrentClass() {
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  const targetClass = selectedClassbookClass || classNames[0] || '';
+  if (!targetClass) return;
+
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const sessions = getScheduledSessionListForConfig(cfg);
+  const classStudents = (appState.students || []).filter(s => s.className === targetClass);
+
+  const attMap = getStudentAttendanceMap();
+  attMap[targetClass] = {};
+  // Đặt rõ trạng thái 0 cho các buổi đã qua để không bị tự động điền lại nếu người dùng chủ động xóa trắng lớp này
+  sessions.forEach(sess => {
+    attMap[targetClass][sess.dateKey] = {};
+    classStudents.forEach(stu => {
+      attMap[targetClass][sess.dateKey][stu.id] = 0;
+    });
+  });
+  cfg.sessionStates = {};
+  map[targetClass] = cfg;
+
+  saveStudentAttendanceMap(
+    attMap,
+    map,
+    `Đã đặt lại toàn bộ dữ liệu điểm danh của lớp ${targetClass} (Có thể bấm Quay lại nếu nhầm)!`
+  );
+}
+
+function getClassAttendanceStats(className, cfg, classStudents, attMap, todayKey, autoEnabled) {
+  const sessions = getScheduledSessionListForConfig(cfg);
+  let presentSlots = 0;
+  let absentSlots = 0;
+  let excusedSlots = 0;
+  let trackedSlots = 0;
+  let completedSessions = 0;
+  let autoSessionsCount = 0;
+
+  sessions.forEach(sess => {
+    let sessionHasAny = false;
+    let sessionHasAuto = false;
+
+    if (classStudents.length === 0) {
+      const calSt = Number(cfg?.sessionStates?.[sess.dateKey] || 0);
+      if (calSt === 1 || calSt === 2 || (autoEnabled && sess.dateKey < todayKey && calSt !== 3)) {
+        completedSessions++;
+      }
+      return;
+    }
+
+    classStudents.forEach(stu => {
+      const eff = getEffectiveStudentSessionState(
+        className,
+        stu.id,
+        sess.dateKey,
+        cfg,
+        attMap,
+        todayKey,
+        autoEnabled
+      );
+      if (eff.state === 1) {
+        presentSlots++;
+        trackedSlots++;
+        sessionHasAny = true;
+        if (eff.isAuto) sessionHasAuto = true;
+      } else if (eff.state === 2) {
+        absentSlots++;
+        trackedSlots++;
+        sessionHasAny = true;
+      } else if (eff.state === 3) {
+        excusedSlots++;
+        trackedSlots++;
+        sessionHasAny = true;
+      }
+    });
+
+    if (sessionHasAny) completedSessions++;
+    if (sessionHasAuto) autoSessionsCount++;
+  });
+
+  const ratePct =
+    trackedSlots > 0 ? ((presentSlots + excusedSlots * 0.5) / trackedSlots) * 100 : 100;
+
+  return {
+    sessions,
+    totalSessions: sessions.length,
+    completedSessions,
+    autoSessionsCount,
+    presentSlots,
+    absentSlots,
+    excusedSlots,
+    trackedSlots,
+    ratePct: Math.min(100, Math.max(0, ratePct))
+  };
+}
+
+function getGlobalAttendanceSummary() {
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  const attMap = getStudentAttendanceMap();
+  const todayKey = getTodayDateKey();
+  const autoEnabled = isAutoAttendanceEnabled();
+  const allStudents = appState.students || [];
+
+  let totalTaughtSessions = 0;
+  let totalPresentSlots = 0;
+  let totalAbsentOrExcusedSlots = 0;
+  let totalTrackedSlots = 0;
+
+  classNames.forEach(cls => {
+    const cfg = map[cls] || getDefaultClassScheduleConfig(cls);
+    const clsStudents = allStudents.filter(s => s.className === cls);
+    const st = getClassAttendanceStats(cls, cfg, clsStudents, attMap, todayKey, autoEnabled);
+    totalTaughtSessions += st.completedSessions;
+    totalPresentSlots += st.presentSlots;
+    totalAbsentOrExcusedSlots += st.absentSlots + st.excusedSlots;
+    totalTrackedSlots += st.trackedSlots;
+  });
+
+  const attendanceRateNum =
+    totalTrackedSlots > 0
+      ? Math.min(100, Math.max(0, ((totalPresentSlots) / totalTrackedSlots) * 100))
+      : 96.5;
+
+  const totalStuCount = allStudents.length;
+  const absentStudentsEst =
+    totalTrackedSlots > 0
+      ? Math.min(totalStuCount, Math.round(totalStuCount * ((100 - attendanceRateNum) / 100)))
+      : 0;
+  const presentStudentsEst = Math.max(0, totalStuCount - absentStudentsEst);
+
+  return {
+    classCount: classNames.length,
+    taughtSessionsCount: totalTaughtSessions,
+    attendanceRateNum,
+    presentStudentsEst,
+    absentStudentsEst
+  };
+}
+
+function renderAdminAttendance() {
+  const dropdown = document.getElementById('att-class-dropdown');
+  const pillsContainer = document.getElementById('att-class-pills');
+  const gradeFiltersEl = document.getElementById('att-grade-filters');
+  const thead = document.getElementById('att-matrix-thead');
+  const tbody = document.getElementById('att-matrix-tbody');
+  if (!dropdown || !pillsContainer || !thead || !tbody) return;
+
+  const map = getClassSchedulesMap();
+  const classNames = getOrderedClassNamesList(map);
+  if (!selectedClassbookClass || !classNames.includes(selectedClassbookClass)) {
+    selectedClassbookClass = classNames[0] || '12 2K8';
+  }
+
+  const todayKey = getTodayDateKey();
+  const autoEnabled = isAutoAttendanceEnabled();
+  const attMap = getStudentAttendanceMap();
+
+  // Cập nhật nhãn Hôm nay & Trạng thái Tự động điểm danh qua ngày
+  const todayLabelEl = document.getElementById('att-today-label');
+  if (todayLabelEl) {
+    todayLabelEl.textContent = `Hôm nay: ${formatShortDateVN(todayKey)}`;
+  }
+
+  const toggleInput = document.getElementById('att-auto-nextday-toggle');
+  if (toggleInput) toggleInput.checked = autoEnabled;
+
+  const statusBadge = document.getElementById('att-auto-status-badge');
+  const toggleLabel = document.getElementById('att-auto-toggle-label');
+  const tabAutoBadge = document.getElementById('tab-attendance-auto-badge');
+  const bannerEl = document.getElementById('att-auto-mechanism-banner');
+  const iconBoxEl = document.getElementById('att-auto-icon-box');
+
+  if (autoEnabled) {
+    if (statusBadge) {
+      statusBadge.textContent = 'ĐANG BẬT (Tự động qua ngày)';
+      statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-600 text-white whitespace-nowrap';
+    }
+    if (toggleLabel) {
+      toggleLabel.textContent = 'Đang BẬT tự động điểm danh';
+      toggleLabel.className = 'text-xs font-extrabold text-emerald-700 whitespace-nowrap';
+    }
+    if (tabAutoBadge) {
+      tabAutoBadge.textContent = 'Tự động: BẬT';
+      tabAutoBadge.className = 'px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-800 font-extrabold whitespace-nowrap';
+    }
+    if (bannerEl) {
+      bannerEl.className = 'p-3.5 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/90 via-white to-indigo-50/70 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-2xs';
+    }
+    if (iconBoxEl) {
+      iconBoxEl.className = 'w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs';
+    }
+  } else {
+    if (statusBadge) {
+      statusBadge.textContent = 'ĐANG TẮT (Chỉ điểm danh thủ công)';
+      statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-slate-500 text-white whitespace-nowrap';
+    }
+    if (toggleLabel) {
+      toggleLabel.textContent = 'Đang TẮT tự động điểm danh';
+      toggleLabel.className = 'text-xs font-extrabold text-slate-600 whitespace-nowrap';
+    }
+    if (tabAutoBadge) {
+      tabAutoBadge.textContent = 'Tự động: TẮT';
+      tabAutoBadge.className = 'px-2 py-0.5 text-[10px] rounded-full bg-slate-200 text-slate-700 font-extrabold whitespace-nowrap';
+    }
+    if (bannerEl) {
+      bannerEl.className = 'p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-2xs';
+    }
+    if (iconBoxEl) {
+      iconBoxEl.className = 'w-10 h-10 rounded-2xl bg-slate-500 text-white flex items-center justify-center shrink-0 shadow-xs';
+    }
+  }
+
+  // 1. Render bộ lọc Khối lớp
+  const gradeDefs = getActiveGradeDefinitions();
+  if (gradeFiltersEl) {
+    gradeFiltersEl.innerHTML = gradeDefs
+      .map(g => {
+        const cnt =
+          g.key === 'ALL'
+            ? classNames.length
+            : classNames.filter(c => getGradeCategoryForClassName(c) === g.key).length;
+        const active = selectedAttendanceGradeFilter === g.key;
+        return `
+          <button
+            type="button"
+            onclick="setAttendanceGradeFilter('${escapeAttr(g.key)}')"
+            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 whitespace-nowrap ${
+              active
+                ? 'bg-indigo-600 text-white shadow-2xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }"
+          >
+            <span>${escapeHtml(g.label)}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+              active ? 'bg-white/20 text-white' : 'bg-white text-slate-600'
+            }">${cnt}</span>
+          </button>
+        `;
+      })
+      .join('');
+  }
+
+  // 2. Render Dropdown & Lưới thẻ chọn Lớp
+  dropdown.innerHTML = classNames
+    .map(cls => {
+      const count = (appState.students || []).filter(s => s.className === cls).length;
+      const cCfg = map[cls] || {};
+      return `<option value="${escapeAttr(cls)}" ${
+        cls === selectedClassbookClass ? 'selected' : ''
+      }>Lớp ${escapeHtml(cls)} — ${escapeHtml(cCfg.batchLabel || 'Đang học')} (${count} HS)</option>`;
+    })
+    .join('');
+
+  const visibleClasses =
+    selectedAttendanceGradeFilter === 'ALL'
+      ? classNames
+      : classNames.filter(c => getGradeCategoryForClassName(c) === selectedAttendanceGradeFilter);
+
+  pillsContainer.innerHTML = visibleClasses
+    .map(cls => {
+      const isSelected = cls === selectedClassbookClass;
+      const clsStudents = (appState.students || []).filter(s => s.className === cls);
+      const cCfg = map[cls] || getDefaultClassScheduleConfig(cls);
+      const st = getClassAttendanceStats(cls, cCfg, clsStudents, attMap, todayKey, autoEnabled);
+      const { mainTitle, subLabel } = parseClassDisplayTitle(cls);
+      const progPct = st.totalSessions > 0 ? Math.round((st.completedSessions / st.totalSessions) * 100) : 0;
+
+      return `
+        <div
+          role="button"
+          tabindex="0"
+          onclick="selectAttendanceClass('${escapeAttr(cls)}')"
+          class="class-selector-item ${
+            isSelected ? 'is-active' : ''
+          } group w-full px-3.5 py-2.5 rounded-xl text-left transition cursor-pointer flex flex-col justify-between gap-1.5"
+        >
+          <div class="flex items-center justify-between gap-1.5 w-full">
+            <span class="font-extrabold text-xs sm:text-sm truncate ${
+              isSelected ? 'text-white' : 'text-slate-900 group-hover:text-blue-600'
+            }">
+              ${escapeHtml(mainTitle)}
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap shrink-0 ${
+              isSelected
+                ? 'bg-amber-300 text-slate-950 font-black shadow-2xs'
+                : 'bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200'
+            }">
+              ${st.completedSessions}/${st.totalSessions} buổi
+            </span>
+          </div>
+          <div class="flex items-center justify-between gap-2 w-full text-[11px]">
+            <span class="truncate font-semibold ${isSelected ? 'text-blue-100' : 'text-slate-500'}">
+              ${escapeHtml(subLabel)} • ${clsStudents.length} HS
+            </span>
+            <span class="shrink-0 font-bold whitespace-nowrap ${
+              isSelected ? 'text-emerald-200' : 'text-indigo-600'
+            }">
+              Chuyên cần: ${st.ratePct.toFixed(0)}%
+            </span>
+          </div>
+          <div class="class-card-progress-track">
+            <div class="class-card-progress-fill" style="width: ${progPct}%"></div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  // 3. Render thông tin Lớp đang chọn & 4 Ô KPI
+  const cfg = map[selectedClassbookClass] || getDefaultClassScheduleConfig(selectedClassbookClass);
+  const classStudents = (appState.students || []).filter(s => s.className === selectedClassbookClass);
+  const stats = getClassAttendanceStats(
+    selectedClassbookClass,
+    cfg,
+    classStudents,
+    attMap,
+    todayKey,
+    autoEnabled
+  );
+
+  const metaClassEl = document.getElementById('att-meta-classname');
+  if (metaClassEl) metaClassEl.textContent = cfg.className;
+  const metaPeriodEl = document.getElementById('att-meta-period');
+  if (metaPeriodEl) {
+    metaPeriodEl.textContent = `${cfg.periodLabel || 'Tháng hiện tại'} (${formatShortDateVN(cfg.startDate)} → ${formatShortDateVN(cfg.endDate)})`;
+  }
+  const metaDaysEl = document.getElementById('att-meta-schedule-days');
+  if (metaDaysEl) {
+    metaDaysEl.textContent = cfg.batchLabel || 'ĐỢT HIỆN TẠI';
+  }
+
+  const kpiSessionsEl = document.getElementById('att-kpi-sessions');
+  if (kpiSessionsEl) kpiSessionsEl.textContent = `${stats.completedSessions} / ${stats.totalSessions} buổi`;
+  const kpiStuSubEl = document.getElementById('att-kpi-students-sub');
+  if (kpiStuSubEl) kpiStuSubEl.textContent = `${classStudents.length} học sinh trong lớp`;
+
+  const kpiRateEl = document.getElementById('att-kpi-rate');
+  if (kpiRateEl) kpiRateEl.textContent = `${stats.ratePct.toFixed(1).replace('.', ',')}%`;
+  const kpiRateSubEl = document.getElementById('att-kpi-rate-sub');
+  if (kpiRateSubEl) {
+    kpiRateSubEl.textContent =
+      stats.ratePct >= 90 ? 'Chuyên cần rất tốt' : stats.ratePct >= 75 ? 'Chuyên cần khá' : 'Cần nhắc nhở chuyên cần';
+  }
+
+  const kpiPresentEl = document.getElementById('att-kpi-present');
+  if (kpiPresentEl) kpiPresentEl.textContent = `${stats.presentSlots} lượt`;
+  const kpiAutoSubEl = document.getElementById('att-kpi-auto-sub');
+  if (kpiAutoSubEl) {
+    kpiAutoSubEl.textContent = autoEnabled
+      ? `Tự động qua ngày: ${stats.autoSessionsCount} buổi`
+      : 'Tự động qua ngày: Đang tắt';
+  }
+
+  const kpiAbsentEl = document.getElementById('att-kpi-absent');
+  if (kpiAbsentEl) kpiAbsentEl.textContent = `${stats.absentSlots + stats.excusedSlots} lượt`;
+  const kpiAbsentSubEl = document.getElementById('att-kpi-absent-sub');
+  if (kpiAbsentSubEl) {
+    kpiAbsentSubEl.textContent = `${stats.absentSlots} vắng • ${stats.excusedSlots} có phép`;
+  }
+
+  // 4. Render Bảng Ma Trận Điểm Danh (Học sinh × Từng buổi học)
+  const sessions = stats.sessions;
+  if (sessions.length === 0) {
+    thead.innerHTML = '';
+    tbody.innerHTML = `
+      <tr>
+        <td class="py-10 px-4 text-center text-slate-500 text-xs sm:text-sm">
+          Lớp <strong>${escapeHtml(cfg.className)}</strong> chưa có lịch buổi học. Hãy bấm <strong>"Cài đặt Lịch buổi học"</strong> để chọn ngày bắt đầu, ngày kết thúc và các thứ trong tuần.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Hàng tiêu đề các cột Buổi học + Hàng Tổng kết theo từng buổi
+  const sessionHeaderColsHtml = sessions
+    .map(sess => {
+      const isToday = sess.dateKey === todayKey;
+      const isPast = sess.dateKey < todayKey;
+      const allManualPresent =
+        classStudents.length > 0 &&
+        classStudents.every(stu => attMap?.[cfg.className]?.[sess.dateKey]?.[stu.id] === 1);
+
+      const timeBadge = isToday
+        ? `<span class="px-1.5 py-0.2 rounded bg-amber-300 text-slate-950 text-[9px] font-black uppercase">Hôm nay</span>`
+        : isPast
+        ? `<span class="px-1.5 py-0.2 rounded bg-emerald-400/25 text-emerald-200 text-[9px] font-bold">Đã qua</span>`
+        : `<span class="px-1.5 py-0.2 rounded bg-white/10 text-blue-200 text-[9px] font-semibold">Sắp tới</span>`;
+
+      return `
+        <th class="py-2.5 px-2 text-center min-w-[96px] border-l border-blue-800/50 whitespace-nowrap">
+          <div class="flex flex-col items-center gap-1">
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] font-black text-amber-300 uppercase">Buổi ${sess.sessionNumber}</span>
+              ${timeBadge}
+            </div>
+            <span class="text-xs font-extrabold text-white">${sess.dayShort} • ${sess.label}</span>
+            <button
+              type="button"
+              onclick="toggleWholeSessionAttendance('${escapeAttr(cfg.className)}', '${sess.dateKey}')"
+              title="Bấm để điểm danh Có mặt toàn bộ học sinh cho Buổi ${sess.sessionNumber} (${sess.dayShort} ${sess.label})"
+              class="mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold transition cursor-pointer whitespace-nowrap ${
+                allManualPresent
+                  ? 'bg-emerald-400 text-slate-950 hover:bg-rose-500 hover:text-white'
+                  : 'bg-white/15 hover:bg-emerald-500 text-white border border-white/25'
+              }"
+            >
+              ${allManualPresent ? '✓ Đủ cả lớp' : '✓ Cả lớp'}
+            </button>
+          </div>
+        </th>
+      `;
+    })
+    .join('');
+
+  const sessionSummaryColsHtml = sessions
+    .map(sess => {
+      let presentCnt = 0;
+      let absentCnt = 0;
+      let autoCnt = 0;
+      classStudents.forEach(stu => {
+        const eff = getEffectiveStudentSessionState(
+          cfg.className,
+          stu.id,
+          sess.dateKey,
+          cfg,
+          attMap,
+          todayKey,
+          autoEnabled
+        );
+        if (eff.state === 1) {
+          presentCnt++;
+          if (eff.isAuto) autoCnt++;
+        } else if (eff.state === 2 || eff.state === 3) {
+          absentCnt++;
+        }
+      });
+
+      const isFull = classStudents.length > 0 && presentCnt === classStudents.length;
+      return `
+        <td class="py-2 px-2 text-center border-l border-slate-200 whitespace-nowrap">
+          <div class="text-[11px] font-extrabold ${
+            isFull ? 'text-emerald-700' : presentCnt > 0 ? 'text-blue-700' : 'text-slate-400'
+          }">
+            ${presentCnt}/${classStudents.length} có mặt
+          </div>
+          <div class="text-[10px] font-semibold ${
+            absentCnt > 0 ? 'text-rose-600' : autoCnt > 0 ? 'text-teal-600' : 'text-slate-400'
+          }">
+            ${absentCnt > 0 ? `${absentCnt} vắng/phép` : autoCnt > 0 ? 'Tự động ĐD' : '—'}
+          </div>
+        </td>
+      `;
+    })
+    .join('');
+
+  thead.innerHTML = `
+    <tr class="sheet-navy-header text-xs font-extrabold whitespace-nowrap">
+      <th class="py-3 px-2.5 w-11 text-center">STT</th>
+      <th class="py-3 px-3 text-left min-w-[190px]">Học Sinh Trong Lớp</th>
+      <th class="py-3 px-2.5 text-center w-32">Chuyên cần</th>
+      <th class="py-3 px-2 text-center w-24">Chọn nhanh</th>
+      ${sessionHeaderColsHtml}
+    </tr>
+    <tr class="bg-slate-100 border-b-2 border-slate-300 text-xs font-extrabold whitespace-nowrap">
+      <td colspan="4" class="py-2 px-3 text-left uppercase tracking-wider text-slate-800">
+        SĨ SỐ TỪNG BUỔI (${classStudents.length} HỌC SINH)
+      </td>
+      ${sessionSummaryColsHtml}
+    </tr>
+  `;
+
+  if (classStudents.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="${sessions.length + 4}" class="py-10 text-center text-slate-400 text-xs sm:text-sm">
+          Lớp <strong>${escapeHtml(cfg.className)}</strong> hiện chưa có học sinh nào.
+          <button onclick="openStudentModalForCurrentClass()" class="text-blue-600 font-extrabold hover:underline ml-1 cursor-pointer">+ Thêm học sinh ngay</button>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = classStudents
+    .map((stu, idx) => {
+      let stuPresent = 0;
+      let stuAbsent = 0;
+      let stuExcused = 0;
+
+      const cellsHtml = sessions
+        .map(sess => {
+          const eff = getEffectiveStudentSessionState(
+            cfg.className,
+            stu.id,
+            sess.dateKey,
+            cfg,
+            attMap,
+            todayKey,
+            autoEnabled
+          );
+
+          if (eff.state === 1) stuPresent++;
+          else if (eff.state === 2) stuAbsent++;
+          else if (eff.state === 3) stuExcused++;
+
+          let btnLabel = '—';
+          let tip = `Buổi ${sess.sessionNumber} (${sess.dayShort} ${sess.label}) — Chưa điểm danh (Bấm để điểm danh)`;
+          if (eff.state === 1) {
+            btnLabel = eff.isAuto ? '✓ Tự động' : '✓ Có mặt';
+            tip = eff.isAuto
+              ? `Buổi ${sess.sessionNumber} (${sess.dayShort} ${sess.label}) — Đã tự động điểm danh Có mặt khi qua ngày (Bấm để đổi sang Vắng / Có phép)`
+              : `Buổi ${sess.sessionNumber} (${sess.dayShort} ${sess.label}) — Có mặt (Bấm để đổi sang Vắng / Có phép)`;
+          } else if (eff.state === 2) {
+            btnLabel = '✗ Vắng';
+            tip = `Buổi ${sess.sessionNumber} (${sess.dayShort} ${sess.label}) — Vắng không phép (Bấm để đổi sang Có phép / Xóa)`;
+          } else if (eff.state === 3) {
+            btnLabel = 'P Có phép';
+            tip = `Buổi ${sess.sessionNumber} (${sess.dayShort} ${sess.label}) — Nghỉ có phép / Dạy bù (Bấm để đổi)`;
+          }
+
+          return `
+            <td class="py-2 px-1.5 text-center border-l border-slate-100 whitespace-nowrap">
+              <button
+                type="button"
+                onclick="toggleStudentSessionAttendance('${escapeAttr(cfg.className)}', '${stu.id}', '${sess.dateKey}')"
+                title="${escapeAttr(tip)}"
+                class="att-cell-btn att-cell-state-${eff.state} ${eff.isAuto ? 'is-auto-att' : ''}"
+              >
+                <span>${btnLabel}</span>
+              </button>
+            </td>
+          `;
+        })
+        .join('');
+
+      const allStuManualPresent = sessions.every(
+        sess => attMap?.[cfg.className]?.[sess.dateKey]?.[stu.id] === 1
+      );
+
+      return `
+        <tr class="hover:bg-slate-50/90 transition border-b border-slate-200/80">
+          <td class="py-2.5 px-2 text-center font-bold text-slate-500">${idx + 1}</td>
+          <td class="py-2.5 px-3">
+            <div class="font-extrabold text-slate-900 text-xs sm:text-sm whitespace-nowrap truncate max-w-[200px]" title="${escapeAttr(stu.fullName)}">
+              ${escapeHtml(stu.fullName)}
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono whitespace-nowrap">
+              ${escapeHtml(stu.studentCode || '')}
+            </div>
+          </td>
+          <td class="py-2.5 px-2 text-center whitespace-nowrap">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ✓ ${stuPresent}/${sessions.length}
+            </span>
+            ${
+              stuAbsent > 0 || stuExcused > 0
+                ? `<div class="text-[10px] font-bold text-rose-600 mt-0.5">${stuAbsent} vắng • ${stuExcused} phép</div>`
+                : `<div class="text-[10px] font-semibold text-slate-400 mt-0.5">Đầy đủ</div>`
+            }
+          </td>
+          <td class="py-2.5 px-2 text-center whitespace-nowrap">
+            <button
+              type="button"
+              onclick="markAllSessionsForSingleStudent('${escapeAttr(cfg.className)}', '${stu.id}')"
+              title="Điểm danh Có mặt tất cả các buổi trong đợt cho học sinh ${escapeAttr(stu.fullName)}"
+              class="px-2.5 py-1 rounded-full text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap ${
+                allStuManualPresent
+                  ? 'bg-emerald-600 text-white hover:bg-rose-600'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white border border-indigo-200'
+              }"
+            >
+              ${allStuManualPresent ? '✓ Đủ 100%' : '✓ Tất cả'}
+            </button>
+          </td>
+          ${cellsHtml}
+        </tr>
+      `;
+    })
+    .join('');
+}
+
 
 // ============================================================================
 // CHỤP HÌNH BẢNG SỐ BUỔI HỌC CHUẨN MẪU & TỰ ĐỘNG LƯU VÀO CLIPBOARD (CHỈ VIỆC DÁN)
