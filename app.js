@@ -5187,7 +5187,7 @@ function renderAdminStudents() {
   const delClassBtnLabel = document.getElementById('btn-students-delete-class-label');
   if (delClassBtnLabel) {
     delClassBtnLabel.textContent =
-      currentClassFilter === 'ALL' ? '🗑️ Xóa Lớp' : `🗑️ Xóa Lớp "${currentClassFilter}"`;
+      currentClassFilter === 'ALL' ? 'Xóa Lớp' : `Xóa Lớp "${currentClassFilter}"`;
   }
 
   const sheetTitleEl = document.getElementById('stu-stat-sheet-title');
@@ -5260,7 +5260,7 @@ function renderAdminStudents() {
   if (sumCollectedEl) sumCollectedEl.textContent = formatCurrency(paidSum);
   if (sumMissingEl) sumMissingEl.textContent = formatCurrency(unpaidSum);
 
-  // 2. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối" & "Xóa Khối" (giống hệt Sổ Theo Dõi)
+  // 2. Render bộ lọc nhanh theo Khối lớp (Tầng 2 cân đối ngang hàng với nút + Tạo Khối / Xóa Khối bên phải)
   const gradeFiltersEl = document.getElementById('all-stu-grade-filters');
   if (gradeFiltersEl) {
     const gradeGroups = getAllGradeGroupsForDisplay(allClassNames, allStudents);
@@ -5274,65 +5274,27 @@ function renderAdminStudents() {
       topDelBtnLabel.textContent = activeGradeLabel ? `Xóa ${activeGradeLabel}` : 'Xóa Khối';
     }
 
-    gradeFiltersEl.innerHTML =
-      gradeGroups
-        .map(g => {
-          const active = selectedAllStuGradeFilter === g.key;
-          const canDelete = g.key !== 'ALL';
-          return `
-            <div class="inline-flex items-center rounded-lg border transition whitespace-nowrap overflow-hidden ${
+    gradeFiltersEl.innerHTML = gradeGroups
+      .map(g => {
+        const active = selectedAllStuGradeFilter === g.key;
+        return `
+          <button
+            type="button"
+            onclick="setAllStuGradeFilter('${escapeAttr(g.key)}')"
+            class="h-8 px-3 rounded-lg text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5 border whitespace-nowrap ${
               active
                 ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                 : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-            }">
-              <button
-                type="button"
-                onclick="setAllStuGradeFilter('${escapeAttr(g.key)}')"
-                class="px-2.5 py-1 text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
-              >
-                <span>${escapeHtml(g.label)}</span>
-                <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-                  active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                }">${g.stuCount} HS</span>
-              </button>
-              ${
-                canDelete
-                  ? `<button
-                      type="button"
-                      onclick="event.stopPropagation(); deleteGradeByKey('${escapeAttr(g.key)}')"
-                      title="Xóa ${escapeAttr(g.label)}"
-                      class="pr-2 pl-1 py-1 text-[11px] font-black transition cursor-pointer ${
-                        active
-                          ? 'text-white/80 hover:text-white hover:bg-rose-500/40'
-                          : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
-                      }"
-                    >✕</button>`
-                  : ''
-              }
-            </div>
-          `;
-        })
-        .join('') +
-      `
-        <button
-          type="button"
-          onclick="openGradeManagerModal()"
-          title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý Khối"
-          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white whitespace-nowrap shadow-2xs"
-        >
-          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-          <span>+ Tạo Khối</span>
-        </button>
-        <button
-          type="button"
-          onclick="handleToolbarDeleteGrade('students')"
-          title="${activeGradeLabel ? `Xóa ${escapeAttr(activeGradeLabel)} đang chọn` : 'Chọn hoặc mở hộp thoại để Xóa Khối'}"
-          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-rose-400 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white whitespace-nowrap shadow-2xs"
-        >
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          <span>${activeGradeLabel ? `Xóa ${escapeHtml(activeGradeLabel)}` : 'Xóa Khối'}</span>
-        </button>
-      `;
+            }"
+          >
+            <span>${escapeHtml(g.label)}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }">${g.stuCount} HS</span>
+          </button>
+        `;
+      })
+      .join('');
   }
 
   // 3. Render Lưới Thẻ Đếm & Chọn Lớp 4 cột cân đối (giống hệt Sổ Theo Dõi Lớp Học)
@@ -7084,7 +7046,7 @@ function renderAdminClassbook() {
     selectedClassbookClass = classNames[0] || '12 2K9 (Ca 1 - T3,5,7)';
   }
 
-  // 0. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối" & "Xóa Khối"
+  // 0. Render bộ lọc nhanh theo Khối lớp (Tầng 2 cân đối ngang hàng với nút + Tạo Khối / Xóa Khối bên phải)
   const gradeFiltersEl = document.getElementById('classbook-grade-filters');
   if (gradeFiltersEl) {
     const gradeGroups = getAllGradeGroupsForDisplay(classNames, appState.students || []);
@@ -7098,65 +7060,27 @@ function renderAdminClassbook() {
       topDelBtnLabel.textContent = activeGradeLabel ? `Xóa ${activeGradeLabel}` : 'Xóa Khối';
     }
 
-    gradeFiltersEl.innerHTML =
-      gradeGroups
-        .map(g => {
-          const active = selectedClassbookGradeFilter === g.key;
-          const canDelete = g.key !== 'ALL';
-          return `
-            <div class="inline-flex items-center rounded-lg border transition whitespace-nowrap overflow-hidden ${
+    gradeFiltersEl.innerHTML = gradeGroups
+      .map(g => {
+        const active = selectedClassbookGradeFilter === g.key;
+        return `
+          <button
+            type="button"
+            onclick="setClassbookGradeFilter('${escapeAttr(g.key)}')"
+            class="h-8 px-3 rounded-lg text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5 border whitespace-nowrap ${
               active
                 ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                 : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-            }">
-              <button
-                type="button"
-                onclick="setClassbookGradeFilter('${escapeAttr(g.key)}')"
-                class="px-2.5 py-1 text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
-              >
-                <span>${escapeHtml(g.label)}</span>
-                <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-                  active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                }">${g.count}</span>
-              </button>
-              ${
-                canDelete
-                  ? `<button
-                      type="button"
-                      onclick="event.stopPropagation(); deleteGradeByKey('${escapeAttr(g.key)}')"
-                      title="Xóa ${escapeAttr(g.label)}"
-                      class="pr-2 pl-1 py-1 text-[11px] font-black transition cursor-pointer ${
-                        active
-                          ? 'text-white/80 hover:text-white hover:bg-rose-500/40'
-                          : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
-                      }"
-                    >✕</button>`
-                  : ''
-              }
-            </div>
-          `;
-        })
-        .join('') +
-      `
-        <button
-          type="button"
-          onclick="openGradeManagerModal()"
-          title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý Khối"
-          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white whitespace-nowrap shadow-2xs"
-        >
-          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-          <span>+ Tạo Khối</span>
-        </button>
-        <button
-          type="button"
-          onclick="handleToolbarDeleteGrade('classbook')"
-          title="${activeGradeLabel ? `Xóa ${escapeAttr(activeGradeLabel)} đang chọn` : 'Chọn hoặc mở hộp thoại để Xóa Khối'}"
-          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-rose-400 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white whitespace-nowrap shadow-2xs"
-        >
-          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          <span>${activeGradeLabel ? `Xóa ${escapeHtml(activeGradeLabel)}` : 'Xóa Khối'}</span>
-        </button>
-      `;
+            }"
+          >
+            <span>${escapeHtml(g.label)}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }">${g.count}</span>
+          </button>
+        `;
+      })
+      .join('');
   }
 
   const visibleClasses =
@@ -8362,7 +8286,6 @@ async function deleteGradeByKey(gradeKey) {
   }
 
   saveStateToLocal();
-  renderAll();
   renderGradeManagerList();
   populateClassScheduleGradeSelect('AUTO');
   await triggerAutoSyncIfNeeded(`🗑️ Đã xóa "${label}" & đồng bộ lên Google Sheet!`);
