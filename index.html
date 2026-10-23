@@ -762,7 +762,7 @@
               <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
 
                 <!-- LEFT TABLE (8 cols): DANH SÁCH HỌC SINH & HỌC PHÍ TRONG LỚP -->
-                <div class="xl:col-span-8 space-y-3 overflow-x-auto">
+                <div class="xl:col-span-8 space-y-3 min-w-0">
                   <!-- Quick Inline Add Student + Tuition Fee Selector -->
                   <form
                     onsubmit="quickAddStudentInClassbook(event)"
@@ -821,44 +821,46 @@
                     </div>
                   </form>
 
-                  <table class="sheet-table text-xs sm:text-sm">
-                    <thead>
-                      <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
-                        <th class="py-2.5 px-2 w-10">STT</th>
-                        <th class="py-2.5 px-3 text-left min-w-[190px]">Họ và tên</th>
-                        <th class="py-2.5 px-2.5 text-right w-28">Học phí</th>
-                        <th class="py-2.5 px-2 w-28">Đã thanh toán</th>
-                        <th class="py-2.5 px-2.5 w-36">Tình trạng</th>
-                        <th class="py-2.5 px-2.5 text-left min-w-[140px]">Ghi chú</th>
-                        <th class="py-2.5 px-2 w-20">Sửa</th>
-                      </tr>
-                      <!-- Dòng TỔNG CỘNG giống hệt mẫu -->
-                      <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
-                        <td colspan="2" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
-                          TỔNG CỘNG
-                        </td>
-                        <td id="cb-sum-expected" class="py-2 px-2.5 text-right text-slate-900 whitespace-nowrap">
-                          0 ₫
-                        </td>
-                        <td id="cb-sum-paid-count" class="py-2 px-2 text-center text-slate-900 whitespace-nowrap">
-                          0 em
-                        </td>
-                        <td id="cb-sum-collected" class="py-2 px-2.5 text-right text-emerald-700 whitespace-nowrap">
-                          0 ₫
-                        </td>
-                        <td id="cb-sum-missing" colspan="2" class="py-2 px-2.5 text-right text-rose-600 whitespace-nowrap">
-                          0 ₫
-                        </td>
-                      </tr>
-                    </thead>
-                    <tbody id="cb-students-tbody">
-                      <!-- Rendered by JS -->
-                    </tbody>
-                  </table>
+                  <div class="overflow-x-auto js-sticky-table-wrap">
+                    <table id="cb-students-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
+                      <thead class="sticky-table-thead">
+                        <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
+                          <th class="py-2.5 px-2 w-10">STT</th>
+                          <th class="py-2.5 px-3 text-left min-w-[190px]">Họ và tên</th>
+                          <th class="py-2.5 px-2.5 text-right w-28">Học phí</th>
+                          <th class="py-2.5 px-2 w-28">Đã thanh toán</th>
+                          <th class="py-2.5 px-2.5 w-36">Tình trạng</th>
+                          <th class="py-2.5 px-2.5 text-left min-w-[140px]">Ghi chú</th>
+                          <th class="py-2.5 px-2 w-20">Sửa</th>
+                        </tr>
+                        <!-- Dòng TỔNG CỘNG giống hệt mẫu -->
+                        <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
+                          <td colspan="2" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
+                            TỔNG CỘNG
+                          </td>
+                          <td id="cb-sum-expected" class="py-2 px-2.5 text-right text-slate-900 whitespace-nowrap">
+                            0 ₫
+                          </td>
+                          <td id="cb-sum-paid-count" class="py-2 px-2 text-center text-slate-900 whitespace-nowrap">
+                            0 em
+                          </td>
+                          <td id="cb-sum-collected" class="py-2 px-2.5 text-right text-emerald-700 whitespace-nowrap">
+                            0 ₫
+                          </td>
+                          <td id="cb-sum-missing" colspan="2" class="py-2 px-2.5 text-right text-rose-600 whitespace-nowrap">
+                            0 ₫
+                          </td>
+                        </tr>
+                      </thead>
+                      <tbody id="cb-students-tbody">
+                        <!-- Rendered by JS -->
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
-                <!-- RIGHT TABLE (4 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU -->
-                <div class="xl:col-span-4 space-y-2.5">
+                <!-- RIGHT TABLE (4 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU (Cố định theo chiều dọc khi cuộn danh sách học sinh) -->
+                <div class="xl:col-span-4 space-y-2.5 xl:sticky xl:top-20">
                   <!-- 1 Nút Lớn Duy Nhất Ở Trên Để Chụp Hình Số Buổi Học Tự Động Lưu Vào Clipboard -->
                   <button
                     type="button"
@@ -1472,10 +1474,10 @@
                 </div>
               </div>
 
-              <!-- Bảng Học Sinh Chuẩn Mẫu Sổ Theo Dõi (sheet-table + Dòng TỔNG CỘNG) -->
-              <div class="overflow-x-auto">
-                <table class="sheet-table text-xs sm:text-sm">
-                  <thead>
+              <!-- Bảng Học Sinh Chuẩn Mẫu Sổ Theo Dõi (sheet-table + Dòng TỔNG CỘNG + Cố định thanh ngang khi cuộn) -->
+              <div class="overflow-x-auto js-sticky-table-wrap">
+                <table id="all-students-stat-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
+                  <thead class="sticky-table-thead">
                     <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
                       <th class="py-2.5 px-2 w-12">STT</th>
                       <th class="py-2.5 px-2.5 w-20">Mã HS</th>
@@ -1597,11 +1599,11 @@
             </div>
           </div>
 
-          <!-- Transactions Table (Cân đối cột, đồng bộ chuẩn Modern Sheet Card) -->
+          <!-- Transactions Table (Cân đối cột, đồng bộ chuẩn Modern Sheet Card + Cố định thanh tiêu đề khi cuộn) -->
           <div class="modern-sheet-card bg-white overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="sheet-table w-full text-left border-collapse">
-                <thead>
+            <div class="overflow-x-auto js-sticky-table-wrap">
+              <table id="finance-transactions-table" class="sheet-table js-sticky-header-table w-full text-left border-collapse">
+                <thead class="sticky-table-thead">
                   <tr class="sheet-navy-header text-xs font-extrabold uppercase tracking-wider whitespace-nowrap">
                     <th class="py-3.5 px-4 w-[185px] text-left">Mã GD / Ngày</th>
                     <th class="py-3.5 px-3 w-[105px] text-center">Loại</th>
