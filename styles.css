@@ -1,16 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 :root {
-  --brand-navy: #1f3d6e;
-  --brand-navy-mid: #25477d;
+  --brand-navy: #1e3a8a;
+  --brand-navy-mid: #1d4ed8;
   --brand-primary: #2563eb;
   --brand-primary-hover: #1d4ed8;
   --brand-primary-rgb: 37, 99, 235;
-  --brand-soft: #eef4fb;
+  --brand-soft: #eff6ff;
   --brand-border: #bfdbfe;
-  --brand-banner-from: #0f294a;
-  --brand-banner-via: #173b6c;
-  --brand-banner-to: #1e4b85;
+  --brand-banner-from: #09152b;
+  --brand-banner-via: #132d5e;
+  --brand-banner-to: #1d4ed8;
   --primary: var(--brand-primary);
   --primary-hover: var(--brand-primary-hover);
   --success: #059669;
@@ -25,25 +25,41 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f1f5f9;
+  background-color: #f4f7fb;
   background-image:
-    radial-gradient(at 0% 0%, rgba(var(--brand-primary-rgb), 0.06) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 45%);
+    radial-gradient(at 0% 0%, rgba(var(--brand-primary-rgb), 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.07) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%);
   background-attachment: fixed;
   color: #0f172a;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Custom Scrollbar */
+h1, h2, h3, h4,
+.font-display,
+.sheet-navy-header,
+.modern-kpi-value,
+#sepay-live-balance {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* Custom Scrollbar - Sleek Modern */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: rgba(226, 232, 240, 0.6);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -55,7 +71,7 @@ body {
   background: #64748b;
 }
 
-/* Status Badges - Light Mode (High Contrast) */
+/* Status Badges - Light Mode (High Contrast Pill Style) */
 .badge-paid {
   background-color: #d1fae5;
   color: #065f46;
@@ -74,37 +90,49 @@ body {
   border: 1px solid #f87171;
 }
 
-/* Table Status Cells - Light Mode */
+/* Table Status Cells - Modern Tinted Pill Cells */
 .status-cell-paid {
-  background-color: #d1fae5 !important;
+  background-color: #ecfdf5 !important;
   color: #065f46 !important;
   font-weight: 700;
 }
 
 .status-cell-paid select {
+  background-color: #d1fae5 !important;
   color: #065f46 !important;
+  border: 1px solid #6ee7b7 !important;
+  border-radius: 9999px;
+  padding: 3px 10px;
   font-weight: 800;
 }
 
 .status-cell-pending {
-  background-color: #fef3c7 !important;
+  background-color: #fffbeb !important;
   color: #92400e !important;
   font-weight: 700;
 }
 
 .status-cell-pending select {
+  background-color: #fef3c7 !important;
   color: #92400e !important;
+  border: 1px solid #fcd34d !important;
+  border-radius: 9999px;
+  padding: 3px 10px;
   font-weight: 800;
 }
 
 .status-cell-unpaid {
-  background-color: #ffe4e6 !important;
+  background-color: #fff1f2 !important;
   color: #be123c !important;
   font-weight: 600;
 }
 
 .status-cell-unpaid select {
+  background-color: #ffe4e6 !important;
   color: #be123c !important;
+  border: 1px solid #fda4af !important;
+  border-radius: 9999px;
+  padding: 3px 10px;
   font-weight: 700;
 }
 
@@ -112,7 +140,7 @@ body {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -121,7 +149,7 @@ body {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes pulseSubtle {
@@ -137,24 +165,25 @@ body {
   animation: pulseSubtle 2s infinite;
 }
 
-/* Glass header & cards */
+/* Glass Header & Modern Navigation */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.03);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px -4px rgba(15, 23, 42, 0.04);
 }
 
 /* Header Role Switcher Pill */
 .role-switch-pill {
   background-color: #f1f5f9;
   border: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .mode-pill-active {
-  background-color: #ffffff;
-  color: var(--brand-primary);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%);
+  color: #ffffff !important;
+  box-shadow: 0 3px 10px -2px rgba(var(--brand-primary-rgb), 0.38);
   font-weight: 700;
 }
 
@@ -166,7 +195,7 @@ body {
 
 .mode-pill-inactive:hover {
   color: #0f172a;
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.75);
 }
 
 .qr-frame {
@@ -177,63 +206,149 @@ body {
 /* Dynamic Theme Bindings */
 .theme-brand-icon {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
-  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.28);
+  box-shadow: 0 6px 16px -2px rgba(var(--brand-primary-rgb), 0.38);
 }
 
 .theme-hero-banner {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
-  box-shadow: 0 12px 32px -8px rgba(var(--brand-primary-rgb), 0.35);
+  background:
+    radial-gradient(at 90% 10%, rgba(255, 255, 255, 0.14) 0px, transparent 45%),
+    radial-gradient(at 10% 90%, rgba(56, 189, 248, 0.18) 0px, transparent 50%),
+    linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-primary) 55%, #3730a3 100%) !important;
+  box-shadow: 0 20px 40px -12px rgba(var(--brand-primary-rgb), 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .sepay-live-banner {
-  background: linear-gradient(95deg, var(--brand-banner-from) 0%, var(--brand-banner-via) 52%, var(--brand-banner-to) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 10px 25px -6px rgba(15, 23, 42, 0.25);
+  background:
+    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.2) 0px, transparent 45%),
+    linear-gradient(95deg, var(--brand-banner-from) 0%, var(--brand-banner-via) 52%, var(--brand-banner-to) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 32px -8px rgba(15, 23, 42, 0.26);
 }
 
 .classbook-selector-card {
-  background: linear-gradient(145deg, var(--brand-soft) 0%, #ffffff 65%, #f8fafc 100%);
-  border: 2px solid var(--brand-border);
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96) 0%, var(--brand-soft) 100%);
+  border: 1.5px solid var(--brand-border);
+  box-shadow: 0 10px 28px -8px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
 }
 
 .theme-navy-badge {
-  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-mid) 100%) !important;
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
   color: #ffffff !important;
+  box-shadow: 0 4px 12px -2px rgba(var(--brand-primary-rgb), 0.3);
 }
 
 .admin-tab-btn {
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-tab-btn.bg-blue-600 {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.28);
+  box-shadow: 0 6px 16px -3px rgba(var(--brand-primary-rgb), 0.38);
 }
 
-/* Thẻ lớp học ở Chế độ Sáng (tương phản rõ với nền khung & hiệu ứng nổi) */
+/* ========================================================================== */
+/* MODERN BENTO KPI CARDS & SHEET CARDS (SAAS 2026 DESIGN)                    */
+/* ========================================================================== */
+.modern-kpi-card {
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  border-radius: 1.15rem;
+  padding: 1rem 1.15rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.modern-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.1);
+}
+
+.modern-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  border-radius: 9999px;
+}
+
+.modern-kpi-blue::before {
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+.modern-kpi-indigo::before {
+  background: linear-gradient(90deg, #4f46e5, #818cf8);
+}
+
+.modern-kpi-emerald::before {
+  background: linear-gradient(90deg, #059669, #34d399);
+}
+
+.modern-kpi-rose::before {
+  background: linear-gradient(90deg, #e11d48, #fb7185);
+}
+
+.modern-sheet-card {
+  background: #ffffff;
+  border: 1.5px solid rgba(30, 58, 138, 0.22);
+  border-radius: 1.35rem;
+  box-shadow: 0 14px 34px -10px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+/* Thẻ lớp học ở Chế độ Sáng (tương phản rõ với nền khung & hiệu ứng nổi + thanh tiến độ) */
 .class-selector-item {
   background-color: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid #dbe3ef;
   color: #0f172a;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  overflow: hidden;
 }
 
 .class-selector-item:hover {
   border-color: var(--brand-primary);
-  background-color: #f8fafc;
-  transform: translateY(-1.5px);
-  box-shadow: 0 6px 14px -2px rgba(var(--brand-primary-rgb), 0.14);
+  background-color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -4px rgba(var(--brand-primary-rgb), 0.15);
 }
 
 .class-selector-item.is-active {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
   color: #ffffff !important;
   border-color: var(--brand-navy) !important;
-  box-shadow: 0 8px 20px -3px rgba(var(--brand-primary-rgb), 0.36) !important;
+  box-shadow: 0 10px 24px -4px rgba(var(--brand-primary-rgb), 0.4) !important;
+}
+
+/* Thanh tiến độ đóng học phí mini trên mỗi thẻ lớp */
+.class-card-progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: #e2e8f0;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.class-selector-item.is-active .class-card-progress-track {
+  background-color: rgba(255, 255, 255, 0.24);
+}
+
+.class-card-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.class-selector-item.is-active .class-card-progress-fill {
+  background: linear-gradient(90deg, #fde047, #34d399);
 }
 
 /* Nút xóa nhanh trên thẻ lớp */
@@ -248,13 +363,13 @@ body {
 
 /* Nút Chi tiết canh thẳng lề phải kế bên tên học sinh */
 .stu-detail-inline-btn {
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.16s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 .stu-detail-inline-btn:hover {
-  transform: translateY(-0.5px);
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28);
 }
 
 /* Mobile bottom bar padding */
@@ -264,9 +379,9 @@ body {
   }
 }
 
-/* Sổ Theo Dõi Lớp Học - Chuẩn Mẫu Styles */
+/* Sổ Theo Dõi Lớp Học & Sổ Thống Kê - Modern Executive Header & Table */
 .sheet-navy-header {
-  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-mid) 100%) !important;
+  background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-mid) 55%, var(--brand-primary) 100%) !important;
   color: #ffffff !important;
 }
 
@@ -276,13 +391,13 @@ body {
 }
 
 .sheet-sub-bar {
-  background-color: var(--brand-soft);
-  border-bottom: 2px solid var(--brand-navy);
+  background: linear-gradient(90deg, var(--brand-soft) 0%, #f8fafc 100%);
+  border-bottom: 1.5px solid rgba(30, 58, 138, 0.18);
 }
 
 .sheet-main-frame {
-  border-color: var(--brand-navy) !important;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+  border-color: rgba(30, 58, 138, 0.25) !important;
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
 }
 
 .sheet-table {
@@ -292,25 +407,34 @@ body {
 
 .sheet-table th,
 .sheet-table td {
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
+}
+
+.sheet-table thead th {
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .sheet-table tbody tr {
-  transition: background-color 0.12s ease;
+  transition: background-color 0.14s ease;
 }
 
-/* Trạng thái tô màu các buổi dạy trên lịch */
+.sheet-table tbody tr:hover {
+  background-color: rgba(37, 99, 235, 0.04);
+}
+
+/* Trạng thái tô màu các buổi dạy trên lịch (Tactile Modern Cells) */
 .session-cell {
-  transition: background-color 0.15s ease, color 0.15s ease, filter 0.15s ease, transform 0.1s ease;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   cursor: pointer;
   height: 42px;
   vertical-align: middle;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .session-cell:hover {
-  filter: brightness(0.95);
+  filter: brightness(0.96);
+  transform: scale(0.98);
 }
 
 /* 0: Chưa dạy (Trắng) */
@@ -320,39 +444,43 @@ body {
 }
 
 .session-state-0:hover {
-  background-color: #f1f5f9;
+  background-color: #eff6ff;
+  color: #1d4ed8;
 }
 
-/* 1: Đã dạy (Tô màu Xanh lá) */
+/* 1: Đã dạy (Tô màu Xanh lá Emerald hiện đại) */
 .session-state-1 {
-  background-color: #10b981 !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
   color: #ffffff !important;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 /* 2: Đã xác nhận / Chốt (Tô màu Vàng Cam nổi bật) */
 .session-state-2 {
-  background-color: #f59e0b !important;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
   color: #ffffff !important;
-  font-weight: 700;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 /* 3: Nghỉ / Dạy bù (Tô màu Đỏ nhạt) */
 .session-state-3 {
-  background-color: #fecdd3 !important;
-  color: #9f1239 !important;
+  background-color: #ffe4e6 !important;
+  color: #be123c !important;
   text-decoration: line-through;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* ========================================================================== */
 /* CHẾ ĐỘ TỐI (DARK MODE) - PHÂN TẦNG NỀN RÕ RÀNG & CHỮ TƯƠNG PHẢN CAO 100%   */
 /* ========================================================================== */
 html.dark-mode body {
-  background-color: #070b14;
+  background-color: #060a13;
   background-image:
-    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.14) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 45%);
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.16) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
   color: #f8fafc;
 }
 
@@ -365,9 +493,9 @@ html.dark-mode ::-webkit-scrollbar-thumb {
 }
 
 html.dark-mode .glass-nav {
-  background: rgba(11, 17, 32, 0.94);
-  border-color: #334155 !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  background: rgba(10, 15, 29, 0.9);
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
 }
 
 /* Role Switcher Pill trong Dark Mode */
@@ -379,7 +507,7 @@ html.dark-mode .role-switch-pill {
 html.dark-mode .mode-pill-active {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.45) !important;
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.5) !important;
 }
 
 html.dark-mode .mode-pill-inactive {
@@ -392,11 +520,23 @@ html.dark-mode .mode-pill-inactive:hover {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Tầng 1: Khung Card chính (.bg-white) */
-html.dark-mode .bg-white {
-  background-color: #111827 !important;
+/* Tầng 1: Khung Card chính (.bg-white, .modern-sheet-card, .modern-kpi-card) */
+html.dark-mode .bg-white,
+html.dark-mode .modern-sheet-card {
+  background-color: #0f172a !important;
   color: #f8fafc;
-  border-color: #334155;
+  border-color: #334155 !important;
+}
+
+html.dark-mode .modern-kpi-card {
+  background: linear-gradient(160deg, #162033 0%, #0f172a 100%) !important;
+  border-color: #334155 !important;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.45);
+}
+
+html.dark-mode .modern-kpi-card:hover {
+  border-color: #475569 !important;
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.6);
 }
 
 /* Tầng 2: Các hộp con / ô thống kê bên trong Card (.bg-slate-50, .bg-slate-100, .bg-slate-200) */
@@ -422,16 +562,16 @@ html.dark-mode .bg-slate-200\/80 {
   border-color: #475569 !important;
 }
 
-/* Khung chọn lớp & Thẻ từng lớp ở Chế độ Tối (Tách biệt hoàn toàn nền và chữ) */
+/* Khung chọn lớp & Thẻ từng lớp ở Chế độ Tối */
 html.dark-mode .classbook-selector-card {
   background: linear-gradient(145deg, #0f172a 0%, #162033 100%) !important;
-  border: 2px solid rgba(96, 165, 250, 0.4) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(96, 165, 250, 0.35) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
 }
 
 html.dark-mode .class-selector-item {
   background-color: #1e293b !important;
-  border: 1.5px solid #475569 !important;
+  border: 1.5px solid #334155 !important;
   color: #f8fafc !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -448,10 +588,14 @@ html.dark-mode .class-selector-item.is-active {
   box-shadow: 0 8px 22px rgba(37, 99, 235, 0.48) !important;
 }
 
+html.dark-mode .class-card-progress-track {
+  background-color: #334155;
+}
+
 html.dark-mode .sheet-sub-bar {
-  background-color: #1e293b !important;
+  background: linear-gradient(90deg, #162033 0%, #1e293b 100%) !important;
   color: #f8fafc !important;
-  border-bottom-color: #3b82f6 !important;
+  border-bottom-color: #334155 !important;
 }
 
 html.dark-mode .qr-frame {
@@ -528,35 +672,41 @@ html.dark-mode .bg-purple-100 {
 /* Status Badges & Table Status Cells trong Dark Mode */
 html.dark-mode .badge-paid,
 html.dark-mode .status-cell-paid {
-  background-color: rgba(16, 185, 129, 0.26) !important;
+  background-color: rgba(16, 185, 129, 0.16) !important;
   color: #6ee7b7 !important;
-  border-color: rgba(52, 211, 153, 0.45) !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
 }
 
 html.dark-mode .status-cell-paid select {
+  background-color: rgba(16, 185, 129, 0.28) !important;
   color: #6ee7b7 !important;
+  border-color: rgba(52, 211, 153, 0.5) !important;
 }
 
 html.dark-mode .badge-pending,
 html.dark-mode .status-cell-pending {
-  background-color: rgba(245, 158, 11, 0.26) !important;
+  background-color: rgba(245, 158, 11, 0.16) !important;
   color: #fde68a !important;
-  border-color: rgba(251, 191, 36, 0.45) !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
 }
 
 html.dark-mode .status-cell-pending select {
+  background-color: rgba(245, 158, 11, 0.28) !important;
   color: #fde68a !important;
+  border-color: rgba(251, 191, 36, 0.5) !important;
 }
 
 html.dark-mode .badge-unpaid,
 html.dark-mode .status-cell-unpaid {
-  background-color: rgba(244, 63, 94, 0.22) !important;
+  background-color: rgba(244, 63, 94, 0.15) !important;
   color: #fda4af !important;
-  border-color: rgba(251, 113, 133, 0.45) !important;
+  border-color: rgba(251, 113, 133, 0.4) !important;
 }
 
 html.dark-mode .status-cell-unpaid select {
+  background-color: rgba(244, 63, 94, 0.28) !important;
   color: #fda4af !important;
+  border-color: rgba(251, 113, 133, 0.5) !important;
 }
 
 /* Nút cọ tô màu lịch & Ô lịch nghỉ trong Dark Mode */
@@ -667,26 +817,31 @@ html.dark-mode .border-slate-300,
 html.dark-mode .border-slate-400,
 html.dark-mode .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
 html.dark-mode .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #334155 !important;
+  border-color: #263449 !important;
 }
 
 html.dark-mode .sheet-table th,
 html.dark-mode .sheet-table td {
-  border-color: #334155;
+  border-color: #263449;
+}
+
+html.dark-mode .sheet-table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 html.dark-mode .session-state-0 {
-  background-color: #111827;
+  background-color: #0f172a;
   color: #f1f5f9;
 }
 
 html.dark-mode .session-state-0:hover {
   background-color: #1e293b;
+  color: #93c5fd;
 }
 
 /* Ô nhập liệu (Inputs, Selects, Textareas) nổi bật trong Dark Mode */
 html.dark-mode input:not([type="checkbox"]):not([type="color"]),
-html.dark-mode select,
+html.dark-mode select:not(.status-select),
 html.dark-mode textarea {
   background-color: #1e293b !important;
   color: #f8fafc !important;
@@ -698,7 +853,7 @@ html.dark-mode textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-html.dark-mode .sheet-table select,
+html.dark-mode .sheet-table select:not(.status-select),
 html.dark-mode .sheet-table input[type="text"] {
   background-color: transparent !important;
 }
