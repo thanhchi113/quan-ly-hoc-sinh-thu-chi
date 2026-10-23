@@ -19,7 +19,7 @@ const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz6CZ6W-
 
 const STORAGE_KEYS = {
   STATE: 'edupay_app_state_v2',
-  SANDBOX_STATE: 'edupay_sandbox_draft_state_v1',
+  SANDBOX_STATE: 'edupay_sandbox_draft_state_v2',
   GAS_URL: 'edupay_gas_webapp_url',
   AUTO_SYNC: 'edupay_auto_sync_enabled',
   ADMIN_AUTH: 'edupay_admin_authenticated'
@@ -3469,6 +3469,7 @@ function getInitialSandboxDraftState() {
 
   return {
     settings: {
+      isSandboxData: true,
       centerName: 'TRUNG TÂM GIÁO DỤC ALPHA (BẢN NHÁP)',
       bankBin: 'MB',
       bankAccountNo: '0999888777',
@@ -3490,10 +3491,17 @@ function getInitialSandboxDraftState() {
 
 function loadSandboxDraftStateFromLocal() {
   try {
+    localStorage.removeItem('edupay_sandbox_draft_state_v1');
     const raw = localStorage.getItem(STORAGE_KEYS.SANDBOX_STATE);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.students) && parsed.settings) {
+      if (
+        parsed &&
+        Array.isArray(parsed.students) &&
+        parsed.settings &&
+        parsed.settings.isSandboxData === true &&
+        !String(parsed.settings.centerName || '').toUpperCase().includes('ANH CHÍ')
+      ) {
         return parsed;
       }
     }
@@ -3538,10 +3546,27 @@ const MAX_UNDO_HISTORY = 30;
 let currentMode = 'parent'; // 'parent' | 'admin'
 let currentAdminTab = 'classbook';
 let selectedClassbookClass = '';
+let selectedClassbookGradeFilter = 'ALL';
+let selectedAllStuGradeFilter = 'ALL';
+let selectedStuStatTimeMode = 'ALL';
+let expandedHistoryIds = new Set();
+let livePollingTimer = null;
 let currentCalendarBrush = 'cycle'; // 'cycle' | 1 | 2 | 3 | 0
 let uploadedReceiptBase64 = '';
 let financeBarChartInstance = null;
 let tuitionPieChartInstance = null;
+
+function handleOpenGoogleSheetLink(event) {
+  if (isSandboxDraftMode) {
+    if (event) event.preventDefault();
+    showToast(
+      '🧪 Đang ở Tab Nháp (Dùng Thử): Không sử dụng Google Sheet thật của chủ hệ thống! Mọi dữ liệu nháp được lưu độc lập.',
+      'info'
+    );
+    return false;
+  }
+  return true;
+}
 
 function updateSandboxModeButtonsUI() {
   const banner = document.getElementById('sandbox-draft-banner');
@@ -3551,12 +3576,57 @@ function updateSandboxModeButtonsUI() {
   const tabBtn = document.getElementById('tab-btn-sandbox');
   const tabLabel = document.getElementById('tab-btn-sandbox-label');
 
+  // Các phần tử thương hiệu cần đổi sang Thông tin Nháp khi ở Tab Nháp
+  const headerBrandBadge = document.getElementById('header-brand-badge');
+  const sidebarBrandTitle = document.getElementById('sidebar-brand-title');
+  const sidebarBrandSub = document.getElementById('sidebar-brand-subtitle');
+  const workspaceBrandBadge = document.getElementById('workspace-brand-badge');
+  const avatarInitials = document.getElementById('header-avatar-initials');
+  const avatarBox = document.getElementById('header-avatar-box');
+  const sheetTopLabel = document.getElementById('btn-open-google-sheet-top-label');
+
   if (banner) {
     if (isSandboxDraftMode) {
       banner.classList.remove('hidden');
     } else {
       banner.classList.add('hidden');
     }
+  }
+
+  if (isSandboxDraftMode) {
+    document.title = 'ALPHA EDU (BẢN NHÁP) — Hệ Thống Dùng Thử Quản Lý Học Sinh & Tài Chính';
+    if (headerBrandBadge) {
+      headerBrandBadge.textContent = 'ALPHA EDU • NHÁP';
+      headerBrandBadge.className =
+        'px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold tracking-wider uppercase shrink-0';
+    }
+    if (sidebarBrandTitle) sidebarBrandTitle.textContent = 'ALPHA EDU (NHÁP)';
+    if (sidebarBrandSub) sidebarBrandSub.textContent = 'Bản Dùng Thử Mẫu';
+    if (workspaceBrandBadge) {
+      workspaceBrandBadge.textContent = 'BẢN NHÁP DÙNG THỬ';
+      workspaceBrandBadge.className =
+        'hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold';
+    }
+    if (avatarInitials) avatarInitials.textContent = 'NH';
+    if (avatarBox) avatarBox.title = 'Tài khoản Dùng Thử — TRUNG TÂM GIÁO DỤC ALPHA (BẢN NHÁP)';
+    if (sheetTopLabel) sheetTopLabel.textContent = 'Sheet Nháp (Demo)';
+  } else {
+    document.title = 'THANH CHÍ EDU — Quản Lý Học Sinh, Học Phí & Tài Chính';
+    if (headerBrandBadge) {
+      headerBrandBadge.textContent = 'THANH CHÍ EDU';
+      headerBrandBadge.className =
+        'px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0';
+    }
+    if (sidebarBrandTitle) sidebarBrandTitle.textContent = 'THANH CHÍ EDU';
+    if (sidebarBrandSub) sidebarBrandSub.textContent = 'Hệ thống Quản trị';
+    if (workspaceBrandBadge) {
+      workspaceBrandBadge.textContent = 'THANH CHÍ EDU';
+      workspaceBrandBadge.className =
+        'hidden sm:inline-flex px-2.5 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] text-[10px] font-extrabold';
+    }
+    if (avatarInitials) avatarInitials.textContent = 'TC';
+    if (avatarBox) avatarBox.title = 'Quản trị viên — THANH CHÍ EDU';
+    if (sheetTopLabel) sheetTopLabel.textContent = 'Mở Google Sheet';
   }
 
   if (topBtn) {
@@ -3768,12 +3838,6 @@ function bootstrapApp() {
     syncFromGoogleSheet(false);
     startLiveBankPolling();
   }
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', bootstrapApp);
-} else {
-  bootstrapApp();
 }
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
@@ -5601,9 +5665,6 @@ function renderDashboardCharts(
 // ============================================================================
 // TAB 2: SỔ THỐNG KÊ HỌC SINH & HỌC PHÍ (ĐA CHIỀU: LỚP • THÁNG • NĂM • NGÀY)
 // ============================================================================
-let selectedAllStuGradeFilter = 'ALL';
-let selectedStuStatTimeMode = 'ALL'; // 'ALL' | 'MONTH' | 'YEAR' | 'DAY' | 'RANGE'
-
 function sortClassNamesStandard(classNames) {
   const gradeOrder = { '12': 1, '11': 2, '10': 3, '9': 4, '8': 5, '7': 6, '6': 7, '6-8': 8, 'OTHER': 99 };
   return [...classNames].sort((a, b) => {
@@ -7270,7 +7331,9 @@ function deleteTransactionRecord(transId) {
 // ============================================================================
 function populateSettingsForm() {
   const stg = appState.settings || {};
-  document.getElementById('setting-gas-url').value = getGasUrl();
+  document.getElementById('setting-gas-url').value = isSandboxDraftMode
+    ? 'https://script.google.com/macros/s/DEMO_SANDBOX_MODE_ONLY/exec'
+    : getGasUrl();
   document.getElementById('setting-auto-sync').checked = isAutoSyncEnabled();
 
   document.getElementById('setting-center-name').value = stg.centerName || 'LỚP TOÁN ANH CHÍ';
@@ -7280,6 +7343,13 @@ function populateSettingsForm() {
   document.getElementById('setting-bank-owner').value = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
   document.getElementById('setting-teacher-phone').value = stg.teacherPhone || '0905957716';
   document.getElementById('setting-admin-pass').value = stg.adminPassword || '123456';
+
+  const webhookDisplay = document.getElementById('bank-webhook-url-display');
+  if (webhookDisplay) {
+    webhookDisplay.textContent = isSandboxDraftMode
+      ? 'https://script.google.com/macros/s/DEMO_SANDBOX_MODE_ONLY/exec'
+      : getGasUrl();
+  }
 
   updateQrPreviewInSettings();
 }
@@ -7457,6 +7527,9 @@ async function syncFromGoogleSheet(showUserToast = true) {
       redirect: 'follow'
     });
     const json = await res.json();
+
+    // Nếu người dùng đã chuyển sang Tab Nháp trong lúc đang chờ mạng, hủy bỏ ngay để không ghi đè dữ liệu nháp
+    if (isSandboxDraftMode) return;
 
     if (json && json.success && json.data) {
       // Nếu Google Sheet đang hoàn toàn trống (mới tạo lần đầu), hỏi hoặc tự đẩy dữ liệu hiện tại lên
@@ -8076,8 +8149,6 @@ function setCalendarBrush(brushMode) {
   });
 }
 
-let selectedClassbookGradeFilter = 'ALL';
-
 // ============================================================================
 // HỆ THỐNG TẠO & QUẢN LÝ KHỐI LỚP (+ TẠO KHỐI)
 // ============================================================================
@@ -8170,12 +8241,12 @@ function getGradeCategoryForClassName(cls) {
     }
   }
 
-  // 3. Nhận diện mặc định theo đầu tên lớp
-  if (/^12\b/.test(s)) return '12';
-  if (/^11\b/.test(s)) return '11';
-  if (/^10\b/.test(s)) return '10';
-  if (/^9\b/.test(s)) return '9';
-  if (/^[678]\b/.test(s)) return '6-8';
+  // 3. Nhận diện mặc định theo đầu tên lớp (hỗ trợ cả "12 2K9" và "12A1")
+  if (/^12(?:\D|$)/.test(s)) return '12';
+  if (/^11(?:\D|$)/.test(s)) return '11';
+  if (/^10(?:\D|$)/.test(s)) return '10';
+  if (/^9(?:\D|$)/.test(s)) return '9';
+  if (/^[678](?:\D|$)/.test(s)) return '6-8';
   return 'OTHER';
 }
 
@@ -10037,8 +10108,6 @@ function openHistoryForCurrentClass() {
   }
 }
 
-let expandedHistoryIds = new Set();
-
 function toggleHistoryBatchDetail(histId) {
   if (expandedHistoryIds.has(histId)) {
     expandedHistoryIds.delete(histId);
@@ -10477,8 +10546,6 @@ async function deleteHistoryBatch(histId) {
 // ============================================================================
 // TỰ ĐỘNG CẬP NHẬT SỐ DƯ SEPAY.VN & DUYỆT HỌC PHÍ TỰ ĐỘNG (AUTO-BANK WEBHOOK)
 // ============================================================================
-let livePollingTimer = null;
-
 function getComputedSepayBalance() {
   const stg = appState.settings || {};
   const transactions = appState.transactions || [];
@@ -10617,6 +10684,7 @@ function startLiveBankPolling() {
   }
 
   livePollingTimer = setInterval(async () => {
+    if (isSandboxDraftMode) return;
     const gasUrl = getGasUrl();
     if (!gasUrl) return;
     try {
@@ -10632,6 +10700,7 @@ function startLiveBankPolling() {
         redirect: 'follow'
       });
       const json = await res.json();
+      if (isSandboxDraftMode) return;
       if (json && json.success && json.data) {
         const nextState = mergeServerData(json.data);
         const newlyPaid = (nextState.students || []).filter(
@@ -11338,7 +11407,8 @@ function scrollToPageTop() {
 }
 
 function handleGoToHomePage() {
-  if (currentMode === 'admin' && isAdminAuthenticated) {
+  const isAuth = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  if (currentMode === 'admin' && isAuth) {
     if (currentAdminTab !== 'classbook') {
       switchAdminTab('classbook');
     }
@@ -11382,6 +11452,12 @@ function initStickyTableHeaderEngine() {
   updateScrollToTopButtonVisibility();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    bootstrapApp();
+    initStickyTableHeaderEngine();
+  });
+} else {
+  bootstrapApp();
   initStickyTableHeaderEngine();
-});
+}
