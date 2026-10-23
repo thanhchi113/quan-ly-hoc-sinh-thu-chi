@@ -7398,9 +7398,19 @@ function renderClassbookScheduleTable(cfg) {
           <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide text-left">
             SỐ BUỔI HỌC CỦA ${escapeHtml(cleanPeriod)}
           </span>
-          <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase shrink-0 shadow-2xs">
-            ${escapeHtml(batchText)}
-          </span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onclick="captureCurrentScheduleToClipboard(this)"
+              title="Chụp hình bảng Số buổi học lưu vào bộ nhớ tạm (chỉ việc nhấn Ctrl+V để dán)"
+              class="px-2 py-0.5 rounded-md bg-white/15 hover:bg-white/25 text-white border border-white/25 font-extrabold text-[11px] inline-flex items-center gap-1 transition cursor-pointer"
+            >
+              <span>📸 Chụp</span>
+            </button>
+            <span class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs uppercase shrink-0 shadow-2xs">
+              ${escapeHtml(batchText)}
+            </span>
+          </div>
         </div>
       </th>
     </tr>
@@ -7499,6 +7509,363 @@ function toggleSessionDateState(className, dateKey) {
 
   map[className] = cfg;
   saveClassSchedulesMap(map);
+}
+
+// ============================================================================
+// CHỤP HÌNH BẢNG SỐ BUỔI HỌC CHUẨN MẪU & TỰ ĐỘNG LƯU VÀO CLIPBOARD (CHỈ VIỆC DÁN)
+// ============================================================================
+function drawRoundedRectPath(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function renderScheduleConfigToCanvas(cfg) {
+  const { orderedCols, weeks } = generateScheduleWeeks(
+    cfg.startDate,
+    cfg.endDate,
+    cfg.daysOfWeek
+  );
+  const states = cfg.sessionStates || {};
+  let taughtCount = 0;
+  let confirmedCount = 0;
+  weeks.forEach(row => {
+    row.forEach(cell => {
+      if (cell.inRange && cell.dateKey) {
+        const st = Number(states[cell.dateKey] || 0);
+        if (st === 1) taughtCount++;
+        if (st === 2) confirmedCount++;
+      }
+    });
+  });
+
+  const colCount = Math.max(1, orderedCols.length);
+  const checkedSessions = taughtCount + confirmedCount;
+  const batchText = String(cfg.batchLabel || 'ĐỢT 5')
+    .replace(/ĐỢT\s+SỐ\s+/i, 'ĐỢT ')
+    .trim()
+    .toUpperCase();
+  const cleanPeriod = (
+    String(cfg.periodLabel || 'THÁNG 9-10/2026')
+      .replace(/\(\s*ĐỢT[^)]*\)/gi, '')
+      .trim() || 'THÁNG HIỆN TẠI'
+  ).toUpperCase();
+
+  // Kích thước chuẩn theo đúng ảnh mẫu người dùng gửi (vẽ ở độ phân giải 3x Retina siêu nét)
+  const scale = 3;
+  const pad = 14;
+  const cardW = 600;
+  const headerH = 56;
+  const subH = 48;
+  const weekdayH = 46;
+  const rowH = 52;
+  const weekRowsCount = Math.max(1, weeks.length);
+  const cardH = headerH + subH + weekdayH + weekRowsCount * rowH;
+  const totalW = cardW + pad * 2;
+  const totalH = cardH + pad * 2;
+  const cornerRadius = 22;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalW * scale;
+  canvas.height = totalH * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  // Nền ngoài trắng tinh khiết để khi dán vào Zalo / Messenger nổi bật góc bo tròn
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, totalW, totalH);
+
+  // Bóng đổ nhẹ dưới khung thẻ
+  ctx.save();
+  ctx.shadowColor = 'rgba(15, 23, 42, 0.08)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 3;
+  drawRoundedRectPath(ctx, pad, pad, cardW, cardH, cornerRadius);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.restore();
+
+  // Cắt (Clip) theo khung bo góc
+  ctx.save();
+  drawRoundedRectPath(ctx, pad, pad, cardW, cardH, cornerRadius);
+  ctx.clip();
+
+  // 1. HÀNG TIÊU ĐỀ TRÊN CÙNG (Gradient Xanh Tím Đậm + Nhãn Vàng ĐỢT)
+  const headerGrad = ctx.createLinearGradient(pad, pad, pad + cardW, pad + headerH);
+  headerGrad.addColorStop(0, '#1e1b4b');
+  headerGrad.addColorStop(0.5, '#312e81');
+  headerGrad.addColorStop(1, '#3b3898');
+  ctx.fillStyle = headerGrad;
+  ctx.fillRect(pad, pad, cardW, headerH);
+
+  // Chữ tiêu đề trái: SỐ BUỔI HỌC CỦA THÁNG ...
+  ctx.font = '800 17px "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText(`SỐ BUỔI HỌC CỦA ${cleanPeriod}`, pad + 20, pad + headerH / 2 + 0.5);
+
+  // Nhãn Vàng góc phải: ĐỢT 5
+  ctx.font = '800 13px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+  const batchTextW = ctx.measureText(batchText).width;
+  const badgeW = Math.max(66, batchTextW + 24);
+  const badgeH = 28;
+  const badgeX = pad + cardW - 18 - badgeW;
+  const badgeY = pad + (headerH - badgeH) / 2;
+  drawRoundedRectPath(ctx, badgeX, badgeY, badgeW, badgeH, 7);
+  ctx.fillStyle = '#fbbf24';
+  ctx.fill();
+  ctx.fillStyle = '#0f172a';
+  ctx.textAlign = 'center';
+  ctx.fillText(batchText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 0.5);
+
+  // 2. HÀNG TỔNG CỘNG SỐ BUỔI DẠY
+  const subY = pad + headerH;
+  ctx.fillStyle = '#f1f5f9';
+  ctx.fillRect(pad, subY, cardW, subH);
+
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pad, subY + subH);
+  ctx.lineTo(pad + cardW, subY + subH);
+  ctx.stroke();
+
+  ctx.font = '800 14px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.textAlign = 'left';
+  ctx.fillText('TỔNG CỘNG SỐ BUỔI DẠY', pad + 20, subY + subH / 2 + 0.5);
+
+  // Pill Xanh dương: 12 buổi
+  const sessionCountText = `${checkedSessions} buổi`;
+  ctx.font = '800 13.5px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+  const sessTextW = ctx.measureText(sessionCountText).width;
+  const pillW = Math.max(84, sessTextW + 30);
+  const pillH = 27;
+  const pillX = pad + cardW - 18 - pillW;
+  const pillY = subY + (subH - pillH) / 2;
+  drawRoundedRectPath(ctx, pillX, pillY, pillW, pillH, 13.5);
+  ctx.fillStyle = '#1d4ed8';
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText(sessionCountText, pillX + pillW / 2, pillY + pillH / 2 + 0.5);
+
+  // 3. HÀNG THỨ TRONG TUẦN (THỨ 3 | THỨ 5 | THỨ 7 ...)
+  const wkY = subY + subH;
+  ctx.fillStyle = '#234270';
+  ctx.fillRect(pad, wkY, cardW, weekdayH);
+
+  const colW = cardW / colCount;
+  orderedCols.forEach((d, cIdx) => {
+    const cx = pad + cIdx * colW;
+    ctx.font = '800 14.5px "Plus Jakarta Sans", "Inter", -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(DAY_LABELS[d] || '', cx + colW / 2, wkY + weekdayH / 2 + 0.5);
+
+    if (cIdx > 0) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx, wkY);
+      ctx.lineTo(cx, wkY + weekdayH);
+      ctx.stroke();
+    }
+  });
+
+  // 4. LƯỚI CÁC Ô NGÀY HỌC
+  const gridStartY = wkY + weekdayH;
+  if (weeks.length === 0) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(pad, gridStartY, cardW, rowH);
+    ctx.font = '600 14px "Inter", sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'center';
+    ctx.fillText('Chưa có lịch buổi học', pad + cardW / 2, gridStartY + rowH / 2);
+  } else {
+    weeks.forEach((row, rIdx) => {
+      const cy = gridStartY + rIdx * rowH;
+      row.forEach((cell, cIdx) => {
+        const cx = pad + cIdx * colW;
+        const st = cell.inRange && cell.dateKey ? Number(states[cell.dateKey] || 0) : -1;
+
+        if (!cell.inRange) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(cx, cy, colW, rowH);
+          ctx.font = '600 16px "Inter", sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.textAlign = 'center';
+          ctx.fillText('–', cx + colW / 2, cy + rowH / 2 + 0.5);
+        } else if (st === 1) {
+          // Đã dạy (Màu Xanh lá chuẩn mẫu)
+          ctx.fillStyle = '#05a66b';
+          ctx.fillRect(cx, cy, colW, rowH);
+          ctx.font = '800 16.5px "Plus Jakarta Sans", "Inter", sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.fillText(`✓ ${cell.label}`, cx + colW / 2, cy + rowH / 2 + 0.5);
+        } else if (st === 2) {
+          // Đã xác nhận (Màu Cam)
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(cx, cy, colW, rowH);
+          ctx.font = '800 16.5px "Plus Jakarta Sans", "Inter", sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.fillText(`★ ${cell.label}`, cx + colW / 2, cy + rowH / 2 + 0.5);
+        } else if (st === 3) {
+          // Nghỉ / Dạy bù (Màu Đỏ hồng gạch ngang)
+          ctx.fillStyle = '#ffe4e6';
+          ctx.fillRect(cx, cy, colW, rowH);
+          const textStr = `✕ ${cell.label}`;
+          ctx.font = '800 16px "Plus Jakarta Sans", "Inter", sans-serif';
+          ctx.fillStyle = '#be123c';
+          ctx.textAlign = 'center';
+          ctx.fillText(textStr, cx + colW / 2, cy + rowH / 2 + 0.5);
+          const tw = ctx.measureText(textStr).width;
+          ctx.strokeStyle = '#be123c';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(cx + colW / 2 - tw / 2, cy + rowH / 2 + 0.5);
+          ctx.lineTo(cx + colW / 2 + tw / 2, cy + rowH / 2 + 0.5);
+          ctx.stroke();
+        } else {
+          // Chưa dạy (Trắng)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(cx, cy, colW, rowH);
+          ctx.font = '700 16px "Plus Jakarta Sans", "Inter", sans-serif';
+          ctx.fillStyle = '#1e293b';
+          ctx.textAlign = 'center';
+          ctx.fillText(cell.label, cx + colW / 2, cy + rowH / 2 + 0.5);
+        }
+
+        // Đường kẻ ô
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx, cy, colW, rowH);
+      });
+    });
+  }
+
+  ctx.restore();
+
+  // Viền ngoài bo góc sắc nét
+  drawRoundedRectPath(ctx, pad, pad, cardW, cardH, cornerRadius);
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  return canvas;
+}
+
+function flashScheduleCaptureButtonSuccess(btnEl) {
+  if (!btnEl) return;
+  if (!btnEl.dataset.origHtml) {
+    btnEl.dataset.origHtml = btnEl.innerHTML;
+  }
+  btnEl.innerHTML = `<span>✅ Đã Copy ảnh! Chỉ việc nhấn Ctrl+V để dán</span>`;
+  btnEl.classList.add('ring-2', 'ring-emerald-400');
+  setTimeout(() => {
+    if (btnEl && btnEl.dataset.origHtml) {
+      btnEl.innerHTML = btnEl.dataset.origHtml;
+      btnEl.classList.remove('ring-2', 'ring-emerald-400');
+      lucide.createIcons();
+    }
+  }, 3200);
+}
+
+async function captureScheduleConfigToClipboard(cfg, triggerBtn = null) {
+  if (!cfg) return;
+  try {
+    const canvas = renderScheduleConfigToCanvas(cfg);
+    const classTitle = cfg.className || selectedClassbookClass || 'Lớp';
+
+    if (navigator.clipboard && window.ClipboardItem) {
+      const blobPromise = new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error('Không thể tạo ảnh PNG'));
+        }, 'image/png');
+      });
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': blobPromise
+        })
+      ]);
+
+      flashScheduleCaptureButtonSuccess(triggerBtn);
+      showToast(
+        `📸 Đã chụp & lưu ảnh Số buổi học (${classTitle}) vào bộ nhớ tạm! Bạn chỉ việc nhấn Ctrl + V để dán ngay vào Zalo / Messenger.`,
+        'success'
+      );
+      return;
+    }
+
+    // Fallback nếu trình duyệt không hỗ trợ ClipboardItem: tự động tải về máy
+    downloadCanvasAsPng(canvas, cfg);
+    showToast(
+      `📸 Đã tải ảnh Số buổi học (${classTitle}) về máy!`,
+      'success'
+    );
+  } catch (err) {
+    console.warn('Clipboard write fallback:', err);
+    try {
+      const canvas = renderScheduleConfigToCanvas(cfg);
+      downloadCanvasAsPng(canvas, cfg);
+      showToast(
+        `📸 Trình duyệt chặn tự động Copy, hệ thống đã tải thẳng ảnh Số buổi học về máy cho bạn!`,
+        'warning'
+      );
+    } catch (e) {
+      showToast('Không thể chụp bảng lịch: ' + e.message, 'error');
+    }
+  }
+}
+
+function downloadCanvasAsPng(canvas, cfg) {
+  const dataUrl = canvas.toDataURL('image/png');
+  const safeClass = String(cfg?.className || 'Lop').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const safeBatch = String(cfg?.batchLabel || 'Dot').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = `SoBuoiHoc_${safeClass}_${safeBatch}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function captureCurrentScheduleToClipboard(triggerBtn = null) {
+  const map = getClassSchedulesMap();
+  const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  captureScheduleConfigToClipboard(cfg, triggerBtn);
+}
+
+function downloadCurrentScheduleImage() {
+  const map = getClassSchedulesMap();
+  const targetClass = selectedClassbookClass || Object.keys(map)[0] || '12 2K8';
+  const cfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const canvas = renderScheduleConfigToCanvas(cfg);
+  downloadCanvasAsPng(canvas, cfg);
+  showToast(`⬇️ Đã tải file ảnh PNG Số buổi học Lớp ${targetClass}!`, 'success');
+}
+
+function captureHistoryScheduleToClipboard(histId, triggerBtn = null) {
+  const historyList = getClassHistoryList();
+  const hist = historyList.find(h => h.id === histId);
+  if (!hist) return;
+  captureScheduleConfigToClipboard(hist, triggerBtn);
 }
 
 // Mở Modal cài đặt Lớp & Lịch học (Từ ngày -> Đến ngày, Tháng, Các thứ trong tuần)
@@ -8051,6 +8418,15 @@ function renderAdminHistory() {
             <div class="flex items-center gap-2" onclick="event.stopPropagation()">
               <button
                 type="button"
+                onclick="captureHistoryScheduleToClipboard('${hist.id}', this)"
+                title="Chụp hình bảng Số buổi học của đợt này lưu vào bộ nhớ tạm (chỉ việc nhấn Ctrl+V để dán)"
+                class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span>📸 Chụp Số buổi học</span>
+              </button>
+              <button
+                type="button"
                 onclick="toggleHistoryBatchDetail('${hist.id}')"
                 class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
@@ -8161,6 +8537,15 @@ function renderAdminHistory() {
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="captureHistoryScheduleToClipboard('${hist.id}', this)"
+                title="Chụp hình bảng Số buổi học của đợt này lưu vào bộ nhớ tạm (chỉ việc nhấn Ctrl+V để dán)"
+                class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition cursor-pointer flex items-center gap-1 shadow-2xs"
+              >
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span>📸 Chụp hình Số buổi học (Chỉ việc dán)</span>
+              </button>
               <button
                 type="button"
                 onclick="toggleHistoryBatchDetail('${hist.id}')"
