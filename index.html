@@ -11,7 +11,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261023_v2" />
+  <link rel="stylesheet" href="styles.css?v=20261023_v3" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -736,86 +736,162 @@
         <!-- =============================================================== -->
         <!-- SEPAY LIVE BANK BALANCE & REALTIME NOTIFICATION BAR (BALANCED)  -->
         <!-- =============================================================== -->
-        <div class="sepay-live-banner text-white rounded-2xl p-4 sm:px-5 sm:py-4 shadow-md grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-          <!-- Left (4 cols): Live Bank Account Balance -->
-          <div class="lg:col-span-4 flex items-center gap-3.5 min-w-0">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
-              <i data-lucide="wallet" class="w-6 h-6 text-emerald-300"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-100 whitespace-nowrap">
-                  Số Dư Ngân Hàng (SePay):
-                </span>
-                <span id="sepay-bank-badge" class="px-2 py-0.5 rounded-md bg-white/15 text-[11px] font-mono font-bold text-amber-300 whitespace-nowrap">
-                  BIDV • 8601774789
-                </span>
-              </div>
-              <div class="flex flex-wrap items-center gap-2.5 mt-1">
-                <span id="sepay-live-balance" class="text-2xl sm:text-3xl font-black tracking-tight text-white whitespace-nowrap leading-none">
-                  0 ₫
-                </span>
+        <div class="sepay-live-banner text-white rounded-2xl p-4 sm:px-5 sm:py-4 shadow-md space-y-3">
+          <!-- Tầng 1: Chọn STK Nhận Tiền Trên Web + Trạng Thái Tự Kết Nối SePay -->
+          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 pb-3 border-b border-white/15">
+            <div class="flex flex-wrap items-center gap-2 min-w-0">
+              <span class="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-300 whitespace-nowrap">
+                <i data-lucide="landmark" class="w-3.5 h-3.5 shrink-0"></i>
+                <span>Chọn STK Nhận Tiền:</span>
+              </span>
+              <select
+                id="sepay-banner-account-select"
+                onchange="selectReceivingBankAccount(this.value)"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-900/75 hover:bg-slate-900 text-white border border-amber-400/50 text-xs font-extrabold cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-300 max-w-full sm:max-w-[340px]"
+              >
+                <option value="MAIN_BIDV">🏦 STK Chính: BIDV • 8601774789 (HKD TRUNG TAM HUYNH THANH CHI)</option>
+                <option value="TEST_BIDV">🧪 STK Nháp (Test thử): BIDV • 5801434567 (TK NHAP TEST SEPAY)</option>
+              </select>
+
+              <!-- Nút chuyển nhanh 1 chạm giữa STK Chính & STK Nháp 5801434567 -->
+              <div class="inline-flex items-center rounded-xl bg-white/10 p-0.5 border border-white/15">
                 <button
                   type="button"
-                  onclick="promptEditSepayBalance()"
-                  title="Chỉnh sửa số dư gốc ban đầu cho khớp với tài khoản BIDV hiện tại của bạn"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-semibold text-blue-100 hover:text-white transition cursor-pointer whitespace-nowrap"
+                  id="btn-quick-stk-main"
+                  onclick="selectReceivingBankAccount('MAIN_BIDV')"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap bg-amber-400 text-slate-950"
+                  title="Chuyển sang STK Chính: BIDV 8601774789"
                 >
-                  <i data-lucide="edit-2" class="w-3 h-3"></i>
-                  <span>Sửa số dư</span>
+                  🏦 Chính (8601774789)
+                </button>
+                <button
+                  type="button"
+                  id="btn-quick-stk-test"
+                  onclick="selectReceivingBankAccount('TEST_BIDV')"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap text-blue-100 hover:text-white"
+                  title="Chuyển sang STK Nháp (Test SePay): BIDV 5801434567"
+                >
+                  🧪 Nháp Test (5801434567)
                 </button>
               </div>
+
+              <button
+                type="button"
+                onclick="promptAddReceivingBankAccount()"
+                class="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-[11px] font-bold text-blue-100 hover:text-white transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
+                title="Thêm số tài khoản nhận tiền khác vào danh sách chọn"
+              >
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-300"></i>
+                <span>+ Thêm STK</span>
+              </button>
+            </div>
+
+            <!-- Trạng thái Tự Động Kết Nối SePay -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                id="sepay-auto-connect-badge"
+                onclick="autoConnectAndVerifySepay()"
+                title="Bấm để kiểm tra & đồng bộ liên kết tự động với SePay Webhook"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-extrabold text-emerald-200 cursor-pointer hover:bg-emerald-500/30 transition whitespace-nowrap"
+              >
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="sepay-auto-connect-text">Đã tự kết nối SePay (BIDV • 8601774789)</span>
+              </span>
+              <button
+                type="button"
+                onclick="autoConnectAndVerifySepay(true)"
+                class="px-2.5 py-1 rounded-xl bg-blue-500/30 hover:bg-blue-500/50 border border-blue-300/40 text-[11px] font-extrabold text-white transition cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
+                title="Tự động liên kết & kiểm tra kết nối SePay cho STK đang chọn"
+              >
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                <span>Tự kết nối SePay</span>
+              </button>
             </div>
           </div>
 
-          <!-- Middle (5 cols): Latest Balance Fluctuation Notification -->
-          <div id="sepay-last-alert-box" class="lg:col-span-5 bg-white/10 backdrop-blur-xs rounded-xl px-4 py-2.5 border border-white/15 min-w-0">
-            <div class="flex items-center justify-between gap-2 text-[11px] text-blue-100 font-semibold">
-              <span class="flex items-center gap-1.5 truncate">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+          <!-- Tầng 2: Số dư + Biến động gần nhất + Nút Test -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+            <!-- Left (4 cols): Live Bank Account Balance -->
+            <div class="lg:col-span-4 flex items-center gap-3.5 min-w-0">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                <i data-lucide="wallet" class="w-6 h-6 text-emerald-300"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-100 whitespace-nowrap">
+                    Số Dư Ngân Hàng (SePay):
+                  </span>
+                  <span id="sepay-bank-badge" class="px-2 py-0.5 rounded-md bg-white/15 text-[11px] font-mono font-bold text-amber-300 whitespace-nowrap">
+                    BIDV • 8601774789
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 mt-1">
+                  <span id="sepay-live-balance" class="text-2xl sm:text-3xl font-black tracking-tight text-white whitespace-nowrap leading-none">
+                    0 ₫
+                  </span>
+                  <button
+                    type="button"
+                    onclick="promptEditSepayBalance()"
+                    title="Chỉnh sửa số dư gốc ban đầu cho khớp với tài khoản BIDV hiện tại của bạn"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-semibold text-blue-100 hover:text-white transition cursor-pointer whitespace-nowrap"
+                  >
+                    <i data-lucide="edit-2" class="w-3 h-3"></i>
+                    <span>Sửa số dư</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Middle (5 cols): Latest Balance Fluctuation Notification -->
+            <div id="sepay-last-alert-box" class="lg:col-span-5 bg-white/10 backdrop-blur-xs rounded-xl px-4 py-2.5 border border-white/15 min-w-0">
+              <div class="flex items-center justify-between gap-2 text-[11px] text-blue-100 font-semibold">
+                <span class="flex items-center gap-1.5 truncate">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+                  <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
+                  <span class="truncate">Biến động số dư gần nhất (SePay Webhook):</span>
+                </span>
+                <span id="sepay-last-alert-time" class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 font-mono text-[10px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
+                  Sẵn sàng 24/7
+                </span>
+              </div>
+              <p id="sepay-last-alert-text" class="text-xs sm:text-sm font-bold text-emerald-300 mt-1 truncate">
+                Đang chờ thông báo biến động số dư từ SePay.vn...
+              </p>
+            </div>
+
+            <!-- Right (3 cols): Actions (Sound Alert, Test, Setup Guide) -->
+            <div class="lg:col-span-3 flex flex-wrap items-center justify-start lg:justify-end gap-2">
+              <label
+                title="Bật/tắt âm báo Ting-Ting khi có học phí chuyển vào tài khoản"
+                class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold cursor-pointer select-none whitespace-nowrap"
+              >
+                <input
+                  id="sepay-sound-toggle"
+                  type="checkbox"
+                  checked
+                  class="w-3.5 h-3.5 rounded text-emerald-500"
+                />
                 <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
-                <span class="truncate">Biến động số dư gần nhất (SePay Webhook):</span>
-              </span>
-              <span id="sepay-last-alert-time" class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 font-mono text-[10px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
-                Sẵn sàng 24/7
-              </span>
+                <span>Âm báo</span>
+              </label>
+              <button
+                type="button"
+                onclick="testSepayDraftAccount5801434567()"
+                title="Bắn thử giao dịch SePay vào STK Nháp 5801434567 (BIDV)"
+                class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                <span>Test STK 5801434567</span>
+              </button>
+              <button
+                type="button"
+                onclick="openSepayGuideModal()"
+                class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+              >
+                <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
+                <span>Liên Kết SePay</span>
+              </button>
             </div>
-            <p id="sepay-last-alert-text" class="text-xs sm:text-sm font-bold text-emerald-300 mt-1 truncate">
-              Đang chờ thông báo biến động số dư từ SePay.vn...
-            </p>
-          </div>
-
-          <!-- Right (3 cols): Actions (Sound Alert, Test, Setup Guide) -->
-          <div class="lg:col-span-3 flex flex-wrap items-center justify-start lg:justify-end gap-2">
-            <label
-              title="Bật/tắt âm báo Ting-Ting khi có học phí chuyển vào tài khoản"
-              class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold cursor-pointer select-none whitespace-nowrap"
-            >
-              <input
-                id="sepay-sound-toggle"
-                type="checkbox"
-                checked
-                class="w-3.5 h-3.5 rounded text-emerald-500"
-              />
-              <i data-lucide="bell-ring" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
-              <span>Âm báo</span>
-            </label>
-            <button
-              type="button"
-              onclick="quickTestSepayAlert()"
-              class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
-              <span>Test Số Dư</span>
-            </button>
-            <button
-              type="button"
-              onclick="openSepayGuideModal()"
-              class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
-              <span>Nối SePay</span>
-            </button>
           </div>
         </div>
 
@@ -2766,6 +2842,45 @@
                   </label>
                 </div>
 
+                <!-- Trạng thái Tự Động Liên Kết & Kết Nối SePay -->
+                <div class="bg-white p-3 rounded-xl border border-emerald-300 space-y-2.5 shadow-2xs">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 text-xs font-extrabold text-emerald-950">
+                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span id="setting-sepay-conn-status">Đã tự động liên kết SePay Webhook 24/7</span>
+                    </div>
+                    <button
+                      type="button"
+                      onclick="autoConnectAndVerifySepay(true)"
+                      class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition"
+                    >
+                      <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
+                      <span>Tự Kết Nối &amp; Kiểm Tra Liên Kết SePay Ngay</span>
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onclick="openSepayDirectLink('bank')"
+                      class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-[11px] font-bold flex items-center justify-between gap-1.5 cursor-pointer transition"
+                      title="Tự động copy STK đang chọn (5801434567 hoặc 8601774789) và mở thẳng trang Thêm Ngân Hàng của SePay.vn"
+                    >
+                      <span class="truncate">🔗 1. Liên kết STK trên my.sepay.vn</span>
+                      <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 text-emerald-700"></i>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="openSepayDirectLink('webhook')"
+                      class="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-950 text-[11px] font-bold flex items-center justify-between gap-1.5 cursor-pointer transition"
+                      title="Tự động copy đường dẫn Webhook URL và mở thẳng trang Tích hợp Webhooks của SePay.vn"
+                    >
+                      <span class="truncate">🔗 2. Tự động gắn Webhook trên SePay</span>
+                      <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 text-amber-700"></i>
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Webhook URL to paste into SePay / Casso -->
                 <div class="bg-white p-2.5 rounded-lg border border-emerald-200 space-y-1">
                   <div class="flex items-center justify-between text-[11px]">
@@ -2785,19 +2900,28 @@
 
                 <!-- 3-step guide for BIDV + SePay -->
                 <div class="text-xs text-slate-700 space-y-1 bg-white/80 p-3 rounded-lg border border-emerald-200/80">
-                  <p id="setting-autobank-guide-title" class="font-bold text-emerald-900">Cách kích hoạt tự động 100% cho STK BIDV (8601774789) miễn phí:</p>
+                  <p id="setting-autobank-guide-title" class="font-bold text-emerald-900">Cách kích hoạt tự động 100% cho STK BIDV (Chính: 8601774789 / Nháp Test: 5801434567):</p>
                   <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-600">
                     <li>Cập nhật lại mã <strong>Code.gs</strong> mới nhất vào Google Sheet của bạn (Bấm nút <strong>"2. Copy mã Code.gs"</strong> ở trên &rarr; Dán vào Apps Script &rarr; Bấm <strong>Triển khai &rarr; Quản lý nội dung triển khai &rarr; Chỉnh sửa &rarr; Phiên bản mới</strong>).</li>
-                    <li>Đăng ký tài khoản miễn phí tại <a href="https://my.sepay.vn" target="_blank" class="text-blue-600 font-bold underline">my.sepay.vn</a> (SePay hỗ trợ liên kết trực tiếp API ngân hàng).</li>
-                    <li>Trong SePay, vào mục <strong>Cấu hình Webhook</strong> &rarr; Dán đường dẫn <strong>Webhook URL</strong> ở trên vào. Từ đó, hễ có người chuyển khoản chứa <strong>Mã HS</strong> (VD: <code class="text-emerald-700">HP HS001</code>) hoặc <strong>Họ tên HS</strong>, sau 3 giây hệ thống tự động tích <code class="text-emerald-700 font-bold">Đã hoàn thành</code>!</li>
+                    <li>Bấm nút <strong>"🔗 1. Liên kết STK trên my.sepay.vn"</strong> để thêm STK <strong>5801434567 (BIDV - Nháp Test)</strong> hoặc <strong>8601774789 (BIDV - Chính)</strong> vào SePay.</li>
+                    <li>Bấm nút <strong>"🔗 2. Tự động gắn Webhook trên SePay"</strong> (hệ thống tự copy sẵn Webhook URL) &rarr; Dán vào mục <strong>Cấu hình Webhook</strong> trên SePay. Hễ có chuyển khoản chứa <strong>Mã HS</strong> hoặc <strong>Họ tên HS</strong>, sau 3 giây hệ thống tự động tích <code class="text-emerald-700 font-bold">Đã hoàn thành</code>!</li>
                   </ol>
                 </div>
 
                 <!-- Test Auto-Bank Transfer Simulator -->
                 <div class="bg-white p-3 rounded-lg border border-emerald-200 space-y-2">
-                  <span class="text-xs font-bold text-slate-800 block">
-                    ⚡ Chạy thử ngay: Giả lập Ngân hàng báo có tiền chuyển vào STK của bạn
-                  </span>
+                  <div class="flex flex-wrap items-center justify-between gap-1.5">
+                    <span class="text-xs font-bold text-slate-800 block">
+                      ⚡ Chạy thử ngay: Giả lập SePay báo có tiền chuyển vào STK đang chọn
+                    </span>
+                    <button
+                      type="button"
+                      onclick="selectReceivingBankAccount('TEST_BIDV'); testSepayDraftAccount5801434567();"
+                      class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[11px] font-extrabold cursor-pointer transition"
+                    >
+                      🧪 Dùng STK Nháp 5801434567 BIDV &amp; Test Ngay
+                    </button>
+                  </div>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <input
                       id="sim-bank-content"
@@ -2916,6 +3040,58 @@
                       required
                       class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
                     />
+                  </div>
+                </div>
+
+                <!-- MỤC CHỌN STK NHẬN TIỀN TRÊN WEB (CHÍNH / NHÁP TEST SEPAY 5801434567 / TÙY CHỈNH) -->
+                <div class="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/70 to-amber-50/60 border-2 border-blue-300 space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label for="setting-receiving-account-select" class="text-xs font-extrabold text-blue-950 flex items-center gap-1.5">
+                      <i data-lucide="landmark" class="w-4 h-4 text-blue-600"></i>
+                      <span>Chọn STK Nhận Tiền Đang Áp Dụng Trên Web:</span>
+                    </label>
+                    <button
+                      type="button"
+                      onclick="promptAddReceivingBankAccount()"
+                      class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition"
+                    >
+                      <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                      <span>+ Thêm STK nhận tiền</span>
+                    </button>
+                  </div>
+
+                  <select
+                    id="setting-receiving-account-select"
+                    onchange="selectReceivingBankAccount(this.value)"
+                    class="w-full px-3 py-2 rounded-xl border-2 border-blue-400 bg-white text-xs sm:text-sm font-extrabold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="MAIN_BIDV">🏦 STK Chính: BIDV • 8601774789 — HKD TRUNG TAM HUYNH THANH CHI</option>
+                    <option value="TEST_BIDV">🧪 STK Nháp (Test thử SePay): BIDV • 5801434567 — HKD TRUNG TAM HUYNH THANH CHI</option>
+                  </select>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onclick="selectReceivingBankAccount('MAIN_BIDV')"
+                      class="p-2.5 rounded-xl bg-white hover:bg-blue-50 border border-blue-200 text-left transition cursor-pointer flex items-center justify-between gap-2"
+                    >
+                      <div class="min-w-0">
+                        <div class="text-[11px] font-extrabold text-blue-900">🏦 STK Chính (Nhận học phí thật)</div>
+                        <div class="font-mono font-bold text-xs text-slate-800 truncate">BIDV • 8601774789</div>
+                      </div>
+                      <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-extrabold shrink-0">Chọn</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="selectReceivingBankAccount('TEST_BIDV')"
+                      class="p-2.5 rounded-xl bg-white hover:bg-amber-50 border border-amber-300 text-left transition cursor-pointer flex items-center justify-between gap-2"
+                    >
+                      <div class="min-w-0">
+                        <div class="text-[11px] font-extrabold text-amber-900">🧪 STK Nháp (Test thử SePay)</div>
+                        <div class="font-mono font-bold text-xs text-slate-800 truncate">BIDV • 5801434567</div>
+                      </div>
+                      <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-extrabold shrink-0">Chọn Test</span>
+                    </button>
                   </div>
                 </div>
 
@@ -3117,6 +3293,26 @@
           <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-600 text-white">
             BƯỚC 1: QUÉT MÃ QR CHUYỂN KHOẢN
           </span>
+
+          <!-- Chọn STK Nhận Tiền ngay trên cửa sổ QR -->
+          <div class="w-full bg-white rounded-xl p-2.5 border border-blue-200 text-left space-y-1.5">
+            <label for="pay-modal-account-select" class="text-[11px] font-extrabold text-blue-900 flex items-center justify-between gap-1">
+              <span class="flex items-center gap-1">
+                <i data-lucide="landmark" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span>Chọn STK Nhận Tiền (VietQR / SePay):</span>
+              </span>
+              <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">Tự kết nối SePay</span>
+            </label>
+            <select
+              id="pay-modal-account-select"
+              onchange="selectReceivingBankAccount(this.value)"
+              class="w-full px-2.5 py-1.5 rounded-lg border border-blue-300 bg-blue-50/50 text-xs font-extrabold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="MAIN_BIDV">🏦 STK Chính: BIDV • 8601774789</option>
+              <option value="TEST_BIDV">🧪 STK Nháp (Test SePay): BIDV • 5801434567</option>
+            </select>
+          </div>
+
           <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
             <img
               id="pay-modal-qr-img"
@@ -3911,7 +4107,7 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODAL 7: HƯỚNG DẪN CHI TIẾT KẾT NỐI SEPAY.VN ĐỂ HIỂN THỊ SỐ DƯ BIDV  -->
+  <!-- MODAL 7: LIÊN KẾT & TỰ KẾT NỐI SEPAY.VN (STK CHÍNH & NHÁP 5801434567)  -->
   <!-- ===================================================================== -->
   <div
     id="sepay-guide-modal"
@@ -3922,8 +4118,8 @@
         <div class="flex items-center gap-2.5">
           <i data-lucide="plug-zap" class="w-6 h-6 text-amber-300"></i>
           <div>
-            <h3 class="font-extrabold text-base sm:text-lg">Kết Nối SePay.vn Để Báo Số Dư Thực Tế &amp; Tự Động Duyệt Học Phí</h3>
-            <p class="text-xs text-blue-200">Tài khoản thụ hưởng của bạn: <strong id="sepay-modal-bank-summary">BIDV • 8601774789 • HKD TRUNG TAM HUYNH THANH CHI</strong></p>
+            <h3 class="font-extrabold text-base sm:text-lg">Liên Kết &amp; Tự Động Kết Nối SePay.vn (Chính &amp; Nháp Test 5801434567 BIDV)</h3>
+            <p class="text-xs text-blue-200">STK đang chọn nhận tiền: <strong id="sepay-modal-bank-summary">BIDV • 8601774789 • HKD TRUNG TAM HUYNH THANH CHI</strong></p>
           </div>
         </div>
         <button onclick="closeSepayGuideModal()" class="p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
@@ -3932,11 +4128,74 @@
       </div>
 
       <div class="p-6 space-y-4 text-xs sm:text-sm text-slate-700 max-h-[80vh] overflow-y-auto">
+        <!-- Khung Chọn STK Nhận Tiền & Trạng Thái Tự Kết Nối SePay -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-300 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
+              <span id="sepay-modal-conn-status" class="font-extrabold text-emerald-950 text-sm">
+                Đã tự động kết nối SePay Webhook 24/7
+              </span>
+            </div>
+            <button
+              type="button"
+              onclick="autoConnectAndVerifySepay(true)"
+              class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+            >
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Tự Kết Nối &amp; Kiểm Tra Liên Kết SePay Ngay</span>
+            </button>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="sepay-modal-account-select" class="block text-xs font-extrabold text-slate-800">
+              Chọn STK Nhận Tiền Đang Liên Kết Với Web &amp; SePay:
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <select
+                id="sepay-modal-account-select"
+                onchange="selectReceivingBankAccount(this.value)"
+                class="flex-1 px-3 py-2 rounded-xl border-2 border-emerald-400 bg-white text-xs sm:text-sm font-extrabold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="MAIN_BIDV">🏦 STK Chính: BIDV • 8601774789 — HKD TRUNG TAM HUYNH THANH CHI</option>
+                <option value="TEST_BIDV">🧪 STK Nháp (Test thử): BIDV • 5801434567 — HKD TRUNG TAM HUYNH THANH CHI</option>
+              </select>
+              <button
+                type="button"
+                onclick="promptAddReceivingBankAccount()"
+                class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold cursor-pointer whitespace-nowrap"
+              >
+                + Thêm STK khác
+              </button>
+            </div>
+          </div>
+
+          <!-- Tùy chọn nhập SePay API Token để đồng bộ trực tiếp -->
+          <div class="pt-2 border-t border-emerald-200/80 flex flex-col sm:flex-row sm:items-center gap-2">
+            <label for="sepay-api-token-input" class="text-xs font-bold text-slate-700 whitespace-nowrap">
+              SePay API Token (Tùy chọn):
+            </label>
+            <input
+              id="sepay-api-token-input"
+              type="password"
+              placeholder="Dán API Token từ my.sepay.vn (nếu có) hoặc dùng Webhook tự động miễn phí..."
+              class="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-mono"
+            />
+            <button
+              type="button"
+              onclick="saveSepayApiTokenFromModal()"
+              class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
+            >
+              Lưu &amp; Liên Kết
+            </button>
+          </div>
+        </div>
+
         <!-- Bước 1 -->
         <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="font-extrabold text-blue-950 text-sm">
-              Bước 1: Cập nhật mã Code.gs mới nhất (Có tính năng nhận Số dư SePay)
+              Bước 1: Cập nhật mã Code.gs mới nhất (Hỗ trợ tự kết nối SePay cho cả STK 5801434567 &amp; 8601774789)
             </span>
             <div class="flex items-center gap-1.5">
               <button
@@ -3969,21 +4228,21 @@
         <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span id="sepay-modal-step2-title" class="font-extrabold text-emerald-950 text-sm">
-              Bước 2: Liên kết tài khoản BIDV (8601774789) trên SePay.vn
+              Bước 2: Liên kết nhanh STK BIDV (5801434567 hoặc 8601774789) trên SePay.vn
             </span>
-            <a
-              href="https://my.sepay.vn"
-              target="_blank"
+            <button
+              type="button"
+              onclick="openSepayDirectLink('bank')"
               class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-              <span>Mở my.sepay.vn</span>
-            </a>
+              <span>Copy STK &amp; Mở SePay Thêm Ngân Hàng</span>
+            </button>
           </div>
           <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600">
-            <li>Đăng nhập tại <a href="https://my.sepay.vn" target="_blank" class="text-blue-600 font-bold underline">my.sepay.vn</a> (Gói miễn phí hỗ trợ đầy đủ).</li>
-            <li>Vào menu <strong>Ngân hàng &rarr; Thêm ngân hàng</strong>.</li>
-            <li id="sepay-modal-step2-desc">Nhập số tài khoản <strong>8601774789</strong> (HKD TRUNG TAM HUYNH THANH CHI) và xác thực OTP theo hướng dẫn chính thức của ngân hàng &amp; SePay.</li>
+            <li>Bấm nút <strong>"Copy STK &amp; Mở SePay Thêm Ngân Hàng"</strong> ở trên (hệ thống tự copy sẵn STK đang chọn).</li>
+            <li>Trong menu <strong>Ngân hàng &rarr; Thêm ngân hàng</strong> trên SePay, chọn <strong>BIDV</strong>.</li>
+            <li id="sepay-modal-step2-desc">Dán số tài khoản <strong>5801434567</strong> (STK Nháp Test) hoặc <strong>8601774789</strong> (STK Chính) vào và xác thực theo hướng dẫn của SePay.</li>
           </ol>
         </div>
 
@@ -3991,16 +4250,26 @@
         <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-300 space-y-2.5">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="font-extrabold text-amber-950 text-sm">
-              Bước 3: Dán đường dẫn Webhook URL này vào SePay
+              Bước 3: Tự động gắn đường dẫn Webhook URL này vào SePay
             </span>
-            <button
-              type="button"
-              onclick="copyTextById('modal-sepay-webhook-url')"
-              class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-            >
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-              <span>Copy Webhook URL</span>
-            </button>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onclick="copyTextById('modal-sepay-webhook-url')"
+                class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy Webhook URL</span>
+              </button>
+              <button
+                type="button"
+                onclick="openSepayDirectLink('webhook')"
+                class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                <span>Copy URL &amp; Mở Trang Webhook SePay</span>
+              </button>
+            </div>
           </div>
           <div class="p-2.5 rounded-xl bg-white border border-amber-300 font-mono text-xs text-emerald-800 break-all" id="modal-sepay-webhook-url">
             https://script.google.com/macros/s/AKfycbz6CZ6W-WRxFP67uj3or2arPYHc_VLqCUQsG8L5vNMI4DNAqDquBT7OFvR7FRTvjYcx6w/exec
@@ -4015,14 +4284,24 @@
       </div>
 
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
-        <button
-          type="button"
-          onclick="closeSepayGuideModal(); quickTestSepayAlert();"
-          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 cursor-pointer"
-        >
-          <i data-lucide="zap" class="w-4 h-4"></i>
-          <span>Chạy Thử Thông Báo Số Dư Ngay</span>
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onclick="closeSepayGuideModal(); testSepayDraftAccount5801434567();"
+            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs"
+          >
+            <i data-lucide="zap" class="w-4 h-4"></i>
+            <span>🧪 Test Bắn Tiền SePay Vào STK Nháp 5801434567 (BIDV)</span>
+          </button>
+          <button
+            type="button"
+            onclick="closeSepayGuideModal(); quickTestSepayAlert();"
+            class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <i data-lucide="bell-ring" class="w-4 h-4"></i>
+            <span>Test Báo Số Dư Hiện Tại</span>
+          </button>
+        </div>
         <button
           type="button"
           onclick="closeSepayGuideModal()"
@@ -4433,6 +4712,6 @@
   <div id="toast-container" class="fixed bottom-20 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261023_v2"></script>
+  <script src="app.js?v=20261023_v3"></script>
 </body>
 </html>
