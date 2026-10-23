@@ -8555,6 +8555,9 @@ function parseClassDisplayTitle(cls) {
 function selectClassbookClass(className) {
   selectedClassbookClass = className;
   renderAdminClassbook();
+  if (typeof renderAdminAttendance === 'function') {
+    renderAdminAttendance();
+  }
 }
 
 function renderAdminClassbook() {
@@ -9292,6 +9295,13 @@ function setAttendanceGradeFilter(gradeKey) {
   renderAdminAttendance();
 }
 
+function getOrderedClassNamesList(mapObj) {
+  const m = mapObj || getClassSchedulesMap();
+  return typeof sortClassNamesStandard === 'function'
+    ? sortClassNamesStandard(Object.keys(m))
+    : Object.keys(m);
+}
+
 function selectAttendanceClass(className) {
   if (!className) return;
   selectedClassbookClass = className;
@@ -9876,12 +9886,17 @@ function renderAdminAttendance() {
   }
 
   // 1. Render bộ lọc Khối lớp
-  const gradeDefs = getActiveGradeDefinitions();
+  const gradeDefs =
+    typeof getAllGradeGroupsForDisplay === 'function'
+      ? getAllGradeGroupsForDisplay(classNames, appState.students || [])
+      : [{ key: 'ALL', label: 'Tất cả', count: classNames.length }];
   if (gradeFiltersEl) {
     gradeFiltersEl.innerHTML = gradeDefs
       .map(g => {
         const cnt =
-          g.key === 'ALL'
+          typeof g.count === 'number'
+            ? g.count
+            : g.key === 'ALL'
             ? classNames.length
             : classNames.filter(c => getGradeCategoryForClassName(c) === g.key).length;
         const active = selectedAttendanceGradeFilter === g.key;
