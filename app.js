@@ -3239,6 +3239,12 @@ function detectActionDescription(prevJson, nextJson) {
     if (prev.settings?.deletedClassesJson !== next.settings?.deletedClassesJson) {
       return `Xóa lớp học (${prevSt.length} → ${nextSt.length} HS)`;
     }
+    if (
+      prev.settings?.customGradesJson !== next.settings?.customGradesJson ||
+      prev.settings?.deletedGradesJson !== next.settings?.deletedGradesJson
+    ) {
+      return 'Tạo / Cập nhật danh sách Khối lớp';
+    }
     if (nextSt.length > prevSt.length) {
       return `Thêm học sinh (${prevSt.length} → ${nextSt.length} HS)`;
     }
@@ -4418,10 +4424,10 @@ let selectedAllStuGradeFilter = 'ALL';
 let selectedStuStatTimeMode = 'ALL'; // 'ALL' | 'MONTH' | 'YEAR' | 'DAY' | 'RANGE'
 
 function sortClassNamesStandard(classNames) {
-  const gradeOrder = { '12': 1, '11': 2, '10': 3, '9': 4, '6-8': 5, 'OTHER': 6 };
+  const gradeOrder = { '12': 1, '11': 2, '10': 3, '9': 4, '8': 5, '7': 6, '6': 7, '6-8': 8, 'OTHER': 99 };
   return [...classNames].sort((a, b) => {
-    const ga = gradeOrder[getGradeCategoryForClassName(a)] || 99;
-    const gb = gradeOrder[getGradeCategoryForClassName(b)] || 99;
+    const ga = gradeOrder[getGradeCategoryForClassName(a)] || 50;
+    const gb = gradeOrder[getGradeCategoryForClassName(b)] || 50;
     if (ga !== gb) return ga - gb;
     const numA = parseInt(String(a).match(/^\d+/)?.[0] || '0', 10);
     const numB = parseInt(String(b).match(/^\d+/)?.[0] || '0', 10);
@@ -5254,64 +5260,44 @@ function renderAdminStudents() {
   if (sumCollectedEl) sumCollectedEl.textContent = formatCurrency(paidSum);
   if (sumMissingEl) sumMissingEl.textContent = formatCurrency(unpaidSum);
 
-  // 2. Render bộ lọc nhanh theo Khối lớp (giống hệt Sổ Theo Dõi)
+  // 2. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối" (giống hệt Sổ Theo Dõi)
   const gradeFiltersEl = document.getElementById('all-stu-grade-filters');
   if (gradeFiltersEl) {
-    const gradeGroups = [
-      { key: 'ALL', label: 'Tất cả', count: allClassNames.length, stuCount: allStudents.length },
-      {
-        key: '12',
-        label: 'Khối 12',
-        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '12').length,
-        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '12').length
-      },
-      {
-        key: '11',
-        label: 'Khối 11',
-        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '11').length,
-        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '11').length
-      },
-      {
-        key: '10',
-        label: 'Khối 10',
-        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '10').length,
-        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '10').length
-      },
-      {
-        key: '9',
-        label: 'Khối 9',
-        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '9').length,
-        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '9').length
-      },
-      {
-        key: '6-8',
-        label: 'Khối 6 - 8',
-        count: allClassNames.filter(c => getGradeCategoryForClassName(c) === '6-8').length,
-        stuCount: allStudents.filter(s => getGradeCategoryForClassName(s.className) === '6-8').length
-      }
-    ].filter(g => g.key === 'ALL' || g.count > 0);
+    const gradeGroups = getAllGradeGroupsForDisplay(allClassNames, allStudents);
 
-    gradeFiltersEl.innerHTML = gradeGroups
-      .map(g => {
-        const active = selectedAllStuGradeFilter === g.key;
-        return `
-          <button
-            type="button"
-            onclick="setAllStuGradeFilter('${g.key}')"
-            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
-              active
-                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-            }"
-          >
-            <span>${g.label}</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-            }">${g.stuCount} HS</span>
-          </button>
-        `;
-      })
-      .join('');
+    gradeFiltersEl.innerHTML =
+      gradeGroups
+        .map(g => {
+          const active = selectedAllStuGradeFilter === g.key;
+          return `
+            <button
+              type="button"
+              onclick="setAllStuGradeFilter('${escapeAttr(g.key)}')"
+              class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
+                active
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+              }"
+            >
+              <span>${escapeHtml(g.label)}</span>
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              }">${g.stuCount} HS</span>
+            </button>
+          `;
+        })
+        .join('') +
+      `
+        <button
+          type="button"
+          onclick="openGradeManagerModal()"
+          title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý Khối"
+          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white whitespace-nowrap shadow-2xs"
+        >
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+          <span>+ Tạo Khối</span>
+        </button>
+      `;
   }
 
   // 3. Render Lưới Thẻ Đếm & Chọn Lớp 4 cột cân đối (giống hệt Sổ Theo Dõi Lớp Học)
@@ -6836,14 +6822,175 @@ function setCalendarBrush(brushMode) {
 
 let selectedClassbookGradeFilter = 'ALL';
 
+// ============================================================================
+// HỆ THỐNG TẠO & QUẢN LÝ KHỐI LỚP (+ TẠO KHỐI)
+// ============================================================================
+const DEFAULT_BUILTIN_GRADES = [
+  { key: '12', label: 'Khối 12' },
+  { key: '11', label: 'Khối 11' },
+  { key: '10', label: 'Khối 10' },
+  { key: '9', label: 'Khối 9' },
+  { key: '8', label: 'Khối 8' },
+  { key: '7', label: 'Khối 7' },
+  { key: '6', label: 'Khối 6' },
+  { key: '6-8', label: 'Khối 6 - 8' }
+];
+
+function getCustomGradesList() {
+  try {
+    if (appState.settings && appState.settings.customGradesJson) {
+      const parsed = JSON.parse(appState.settings.customGradesJson);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function getDeletedGradesSet() {
+  try {
+    if (appState.settings && appState.settings.deletedGradesJson) {
+      const parsed = JSON.parse(appState.settings.deletedGradesJson);
+      if (Array.isArray(parsed)) return new Set(parsed.map(k => String(k).trim()));
+    }
+  } catch (e) {}
+  return new Set();
+}
+
+function normalizeGradeKeyAndLabel(rawInput) {
+  const raw = String(rawInput || '').trim();
+  if (!raw) return { key: '', label: '' };
+
+  // Nếu người dùng nhập "Khối 8" hoặc "8" hoặc "Lớp 8"
+  const numMatch = raw.match(/^(?:khối|lớp)?\s*(\d{1,2})\s*$/i);
+  if (numMatch) {
+    const num = numMatch[1];
+    return { key: num, label: `Khối ${num}` };
+  }
+
+  // Nếu người dùng nhập "6-8" hoặc "Khối 6-8" hoặc "Khối 6 - 8"
+  if (/^(?:khối\s*)?6\s*-\s*8$/i.test(raw)) {
+    return { key: '6-8', label: 'Khối 6 - 8' };
+  }
+
+  // Các tên khối tùy chỉnh (VD: "Khối Luyện Thi ĐH", "Khối Chuyên", "Cấp 2"...)
+  const hasPrefix = /^khối\b/i.test(raw);
+  const label = hasPrefix ? raw : `Khối ${raw}`;
+  const key = raw
+    .replace(/^khối\s*/i, '')
+    .trim()
+    .toUpperCase();
+  return { key, label };
+}
+
 function getGradeCategoryForClassName(cls) {
   const s = String(cls || '').trim();
+  if (!s) return 'OTHER';
+
+  // 1. Kiểm tra nếu lớp đã được gán Khối cụ thể trong cấu hình lớp
+  try {
+    if (appState?.settings?.classSchedulesJson) {
+      const rawMap = JSON.parse(appState.settings.classSchedulesJson) || {};
+      const cfg = rawMap[s];
+      if (cfg && cfg.gradeKey && cfg.gradeKey !== 'AUTO') {
+        return String(cfg.gradeKey);
+      }
+    }
+  } catch (e) {}
+
+  // 2. Kiểm tra danh sách Khối do người dùng tạo (ưu tiên khớp số khối cụ thể như 8, 7, 6 hoặc tên khối)
+  const customGrades = getCustomGradesList();
+  for (let i = 0; i < customGrades.length; i++) {
+    const cg = customGrades[i];
+    if (!cg || !cg.key) continue;
+    const k = String(cg.key).trim();
+    if (/^\d+$/.test(k)) {
+      const regex = new RegExp(`^${k}\\b`);
+      if (regex.test(s)) return k;
+    } else if (
+      s.toUpperCase().startsWith(k.toUpperCase()) ||
+      removeVietnameseTones(s.toLowerCase()).includes(removeVietnameseTones(k.toLowerCase()))
+    ) {
+      return k;
+    }
+  }
+
+  // 3. Nhận diện mặc định theo đầu tên lớp
   if (/^12\b/.test(s)) return '12';
   if (/^11\b/.test(s)) return '11';
   if (/^10\b/.test(s)) return '10';
   if (/^9\b/.test(s)) return '9';
   if (/^[678]\b/.test(s)) return '6-8';
   return 'OTHER';
+}
+
+function getAllGradeGroupsForDisplay(classNames, allStudents) {
+  const cList = Array.isArray(classNames) ? classNames : [];
+  const sList = Array.isArray(allStudents) ? allStudents : [];
+  const customGrades = getCustomGradesList();
+  const customKeysSet = new Set(customGrades.map(g => String(g.key)));
+  const deletedGrades = getDeletedGradesSet();
+
+  const mergedDefs = [{ key: 'ALL', label: 'Tất cả', isAlwaysVisible: true }];
+  const seenKeys = new Set(['ALL']);
+
+  // Đưa các Khối chuẩn và Khối người dùng tạo vào danh sách
+  DEFAULT_BUILTIN_GRADES.forEach(bg => {
+    if (deletedGrades.has(bg.key) && !customKeysSet.has(bg.key)) return;
+    seenKeys.add(bg.key);
+    mergedDefs.push({
+      key: bg.key,
+      label: bg.label,
+      isCustom: customKeysSet.has(bg.key)
+    });
+  });
+
+  customGrades.forEach(cg => {
+    if (!cg || !cg.key || seenKeys.has(cg.key)) return;
+    seenKeys.add(cg.key);
+    mergedDefs.push({
+      key: cg.key,
+      label: cg.label || `Khối ${cg.key}`,
+      isCustom: true
+    });
+  });
+
+  // Kiểm tra nếu có lớp thuộc nhóm OTHER
+  const otherClassesCnt = cList.filter(c => getGradeCategoryForClassName(c) === 'OTHER').length;
+  if (otherClassesCnt > 0 && !seenKeys.has('OTHER')) {
+    mergedDefs.push({ key: 'OTHER', label: 'Khối Khác', isCustom: false });
+  }
+
+  return mergedDefs
+    .map(def => {
+      if (def.key === 'ALL') {
+        return {
+          key: 'ALL',
+          label: 'Tất cả',
+          count: cList.length,
+          stuCount: sList.length,
+          isCustom: false
+        };
+      }
+      const count = cList.filter(c => getGradeCategoryForClassName(c) === def.key).length;
+      const stuCount = sList.filter(s => getGradeCategoryForClassName(s.className) === def.key).length;
+      return {
+        key: def.key,
+        label: def.label,
+        count,
+        stuCount,
+        isCustom: Boolean(def.isCustom)
+      };
+    })
+    .filter(g => g.key === 'ALL' || g.count > 0 || g.isCustom);
+}
+
+function getGradeLabelByKey(gradeKey) {
+  if (!gradeKey || gradeKey === 'ALL') return 'Tất cả';
+  const custom = getCustomGradesList().find(g => g.key === gradeKey);
+  if (custom) return custom.label;
+  const builtin = DEFAULT_BUILTIN_GRADES.find(g => g.key === gradeKey);
+  if (builtin) return builtin.label;
+  return `Khối ${gradeKey}`;
 }
 
 function setClassbookGradeFilter(gradeKey) {
@@ -6891,39 +7038,44 @@ function renderAdminClassbook() {
     selectedClassbookClass = classNames[0] || '12 2K9 (Ca 1 - T3,5,7)';
   }
 
-  // 0. Render bộ lọc nhanh theo Khối lớp (Tất cả, Khối 12, Khối 11, Khối 10, Khối 9, Khối 6-8)
+  // 0. Render bộ lọc nhanh theo Khối lớp + Nút "+ Tạo Khối"
   const gradeFiltersEl = document.getElementById('classbook-grade-filters');
   if (gradeFiltersEl) {
-    const gradeGroups = [
-      { key: 'ALL', label: 'Tất cả', count: classNames.length },
-      { key: '12', label: 'Khối 12', count: classNames.filter(c => getGradeCategoryForClassName(c) === '12').length },
-      { key: '11', label: 'Khối 11', count: classNames.filter(c => getGradeCategoryForClassName(c) === '11').length },
-      { key: '10', label: 'Khối 10', count: classNames.filter(c => getGradeCategoryForClassName(c) === '10').length },
-      { key: '9', label: 'Khối 9', count: classNames.filter(c => getGradeCategoryForClassName(c) === '9').length },
-      { key: '6-8', label: 'Khối 6 - 8', count: classNames.filter(c => getGradeCategoryForClassName(c) === '6-8').length }
-    ].filter(g => g.key === 'ALL' || g.count > 0);
+    const gradeGroups = getAllGradeGroupsForDisplay(classNames, appState.students || []);
 
-    gradeFiltersEl.innerHTML = gradeGroups
-      .map(g => {
-        const active = selectedClassbookGradeFilter === g.key;
-        return `
-          <button
-            type="button"
-            onclick="setClassbookGradeFilter('${g.key}')"
-            class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
-              active
-                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-            }"
-          >
-            <span>${g.label}</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
-              active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-            }">${g.count}</span>
-          </button>
-        `;
-      })
-      .join('');
+    gradeFiltersEl.innerHTML =
+      gradeGroups
+        .map(g => {
+          const active = selectedClassbookGradeFilter === g.key;
+          return `
+            <button
+              type="button"
+              onclick="setClassbookGradeFilter('${escapeAttr(g.key)}')"
+              class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border whitespace-nowrap ${
+                active
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+              }"
+            >
+              <span>${escapeHtml(g.label)}</span>
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] ${
+                active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              }">${g.count}</span>
+            </button>
+          `;
+        })
+        .join('') +
+      `
+        <button
+          type="button"
+          onclick="openGradeManagerModal()"
+          title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý Khối"
+          class="px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer flex items-center gap-1 border border-dashed border-purple-400 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white whitespace-nowrap shadow-2xs"
+        >
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+          <span>+ Tạo Khối</span>
+        </button>
+      `;
   }
 
   const visibleClasses =
@@ -6932,8 +7084,31 @@ function renderAdminClassbook() {
       : classNames.filter(c => getGradeCategoryForClassName(c) === selectedClassbookGradeFilter);
 
   // 1. Render lưới thẻ chọn lớp cân đối (4 cột đều nhau, chuyên nghiệp + thanh tiến độ)
-  pillsContainer.innerHTML = visibleClasses
-    .map(cls => {
+  if (visibleClasses.length === 0) {
+    const currentGradeLabel = getGradeLabelByKey(selectedClassbookGradeFilter);
+    pillsContainer.innerHTML = `
+      <div class="col-span-full p-5 rounded-2xl bg-white border border-dashed border-indigo-300 text-center flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="text-left">
+          <div class="font-extrabold text-sm text-slate-800">
+            ${escapeHtml(currentGradeLabel)} hiện chưa có lớp học nào.
+          </div>
+          <div class="text-xs text-slate-500 mt-0.5">
+            Hãy bấm nút bên phải để tạo lớp học đầu tiên cho <strong>${escapeHtml(currentGradeLabel)}</strong>.
+          </div>
+        </div>
+        <button
+          type="button"
+          onclick="openClassScheduleModalForGrade('${escapeAttr(selectedClassbookGradeFilter)}')"
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+        >
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>+ Tạo Lớp Mới thuộc ${escapeHtml(currentGradeLabel)}</span>
+        </button>
+      </div>
+    `;
+  } else {
+    pillsContainer.innerHTML = visibleClasses
+      .map(cls => {
       const isSelected = cls === selectedClassbookClass;
       const clsStudents = (appState.students || []).filter(s => s.className === cls);
       const count = clsStudents.length;
@@ -7001,8 +7176,9 @@ function renderAdminClassbook() {
           </div>
         </div>
       `;
-    })
-    .join('');
+      })
+      .join('');
+  }
 
   const classDropdown = document.getElementById('classbook-class-dropdown');
   if (classDropdown) {
@@ -7868,6 +8044,231 @@ function captureHistoryScheduleToClipboard(histId, triggerBtn = null) {
   captureScheduleConfigToClipboard(hist, triggerBtn);
 }
 
+// Mở Modal Tạo Khối Mới & Quản Lý Khối Lớp
+function openGradeManagerModal() {
+  const modal = document.getElementById('grade-manager-modal');
+  if (!modal) return;
+  const labelInput = document.getElementById('new-grade-label-input');
+  const firstClassInput = document.getElementById('new-grade-first-class-input');
+  if (labelInput) labelInput.value = '';
+  if (firstClassInput) firstClassInput.value = '';
+  renderGradeManagerList();
+  modal.classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeGradeManagerModal() {
+  const modal = document.getElementById('grade-manager-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderGradeManagerList() {
+  const listEl = document.getElementById('grade-manager-list');
+  if (!listEl) return;
+
+  const map = getClassSchedulesMap();
+  const classNames = sortClassNamesStandard(Object.keys(map));
+  const allStudents = appState.students || [];
+  const gradeGroups = getAllGradeGroupsForDisplay(classNames, allStudents).filter(g => g.key !== 'ALL');
+
+  if (gradeGroups.length === 0) {
+    listEl.innerHTML = `
+      <div class="col-span-full py-6 text-center text-slate-400 text-xs">
+        Chưa có Khối lớp nào. Hãy nhập tên Khối ở trên để tạo mới!
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = gradeGroups
+    .map(g => {
+      return `
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2.5">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(g.label)}</span>
+              <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-extrabold whitespace-nowrap">
+                ${g.count} lớp • ${g.stuCount} HS
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-0.5 truncate">
+              Mã nhận diện: <strong class="font-mono text-slate-700">${escapeHtml(g.key)}</strong>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onclick="closeGradeManagerModal(); openClassScheduleModalForGrade('${escapeAttr(g.key)}');"
+              title="Tạo thêm lớp mới thuộc ${escapeAttr(g.label)}"
+              class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 text-xs font-extrabold transition cursor-pointer whitespace-nowrap"
+            >
+              + Thêm lớp
+            </button>
+            <button
+              type="button"
+              onclick="deleteGradeByKey('${escapeAttr(g.key)}')"
+              title="Xóa ${escapeAttr(g.label)} khỏi thanh lọc"
+              class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  lucide.createIcons();
+}
+
+async function addOrEnableGrade(key, label, firstClassName = '') {
+  const cleanKey = String(key || '').trim();
+  const cleanLabel = String(label || '').trim();
+  if (!cleanKey || !cleanLabel) return;
+
+  if (!appState.settings) appState.settings = {};
+
+  // Bỏ khỏi danh sách Khối đã ẩn/xóa (nếu có)
+  const deletedSet = getDeletedGradesSet();
+  if (deletedSet.has(cleanKey)) {
+    deletedSet.delete(cleanKey);
+    appState.settings.deletedGradesJson = JSON.stringify(Array.from(deletedSet));
+  }
+
+  // Lưu vào customGradesJson
+  const customList = getCustomGradesList();
+  const existingIdx = customList.findIndex(g => String(g.key).toUpperCase() === cleanKey.toUpperCase());
+  if (existingIdx !== -1) {
+    customList[existingIdx].label = cleanLabel;
+  } else {
+    customList.push({ key: cleanKey, label: cleanLabel });
+  }
+  appState.settings.customGradesJson = JSON.stringify(customList);
+
+  // Nếu người dùng nhập kèm tên lớp đầu tiên của Khối này thì tạo luôn lớp đó
+  const cleanFirstCls = String(firstClassName || '').trim();
+  if (cleanFirstCls) {
+    unmarkClassAsDeletedInState(cleanFirstCls);
+    const map = getClassSchedulesMap();
+    if (!map[cleanFirstCls]) {
+      map[cleanFirstCls] = {
+        ...getDefaultClassScheduleConfig(cleanFirstCls),
+        gradeKey: cleanKey
+      };
+    } else {
+      map[cleanFirstCls].gradeKey = cleanKey;
+    }
+    appState.settings.classSchedulesJson = JSON.stringify(map);
+    selectedClassbookClass = cleanFirstCls;
+  }
+
+  selectedClassbookGradeFilter = cleanKey;
+  selectedAllStuGradeFilter = cleanKey;
+
+  saveStateToLocal();
+  renderGradeManagerList();
+  populateClassScheduleGradeSelect(cleanKey);
+
+  await triggerAutoSyncIfNeeded(
+    cleanFirstCls
+      ? `✅ Đã tạo "${cleanLabel}" cùng lớp "${cleanFirstCls}" & đồng bộ lên Google Sheet!`
+      : `✅ Đã tạo "${cleanLabel}" trên thanh chọn Khối!`
+  );
+}
+
+async function handleCreateCustomGrade(event) {
+  event.preventDefault();
+  const labelInput = document.getElementById('new-grade-label-input');
+  const firstClassInput = document.getElementById('new-grade-first-class-input');
+  const rawLabel = (labelInput?.value || '').trim();
+  const firstClass = (firstClassInput?.value || '').trim();
+
+  if (!rawLabel) {
+    showToast('Vui lòng nhập tên Khối cần tạo (VD: Khối 8, Khối 7, Khối Luyện Thi...)', 'warning');
+    labelInput?.focus();
+    return;
+  }
+
+  const { key, label } = normalizeGradeKeyAndLabel(rawLabel);
+  if (labelInput) labelInput.value = '';
+  if (firstClassInput) firstClassInput.value = '';
+
+  await addOrEnableGrade(key, label, firstClass);
+}
+
+async function quickAddPresetGrade(key, label) {
+  await addOrEnableGrade(key, label, '');
+}
+
+async function deleteGradeByKey(gradeKey) {
+  const cleanKey = String(gradeKey || '').trim();
+  if (!cleanKey || cleanKey === 'ALL') return;
+  const label = getGradeLabelByKey(cleanKey);
+
+  const map = getClassSchedulesMap();
+  const classesInGrade = Object.keys(map).filter(c => getGradeCategoryForClassName(c) === cleanKey);
+
+  const confirmMsg =
+    classesInGrade.length > 0
+      ? `Bạn có muốn xóa "${label}" (đang có ${classesInGrade.length} lớp: ${classesInGrade.join(', ')})?\n\n- Nhấn OK để ẩn Khối này khỏi thanh lọc.`
+      : `Bạn có chắc muốn xóa "${label}" khỏi danh sách Khối?`;
+
+  if (!confirm(confirmMsg)) return;
+
+  if (!appState.settings) appState.settings = {};
+  const customList = getCustomGradesList().filter(g => String(g.key) !== cleanKey);
+  appState.settings.customGradesJson = JSON.stringify(customList);
+
+  const deletedSet = getDeletedGradesSet();
+  deletedSet.add(cleanKey);
+  appState.settings.deletedGradesJson = JSON.stringify(Array.from(deletedSet));
+
+  if (selectedClassbookGradeFilter === cleanKey) selectedClassbookGradeFilter = 'ALL';
+  if (selectedAllStuGradeFilter === cleanKey) selectedAllStuGradeFilter = 'ALL';
+
+  saveStateToLocal();
+  renderGradeManagerList();
+  await triggerAutoSyncIfNeeded(`🗑️ Đã xóa "${label}" khỏi thanh lọc Khối!`);
+}
+
+function populateClassScheduleGradeSelect(selectedVal = 'AUTO') {
+  const gradeSelect = document.getElementById('cs-form-grade');
+  if (!gradeSelect) return;
+
+  const customGrades = getCustomGradesList();
+  const allOptions = [...DEFAULT_BUILTIN_GRADES];
+  const seen = new Set(allOptions.map(o => o.key));
+  customGrades.forEach(cg => {
+    if (cg && cg.key && !seen.has(cg.key)) {
+      seen.add(cg.key);
+      allOptions.push({ key: cg.key, label: cg.label || `Khối ${cg.key}` });
+    }
+  });
+
+  gradeSelect.innerHTML =
+    `<option value="AUTO">Tự động nhận diện theo tên lớp</option>` +
+    allOptions
+      .map(
+        o =>
+          `<option value="${escapeAttr(o.key)}" ${
+            String(selectedVal) === String(o.key) ? 'selected' : ''
+          }>${escapeHtml(o.label)}</option>`
+      )
+      .join('');
+}
+
+function openClassScheduleModalForGrade(gradeKey) {
+  openClassScheduleModal(true);
+  if (gradeKey && gradeKey !== 'ALL') {
+    populateClassScheduleGradeSelect(gradeKey);
+    const nameInput = document.getElementById('cs-form-classname');
+    if (nameInput && !nameInput.value.trim() && /^\d+$/.test(gradeKey)) {
+      nameInput.value = `${gradeKey} `;
+      nameInput.focus();
+    }
+  }
+}
+
 // Mở Modal cài đặt Lớp & Lịch học (Từ ngày -> Đến ngày, Tháng, Các thứ trong tuần)
 function openClassScheduleModal(isNew = false) {
   const modal = document.getElementById('class-schedule-modal');
@@ -7888,6 +8289,11 @@ function openClassScheduleModal(isNew = false) {
     document.getElementById('cs-form-status').value = 'Đang diễn ra';
     document.getElementById('cs-form-start-date').value = '2026-10-01';
     document.getElementById('cs-form-end-date').value = '2026-11-30';
+    const defaultGrade =
+      selectedClassbookGradeFilter && selectedClassbookGradeFilter !== 'ALL'
+        ? selectedClassbookGradeFilter
+        : 'AUTO';
+    populateClassScheduleGradeSelect(defaultGrade);
     document.querySelectorAll('.cs-day-checkbox').forEach(cb => {
       cb.checked = [1, 3, 5, 0].includes(Number(cb.value));
     });
@@ -7903,6 +8309,7 @@ function openClassScheduleModal(isNew = false) {
     document.getElementById('cs-form-status').value = cfg.status || 'Đang diễn ra';
     document.getElementById('cs-form-start-date').value = cfg.startDate || '2026-05-04';
     document.getElementById('cs-form-end-date').value = cfg.endDate || '2026-06-28';
+    populateClassScheduleGradeSelect(cfg.gradeKey || getGradeCategoryForClassName(cfg.className) || 'AUTO');
     const activeDays = cfg.daysOfWeek || [1, 3, 5, 0];
     document.querySelectorAll('.cs-day-checkbox').forEach(cb => {
       cb.checked = activeDays.includes(Number(cb.value));
@@ -7921,6 +8328,7 @@ function saveClassScheduleForm(event) {
   const isNew = document.getElementById('cs-form-is-new').value === 'true';
   const oldName = document.getElementById('cs-form-old-name').value.trim();
   const className = document.getElementById('cs-form-classname').value.trim() || 'Lớp mới';
+  const gradeKey = (document.getElementById('cs-form-grade')?.value || 'AUTO').trim();
   const subject = document.getElementById('cs-form-subject').value.trim() || 'Toán';
   const periodLabel = document.getElementById('cs-form-period').value.trim() || appState.settings?.defaultPeriod || 'Tháng 10-11/2026';
   const batchLabel = document.getElementById('cs-form-batch').value.trim() || 'ĐỢT SỐ 1';
@@ -7955,6 +8363,7 @@ function saveClassScheduleForm(event) {
 
   map[className] = {
     className,
+    gradeKey: gradeKey !== 'AUTO' ? gradeKey : undefined,
     subject,
     periodLabel,
     batchLabel,
@@ -7966,6 +8375,9 @@ function saveClassScheduleForm(event) {
   };
 
   selectedClassbookClass = className;
+  if (gradeKey && gradeKey !== 'AUTO') {
+    selectedClassbookGradeFilter = gradeKey;
+  }
   closeClassScheduleModal();
   saveClassSchedulesMap(map, `Đã cập nhật lịch học lớp "${className}"!`);
 }
