@@ -120,6 +120,18 @@ function unmarkClassAsDeletedInState(className) {
   }
 }
 
+function isSimulatedBankTestItem(item) {
+  if (!item) return false;
+  if (item.isTest === true || item.isTest === 'true') return true;
+  const idStr = String(item.id || '');
+  if (idStr.includes('SEPAY_STK_') || idStr.includes('TEST_STK_')) return true;
+  const textStr = String(item.description || item.note || item.category || '');
+  if (textStr.includes('TEST THỬ STK') || textStr.includes('Test thử STK')) return true;
+  const createdByStr = String(item.createdBy || item.payerName || '');
+  if (createdByStr.includes('Test Thử STK') || createdByStr.includes('Test thử STK')) return true;
+  return false;
+}
+
 function purgeDraftDataFromState(state) {
   if (!state) return state;
   const userDeletedClasses = getDeletedClassesSet(state);
@@ -133,6 +145,21 @@ function purgeDraftDataFromState(state) {
       if (DRAFT_STUDENT_IDS.has(String(s.id || ''))) return false;
       if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
       return true;
+    });
+
+    // Khôi phục lại học sinh nếu trước đó bị nút bấm Test STK (5801434567) tự động đổi sang Đã hoàn thành
+    filtered.forEach(s => {
+      const noteStr = String(s.note || '');
+      if (
+        noteStr.includes('5801434567') ||
+        noteStr.includes('SEPAY_STK_') ||
+        noteStr.includes('TEST THỬ STK')
+      ) {
+        if (s.status === 'Đã hoàn thành' || s.status === 'Chờ duyệt') {
+          s.status = 'Chưa đóng';
+        }
+        s.note = '';
+      }
     });
 
     // Loại bỏ bản ghi học sinh bị nhân đôi (ưu tiên giữ bản ghi gốc ST_REAL_* và bảo toàn trạng thái Đã hoàn thành)
@@ -166,28 +193,89 @@ function purgeDraftDataFromState(state) {
   }
 
   if (Array.isArray(state.paymentRequests)) {
-    state.paymentRequests = state.paymentRequests.filter(r => {
-      if (!r) return false;
-      const cls = String(r.className || '').trim();
-      const nameLower = String(r.studentName || '').trim().toLowerCase();
-      if (DRAFT_CLASS_NAMES.has(cls) || userDeletedClasses.has(cls)) return false;
-      if (DRAFT_STUDENT_IDS.has(String(r.studentRecordId || ''))) return false;
-      if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
-      return true;
-    });
+    state.paymentRequests = state.paymentRequests
+      .filter(r => {
+        if (!r) return false;
+        const cls = String(r.className || '').trim();
+        const nameLower = String(r.studentName || '').trim().toLowerCase();
+        if (DRAFT_CLASS_NAMES.has(cls) || userDeletedClasses.has(cls)) return false;
+        if (DRAFT_STUDENT_IDS.has(String(r.studentRecordId || ''))) return false;
+        if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
+        return true;
+      })
+      .map(r => {
+        if (isSimulatedBankTestItem(r)) {
+          return {
+            ...r,
+            isTest: true,
+            testDisplayAmount: r.testDisplayAmount || r.amount || 600000,
+            amount: 0,
+            note: String(r.note || '').includes('TEST THỬ STK')
+              ? r.note
+              : `🧪 [TEST THỬ STK - Không cộng tiền vào Web] ${r.note || ''}`
+          };
+        }
+        return r;
+      });
   }
 
   if (Array.isArray(state.transactions)) {
-    state.transactions = state.transactions.filter(t => {
-      if (!t) return false;
-      if (['GD_2001', 'GD_2002', 'GD_2003', 'GD_2004', 'GD_1792670474591', 'GD_AUTO_1792671282156', 'GD_SEPAY_1792682673415', 'GD_SEPAY_1792684994950'].includes(String(t.id || ''))) {
-        return false;
-      }
-      return true;
-    });
+    state.transactions = state.transactions
+      .filter(t => {
+        if (!t) return false;
+        if (
+          [
+            'GD_2001',
+            'GD_2002',
+            'GD_2003',
+            'GD_2004',
+            'GD_1792670474591',
+            'GD_AUTO_1792671282156',
+            'GD_SEPAY_1792682673415',
+            'GD_SEPAY_1792684994950'
+          ].includes(String(t.id || ''))
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map(t => {
+        if (isSimulatedBankTestItem(t)) {
+          return {
+            ...t,
+            isTest: true,
+            testDisplayAmount: t.testDisplayAmount || t.amount || 600000,
+            amount: 0,
+            category: 'Test thử STK',
+            method: '🧪 Test thử STK (0₫)',
+            description: String(t.description || '').includes('TEST THỬ STK')
+              ? t.description
+              : `🧪 [TEST THỬ STK - Không cộng tiền vào Web] ${t.description || ''}`
+          };
+        }
+        return t;
+      });
   }
 
   if (state.settings) {
+    // Nếu thông báo gần nhất là từ nút bấm Test STK (SEPAY_STK_ / TEST_STK_), gắn cờ isTest = true và KHÔNG cộng tiền vào sepayBalance
+    if (state.settings.lastBankAlertJson) {
+      try {
+        const alertObj = JSON.parse(state.settings.lastBankAlertJson);
+        if (
+          alertObj &&
+          (alertObj.isTest ||
+            String(alertObj.id || '').includes('SEPAY_STK_') ||
+            String(alertObj.id || '').includes('TEST_STK_') ||
+            String(alertObj.accountNumber || '') === '5801434567')
+        ) {
+          alertObj.isTest = true;
+          alertObj.testTag = '🧪 TEST THỬ STK (Không cộng tiền vào Web)';
+          state.settings.lastBankAlertJson = JSON.stringify(alertObj);
+          state.settings.sepayBalance = '0';
+        }
+      } catch (e) {}
+    }
     if (state.settings.classSchedulesJson) {
       try {
         const map = JSON.parse(state.settings.classSchedulesJson) || {};
@@ -4978,16 +5066,16 @@ function compressImageFile(file, maxDimension, quality, callback) {
   reader.readAsDataURL(file);
 }
 
-// Kiểm tra xem học sinh đã có giao dịch chuyển tiền thành công được ngân hàng / SePay ghi nhận kết quả hay chưa
+// Kiểm tra xem học sinh đã có giao dịch chuyển tiền THẬT thành công được ngân hàng / SePay ghi nhận kết quả hay chưa (Loại trừ các lần bấm Test thử STK)
 function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
   if (!student && !typedStudentName) return false;
   const code = student ? String(student.studentCode || '').trim().toUpperCase() : '';
   const period = student ? String(student.period || '').trim() : '';
 
-  // 1. Kiểm tra trong danh sách Yêu cầu xác nhận xem đã có bản ghi nào được đánh dấu bankVerified = true chưa
+  // 1. Kiểm tra trong danh sách Yêu cầu xác nhận xem đã có bản ghi THẬT nào được đánh dấu bankVerified = true chưa
   const requests = appState.paymentRequests || [];
   const hasVerifiedReq = requests.some(r => {
-    if (!r || !r.bankVerified) return false;
+    if (!r || !r.bankVerified || isSimulatedBankTestItem(r)) return false;
     if (code && String(r.studentCode || '').trim().toUpperCase() === code && (!period || r.period === period)) {
       return true;
     }
@@ -4995,10 +5083,10 @@ function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
   });
   if (hasVerifiedReq) return true;
 
-  // 2. Kiểm tra trong Sổ Thu - Chi xem đã có giao dịch SePay / Auto-Bank xác thực cho học sinh này chưa
+  // 2. Kiểm tra trong Sổ Thu - Chi xem đã có giao dịch SePay / Auto-Bank THẬT xác thực cho học sinh này chưa
   const transactions = appState.transactions || [];
   const hasVerifiedTx = transactions.some(t => {
-    if (!t || t.type !== 'Thu') return false;
+    if (!t || t.type !== 'Thu' || isSimulatedBankTestItem(t)) return false;
     const txId = String(t.id || '');
     const isBankWebhookTx =
       txId.startsWith('GD_SEPAY_') ||
@@ -5013,11 +5101,16 @@ function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
   });
   if (hasVerifiedTx) return true;
 
-  // 3. Kiểm tra thông báo biến động số dư gần nhất từ SePay (lastBankAlertJson)
+  // 3. Kiểm tra thông báo biến động số dư gần nhất từ SePay (lastBankAlertJson) - Bỏ qua nếu là bản ghi Test thử STK
   if (appState.settings?.lastBankAlertJson) {
     try {
       const alertObj = JSON.parse(appState.settings.lastBankAlertJson);
-      if (alertObj && alertObj.type !== 'out' && alertObj.content) {
+      const isTestAlert = Boolean(
+        alertObj?.isTest ||
+          String(alertObj?.id || '').includes('TEST_STK_') ||
+          String(alertObj?.id || '').includes('SEPAY_STK_')
+      );
+      if (alertObj && !isTestAlert && alertObj.type !== 'out' && alertObj.content) {
         const matched = findStudentFromTransferContent(alertObj.content);
         if (matched && student && matched.id === student.id) {
           return true;
@@ -5215,9 +5308,10 @@ function renderAdminDashboard() {
   const requests = appState.paymentRequests || [];
   const schedules = appState.classSchedules || {};
 
-  // 1. Tính KPI Thu - Chi (Card C)
-  const incomeList = transactions.filter(t => t.type === 'Thu');
-  const expenseList = transactions.filter(t => t.type === 'Chi');
+  // 1. Tính KPI Thu - Chi (Card C) — Loại trừ toàn bộ các bản ghi Test Thử STK để không cộng tiền vào Web
+  const realTransactions = transactions.filter(t => !isSimulatedBankTestItem(t));
+  const incomeList = realTransactions.filter(t => t.type === 'Thu');
+  const expenseList = realTransactions.filter(t => t.type === 'Chi');
   const totalIncome = incomeList.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const totalExpense = expenseList.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const netBalance = totalIncome - totalExpense;
@@ -5379,14 +5473,17 @@ function renderAdminDashboard() {
     });
 
     transactions.slice(0, 6).forEach(tx => {
+      const isTestTx = isSimulatedBankTestItem(tx);
       const isInc = tx.type === 'Thu';
       recentTxRows.push({
         title: tx.description || tx.category || (isInc ? 'Thu học phí' : 'Chi phí vận hành'),
         subtitle: `${tx.date || ''} • ${tx.method || 'Chuyển khoản'}`,
-        amount: Number(tx.amount) || 0,
+        amount: isTestTx ? 0 : Number(tx.amount) || 0,
+        testDisplayAmount: tx.testDisplayAmount || Number(tx.amount) || 600000,
         isIncome: isInc,
-        statusLabel: 'Đã đối soát',
-        isPending: false
+        statusLabel: isTestTx ? '🧪 Test thử STK (0₫)' : 'Đã đối soát',
+        isPending: false,
+        isTest: isTestTx
       });
     });
 
@@ -5422,18 +5519,22 @@ function renderAdminDashboard() {
     recentTxContainer.innerHTML = recentTxRows
       .slice(0, 5)
       .map(item => {
-        const iconBg = item.isIncome
+        const iconBg = item.isTest
+          ? 'bg-amber-100 text-amber-800 border-amber-300'
+          : item.isIncome
           ? 'bg-[#F3F1FF] text-[#5B55FF] border-[#E6E1FF]'
           : 'bg-[#FFF3EE] text-[#FF4B16] border-[#FFD9CC]';
-        const iconName = item.isIncome ? 'arrow-down-left' : 'arrow-up-right';
-        const amountSign = item.isIncome ? '+' : '−';
-        const amountColor = item.isIncome ? 'text-[#25214C]' : 'text-[#FF4B16]';
-        const chipHtml = item.isPending
+        const iconName = item.isTest ? 'flask-conical' : item.isIncome ? 'arrow-down-left' : 'arrow-up-right';
+        const amountSign = item.isTest ? '' : item.isIncome ? '+' : '−';
+        const amountColor = item.isTest ? 'text-amber-700' : item.isIncome ? 'text-[#25214C]' : 'text-[#FF4B16]';
+        const chipHtml = item.isTest
+          ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-400 text-[10px] font-extrabold">🧪 Test thử STK • Không cộng tiền</span>`
+          : item.isPending
           ? `<span class="px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold">Chờ xác nhận</span>`
           : `<span class="px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[10px] font-extrabold">Đã đối soát</span>`;
 
         return `
-          <div class="bento-inner-tile py-2.5 px-3 flex items-center justify-between gap-2.5">
+          <div class="bento-inner-tile py-2.5 px-3 flex items-center justify-between gap-2.5 ${item.isTest ? 'border border-amber-300 bg-amber-50/40' : ''}">
             <div class="flex items-center gap-2.5 min-w-0">
               <div class="w-8 h-8 rounded-xl border ${iconBg} flex items-center justify-center shrink-0">
                 <i data-lucide="${iconName}" class="w-4 h-4"></i>
@@ -5449,7 +5550,7 @@ function renderAdminDashboard() {
             </div>
             <div class="text-right shrink-0 space-y-0.5">
               <div class="text-xs font-black ${amountColor} whitespace-nowrap">
-                ${amountSign}${formatCurrency(item.amount)}
+                ${item.isTest ? '0 ₫ (Test STK)' : `${amountSign}${formatCurrency(item.amount)}`}
               </div>
               <div>${chipHtml}</div>
             </div>
@@ -5492,12 +5593,19 @@ function renderAdminDashboard() {
     } else {
       pendingListEl.innerHTML = pendingReqs
         .map(req => {
+          const isTestReq = isSimulatedBankTestItem(req);
           const linkedStu = (appState.students || []).find(
             s => s.id === req.studentRecordId || s.studentCode === req.studentCode
           );
           const isBankVerified = Boolean(
             req.bankVerified || checkHasVerifiedBankTransfer(linkedStu, req.studentName)
           );
+          const testBadgeHtml = isTestReq
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-950 border border-amber-400 font-extrabold text-[11px]">
+                <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-amber-700"></i>
+                <span>🧪 TEST THỬ STK (Không cộng tiền vào Web)</span>
+              </span>`
+            : '';
           const bankStatusBadge = isBankVerified
             ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-[11px]">
                 <i data-lucide="badge-check" class="w-3.5 h-3.5 text-emerald-600"></i>
@@ -5509,7 +5617,7 @@ function renderAdminDashboard() {
               </span>`;
 
           return `
-        <div class="bento-inner-tile p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="bento-inner-tile p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${isTestReq ? 'border-2 border-amber-300 bg-amber-50/40' : ''}">
           <div class="flex items-start gap-3.5">
             ${
               req.receiptUrl
@@ -5526,6 +5634,7 @@ function renderAdminDashboard() {
             }
             <div class="space-y-1 text-xs">
               <div class="flex flex-wrap items-center gap-2">
+                ${testBadgeHtml}
                 <span class="px-2.5 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] font-mono font-extrabold">${escapeHtml(req.studentCode)}</span>
                 <span class="font-extrabold text-[#25214C] text-sm">${escapeHtml(req.studentName)}</span>
                 <span class="text-[#8986A6]">• ${escapeHtml(req.className)}</span>
@@ -5534,7 +5643,11 @@ function renderAdminDashboard() {
               </div>
               <p class="text-[#25214C]">
                 Người chuyển: <strong>${escapeHtml(req.payerName || 'Phụ huynh')}</strong> (${escapeHtml(req.parentPhone)})
-                — Số tiền báo chuyển: <strong class="text-[#5B55FF] text-sm">${formatCurrency(req.amount)}</strong>
+                — Số tiền: <strong class="text-[#5B55FF] text-sm">${
+                  isTestReq
+                    ? `0 ₫ (Mô phỏng Test: ${formatCurrency(req.testDisplayAmount || 600000)} • Không cộng vào Web)`
+                    : formatCurrency(req.amount)
+                }</strong>
               </p>
               <p class="text-[#8986A6] italic">"${escapeHtml(req.note || 'Không có ghi chú')}"</p>
               <p class="text-[11px] text-[#8986A6]">Gửi lúc: ${escapeHtml(req.submittedAt)}</p>
@@ -5593,11 +5706,24 @@ async function handleReviewPaymentRequest(requestId, decision) {
   const req = appState.paymentRequests.find(r => r.id === requestId);
   if (!req) return;
 
+  const isTestReq = isSimulatedBankTestItem(req);
   const nowStr = getCurrentDateTimeString();
   const todayDate = new Date().toISOString().slice(0, 10);
 
   req.status = decision;
   req.reviewedAt = nowStr;
+
+  // Nếu là bản ghi Test thử STK -> Chỉ đổi trạng thái bản ghi Test, tuyệt đối KHÔNG cộng tiền vào Web và KHÔNG đổi trạng thái học sinh thật
+  if (isTestReq) {
+    saveStateToLocal();
+    showToast(
+      decision === 'Đã duyệt'
+        ? `🧪 Đã xác nhận kiểm tra bản ghi "Test thử STK" (Không cộng tiền vào Web)!`
+        : `🧪 Đã đóng bản ghi "Test thử STK".`,
+      'info'
+    );
+    return;
+  }
 
   // Tìm bản ghi học sinh tương ứng
   const student = appState.students.find(
@@ -7337,9 +7463,10 @@ function renderAdminTransactions() {
 
   const list = getFilteredTransactions();
 
-  // Cập nhật 4 thẻ KPI tổng hợp Thu - Chi theo bộ lọc
-  const totalIn = list.filter(t => t.type === 'Thu').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-  const totalOut = list.filter(t => t.type === 'Chi').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  // Cập nhật 4 thẻ KPI tổng hợp Thu - Chi theo bộ lọc (Tuyệt đối KHÔNG cộng các giao dịch Test Thử STK vào tiền thực tế)
+  const realList = list.filter(t => !isSimulatedBankTestItem(t));
+  const totalIn = realList.filter(t => t.type === 'Thu').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const totalOut = realList.filter(t => t.type === 'Chi').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const netBal = totalIn - totalOut;
 
   const sumInEl = document.getElementById('finance-summary-in');
@@ -7350,7 +7477,10 @@ function renderAdminTransactions() {
   if (sumInEl) sumInEl.textContent = `+${formatCurrency(totalIn)}`;
   if (sumOutEl) sumOutEl.textContent = `-${formatCurrency(totalOut)}`;
   if (sumNetEl) sumNetEl.textContent = formatCurrency(netBal);
-  if (sumCountEl) sumCountEl.textContent = `${list.length} phiếu`;
+  if (sumCountEl) {
+    const testCount = list.length - realList.length;
+    sumCountEl.textContent = testCount > 0 ? `${realList.length} phiếu (+${testCount} Test)` : `${list.length} phiếu`;
+  }
 
   if (list.length === 0) {
     tbody.innerHTML = `
@@ -7366,29 +7496,49 @@ function renderAdminTransactions() {
   tbody.innerHTML = list
     .map(t => {
       const isIncome = t.type === 'Thu';
+      const isTestTx = isSimulatedBankTestItem(t);
       return `
-        <tr class="hover:bg-slate-50/80 transition align-middle">
+        <tr class="hover:bg-slate-50/80 transition align-middle ${isTestTx ? 'bg-amber-50/45' : ''}">
           <td class="py-3 px-4 whitespace-nowrap align-middle">
             <div class="font-mono font-bold text-xs text-slate-800 truncate max-w-[175px]" title="${escapeAttr(t.id)}">${escapeHtml(t.id)}</div>
             <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${escapeHtml(t.date)}</div>
           </td>
           <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
-            <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-extrabold whitespace-nowrap border ${
-              isIncome
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                : 'bg-rose-100 text-rose-800 border-rose-300'
-            }">
-              ${isIncome ? '+ Thu' : '- Chi'}
-            </span>
+            ${
+              isTestTx
+                ? `<span class="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-950 border-amber-400">
+                    🧪 Test thử STK
+                  </span>`
+                : `<span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-extrabold whitespace-nowrap border ${
+                    isIncome
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : 'bg-rose-100 text-rose-800 border-rose-300'
+                  }">
+                    ${isIncome ? '+ Thu' : '- Chi'}
+                  </span>`
+            }
           </td>
           <td class="py-3 px-3.5 text-center whitespace-nowrap align-middle">
-            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs whitespace-nowrap">
-              ${escapeHtml(t.category)}
+            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg ${
+              isTestTx
+                ? 'bg-amber-100/80 text-amber-900 border border-amber-300'
+                : 'bg-slate-100 text-slate-700 border border-slate-200'
+            } font-bold text-xs whitespace-nowrap">
+              ${escapeHtml(isTestTx ? '🧪 Test thử STK' : t.category)}
             </span>
           </td>
           <td class="py-3 px-4 align-middle">
-            <div class="flex items-center justify-between gap-2.5">
-              <span class="text-slate-900 font-semibold text-xs sm:text-sm leading-snug">${escapeHtml(t.description)}</span>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="space-y-1">
+                ${
+                  isTestTx
+                    ? `<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400 text-[10px] font-extrabold uppercase tracking-wide">
+                        🧪 Đánh dấu: Test thử hoạt động STK (Không cộng tiền vào Web)
+                      </div>`
+                    : ''
+                }
+                <div class="text-slate-900 font-semibold text-xs sm:text-sm leading-snug">${escapeHtml(t.description)}</div>
+              </div>
               ${
                 t.studentCode
                   ? `<span class="shrink-0 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-mono font-bold text-[11px] whitespace-nowrap">Mã HS: ${escapeHtml(t.studentCode)}</span>`
@@ -7397,13 +7547,24 @@ function renderAdminTransactions() {
             </div>
           </td>
           <td class="py-3 px-4 text-right font-mono font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
-            isIncome ? 'text-emerald-600' : 'text-rose-600'
+            isTestTx ? 'text-amber-700' : isIncome ? 'text-emerald-600' : 'text-rose-600'
           }">
-            ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+            ${
+              isTestTx
+                ? `<div>0 ₫</div>
+                   <div class="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 inline-block mt-0.5">
+                     Không cộng tiền (Test: ${formatCurrency(t.testDisplayAmount || 600000)})
+                   </div>`
+                : `${isIncome ? '+' : '-'}${formatCurrency(t.amount)}`
+            }
           </td>
           <td class="py-3 px-3.5 text-center whitespace-nowrap align-middle">
-            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold whitespace-nowrap">
-              ${escapeHtml(t.method || 'Chuyển khoản')}
+            <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg ${
+              isTestTx
+                ? 'bg-amber-50 text-amber-900 border border-amber-300 font-bold'
+                : 'bg-slate-50 text-slate-600 border border-slate-200 font-semibold'
+            } text-xs whitespace-nowrap">
+              ${escapeHtml(isTestTx ? '🧪 Test thử STK (0₫)' : t.method || 'Chuyển khoản')}
             </span>
           </td>
           <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
@@ -12154,14 +12315,16 @@ function updateAutoApprovePaymentUI() {
   const isEnabled = isAutoApprovePaymentEnabled();
 
   const bannerBtn = document.getElementById('btn-sepay-auto-approve-toggle');
-  const bannerText = document.getElementById('sepay-auto-approve-text');
+  const bannerText =
+    document.getElementById('sepay-auto-approve-label') ||
+    document.getElementById('sepay-auto-approve-text');
   if (bannerBtn && bannerText) {
     bannerText.textContent = isEnabled
-      ? 'Duyệt tự động (Khi tiền vào STK): BẬT'
-      : 'Duyệt tự động: TẮT (Chờ Quản lý bấm Duyệt)';
+      ? 'Tự động duyệt khi CK thành công: ĐANG BẬT'
+      : 'Tự động duyệt: ĐANG TẮT (Chờ Quản lý bấm Duyệt)';
     bannerBtn.className = isEnabled
-      ? 'px-3 py-1 rounded-xl bg-emerald-500/30 hover:bg-emerald-500/45 border border-emerald-400/50 text-emerald-100 text-[11px] font-extrabold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap'
-      : 'px-3 py-1 rounded-xl bg-amber-500/30 hover:bg-amber-500/45 border border-amber-400/60 text-amber-100 text-[11px] font-extrabold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap';
+      ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-300/60 text-[11px] font-extrabold cursor-pointer transition whitespace-nowrap shadow-2xs'
+      : 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 border border-amber-200 text-[11px] font-extrabold cursor-pointer transition whitespace-nowrap shadow-2xs';
   }
 
   const dashBtn = document.getElementById('btn-dashboard-auto-approve-toggle');
@@ -12409,9 +12572,9 @@ async function promptAddReceivingBankAccount() {
 
 function getComputedSepayBalance() {
   const stg = appState.settings || {};
-  const transactions = appState.transactions || [];
-  const totalIn = transactions.filter(t => t.type === 'Thu').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const totalOut = transactions.filter(t => t.type === 'Chi').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const realTransactions = (appState.transactions || []).filter(t => !isSimulatedBankTestItem(t));
+  const totalIn = realTransactions.filter(t => t.type === 'Thu').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const totalOut = realTransactions.filter(t => t.type === 'Chi').reduce((s, t) => s + (Number(t.amount) || 0), 0);
   const netBalance = totalIn - totalOut;
 
   if (stg.sepayBalance !== undefined && stg.sepayBalance !== '' && !isNaN(Number(stg.sepayBalance))) {
@@ -12436,6 +12599,8 @@ function renderSepayBalanceBanner() {
   const balanceEl = document.getElementById('sepay-live-balance');
   const alertTimeEl = document.getElementById('sepay-last-alert-time');
   const alertTextEl = document.getElementById('sepay-last-alert-text');
+  const testAlertBadge = document.getElementById('sepay-test-alert-badge');
+  const clearTestBtn = document.getElementById('btn-clear-sepay-test');
   const connTextEl = document.getElementById('sepay-auto-connect-text');
   const settingConnEl = document.getElementById('setting-sepay-conn-status');
   const modalConnEl = document.getElementById('sepay-modal-conn-status');
@@ -12455,27 +12620,72 @@ function renderSepayBalanceBanner() {
   if (settingConnEl) settingConnEl.textContent = `🟢 ${connLabel} — Webhook 24/7`;
   if (modalConnEl) modalConnEl.textContent = `🟢 ${connLabel} — Sẵn sàng nhận giao dịch tự động`;
 
+  const hasAnyTestRecords =
+    (appState.transactions || []).some(t => isSimulatedBankTestItem(t)) ||
+    (appState.paymentRequests || []).some(r => isSimulatedBankTestItem(r));
+
   if (alertTextEl && alertTimeEl) {
     if (stg.lastBankAlertJson) {
       try {
         const alertObj = JSON.parse(stg.lastBankAlertJson);
+        const isTestAlert = Boolean(
+          alertObj.isTest ||
+            String(alertObj.id || '').includes('TEST_STK_') ||
+            String(alertObj.id || '').includes('SEPAY_STK_')
+        );
         const isOut = alertObj.type === 'out';
         const sign = isOut ? '-' : '+';
         const accTag = alertObj.accountNumber ? `[${alertObj.gateway || 'BIDV'} ${alertObj.accountNumber}] ` : '';
         alertTimeEl.textContent = alertObj.time || 'Vừa xong';
-        alertTextEl.className = `text-xs sm:text-sm font-bold mt-0.5 truncate ${
-          isOut ? 'text-rose-300' : 'text-emerald-300'
-        }`;
-        alertTextEl.textContent = `${accTag}${sign}${formatCurrency(alertObj.amount || 0)} | ND: ${
-          alertObj.content || 'Giao dịch ngân hàng'
-        }`;
+
+        if (testAlertBadge) {
+          if (isTestAlert) {
+            testAlertBadge.classList.remove('hidden');
+          } else {
+            testAlertBadge.classList.add('hidden');
+          }
+        }
+        if (clearTestBtn) {
+          if (isTestAlert || hasAnyTestRecords) {
+            clearTestBtn.classList.remove('hidden');
+            clearTestBtn.classList.add('inline-flex');
+          } else {
+            clearTestBtn.classList.add('hidden');
+            clearTestBtn.classList.remove('inline-flex');
+          }
+        }
+
+        if (isTestAlert) {
+          alertTextEl.className = 'text-xs sm:text-sm font-extrabold mt-1 truncate text-amber-300';
+          alertTextEl.textContent = `🧪 [TEST THỬ STK • KHÔNG CỘNG TIỀN VÀO WEB] ${accTag}Mức test: ${formatCurrency(
+            alertObj.amount || 0
+          )} (Số dư giữ nguyên: 0₫ cộng thêm) | ND: ${alertObj.content || 'Test hoạt động STK'}`;
+        } else {
+          alertTextEl.className = `text-xs sm:text-sm font-bold mt-1 truncate ${
+            isOut ? 'text-rose-300' : 'text-emerald-300'
+          }`;
+          alertTextEl.textContent = `${accTag}${sign}${formatCurrency(alertObj.amount || 0)} | ND: ${
+            alertObj.content || 'Giao dịch ngân hàng'
+          }`;
+        }
       } catch (e) {
+        if (testAlertBadge) testAlertBadge.classList.add('hidden');
         alertTimeEl.textContent = 'Đã kết nối';
         alertTextEl.textContent = `Đang lắng nghe biến động số dư SePay cho STK ${curBin} • ${curAcc}...`;
       }
     } else {
+      if (testAlertBadge) testAlertBadge.classList.add('hidden');
+      if (clearTestBtn) {
+        if (hasAnyTestRecords) {
+          clearTestBtn.classList.remove('hidden');
+          clearTestBtn.classList.add('inline-flex');
+        } else {
+          clearTestBtn.classList.add('hidden');
+          clearTestBtn.classList.remove('inline-flex');
+        }
+      }
       alertTimeEl.textContent = 'Đã kết nối 24/7';
-      alertTextEl.textContent = `Đã tự kết nối SePay cho STK ${curBin} • ${curAcc} (Bấm "Test STK 5801434567" để thử ngay)...`;
+      alertTextEl.textContent = `Đã tự kết nối SePay cho STK ${curBin} • ${curAcc} (Bấm "🧪 Test Thử STK (0₫)" để kiểm tra hoạt động)...`;
     }
   }
 }
@@ -12826,6 +13036,35 @@ function findStudentFromTransferContent(rawContent) {
   return null;
 }
 
+async function clearSimulatedBankTests() {
+  if (!appState.settings) appState.settings = {};
+  if (appState.settings.lastBankAlertJson) {
+    try {
+      const alertObj = JSON.parse(appState.settings.lastBankAlertJson);
+      if (
+        alertObj &&
+        (alertObj.isTest ||
+          String(alertObj.id || '').includes('TEST_STK_') ||
+          String(alertObj.id || '').includes('SEPAY_STK_'))
+      ) {
+        appState.settings.lastBankAlertJson = '';
+      }
+    } catch (e) {
+      appState.settings.lastBankAlertJson = '';
+    }
+  }
+
+  if (Array.isArray(appState.transactions)) {
+    appState.transactions = appState.transactions.filter(t => !isSimulatedBankTestItem(t));
+  }
+  if (Array.isArray(appState.paymentRequests)) {
+    appState.paymentRequests = appState.paymentRequests.filter(r => !isSimulatedBankTestItem(r));
+  }
+
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded('🧹 Đã xóa toàn bộ lịch sử & đánh dấu Test thử STK!');
+}
+
 async function simulateIncomingBankTransfer() {
   const contentInput = document.getElementById('sim-bank-content');
   const amountInput = document.getElementById('sim-bank-amount');
@@ -12845,19 +13084,21 @@ async function simulateIncomingBankTransfer() {
   // Tìm học sinh khớp Mã HS, Họ tên đầy đủ, Tên gọi hoặc SĐT trong nội dung chuyển khoản
   const matchedStudent = findStudentFromTransferContent(rawContent);
 
-  const finalAmount = amount > 0 ? amount : matchedStudent ? matchedStudent.tuitionFee : 600000;
-  const prevBalance = getComputedSepayBalance();
-  const newBalance = prevBalance + finalAmount;
-  const txRefId = 'SEPAY_STK_' + Date.now();
+  const simulatedAmount = amount > 0 ? amount : matchedStudent ? matchedStudent.tuitionFee : 600000;
+  // QUAN TRỌNG: Đây là thao tác bấm TEST THỬ HOẠT ĐỘNG STK của Quản lý -> Tuyệt đối KHÔNG cộng tiền vào số dư Web!
+  const currentRealBalance = getComputedSepayBalance();
+  const txRefId = 'TEST_STK_' + Date.now();
 
   if (!appState.settings) appState.settings = {};
-  appState.settings.sepayBalance = String(newBalance);
+  // Không thay đổi sepayBalance thực tế, chỉ ghi nhận thông báo kèm cờ isTest: true
   appState.settings.lastBankAlertJson = JSON.stringify({
     id: txRefId,
     time: nowStr,
     type: 'in',
-    amount: finalAmount,
-    balance: newBalance,
+    isTest: true,
+    testTag: '🧪 TEST THỬ STK (Không cộng tiền vào Web)',
+    amount: simulatedAmount,
+    balance: currentRealBalance,
     content: rawContent,
     gateway: activeBin,
     accountNumber: activeAcc
@@ -12865,124 +13106,53 @@ async function simulateIncomingBankTransfer() {
 
   const autoApproveOn = isAutoApprovePaymentEnabled();
 
-  if (matchedStudent) {
-    if (autoApproveOn) {
-      // Chế độ Duyệt tự động BẬT + Đã có kết quả chuyển tiền thành công vào STK -> Duyệt ngay lập tức
-      matchedStudent.status = 'Đã hoàn thành';
-      matchedStudent.updatedAt = nowStr;
-      matchedStudent.note = `Đã CK thành công vào STK ${activeAcc} (${activeBin}): +${formatCurrency(finalAmount)} (${nowStr})`;
+  // Ghi nhận bản ghi đánh dấu "Test thử STK" (amount = 0 để KHÔNG cộng tiền vào bất kỳ thống kê nào của Web, và KHÔNG tự ý đổi học sinh thật sang Đã hoàn thành)
+  if (!appState.paymentRequests) appState.paymentRequests = [];
+  appState.paymentRequests.unshift({
+    id: 'YC_' + txRefId,
+    submittedAt: nowStr,
+    studentRecordId: matchedStudent ? matchedStudent.id : '',
+    studentCode: matchedStudent ? matchedStudent.studentCode : 'TEST_STK',
+    studentName: matchedStudent ? `${matchedStudent.fullName} (Test thử STK)` : 'Kiểm tra kết nối STK',
+    className: matchedStudent ? matchedStudent.className : `${activeBin} • ${activeAcc}`,
+    period: matchedStudent ? matchedStudent.period : (appState.settings?.defaultPeriod || 'Test STK'),
+    amount: 0,
+    testDisplayAmount: simulatedAmount,
+    isTest: true,
+    parentPhone: matchedStudent ? matchedStudent.parentPhone || '' : '',
+    payerName: `🧪 Test thử STK ${activeAcc} (${activeBin})`,
+    note: `🧪 [TEST THỬ STK - Không cộng tiền vào Web] Kiểm tra hoạt động STK (${activeBin} • ${activeAcc}) | ND: ${rawContent}`,
+    receiptUrl: '',
+    bankVerified: true,
+    status: autoApproveOn ? 'Đã duyệt' : 'Chờ duyệt',
+    reviewedAt: autoApproveOn ? nowStr : ''
+  });
 
-      if (!appState.paymentRequests) appState.paymentRequests = [];
-      let updatedExistingReq = false;
-      appState.paymentRequests.forEach(r => {
-        if (r.studentCode === matchedStudent.studentCode && r.status === 'Chờ duyệt') {
-          r.status = 'Đã duyệt';
-          r.bankVerified = true;
-          r.reviewedAt = nowStr;
-          r.note = `${r.note ? r.note + ' • ' : ''}✅ Đã ghi nhận chuyển tiền thành công vào STK (${activeBin} ${activeAcc}) & duyệt tự động`;
-          updatedExistingReq = true;
-        }
-      });
-      if (!updatedExistingReq) {
-        appState.paymentRequests.unshift({
-          id: 'YC_' + txRefId,
-          submittedAt: nowStr,
-          studentRecordId: matchedStudent.id,
-          studentCode: matchedStudent.studentCode,
-          studentName: matchedStudent.fullName,
-          className: matchedStudent.className,
-          period: matchedStudent.period,
-          amount: finalAmount,
-          parentPhone: matchedStudent.parentPhone || '',
-          payerName: `Chuyển khoản STK ${activeAcc} (${activeBin})`,
-          note: `✅ Đã ghi nhận chuyển tiền thành công từ SePay STK (${activeBin} • ${activeAcc}) | ND: ${rawContent}`,
-          receiptUrl: '',
-          bankVerified: true,
-          status: 'Đã duyệt',
-          reviewedAt: nowStr
-        });
-      }
-    } else {
-      // Chế độ Duyệt tự động TẮT -> Ghi nhận kết quả chuyển tiền thành công vào STK nhưng để trạng thái "Chờ duyệt" cho Quản lý bấm duyệt
-      if (matchedStudent.status !== 'Đã hoàn thành') {
-        matchedStudent.status = 'Chờ duyệt';
-      }
-      matchedStudent.updatedAt = nowStr;
-      matchedStudent.note = `✅ Ngân hàng đã ghi nhận CK +${formatCurrency(finalAmount)} vào STK ${activeAcc} — Chờ Quản lý bấm Duyệt`;
-
-      if (!appState.paymentRequests) appState.paymentRequests = [];
-      let updatedPendingReq = false;
-      appState.paymentRequests.forEach(r => {
-        if (r.studentCode === matchedStudent.studentCode && r.status === 'Chờ duyệt') {
-          r.bankVerified = true;
-          r.amount = finalAmount || r.amount;
-          r.note = `${r.note || ''} • ✅ Đã ghi nhận chuyển tiền thành công vào STK (${activeBin} ${activeAcc}) — Chờ Quản lý duyệt`;
-          updatedPendingReq = true;
-        }
-      });
-      if (!updatedPendingReq) {
-        appState.paymentRequests.unshift({
-          id: 'YC_' + txRefId,
-          submittedAt: nowStr,
-          studentRecordId: matchedStudent.id,
-          studentCode: matchedStudent.studentCode,
-          studentName: matchedStudent.fullName,
-          className: matchedStudent.className,
-          period: matchedStudent.period,
-          amount: finalAmount,
-          parentPhone: matchedStudent.parentPhone || '',
-          payerName: `Chuyển khoản STK ${activeAcc} (${activeBin})`,
-          note: `✅ SePay đã ghi nhận chuyển tiền thành công vào STK (${activeBin} • ${activeAcc}) | ND: ${rawContent} — Chờ Quản lý bấm Duyệt`,
-          receiptUrl: '',
-          bankVerified: true,
-          status: 'Chờ duyệt',
-          reviewedAt: ''
-        });
-      }
-    }
-  }
-
-  // 2. Tự động lưu Phiếu Thu vào Sổ Thu - Chi (Chỉ tự động tạo phiếu thu học phí cho HS khi Duyệt tự động đang BẬT, hoặc khi giao dịch không gắn HS)
+  // Lưu 1 dòng đánh dấu Test thử STK vào Sổ Thu - Chi với số tiền thực tính = 0 ₫ (không cộng vào Tổng Thu hay Tồn Quỹ)
   if (!appState.transactions) appState.transactions = [];
-  if (!matchedStudent || autoApproveOn) {
-    const alreadyHasStudentPeriodTx =
-      matchedStudent &&
-      appState.transactions.some(
-        t =>
-          t.type === 'Thu' &&
-          t.studentCode === matchedStudent.studentCode &&
-          t.description &&
-          t.description.includes(matchedStudent.period)
-      );
-
-    if (!alreadyHasStudentPeriodTx) {
-      appState.transactions.unshift({
-        id: 'GD_' + txRefId,
-        date: todayDate,
-        type: 'Thu',
-        category: 'Thu học phí',
-        amount: finalAmount,
-        description: matchedStudent
-          ? `Tự động lưu CK vào STK (${activeBin} ${activeAcc}): ${matchedStudent.studentCode} - ${matchedStudent.fullName} (${matchedStudent.period}) | ND: ${rawContent}`
-          : `Tự động lưu CK vào STK (${activeBin} ${activeAcc}): +${formatCurrency(finalAmount)} | ND: ${rawContent}`,
-        studentCode: matchedStudent ? matchedStudent.studentCode : '',
-        method: 'Chuyển khoản STK (Tự động)',
-        receiptUrl: '',
-        createdBy: `Tự động từ SePay (${activeBin} ${activeAcc})`
-      });
-    }
-  }
+  appState.transactions.unshift({
+    id: 'GD_' + txRefId,
+    date: todayDate,
+    type: 'Thu',
+    category: 'Test thử STK',
+    amount: 0,
+    testDisplayAmount: simulatedAmount,
+    isTest: true,
+    description: matchedStudent
+      ? `🧪 [TEST THỬ STK - Không cộng tiền vào Web] Kiểm tra STK (${activeBin} ${activeAcc}) khớp HS ${matchedStudent.studentCode} - ${matchedStudent.fullName} | ND: ${rawContent}`
+      : `🧪 [TEST THỬ STK - Không cộng tiền vào Web] Kiểm tra hoạt động STK (${activeBin} ${activeAcc}) | ND: ${rawContent}`,
+    studentCode: matchedStudent ? matchedStudent.studentCode : '',
+    method: '🧪 Test thử STK (0₫)',
+    receiptUrl: '',
+    createdBy: `Quản lý (Test Thử STK)`
+  });
 
   playTingSound();
   saveStateToLocal();
 
-  const msg = matchedStudent
-    ? autoApproveOn
-      ? `💰 SEPAY [${activeBin} • ${activeAcc}] (+${formatCurrency(finalAmount)}) -> Đã ghi nhận kết quả chuyển tiền & tự động duyệt học phí cho ${matchedStudent.fullName}!`
-      : `💰 SEPAY [${activeBin} • ${activeAcc}] (+${formatCurrency(finalAmount)}) -> Đã ghi nhận chuyển tiền thành công từ ${matchedStudent.fullName}! Yêu cầu đang chờ bạn bấm nút "Duyệt (Đã nhận tiền)".`
-    : `💰 SEPAY [${activeBin} • ${activeAcc}] (+${formatCurrency(finalAmount)}) | Số dư mới: ${formatCurrency(
-        newBalance
-      )} -> Đã tự động lưu vào Sổ Thu - Chi!`;
+  const msg = `🧪 [TEST THỬ STK • KHÔNG CỘNG TIỀN VÀO WEB] Đã kiểm tra hoạt động STK ${activeAcc} (${activeBin}) thành công! Số dư Web giữ nguyên (${formatCurrency(
+    currentRealBalance
+  )}).`;
 
   await triggerAutoSyncIfNeeded(msg);
 }
