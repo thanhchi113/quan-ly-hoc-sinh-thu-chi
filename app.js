@@ -3643,12 +3643,12 @@ function updateSandboxModeButtonsUI() {
   if (topBtn) {
     if (isSandboxDraftMode) {
       topBtn.className =
-        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white shadow-sm transition cursor-pointer';
-      topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5"></i><span>Đang ở Tab Nháp</span>`;
+        'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white shadow-sm transition cursor-pointer whitespace-nowrap';
+      topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5 shrink-0"></i><span>Tab Nháp</span>`;
     } else {
       topBtn.className =
-        'mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer';
-      topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16]"></i><span>Tab Nháp</span>`;
+        'mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
+      topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16] shrink-0"></i><span>Tab Nháp</span>`;
     }
   }
 
@@ -4158,7 +4158,10 @@ function refreshAllViews() {
   // Header
   const centerNameEl = document.getElementById('header-center-name');
   if (centerNameEl) {
-    centerNameEl.textContent = appState.settings.centerName || 'LỚP TOÁN ANH CHÍ';
+    const rawCenterName = appState.settings.centerName || 'LỚP TOÁN ANH CHÍ';
+    centerNameEl.textContent =
+      isSandboxDraftMode && rawCenterName.length > 24 ? 'ALPHA EDU (BẢN NHÁP)' : rawCenterName;
+    centerNameEl.title = rawCenterName;
   }
   const activePeriodTextEl = document.getElementById('header-active-period-text');
   if (activePeriodTextEl) {
@@ -4252,13 +4255,13 @@ function switchAppMode(mode) {
   if (mode === 'parent') {
     parentView.classList.remove('hidden');
     adminView.classList.add('hidden');
-    btnParent.className = 'mode-pill-active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer';
-    btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer';
+    btnParent.className = 'mode-pill-active flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
+    btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
   } else {
     parentView.classList.add('hidden');
     adminView.classList.remove('hidden');
-    btnAdmin.className = 'mode-pill-active relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer';
-    btnParent.className = 'mode-pill-inactive flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition cursor-pointer';
+    btnAdmin.className = 'mode-pill-active relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
+    btnParent.className = 'mode-pill-inactive flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
 
     checkAdminAuthStatus();
   }
@@ -7638,24 +7641,34 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   const quickBtn = document.getElementById('btn-quick-sync');
 
   if (isSandboxDraftMode) {
-    if (dot) dot.className = 'w-2 h-2 rounded-full bg-[#FF4B16] inline-block';
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-[#FF4B16] inline-block shrink-0';
     if (text) text.textContent = 'Đang ở Tab Nháp (Dữ liệu mẫu độc lập)';
-    if (quickBtn) quickBtn.classList.add('hidden');
+    if (quickBtn) {
+      quickBtn.classList.add('hidden');
+      quickBtn.style.display = 'none';
+    }
     return;
   }
 
   const url = getGasUrl();
   if (url) {
-    if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block';
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0';
     if (text) {
       text.textContent = lastSyncTimeStr
         ? `Đã đồng bộ Google Sheet (${lastSyncTimeStr})`
         : 'Đã kết nối Google Sheet (2 chiều)';
     }
-    if (quickBtn) quickBtn.classList.remove('hidden');
+    if (quickBtn) {
+      quickBtn.classList.remove('hidden');
+      quickBtn.style.display = '';
+    }
   } else {
-    if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 inline-block';
+    if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0';
     if (text) text.textContent = 'Chế độ Local Demo (Vào Quản lý -> Cài đặt để gắn Google Sheet)';
+    if (quickBtn) {
+      quickBtn.classList.add('hidden');
+      quickBtn.style.display = 'none';
+    }
   }
 }
 
