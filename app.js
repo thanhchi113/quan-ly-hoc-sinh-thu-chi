@@ -3477,6 +3477,9 @@ function refreshAllViews() {
   }
 
   lucide.createIcons();
+  if (typeof syncFloatingStickyTableHeader === 'function') {
+    requestAnimationFrame(() => syncFloatingStickyTableHeader(true));
+  }
 }
 
 // ============================================================================
@@ -3567,6 +3570,9 @@ function switchAdminTab(tabName) {
     populateSettingsForm();
   }
   lucide.createIcons();
+  if (typeof scheduleStickyHeaderSync === 'function') {
+    requestAnimationFrame(() => scheduleStickyHeaderSync(true));
+  }
 }
 
 // ============================================================================
@@ -5646,6 +5652,9 @@ function renderAdminStudents() {
     .join('');
 
   lucide.createIcons();
+  if (typeof scheduleStickyHeaderSync === 'function') {
+    requestAnimationFrame(() => scheduleStickyHeaderSync(true));
+  }
 }
 
 // Đổi nhanh trạng thái học phí trực tiếp trên bảng Quản lý
@@ -7363,6 +7372,9 @@ function renderAdminClassbook() {
   // 5. Render Bảng Lịch Học & Điểm Danh Buổi Dạy bên phải
   renderClassbookScheduleTable(cfg);
   lucide.createIcons();
+  if (typeof scheduleStickyHeaderSync === 'function') {
+    requestAnimationFrame(() => scheduleStickyHeaderSync(true));
+  }
 }
 
 function toggleClassbookPaidCheckbox(studentId, isChecked) {
@@ -9953,3 +9965,141 @@ function renderThemeCustomizerControls() {
       .join('');
   }
 }
+
+// ============================================================================
+// CỐ ĐỊNH THANH TIÊU ĐỀ BẢNG (STICKY TABLE HEADER) KHI CUỘN XEM HỌC SINH
+// ============================================================================
+let floatingStickyBarEl = null;
+let floatingStickyTableEl = null;
+let activeStickySourceTable = null;
+let stickyHeaderRafId = null;
+
+function ensureFloatingStickyBar() {
+  if (floatingStickyBarEl && document.body.contains(floatingStickyBarEl)) {
+    return floatingStickyBarEl;
+  }
+  const bar = document.createElement('div');
+  bar.id = 'floating-sticky-thead-bar';
+  bar.className = 'hidden';
+  const tbl = document.createElement('table');
+  tbl.className = 'sheet-table text-xs sm:text-sm';
+  bar.appendChild(tbl);
+  document.body.appendChild(bar);
+  floatingStickyBarEl = bar;
+  floatingStickyTableEl = tbl;
+  return bar;
+}
+
+function syncFloatingStickyTableHeader(forceRebuild = false) {
+  const bar = ensureFloatingStickyBar();
+  if (currentMode !== 'admin') {
+    bar.classList.add('hidden');
+    activeStickySourceTable = null;
+    return;
+  }
+
+  const topNav = document.querySelector('header.sticky');
+  const stickyTopOffset = topNav ? Math.max(0, Math.round(topNav.getBoundingClientRect().bottom)) : 0;
+
+  const candidateTables = Array.from(document.querySelectorAll('table.js-sticky-header-table'));
+  let targetTable = null;
+  let targetThead = null;
+  let targetTableRect = null;
+  let targetTheadRect = null;
+
+  for (let i = 0; i < candidateTables.length; i++) {
+    const tbl = candidateTables[i];
+    if (!tbl || tbl.offsetParent === null) continue;
+    const thead = tbl.querySelector('thead');
+    if (!thead) continue;
+    const tblRect = tbl.getBoundingClientRect();
+    const thRect = thead.getBoundingClientRect();
+    if (tblRect.width < 50 || thRect.height < 10) continue;
+
+    // Khi đỉnh bảng đã cuộn vượt qua thanh Header trên cùng, và đáy bảng vẫn còn đủ dòng học sinh bên dưới
+    if (tblRect.top < stickyTopOffset && tblRect.bottom > stickyTopOffset + thRect.height + 34) {
+      targetTable = tbl;
+      targetThead = thead;
+      targetTableRect = tblRect;
+      targetTheadRect = thRect;
+      break;
+    }
+  }
+
+  if (!targetTable || !targetThead) {
+    bar.classList.add('hidden');
+    activeStickySourceTable = null;
+    return;
+  }
+
+  const wrap = targetTable.closest('.js-sticky-table-wrap') || targetTable.parentElement;
+  const wrapRect = wrap ? wrap.getBoundingClientRect() : targetTableRect;
+
+  bar.classList.remove('hidden');
+  bar.style.top = `${stickyTopOffset}px`;
+  bar.style.left = `${Math.round(wrapRect.left)}px`;
+  bar.style.width = `${Math.round(wrapRect.width)}px`;
+
+  if (forceRebuild || activeStickySourceTable !== targetTable || !floatingStickyTableEl.innerHTML) {
+    activeStickySourceTable = targetTable;
+    floatingStickyTableEl.className = targetTable.className.replace('js-sticky-header-table', '');
+    const clonedThead = targetThead.cloneNode(true);
+    clonedThead.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    floatingStickyTableEl.innerHTML = '';
+    floatingStickyTableEl.appendChild(clonedThead);
+  } else {
+    // Cập nhật nhanh nội dung dòng TỔNG CỘNG nếu có thay đổi
+    const origRows = targetThead.querySelectorAll('tr');
+    const cloneRows = floatingStickyTableEl.querySelectorAll('thead tr');
+    if (origRows.length > 1 && cloneRows.length > 1) {
+      const origSumCells = origRows[1].children;
+      const cloneSumCells = cloneRows[1].children;
+      for (let c = 0; c < origSumCells.length && c < cloneSumCells.length; c++) {
+        if (cloneSumCells[c].textContent !== origSumCells[c].textContent) {
+          cloneSumCells[c].textContent = origSumCells[c].textContent;
+        }
+      }
+    }
+  }
+
+  // Đồng bộ chính xác 100% độ rộng của từng cột (th / td) để luôn thẳng hàng với các ô học sinh bên dưới
+  floatingStickyTableEl.style.width = `${targetTableRect.width}px`;
+  floatingStickyTableEl.style.minWidth = `${targetTableRect.width}px`;
+  const scrollLeft = wrap ? wrap.scrollLeft : 0;
+  floatingStickyTableEl.style.transform = `translate3d(${-scrollLeft}px, 0, 0)`;
+
+  const origFirstRowCells = targetThead.querySelectorAll('tr:first-child > th, tr:first-child > td');
+  const cloneFirstRowCells = floatingStickyTableEl.querySelectorAll('thead tr:first-child > th, thead tr:first-child > td');
+  for (let c = 0; c < origFirstRowCells.length && c < cloneFirstRowCells.length; c++) {
+    const w = origFirstRowCells[c].getBoundingClientRect().width;
+    const px = `${w.toFixed(2)}px`;
+    cloneFirstRowCells[c].style.width = px;
+    cloneFirstRowCells[c].style.minWidth = px;
+    cloneFirstRowCells[c].style.maxWidth = px;
+    cloneFirstRowCells[c].style.boxSizing = 'border-box';
+  }
+}
+
+function scheduleStickyHeaderSync(forceRebuild = false) {
+  if (forceRebuild) {
+    syncFloatingStickyTableHeader(true);
+    return;
+  }
+  if (stickyHeaderRafId) return;
+  stickyHeaderRafId = requestAnimationFrame(() => {
+    stickyHeaderRafId = null;
+    syncFloatingStickyTableHeader(false);
+  });
+}
+
+function initStickyTableHeaderEngine() {
+  window.addEventListener('scroll', () => scheduleStickyHeaderSync(false), { passive: true });
+  window.addEventListener('resize', () => scheduleStickyHeaderSync(true), { passive: true });
+  document.querySelectorAll('.js-sticky-table-wrap').forEach(wrap => {
+    wrap.addEventListener('scroll', () => scheduleStickyHeaderSync(false), { passive: true });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initStickyTableHeaderEngine();
+});
