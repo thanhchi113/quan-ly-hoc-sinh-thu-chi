@@ -1,20 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 :root {
-  --brand-navy: #1e3a8a;
-  --brand-navy-mid: #1d4ed8;
-  --brand-primary: #2563eb;
-  --brand-primary-hover: #1d4ed8;
-  --brand-primary-rgb: 37, 99, 235;
-  --brand-soft: #eff6ff;
-  --brand-border: #bfdbfe;
-  --brand-banner-from: #09152b;
-  --brand-banner-via: #132d5e;
-  --brand-banner-to: #1d4ed8;
+  /* THANH CHÍ EDU — Soft Premium SaaS & Fintech Palette */
+  --bg-main: #E2E4E8;
+  --surface-primary: #FAFAFC;
+  --surface-secondary: #FFFFFF;
+  --text-primary: #25214C;
+  --text-secondary: #8986A6;
+  --accent-indigo: #5B55FF;
+  --accent-violet: #7C6BFF;
+  --accent-orange: #FF4B16;
+  --soft-lavender: #E6E1FF;
+  --border-subtle: #EBECF3;
+
+  --brand-navy: #25214C;
+  --brand-navy-mid: #393370;
+  --brand-primary: #5B55FF;
+  --brand-primary-hover: #4842E8;
+  --brand-primary-rgb: 91, 85, 255;
+  --brand-soft: #F3F1FF;
+  --brand-border: #E2DEFF;
+  --brand-banner-from: #1E1A3E;
+  --brand-banner-via: #2E2860;
+  --brand-banner-to: #5B55FF;
   --primary: var(--brand-primary);
   --primary-hover: var(--brand-primary-hover);
   --success: #059669;
-  --warning: #d97706;
+  --warning: #FF4B16;
   --danger: #dc2626;
 }
 
@@ -24,14 +36,14 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f4f7fb;
+  font-family: 'Plus Jakarta Sans', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-main);
   background-image:
-    radial-gradient(at 0% 0%, rgba(var(--brand-primary-rgb), 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.07) 0px, transparent 45%),
-    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%);
+    radial-gradient(at 8% 6%, rgba(124, 107, 255, 0.14) 0px, transparent 42%),
+    radial-gradient(at 92% 10%, rgba(255, 75, 22, 0.09) 0px, transparent 40%),
+    radial-gradient(at 52% 94%, rgba(91, 85, 255, 0.11) 0px, transparent 48%);
   background-attachment: fixed;
-  color: #0f172a;
+  color: var(--text-primary);
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
@@ -43,9 +55,10 @@ h1, h2, h3, h4,
 .font-display,
 .sheet-navy-header,
 .modern-kpi-value,
+.bento-metric-value,
 #sepay-live-balance {
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: 'Plus Jakarta Sans', 'Manrope', 'Inter', sans-serif;
+  letter-spacing: -0.022em;
 }
 
 .font-mono {
@@ -165,106 +178,336 @@ h1, h2, h3, h4,
   animation: pulseSubtle 2s infinite;
 }
 
-/* Glass Header & Modern Navigation */
+/* Glass Header & Soft Premium Navigation */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px -4px rgba(15, 23, 42, 0.04);
+  background: rgba(250, 250, 252, 0.92);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 12px rgba(37, 33, 76, 0.04), 0 12px 32px -6px rgba(37, 33, 76, 0.05);
 }
 
 /* Header Role Switcher Pill */
 .role-switch-pill {
-  background-color: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  background-color: #EFEFF7;
+  border: 1px solid #DFDFEE;
+  border-radius: 9999px;
+  padding: 3px;
+  box-shadow: inset 0 1px 2px rgba(37, 33, 76, 0.04);
 }
 
 .mode-pill-active {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%);
+  background: linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 100%);
   color: #ffffff !important;
-  box-shadow: 0 3px 10px -2px rgba(var(--brand-primary-rgb), 0.38);
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 14px -2px rgba(91, 85, 255, 0.42);
   font-weight: 700;
 }
 
 .mode-pill-inactive {
   background-color: transparent;
-  color: #475569;
+  color: var(--text-secondary);
+  border-radius: 9999px !important;
   font-weight: 600;
 }
 
 .mode-pill-inactive:hover {
-  color: #0f172a;
-  background-color: rgba(255, 255, 255, 0.75);
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 .qr-frame {
-  background: linear-gradient(135deg, var(--brand-soft) 0%, #eef2ff 100%);
+  background: linear-gradient(135deg, var(--brand-soft) 0%, #FAFAFC 100%);
   border: 2px dashed var(--brand-border);
 }
 
 /* Dynamic Theme Bindings */
 .theme-brand-icon {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
-  box-shadow: 0 6px 16px -2px rgba(var(--brand-primary-rgb), 0.38);
+  background: linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 65%, var(--accent-orange) 130%) !important;
+  box-shadow: 0 8px 20px -3px rgba(91, 85, 255, 0.42);
 }
 
 .theme-hero-banner {
   background:
-    radial-gradient(at 90% 10%, rgba(255, 255, 255, 0.14) 0px, transparent 45%),
-    radial-gradient(at 10% 90%, rgba(56, 189, 248, 0.18) 0px, transparent 50%),
-    linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-primary) 55%, #3730a3 100%) !important;
-  box-shadow: 0 20px 40px -12px rgba(var(--brand-primary-rgb), 0.38);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+    radial-gradient(at 88% 14%, rgba(255, 75, 22, 0.22) 0px, transparent 42%),
+    radial-gradient(at 12% 88%, rgba(124, 107, 255, 0.28) 0px, transparent 48%),
+    linear-gradient(135deg, #25214C 0%, #3E3784 52%, #5B55FF 100%) !important;
+  box-shadow: 0 24px 48px -12px rgba(37, 33, 76, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 28px !important;
 }
 
 .sepay-live-banner {
   background:
-    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.2) 0px, transparent 45%),
-    linear-gradient(95deg, var(--brand-banner-from) 0%, var(--brand-banner-via) 52%, var(--brand-banner-to) 100%);
+    radial-gradient(at 95% 10%, rgba(255, 75, 22, 0.18) 0px, transparent 40%),
+    radial-gradient(at 10% 90%, rgba(124, 107, 255, 0.24) 0px, transparent 45%),
+    linear-gradient(100deg, #1E1A3E 0%, #2C265E 52%, #48409E 100%);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 14px 32px -8px rgba(15, 23, 42, 0.26);
+  border-radius: 24px !important;
+  box-shadow: 0 16px 36px -10px rgba(37, 33, 76, 0.24);
 }
 
 .classbook-selector-card {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96) 0%, var(--brand-soft) 100%);
-  border: 1.5px solid var(--brand-border);
-  box-shadow: 0 10px 28px -8px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  background: linear-gradient(165deg, #FFFFFF 0%, #FAFAFC 65%, #F4F2FF 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 28px !important;
+  box-shadow:
+    0 20px 44px -14px rgba(37, 33, 76, 0.08),
+    0 4px 14px -2px rgba(37, 33, 76, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .theme-navy-badge {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
+  background: linear-gradient(135deg, var(--accent-indigo) 0%, #25214C 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px -2px rgba(var(--brand-primary-rgb), 0.3);
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 16px -3px rgba(91, 85, 255, 0.34);
 }
 
 .admin-tab-btn {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 9999px !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-tab-btn.bg-blue-600 {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
+  background: linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 16px -3px rgba(var(--brand-primary-rgb), 0.38);
+  box-shadow: 0 6px 18px -3px rgba(91, 85, 255, 0.42);
 }
 
 /* ========================================================================== */
-/* MODERN BENTO KPI CARDS & SHEET CARDS (SAAS 2026 DESIGN)                    */
+/* THANH CHÍ EDU — LEFT SIDEBAR & SOFT PREMIUM BENTO GRID SYSTEM              */
 /* ========================================================================== */
-.modern-kpi-card {
-  background: #ffffff;
-  border: 1px solid rgba(203, 213, 225, 0.85);
-  border-radius: 1.15rem;
-  padding: 1rem 1.15rem;
+.tc-sidebar {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFC 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 28px;
+  box-shadow:
+    0 20px 44px -14px rgba(37, 33, 76, 0.07),
+    0 4px 14px -2px rgba(37, 33, 76, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: width 0.24s cubic-bezier(0.16, 1, 0.3, 1), padding 0.24s ease;
+}
+
+.tc-sidebar.is-collapsed {
+  width: 74px !important;
+}
+
+.tc-sidebar.is-collapsed .tc-sidebar-label,
+.tc-sidebar.is-collapsed .tc-sidebar-badge,
+.tc-sidebar.is-collapsed .tc-sidebar-brand-text,
+.tc-sidebar.is-collapsed .tc-sidebar-footer-card {
+  display: none !important;
+}
+
+.tc-sidebar.is-collapsed .tc-nav-item {
+  justify-content: center;
+  padding-left: 0.65rem;
+  padding-right: 0.65rem;
+}
+
+.tc-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.68rem 0.95rem;
+  border-radius: 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tc-nav-item:hover {
+  color: var(--text-primary);
+  background-color: #F4F3FF;
+  border-color: #E6E1FF;
+  transform: translateX(2px);
+}
+
+.tc-nav-item.is-active {
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #5B55FF 0%, #7C6BFF 100%) !important;
+  border-color: rgba(124, 107, 255, 0.4) !important;
+  box-shadow: 0 8px 20px -4px rgba(91, 85, 255, 0.42);
+}
+
+.tc-nav-item.is-active i,
+.tc-nav-item.is-active svg {
+  color: #FFFFFF !important;
+}
+
+/* Soft Premium Bento Containers (28px - 32px radius + Ambient Glow) */
+.bento-card {
+  background: linear-gradient(165deg, #FFFFFF 0%, #FAFAFC 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 28px;
+  padding: 1.5rem;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+  box-shadow:
+    0 20px 44px -14px rgba(37, 33, 76, 0.07),
+    0 4px 14px -2px rgba(37, 33, 76, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.bento-card:hover {
+  transform: translateY(-2px);
+  border-color: #DCD8F8;
+  box-shadow:
+    0 26px 52px -14px rgba(91, 85, 255, 0.12),
+    0 6px 18px -2px rgba(37, 33, 76, 0.05);
+}
+
+.bento-glow-violet::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 190px;
+  height: 190px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(124, 107, 255, 0.16) 0%, rgba(91, 85, 255, 0.04) 55%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bento-glow-orange::after {
+  content: '';
+  position: absolute;
+  bottom: -55px;
+  right: -45px;
+  width: 200px;
+  height: 200px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 75, 22, 0.13) 0%, rgba(124, 107, 255, 0.06) 55%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bento-glow-dual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(at 15% 20%, rgba(124, 107, 255, 0.11) 0px, transparent 50%),
+    radial-gradient(at 85% 80%, rgba(255, 75, 22, 0.10) 0px, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bento-inner-tile {
+  background: #FAFAFC;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 2px 8px rgba(37, 33, 76, 0.025), inset 0 1px 0 #FFFFFF;
+  transition: all 0.18s ease;
+}
+
+.bento-inner-tile:hover {
+  background: #FFFFFF;
+  border-color: #DCD8F8;
+  box-shadow: 0 8px 20px -6px rgba(91, 85, 255, 0.10);
+}
+
+/* Segmented Progress Bars & Attendance Bars */
+.segmented-bar-grid {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 4px;
+  align-items: center;
+}
+
+.segmented-bar-pill {
+  height: 22px;
+  border-radius: 9999px;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.segmented-bar-pill:hover {
+  transform: scaleY(1.18);
+}
+
+/* Concentric Circle Financial Forecast Visualization (Card F) */
+.forecast-concentric-stage {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.forecast-ring {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.forecast-ring-outer {
+  width: 220px;
+  height: 220px;
+  border: 1.5px dashed rgba(124, 107, 255, 0.28);
+  background: radial-gradient(circle, rgba(124, 107, 255, 0.08) 0%, rgba(255, 75, 22, 0.06) 60%, transparent 75%);
+}
+
+.forecast-ring-mid {
+  width: 178px;
+  height: 178px;
+  border: 1.5px solid rgba(91, 85, 255, 0.22);
+  background: linear-gradient(135deg, rgba(230, 225, 255, 0.42) 0%, rgba(255, 237, 230, 0.38) 100%);
+  box-shadow: 0 0 36px rgba(124, 107, 255, 0.16);
+}
+
+.forecast-ring-inner {
+  position: relative;
+  z-index: 2;
+  width: 138px;
+  height: 138px;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  border: 2px solid #E6E1FF;
+  box-shadow:
+    0 14px 32px -6px rgba(37, 33, 76, 0.14),
+    0 0 0 6px rgba(255, 255, 255, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.75rem;
+}
+
+/* Soft Pill Buttons Refinement */
+button.rounded-xl,
+a.rounded-xl {
+  border-radius: 9999px;
+}
+
+.modern-kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 22px;
+  padding: 1.05rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 22px -6px rgba(37, 33, 76, 0.06), 0 2px 6px rgba(37, 33, 76, 0.03);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .modern-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.1);
+  border-color: #DCD8F8;
+  box-shadow: 0 14px 28px -6px rgba(91, 85, 255, 0.12);
 }
 
 .modern-kpi-card::before {
@@ -278,11 +521,11 @@ h1, h2, h3, h4,
 }
 
 .modern-kpi-blue::before {
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  background: linear-gradient(90deg, #5B55FF, #7C6BFF);
 }
 
 .modern-kpi-indigo::before {
-  background: linear-gradient(90deg, #4f46e5, #818cf8);
+  background: linear-gradient(90deg, #7C6BFF, #FF4B16);
 }
 
 .modern-kpi-emerald::before {
@@ -290,40 +533,41 @@ h1, h2, h3, h4,
 }
 
 .modern-kpi-rose::before {
-  background: linear-gradient(90deg, #e11d48, #fb7185);
+  background: linear-gradient(90deg, #FF4B16, #fb7185);
 }
 
 .modern-sheet-card {
   background: #ffffff;
-  border: 1.5px solid rgba(30, 58, 138, 0.22);
-  border-radius: 1.35rem;
-  box-shadow: 0 14px 34px -10px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  border: 1.5px solid #DFDFEE;
+  border-radius: 26px;
+  box-shadow: 0 18px 40px -12px rgba(37, 33, 76, 0.08), 0 4px 14px -2px rgba(37, 33, 76, 0.04);
   overflow: hidden;
 }
 
-/* Thẻ lớp học ở Chế độ Sáng (tương phản rõ với nền khung & hiệu ứng nổi + thanh tiến độ) */
+/* Thẻ lớp học ở Chế độ Sáng (Soft Premium Floating Cards) */
 .class-selector-item {
-  background-color: #ffffff;
-  border: 1.5px solid #dbe3ef;
-  color: #0f172a;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  background-color: #FFFFFF;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 18px !important;
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px -2px rgba(37, 33, 76, 0.04);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
 }
 
 .class-selector-item:hover {
-  border-color: var(--brand-primary);
-  background-color: #ffffff;
+  border-color: var(--accent-indigo);
+  background-color: #FFFFFF;
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -4px rgba(var(--brand-primary-rgb), 0.15);
+  box-shadow: 0 12px 24px -6px rgba(91, 85, 255, 0.18);
 }
 
 .class-selector-item.is-active {
-  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-navy) 100%) !important;
+  background: linear-gradient(135deg, #5B55FF 0%, #25214C 100%) !important;
   color: #ffffff !important;
-  border-color: var(--brand-navy) !important;
-  box-shadow: 0 10px 24px -4px rgba(var(--brand-primary-rgb), 0.4) !important;
+  border-color: #5B55FF !important;
+  box-shadow: 0 12px 26px -4px rgba(91, 85, 255, 0.42) !important;
 }
 
 /* Thanh tiến độ đóng học phí mini trên mỗi thẻ lớp */
@@ -331,7 +575,7 @@ h1, h2, h3, h4,
   width: 100%;
   height: 4px;
   border-radius: 9999px;
-  background-color: #e2e8f0;
+  background-color: #E6E1FF;
   overflow: hidden;
   margin-top: 2px;
 }
@@ -343,12 +587,12 @@ h1, h2, h3, h4,
 .class-card-progress-fill {
   height: 100%;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: linear-gradient(90deg, #5B55FF, #FF4B16);
   transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .class-selector-item.is-active .class-card-progress-fill {
-  background: linear-gradient(90deg, #fde047, #34d399);
+  background: linear-gradient(90deg, #FF8A65, #34d399);
 }
 
 /* Nút xóa nhanh trên thẻ lớp */
@@ -982,3 +1226,44 @@ html.dark-mode .hover\:bg-rose-50:hover,
 html.dark-mode .hover\:bg-rose-100:hover {
   background-color: rgba(244, 63, 94, 0.34) !important;
 }
+
+/* Soft Premium Bento & Sidebar in Dark Mode */
+html.dark-mode .tc-sidebar,
+html.dark-mode .bento-card {
+  background: linear-gradient(160deg, #0f172a 0%, #162033 100%) !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+}
+
+html.dark-mode .bento-inner-tile {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: none !important;
+}
+
+html.dark-mode .tc-nav-item {
+  color: #cbd5e1;
+}
+
+html.dark-mode .tc-nav-item:hover {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #ffffff;
+}
+
+html.dark-mode .forecast-ring-inner {
+  background-color: #1e293b !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.dark-mode .text-\[\#25214C\] {
+  color: #f8fafc !important;
+}
+
+html.dark-mode .text-\[\#8986A6\] {
+  color: #94a3b8 !important;
+}
+
