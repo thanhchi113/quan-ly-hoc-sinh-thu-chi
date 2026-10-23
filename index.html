@@ -443,136 +443,158 @@
         <!-- TAB 0: SỔ THEO DÕI LỚP HỌC & LỊCH DẠY CHUẨN MẪU (GIỐNG ẢNH)    -->
         <!-- =============================================================== -->
         <div id="admin-tab-classbook" class="space-y-4">
-          <!-- KHUNG 1 (CÂN ĐỐI 100% CHIỀU RỘNG): CHỌN LỚP ĐỂ XEM HIỆN TẠI -->
-          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3.5">
-            <!-- Hàng 1: Tiêu đề + Lọc nhanh theo Khối + Dropdown Chuyển nhanh -->
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
-              <div class="flex flex-wrap items-center gap-2">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
+          <!-- KHUNG 1 (CÂN ĐỐI 100% CHIỀU RỘNG): CHỌN LỚP & KHỐI ĐỂ XEM HIỆN TẠI -->
+          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3">
+            <!-- Tầng 1: Tiêu đề + Chuyển nhanh Lớp (Trái) & Cụm nút Quản lý Lớp / Học sinh (Phải) -->
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
                   <i data-lucide="school" class="w-4 h-4 text-amber-300"></i>
                   <span>Chọn Lớp Đang Xem</span>
                 </div>
-                <!-- Các nút lọc nhanh theo Khối lớp (Tất cả / Khối 12 / 11 / 10 / 9 / 6-8) -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
+                  <select
+                    id="classbook-class-dropdown"
+                    onchange="selectClassbookClass(this.value)"
+                    class="h-9 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[220px] sm:min-w-[250px]"
+                  >
+                    <!-- Rendered by JS -->
+                  </select>
+                </div>
+              </div>
+
+              <!-- Cụm nút thao tác Lớp & Học sinh căn phải đồng bộ chiều cao -->
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  id="btn-classbook-undo"
+                  onclick="undoLastAction()"
+                  disabled
+                  title="Quay lại thao tác vừa làm trước đó (Ctrl + Z)"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                  <span>Quay lại</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="openClassScheduleModal(true)"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                  <span>+ Tạo Lớp Mới</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="openClassScheduleModal(false)"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>
+                  <span>Cài đặt Lịch học</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="openStudentModalForCurrentClass()"
+                  class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                  <span>+ Thêm Học Sinh</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="deleteCurrentClassSchedule()"
+                  title="Xóa lớp học đang chọn khỏi hệ thống"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span>Xóa Lớp</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tầng 2: Thanh Lọc Theo Khối Lớp (Trái) & Nút Tạo / Xóa Khối (Phải) trên 1 hàng ngang cân đối -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-y border-slate-200/80">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+                  <span>Khối lớp:</span>
+                </span>
+                <!-- Các nút lọc nhanh theo Khối lớp (Tất cả / Khối 12 / 11 / 10 / 9 / 8 / 7 / 6-8) -->
                 <div id="classbook-grade-filters" class="flex flex-wrap items-center gap-1.5">
                   <!-- Rendered by JS -->
                 </div>
               </div>
 
               <div class="flex items-center gap-2 shrink-0">
-                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
-                <select
-                  id="classbook-class-dropdown"
-                  onchange="selectClassbookClass(this.value)"
-                  class="px-3.5 py-2 rounded-xl border-2 border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[230px]"
+                <button
+                  type="button"
+                  onclick="openGradeManagerModal()"
+                  title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý các Khối"
+                  class="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-600 hover:text-white transition cursor-pointer whitespace-nowrap"
                 >
-                  <!-- Rendered by JS -->
-                </select>
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                  <span>+ Tạo Khối</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-classbook-delete-grade"
+                  onclick="handleToolbarDeleteGrade('classbook')"
+                  title="Xóa Khối đang chọn hoặc chọn Khối cần xóa khỏi hệ thống"
+                  class="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span id="btn-classbook-delete-grade-label">Xóa Khối</span>
+                </button>
               </div>
             </div>
 
-            <!-- Hàng 2: Lưới danh sách các Lớp cân đối đều 4 cột trên toàn bộ chiều ngang -->
+            <!-- Tầng 3: Lưới danh sách các Lớp cân đối đều 4 cột trên toàn bộ chiều ngang -->
             <div id="classbook-class-pills" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
               <!-- Rendered by JS -->
             </div>
           </div>
 
-          <!-- KHUNG 2 (TÁCH RIÊNG): CÁC NÚT CÔNG CỤ & THAO TÁC QUẢN LÝ LỚP -->
-          <div class="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
+          <!-- KHUNG 2: THANH TIỆN ÍCH NGHIỆP VỤ SỔ THEO DÕI (CHỤP HÌNH • SANG ĐỢT MỚI • LỊCH SỬ • THỐNG KÊ) -->
+          <div class="bg-white px-4 py-2.5 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
             <div class="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onclick="openGradeManagerModal()"
-                title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý các Khối"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
+                onclick="captureCurrentScheduleToClipboard(this)"
+                title="Chụp hình bảng Số buổi học tự động lưu vào bộ nhớ tạm — Bạn chỉ việc nhấn Ctrl+V để dán vào Zalo / Messenger"
+                class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
               >
-                <i data-lucide="layers" class="w-4 h-4"></i>
-                <span>+ Tạo Khối</span>
+                <i data-lucide="camera" class="w-4 h-4"></i>
+                <span>Chụp hình Số buổi học (Chỉ việc dán)</span>
               </button>
               <button
                 type="button"
-                id="btn-classbook-delete-grade"
-                onclick="handleToolbarDeleteGrade('classbook')"
-                title="Xóa Khối đang chọn hoặc chọn Khối cần xóa khỏi hệ thống"
-                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+                onclick="openRolloverBatchModal()"
+                class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
+                title="Lưu toàn bộ đợt hiện tại vào mục Lịch sử và giữ nguyên danh sách học sinh, số tiền để sang tháng / đợt tiếp theo"
               >
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                <span id="btn-classbook-delete-grade-label">🗑️ Xóa Khối</span>
-              </button>
-              <button
-                onclick="openClassScheduleModal(true)"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition cursor-pointer"
-              >
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>+ Tạo Lớp Mới</span>
-              </button>
-              <button
-                onclick="openClassScheduleModal(false)"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition cursor-pointer"
-              >
-                <i data-lucide="calendar-range" class="w-4 h-4"></i>
-                <span>Cài đặt Lịch học</span>
-              </button>
-              <button
-                onclick="openStudentModalForCurrentClass()"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer"
-              >
-                <i data-lucide="user-plus" class="w-4 h-4"></i>
-                <span>+ Thêm Học Sinh</span>
-              </button>
-              <button
-                type="button"
-                onclick="deleteCurrentClassSchedule()"
-                title="Xóa lớp học đang chọn khỏi hệ thống"
-                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
-              >
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                <span>🗑️ Xóa Lớp</span>
-              </button>
-              <button
-                type="button"
-                id="btn-classbook-undo"
-                onclick="undoLastAction()"
-                disabled
-                title="Quay lại thao tác vừa làm trước đó (Ctrl + Z)"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
-              >
-                <i data-lucide="undo-2" class="w-4 h-4"></i>
-                <span>↩️ Quay lại thao tác trước</span>
+                <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                <span>Sang Đợt / Tháng Tiếp Theo (Lưu Lịch Sử)</span>
               </button>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onclick="captureCurrentScheduleToClipboard(this)"
-                title="Chụp hình bảng Số buổi học tự động lưu vào bộ nhớ tạm — Bạn chỉ việc nhấn Ctrl+V để dán vào Zalo / Messenger"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
-              >
-                <i data-lucide="camera" class="w-4 h-4"></i>
-                <span>📸 Chụp hình Số buổi học (Chỉ việc dán)</span>
-              </button>
-              <button
-                onclick="openRolloverBatchModal()"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer"
-                title="Lưu toàn bộ đợt hiện tại vào mục Lịch sử và giữ nguyên danh sách học sinh, số tiền để sang tháng / đợt tiếp theo"
-              >
-                <i data-lucide="calendar-plus" class="w-4 h-4"></i>
-                <span>⏭️ Sang Đợt / Tháng Tiếp Theo (Lưu Lịch Sử)</span>
-              </button>
-              <button
                 onclick="openHistoryForCurrentClass()"
-                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 transition cursor-pointer"
+                class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
               >
                 <i data-lucide="history" class="w-4 h-4"></i>
                 <span>Xem Lịch Sử Đợt Cũ</span>
               </button>
               <button
+                type="button"
                 onclick="switchAdminTab('students')"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-blue-50 text-blue-800 border border-blue-300 hover:bg-blue-100 transition cursor-pointer"
+                class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-blue-50 text-blue-800 border border-blue-300 hover:bg-blue-100 transition cursor-pointer whitespace-nowrap"
                 title="Mở bảng Thống kê Tất cả Học sinh (Bắt đầu học từ khi nào, Đã đóng bao nhiêu đợt)"
               >
                 <i data-lucide="user-check" class="w-4 h-4"></i>
-                <span>📊 Thống Kê &amp; Xem Chi Tiết HS</span>
+                <span>Thống Kê &amp; Xem Chi Tiết HS</span>
               </button>
             </div>
           </div>
@@ -1040,64 +1062,45 @@
         <div id="admin-tab-students" class="hidden space-y-4">
 
           <!-- KHUNG 1 (GIỐNG SỔ THEO DÕI): ĐẾM & CHỌN LỚP XEM THỐNG KÊ (LƯỚI 4 CỘT CÂN ĐỐI) -->
-          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3.5">
-            <!-- Hàng 1: Tiêu đề + Lọc nhanh theo Khối lớp + Chuyển nhanh & Công cụ -->
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
-              <div class="flex flex-wrap items-center gap-2">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
+          <div class="classbook-selector-card p-4 sm:p-5 rounded-2xl shadow-2xs space-y-3">
+            <!-- Tầng 1: Tiêu đề + Chuyển nhanh Lớp (Trái) & Cụm nút Quản lý Học sinh / Lớp (Phải) -->
+            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl theme-navy-badge text-xs font-extrabold uppercase tracking-wider shrink-0 shadow-2xs">
                   <i data-lucide="graduation-cap" class="w-4 h-4 text-amber-300"></i>
                   <span>Đếm &amp; Chọn Lớp Xem Thống Kê</span>
                 </div>
-                <!-- Các nút lọc nhanh theo Khối lớp (Tất cả / Khối 12 / 11 / 10 / 9 / 6-8) -->
-                <div id="all-stu-grade-filters" class="flex flex-wrap items-center gap-1.5">
-                  <!-- Rendered by JS -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
+                  <select
+                    id="filter-student-class"
+                    onchange="renderAdminStudents()"
+                    class="h-9 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[220px] sm:min-w-[250px]"
+                  >
+                    <option value="ALL">Tất cả lớp / khóa học</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
-                <select
-                  id="filter-student-class"
-                  onchange="renderAdminStudents()"
-                  class="px-3.5 py-2 rounded-xl border-2 border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[230px]"
-                >
-                  <option value="ALL">Tất cả lớp / khóa học</option>
-                </select>
+              <!-- Cụm nút thao tác Học sinh & Lớp căn phải đồng bộ chiều cao -->
+              <div class="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   id="btn-students-undo"
                   onclick="undoLastAction()"
                   disabled
                   title="Quay lại thao tác vừa làm trước đó (Ctrl + Z)"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="undo-2" class="w-4 h-4"></i>
-                  <span>↩️ Quay lại thao tác trước</span>
+                  <i data-lucide="undo-2" class="w-3.5 h-3.5"></i>
+                  <span>Quay lại</span>
                 </button>
                 <button
                   type="button"
-                  onclick="openGradeManagerModal()"
-                  title="Tạo thêm Khối mới hoặc quản lý danh sách Khối lớp"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition cursor-pointer whitespace-nowrap"
-                >
-                  <i data-lucide="layers" class="w-4 h-4"></i>
-                  <span>+ Tạo Khối</span>
-                </button>
-                <button
-                  type="button"
-                  id="btn-students-delete-grade"
-                  onclick="handleToolbarDeleteGrade('students')"
-                  title="Xóa Khối đang chọn hoặc chọn Khối cần xóa khỏi hệ thống"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
-                >
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  <span id="btn-students-delete-grade-label">🗑️ Xóa Khối</span>
-                </button>
-                <button
                   onclick="openStudentModal()"
-                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
+                  class="h-9 inline-flex items-center gap-1.5 px-3.5 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="user-plus" class="w-4 h-4"></i>
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
                   <span>+ Thêm Học Sinh</span>
                 </button>
                 <button
@@ -1105,22 +1108,59 @@
                   id="btn-students-delete-class"
                   onclick="handleDeleteClassInAllStudents()"
                   title="Xóa lớp học đang chọn hoặc chọn lớp cần xóa khỏi hệ thống"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  <span id="btn-students-delete-class-label">🗑️ Xóa Lớp</span>
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span id="btn-students-delete-class-label">Xóa Lớp</span>
                 </button>
                 <button
+                  type="button"
                   onclick="exportStudentsCSV()"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition cursor-pointer whitespace-nowrap"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200 transition cursor-pointer whitespace-nowrap"
                 >
-                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
                   <span>Xuất Excel</span>
                 </button>
               </div>
             </div>
 
-            <!-- Hàng 2: Lưới thẻ Đếm & Chọn Lớp cân đối đều 4 cột giống hệt Sổ Theo Dõi -->
+            <!-- Tầng 2: Thanh Lọc Theo Khối Lớp (Trái) & Nút Tạo / Xóa Khối (Phải) trên 1 hàng ngang cân đối -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 border-y border-slate-200/80">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+                  <span>Khối lớp:</span>
+                </span>
+                <!-- Các nút lọc nhanh theo Khối lớp (Tất cả / Khối 12 / 11 / 10 / 9 / 8 / 7 / 6-8) -->
+                <div id="all-stu-grade-filters" class="flex flex-wrap items-center gap-1.5">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onclick="openGradeManagerModal()"
+                  title="Tạo thêm Khối mới (VD: Khối 8, Khối 7, Khối 6, Khối Luyện Thi...) hoặc quản lý danh sách Khối lớp"
+                  class="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-extrabold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-600 hover:text-white transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                  <span>+ Tạo Khối</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-students-delete-grade"
+                  onclick="handleToolbarDeleteGrade('students')"
+                  title="Xóa Khối đang chọn hoặc chọn Khối cần xóa khỏi hệ thống"
+                  class="h-8 inline-flex items-center gap-1.5 px-3 rounded-lg text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  <span id="btn-students-delete-grade-label">Xóa Khối</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tầng 3: Lưới thẻ Đếm & Chọn Lớp cân đối đều 4 cột giống hệt Sổ Theo Dõi -->
             <div id="all-stu-class-counts-bar" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 w-full">
               <!-- Rendered by JS -->
             </div>
