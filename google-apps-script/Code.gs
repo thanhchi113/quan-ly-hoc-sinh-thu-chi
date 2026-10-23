@@ -402,7 +402,7 @@ function normalizeMoneyVnd(val) {
   if (typeof val === 'number') {
     if (!isFinite(val) || val === 0) return 0;
     const abs = Math.abs(Math.round(val));
-    return (abs >= 20000 && abs % 1000 === 0) ? Math.round(val) : Math.round(val * 1000);
+    return (abs >= 3000 && abs % 1000 === 0) ? Math.round(val) : Math.round(val * 1000);
   }
   const s = String(val).trim();
   if (!s) return 0;
@@ -411,7 +411,7 @@ function normalizeMoneyVnd(val) {
   if (!digits) return 0;
   const num = Number(digits);
   if (!isFinite(num) || num === 0) return 0;
-  const full = (num >= 20000 && num % 1000 === 0) ? Math.round(num) : Math.round(num * 1000);
+  const full = (num >= 3000 && num % 1000 === 0) ? Math.round(num) : Math.round(num * 1000);
   return isNeg ? -full : full;
 }
 
@@ -748,7 +748,7 @@ function processIncomingBankWebhook(ss, payload) {
         const stPhone = String(stValues[i][5] || '').replace(/[^0-9]/g, '');
 
         const matchByCode = stCode && stCode.length >= 3 && cleanContent.indexOf(stCode) !== -1;
-        const matchByName = stName && stName.length >= 5 && cleanContent.indexOf(stName) !== -1;
+        const matchByName = stName && stName.length >= 2 && (` ${cleanContent} `).indexOf(` ${stName} `) !== -1;
         const matchByPhone = stPhone && stPhone.length >= 8 && cleanContent.indexOf(stPhone) !== -1;
 
         if (matchByCode || matchByName || matchByPhone) {
