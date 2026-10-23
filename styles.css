@@ -406,8 +406,10 @@ h1, h2, h3, h4,
 .bento-inner-tile {
   background: #FAFAFC;
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  padding: 0.7rem 0.75rem;
+  min-width: 0;
+  overflow: hidden;
   box-shadow: 0 2px 8px rgba(37, 33, 76, 0.025), inset 0 1px 0 #FFFFFF;
   transition: all 0.18s ease;
 }
@@ -416,6 +418,17 @@ h1, h2, h3, h4,
   background: #FFFFFF;
   border-color: #DCD8F8;
   box-shadow: 0 8px 20px -6px rgba(91, 85, 255, 0.10);
+}
+
+.modern-kpi-value,
+.bento-metric-value,
+#bento-forecast-amount,
+#bento-tuition-collected,
+#bento-tuition-unpaid,
+#bento-forecast-current-expected,
+#bento-forecast-reserve {
+  white-space: nowrap !important;
+  letter-spacing: -0.02em;
 }
 
 /* Segmented Progress Bars & Attendance Bars */
@@ -439,8 +452,8 @@ h1, h2, h3, h4,
 /* Concentric Circle Financial Forecast Visualization (Card F) */
 .forecast-concentric-stage {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 204px;
+  height: 204px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -454,15 +467,15 @@ h1, h2, h3, h4,
 }
 
 .forecast-ring-outer {
-  width: 220px;
-  height: 220px;
+  width: 204px;
+  height: 204px;
   border: 1.5px dashed rgba(124, 107, 255, 0.28);
   background: radial-gradient(circle, rgba(124, 107, 255, 0.08) 0%, rgba(255, 75, 22, 0.06) 60%, transparent 75%);
 }
 
 .forecast-ring-mid {
-  width: 178px;
-  height: 178px;
+  width: 176px;
+  height: 176px;
   border: 1.5px solid rgba(91, 85, 255, 0.22);
   background: linear-gradient(135deg, rgba(230, 225, 255, 0.42) 0%, rgba(255, 237, 230, 0.38) 100%);
   box-shadow: 0 0 36px rgba(124, 107, 255, 0.16);
@@ -471,20 +484,20 @@ h1, h2, h3, h4,
 .forecast-ring-inner {
   position: relative;
   z-index: 2;
-  width: 138px;
-  height: 138px;
+  width: 148px;
+  height: 148px;
   border-radius: 9999px;
   background: #FFFFFF;
   border: 2px solid #E6E1FF;
   box-shadow:
     0 14px 32px -6px rgba(37, 33, 76, 0.14),
-    0 0 0 6px rgba(255, 255, 255, 0.65);
+    0 0 0 5px rgba(255, 255, 255, 0.65);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0.75rem;
+  padding: 0.45rem;
 }
 
 /* Soft Pill Buttons Refinement */
@@ -1266,4 +1279,85 @@ html.dark-mode .text-\[\#25214C\] {
 html.dark-mode .text-\[\#8986A6\] {
   color: #94a3b8 !important;
 }
+
+/* ========================================================================== */
+/* PHÂN HỆ ĐIỂM DANH HỌC SINH CHUYÊN BIỆT (MATRIX & AUTO NEXT-DAY TOGGLE)      */
+/* ========================================================================== */
+.att-cell-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 72px;
+  height: 32px;
+  padding: 0 0.5rem;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.att-cell-btn:hover {
+  transform: translateY(-1px);
+}
+
+.att-cell-state-0 {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
+}
+
+.att-cell-state-0:hover {
+  background-color: #eef2ff;
+  color: #4f46e5;
+  border-color: #a5b4fc;
+}
+
+.att-cell-state-1 {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 1px solid #059669;
+  box-shadow: 0 3px 8px -2px rgba(16, 185, 129, 0.35);
+}
+
+.att-cell-state-1.is-auto-att {
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+  border: 1px dashed #a7f3d0;
+}
+
+.att-cell-state-2 {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color: #ffffff;
+  border: 1px solid #e11d48;
+  box-shadow: 0 3px 8px -2px rgba(244, 63, 94, 0.35);
+}
+
+.att-cell-state-3 {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  border: 1px solid #d97706;
+  box-shadow: 0 3px 8px -2px rgba(245, 158, 11, 0.35);
+}
+
+.att-sticky-col-left {
+  position: sticky;
+  left: 0;
+  z-index: 15;
+  background-color: #ffffff;
+  box-shadow: 2px 0 6px -2px rgba(15, 23, 42, 0.08);
+}
+
+html.dark-mode .att-sticky-col-left {
+  background-color: #1e293b !important;
+}
+
+html.dark-mode .att-cell-state-0 {
+  background-color: #0f172a;
+  color: #64748b;
+  border-color: #334155;
+}
+
 
