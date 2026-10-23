@@ -524,6 +524,15 @@
 
             <div class="flex flex-wrap items-center gap-2">
               <button
+                type="button"
+                onclick="captureCurrentScheduleToClipboard(this)"
+                title="Chụp hình bảng Số buổi học tự động lưu vào bộ nhớ tạm — Bạn chỉ việc nhấn Ctrl+V để dán vào Zalo / Messenger"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
+              >
+                <i data-lucide="camera" class="w-4 h-4"></i>
+                <span>📸 Chụp hình Số buổi học (Chỉ việc dán)</span>
+              </button>
+              <button
                 onclick="openRolloverBatchModal()"
                 class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition cursor-pointer"
                 title="Lưu toàn bộ đợt hiện tại vào mục Lịch sử và giữ nguyên danh sách học sinh, số tiền để sang tháng / đợt tiếp theo"
@@ -816,8 +825,31 @@
                 </div>
 
                 <!-- RIGHT TABLE (4 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU -->
-                <div class="xl:col-span-4">
-                  <div class="modern-sheet-card bg-white">
+                <div class="xl:col-span-4 space-y-2.5">
+                  <!-- Thanh Nút Chụp Hình Số Buổi Học Tự Động Lưu Vào Bộ Nhớ Tạm (Clipboard) -->
+                  <div class="bg-blue-50/80 p-2.5 rounded-2xl border border-blue-200 flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      id="btn-capture-schedule-main"
+                      onclick="captureCurrentScheduleToClipboard(this)"
+                      title="Bấm 1 lần để chụp bảng Số buổi học và tự động lưu vào Clipboard — Bạn chỉ việc nhấn Ctrl + V để dán ngay vào Zalo / Messenger"
+                      class="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-extrabold shadow-sm transition cursor-pointer whitespace-nowrap"
+                    >
+                      <i data-lucide="camera" class="w-4 h-4 text-amber-300 shrink-0"></i>
+                      <span>📸 Chụp hình Số buổi học (Chỉ việc dán)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onclick="downloadCurrentScheduleImage()"
+                      title="Tải file ảnh PNG bảng Số buổi học về máy"
+                      class="px-2.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                      <span>Tải ảnh</span>
+                    </button>
+                  </div>
+
+                  <div id="cb-schedule-capture-card" class="modern-sheet-card bg-white">
                     <table class="sheet-table table-fixed w-full text-xs sm:text-sm text-center">
                       <thead id="cb-schedule-thead">
                         <!-- Rendered by JS -->
