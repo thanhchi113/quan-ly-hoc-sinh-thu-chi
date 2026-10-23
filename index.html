@@ -2357,7 +2357,7 @@
               <!-- Quick Setup Guide for Google Sheets -->
               <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2.5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  <span id="setting-sheet-guide-title" class="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     File Google Sheet của bạn đã được gắn sẵn ID
                   </span>
                   <div class="flex items-center gap-1.5">
@@ -2381,7 +2381,7 @@
                 </div>
                 <ol class="text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
                   <li>Bấm nút <strong>"1. Mở Sheet của bạn"</strong> ở trên, vào menu <strong>Tiện ích mở rộng (Extensions) &rarr; Apps Script</strong>.</li>
-                  <li>Bấm nút <strong>"2. Copy mã Code.gs"</strong> (đã cấu hình sẵn ID Sheet <code class="text-emerald-700">1dObYu...lsvq0</code> của bạn) và dán vào cửa sổ Apps Script &rarr; Bấm <strong>Lưu</strong>.</li>
+                  <li>Bấm nút <strong>"2. Copy mã Code.gs"</strong> (đã cấu hình sẵn ID Sheet <code id="setting-sheet-id-code" class="text-emerald-700">1dObYu...lsvq0</code> của bạn) và dán vào cửa sổ Apps Script &rarr; Bấm <strong>Lưu</strong>.</li>
                   <li>Bấm nút <strong>Triển khai (Deploy) &rarr; Tùy chọn triển khai mới (New deployment)</strong> &rarr; Chọn loại <strong>Ứng dụng web (Web app)</strong>.</li>
                   <li>Mục <em>Ai có quyền truy cập (Who has access)</em> chọn <strong>Bất kỳ ai (Anyone)</strong> &rarr; Bấm <strong>Triển khai</strong> và copy đường link <code class="text-emerald-700">.../exec</code> dán vào ô bên trên.</li>
                 </ol>
@@ -2398,7 +2398,7 @@
                       <h4 class="text-xs sm:text-sm font-extrabold text-emerald-950">
                         Tự Động Cập Nhật Khi Có Tiền Vào STK Ngân Hàng (Auto-Bank)
                       </h4>
-                      <p class="text-[11px] text-emerald-700">
+                      <p id="setting-autobank-desc" class="text-[11px] text-emerald-700">
                         Tự động tích <code class="font-bold">☑ Đã hoàn thành</code> &amp; ghi Sổ Thu Chi ngay khi học sinh/phụ huynh chuyển khoản vào STK BIDV của bạn.
                       </p>
                     </div>
@@ -2434,10 +2434,10 @@
 
                 <!-- 3-step guide for BIDV + SePay -->
                 <div class="text-xs text-slate-700 space-y-1 bg-white/80 p-3 rounded-lg border border-emerald-200/80">
-                  <p class="font-bold text-emerald-900">Cách kích hoạt tự động 100% cho STK BIDV (8601774789) miễn phí:</p>
+                  <p id="setting-autobank-guide-title" class="font-bold text-emerald-900">Cách kích hoạt tự động 100% cho STK BIDV (8601774789) miễn phí:</p>
                   <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-600">
                     <li>Cập nhật lại mã <strong>Code.gs</strong> mới nhất vào Google Sheet của bạn (Bấm nút <strong>"2. Copy mã Code.gs"</strong> ở trên &rarr; Dán vào Apps Script &rarr; Bấm <strong>Triển khai &rarr; Quản lý nội dung triển khai &rarr; Chỉnh sửa &rarr; Phiên bản mới</strong>).</li>
-                    <li>Đăng ký tài khoản miễn phí tại <a href="https://my.sepay.vn" target="_blank" class="text-blue-600 font-bold underline">my.sepay.vn</a> (SePay hỗ trợ liên kết trực tiếp API ngân hàng <strong>BIDV</strong>).</li>
+                    <li>Đăng ký tài khoản miễn phí tại <a href="https://my.sepay.vn" target="_blank" class="text-blue-600 font-bold underline">my.sepay.vn</a> (SePay hỗ trợ liên kết trực tiếp API ngân hàng).</li>
                     <li>Trong SePay, vào mục <strong>Cấu hình Webhook</strong> &rarr; Dán đường dẫn <strong>Webhook URL</strong> ở trên vào. Từ đó, hễ có người chuyển khoản chứa <strong>Mã HS</strong> (VD: <code class="text-emerald-700">HP HS001</code>) hoặc <strong>Họ tên HS</strong>, sau 3 giây hệ thống tự động tích <code class="text-emerald-700 font-bold">Đã hoàn thành</code>!</li>
                   </ol>
                 </div>
@@ -2475,7 +2475,7 @@
               </div>
 
               <!-- Auto Push to GitHub Pages Box -->
-              <div class="bg-slate-900 text-white rounded-xl p-4 space-y-3">
+              <div id="setting-github-deploy-box" class="bg-slate-900 text-white rounded-xl p-4 space-y-3">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <i data-lucide="github" class="w-5 h-5 text-blue-400"></i>
@@ -2626,14 +2626,36 @@
                   </div>
                 </div>
 
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu Quản lý trên Web App</label>
-                  <input
-                    id="setting-admin-pass"
-                    type="text"
-                    required
-                    class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-                  />
+                <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5" id="setting-admin-pass-box">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label id="setting-admin-pass-label" for="setting-admin-pass" class="block text-xs font-bold text-slate-800">
+                      Mật khẩu Quản lý Chính trên Web App
+                    </label>
+                    <span id="setting-admin-pass-badge" class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-extrabold">
+                      Bảo mật riêng Quản lý chính
+                    </span>
+                  </div>
+                  <div class="relative flex items-center">
+                    <input
+                      id="setting-admin-pass"
+                      type="password"
+                      required
+                      autocomplete="new-password"
+                      class="w-full pl-3 pr-24 py-2 rounded-xl border border-slate-300 bg-white text-sm font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      id="btn-toggle-setting-pass"
+                      onclick="toggleSettingPasswordVisibility()"
+                      class="absolute right-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition cursor-pointer"
+                    >
+                      <i data-lucide="eye" class="w-3.5 h-3.5" id="icon-toggle-setting-pass"></i>
+                      <span id="label-toggle-setting-pass">Hiện</span>
+                    </button>
+                  </div>
+                  <p id="setting-admin-pass-hint" class="text-[11px] text-slate-500 leading-snug">
+                    🔒 Mật khẩu Quản lý chính được tách biệt hoàn toàn và không bao giờ hiển thị bên Tab Nháp dùng thử.
+                  </p>
                 </div>
 
                 <!-- Custom QR Upload (Drag & Drop or File Select) + Live Preview -->
@@ -2797,7 +2819,7 @@
           <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-[11px] text-emerald-900 flex items-start gap-2">
             <i data-lucide="zap" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
             <div>
-              <strong>Tự động lưu 100%:</strong> Khi bạn quét mã QR chuyển khoản vào STK <strong>8601774789 (BIDV)</strong> (hoặc bấm Xác nhận bên dưới), hệ thống sẽ <strong>tự động lưu thông tin học sinh, tự động ghi phiếu thu và tự động cộng +1 đợt đã đóng</strong> ngay lập tức!
+              <strong>Tự động lưu 100%:</strong> Khi bạn quét mã QR chuyển khoản vào STK <strong id="pay-modal-auto-bank-label">8601774789 (BIDV)</strong> (hoặc bấm Xác nhận bên dưới), hệ thống sẽ <strong>tự động lưu thông tin học sinh, tự động ghi phiếu thu và tự động cộng +1 đợt đã đóng</strong> ngay lập tức!
             </div>
           </div>
 
@@ -3550,7 +3572,7 @@
           <i data-lucide="plug-zap" class="w-6 h-6 text-amber-300"></i>
           <div>
             <h3 class="font-extrabold text-base sm:text-lg">Kết Nối SePay.vn Để Báo Số Dư Thực Tế &amp; Tự Động Duyệt Học Phí</h3>
-            <p class="text-xs text-blue-200">Tài khoản thụ hưởng của bạn: <strong>BIDV • 8601774789 • HKD TRUNG TAM HUYNH THANH CHI</strong></p>
+            <p class="text-xs text-blue-200">Tài khoản thụ hưởng của bạn: <strong id="sepay-modal-bank-summary">BIDV • 8601774789 • HKD TRUNG TAM HUYNH THANH CHI</strong></p>
           </div>
         </div>
         <button onclick="closeSepayGuideModal()" class="p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
@@ -3595,7 +3617,7 @@
         <!-- Bước 2 -->
         <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="font-extrabold text-emerald-950 text-sm">
+            <span id="sepay-modal-step2-title" class="font-extrabold text-emerald-950 text-sm">
               Bước 2: Liên kết tài khoản BIDV (8601774789) trên SePay.vn
             </span>
             <a
@@ -3609,8 +3631,8 @@
           </div>
           <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600">
             <li>Đăng nhập tại <a href="https://my.sepay.vn" target="_blank" class="text-blue-600 font-bold underline">my.sepay.vn</a> (Gói miễn phí hỗ trợ đầy đủ).</li>
-            <li>Vào menu <strong>Ngân hàng &rarr; Thêm ngân hàng &rarr; Chọn BIDV</strong>.</li>
-            <li>Nhập số tài khoản <strong>8601774789</strong> (HKD TRUNG TAM HUYNH THANH CHI) và xác thực OTP theo hướng dẫn chính thức của BIDV &amp; SePay.</li>
+            <li>Vào menu <strong>Ngân hàng &rarr; Thêm ngân hàng</strong>.</li>
+            <li id="sepay-modal-step2-desc">Nhập số tài khoản <strong>8601774789</strong> (HKD TRUNG TAM HUYNH THANH CHI) và xác thực OTP theo hướng dẫn chính thức của ngân hàng &amp; SePay.</li>
           </ol>
         </div>
 
