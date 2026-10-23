@@ -18,13 +18,17 @@
   <!-- TOP NAVIGATION BAR -->
   <header class="sticky top-0 z-40 glass-nav border-b border-slate-200 shadow-xs">
     <div class="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
-      <!-- Brand -->
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-blue-600 theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0">
+      <!-- Brand (Bấm để quay lại trang đầu) -->
+      <div
+        onclick="handleGoToHomePage()"
+        title="Bấm để quay lại trang đầu"
+        class="flex items-center gap-3 min-w-0 cursor-pointer group"
+      >
+        <div class="w-10 h-10 rounded-xl bg-blue-600 theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
           <i data-lucide="graduation-cap" class="w-6 h-6"></i>
         </div>
         <div class="truncate">
-          <h1 id="header-center-name" class="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">
+          <h1 id="header-center-name" class="font-bold text-slate-900 group-hover:text-blue-600 transition text-base sm:text-lg leading-tight truncate">
             Quản Lý Lớp Học & Học Phí
           </h1>
           <div class="flex items-center gap-1.5 text-xs text-slate-500">
@@ -36,6 +40,17 @@
 
       <!-- Mode Switcher, Theme Customizer & Quick Sync -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Nút Quay lại Trang đầu -->
+        <button
+          id="btn-header-home"
+          type="button"
+          onclick="handleGoToHomePage()"
+          title="Quay lại trang đầu & cuộn lên đỉnh trang"
+          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition cursor-pointer whitespace-nowrap"
+        >
+          <i data-lucide="home" class="w-3.5 h-3.5"></i>
+          <span>Trang đầu</span>
+        </button>
         <!-- Nút chuyển nhanh Sáng / Tối -->
         <button
           id="btn-darkmode-toggle"
@@ -1067,6 +1082,15 @@
 
               <!-- Cụm nút thao tác Học sinh & Lớp căn phải đồng bộ chiều cao -->
               <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onclick="switchAdminTab('classbook'); scrollToPageTop();"
+                  title="Quay lại trang đầu (Sổ Theo Dõi Lớp Học)"
+                  class="h-9 inline-flex items-center gap-1.5 px-3 rounded-xl text-xs font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white transition cursor-pointer whitespace-nowrap"
+                >
+                  <i data-lucide="home" class="w-3.5 h-3.5"></i>
+                  <span>Quay lại Trang đầu</span>
+                </button>
                 <button
                   type="button"
                   id="btn-students-undo"
@@ -3375,8 +3399,20 @@
     </div>
   </div>
 
+  <!-- NÚT NỔI QUAY LẠI ĐẦU TRANG (HIỆN KHI CUỘN XUỐNG XEM DANH SÁCH HỌC SINH) -->
+  <button
+    id="btn-scroll-to-top"
+    type="button"
+    onclick="scrollToPageTop()"
+    title="Cuộn nhanh lên đầu trang"
+    class="fixed bottom-6 right-6 z-40 hidden items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-extrabold shadow-lg hover:shadow-xl border border-white/25 transition-all duration-200 cursor-pointer"
+  >
+    <i data-lucide="arrow-up-circle" class="w-4 h-4 text-amber-300 shrink-0"></i>
+    <span>Lên đầu trang</span>
+  </button>
+
   <!-- TOAST NOTIFICATION CONTAINER -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+  <div id="toast-container" class="fixed bottom-20 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
   <script src="app.js"></script>
