@@ -178,9 +178,14 @@ function doPost(e) {
       });
     }
 
-    // 2. Phụ huynh / Học sinh chuyển khoản vào STK & gửi xác nhận -> TỰ ĐỘNG LƯU THÔNG TIN & HOÀN THÀNH HỌC PHÍ
+    // 2. Phụ huynh / Học sinh gửi thông tin xác nhận chuyển khoản
+    // Chỉ duyệt tự động khi ĐÃ CÓ kết quả chuyển tiền thành công vào STK và đang bật Duyệt tự động
     if (action === 'submitParentPayment') {
       const req = payload.request;
+      const shouldAutoApprove = Boolean(payload.autoApprove && req.status === 'Đã duyệt');
+      const finalReqStatus = shouldAutoApprove ? 'Đã duyệt' : 'Chờ duyệt';
+      const finalStudentStatus = shouldAutoApprove ? 'Đã hoàn thành' : 'Chờ duyệt';
+
       let receiptUrl = req.receiptUrl || '';
 
       // Nếu có ảnh Base64 đính kèm thì lưu vào Google Drive và lấy link xem ảnh
@@ -195,7 +200,7 @@ function doPost(e) {
       const nowStr = req.submittedAt || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
       const todayDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 
-      // Ghi vào sheet XacNhanChuyenKhoan (Trạng thái: Đã duyệt - Tự động lưu)
+      // Ghi vào sheet XacNhanChuyenKhoan
       const shReq = ss.getSheetByName(SHEET_NAMES.PAYMENT_REQUESTS);
       shReq.appendRow([
         req.id,
@@ -208,13 +213,13 @@ function doPost(e) {
         paidAmount,
         "'" + (req.parentPhone || ''),
         req.payerName || '',
-        req.note || 'Tự động lưu khi chuyển khoản vào STK',
+        req.note || 'Phụ huynh gửi xác nhận chuyển khoản',
         receiptUrl,
-        'Đã duyệt',
-        nowStr
+        finalReqStatus,
+        shouldAutoApprove ? nowStr : ''
       ]);
 
-      // Tự động cập nhật trạng thái của Học sinh trong sheet HocSinh_HocPhi sang 'Đã hoàn thành' (hoặc thêm mới nếu chưa có)
+      // Cập nhật trạng thái của Học sinh trong sheet HocSinh_HocPhi
       const shStudents = ss.getSheetByName(SHEET_NAMES.STUDENTS);
       const stValues = shStudents.getDataRange().getValues();
       let foundStudent = false;
@@ -224,12 +229,15 @@ function doPost(e) {
         const rowPeriod = String(stValues[i][6]);
         if (rowId === String(req.studentRecordId) || (rowCode === String(req.studentCode) && rowPeriod === String(req.period))) {
           foundStudent = true;
-          shStudents.getRange(i + 1, 9).setValue('Đã hoàn thành');
+          const currentRowStatus = String(stValues[i][8] || '');
+          if (currentRowStatus !== 'Đã hoàn thành') {
+            shStudents.getRange(i + 1, 9).setValue(finalStudentStatus);
+          }
           if (receiptUrl) {
             shStudents.getRange(i + 1, 10).setValue(receiptUrl);
           }
           shStudents.getRange(i + 1, 11).setValue(nowStr);
-          shStudents.getRange(i + 1, 12).setValue(req.note || ('Đã CK vào STK: ' + paidAmount.toLocaleString('vi-VN') + 'đ'));
+          shStudents.getRange(i + 1, 12).setValue(req.note || ('Phụ huynh báo CK: ' + paidAmount.toLocaleString('vi-VN') + 'đ'));
           break;
         }
       }
@@ -239,37 +247,41 @@ function doPost(e) {
           req.studentRecordId || ('ST_' + Date.now()),
           req.studentCode || ('HS' + String(stValues.length).padStart(3, '0')),
           req.studentName,
-          req.className || '12 2K8',
+          req.className || '12 2K9 (Ca 1 - T3,5,7)',
           req.payerName || '',
           "'" + (req.parentPhone || ''),
-          req.period || 'Tháng 10/2026',
+          req.period || 'Tháng 9-10/2026',
           paidAmount || 600000,
-          'Đã hoàn thành',
+          finalStudentStatus,
           receiptUrl,
           nowStr,
-          req.note || 'Tự động lưu học sinh mới khi CK vào STK'
+          req.note || 'Phụ huynh gửi xác nhận chuyển khoản'
         ]);
       }
 
-      // Tự động ghi phiếu Thu vào sheet SoThuChi
-      const shTrans = ss.getSheetByName(SHEET_NAMES.TRANSACTIONS);
-      shTrans.appendRow([
-        'GD_STK_' + Date.now(),
-        todayDate,
-        'Thu',
-        'Thu học phí',
-        paidAmount,
-        'Tự động lưu CK vào STK - ' + (req.studentCode || '') + ' ' + (req.studentName || '') + ' (' + (req.period || '') + ')',
-        req.studentCode || '',
-        'Chuyển khoản STK (Tự động)',
-        receiptUrl,
-        req.payerName || 'Tự động lưu STK'
-      ]);
+      // CHỈ tự động ghi phiếu Thu vào sheet SoThuChi khi ĐÃ ĐƯỢC DUYỆT
+      if (shouldAutoApprove) {
+        const shTrans = ss.getSheetByName(SHEET_NAMES.TRANSACTIONS);
+        shTrans.appendRow([
+          'GD_STK_' + Date.now(),
+          todayDate,
+          'Thu',
+          'Thu học phí',
+          paidAmount,
+          'Tự động duyệt CK vào STK - ' + (req.studentCode || '') + ' ' + (req.studentName || '') + ' (' + (req.period || '') + ')',
+          req.studentCode || '',
+          'Chuyển khoản STK (Tự động)',
+          receiptUrl,
+          req.payerName || 'Tự động duyệt STK'
+        ]);
+      }
 
       return jsonResponse({
         success: true,
         receiptUrl: receiptUrl,
-        message: 'Đã tự động lưu thông tin chuyển khoản & cập nhật số đợt đã đóng!',
+        message: shouldAutoApprove
+          ? 'Đã xác thực chuyển tiền thành công vào STK & tự động duyệt học phí!'
+          : 'Đã lưu yêu cầu xác nhận chuyển khoản vào trạng thái Chờ duyệt!',
         data: getAllSheetData()
       });
     }
@@ -753,52 +765,92 @@ function processIncomingBankWebhook(ss, payload) {
       const stFee = Number(stValues[i][7]) || 0;
       const paidAmount = tx.amount > 0 ? tx.amount : stFee;
 
-      // 1. Tự động cập nhật trạng thái học sinh sang Đã hoàn thành
-      shStudents.getRange(i + 1, 9).setValue('Đã hoàn thành');
-      shStudents.getRange(i + 1, 11).setValue(nowStr);
-      shStudents.getRange(i + 1, 12).setValue('Đã CK vào STK: +' + paidAmount.toLocaleString('vi-VN') + 'đ (' + nowStr + ')');
+      const rawAutoApprove = shSettings ? getSettingValueByKey(shSettings, 'autoApproveBankTransfer') : 'true';
+      const isAutoApproveOn = rawAutoApprove === '' || rawAutoApprove === null || String(rawAutoApprove) !== 'false';
 
-      // 2. Tự động lưu / cập nhật vào bảng XacNhanChuyenKhoan
-      let updatedExistingReq = false;
-      for (let j = 1; j < reqValues.length; j++) {
-        if (String(reqValues[j][3]).toUpperCase() === stCode.toUpperCase() && String(reqValues[j][12]) === 'Chờ duyệt') {
-          shReq.getRange(j + 1, 13).setValue('Đã duyệt');
-          shReq.getRange(j + 1, 14).setValue(nowStr);
-          updatedExistingReq = true;
+      if (isAutoApproveOn) {
+        // 1. Chế độ Duyệt tự động BẬT + Đã có kết quả chuyển tiền thành công -> Cập nhật sang Đã hoàn thành
+        shStudents.getRange(i + 1, 9).setValue('Đã hoàn thành');
+        shStudents.getRange(i + 1, 11).setValue(nowStr);
+        shStudents.getRange(i + 1, 12).setValue('Đã CK thành công vào STK: +' + paidAmount.toLocaleString('vi-VN') + 'đ (' + nowStr + ')');
+
+        // 2. Tự động lưu / cập nhật vào bảng XacNhanChuyenKhoan
+        let updatedExistingReq = false;
+        for (let j = 1; j < reqValues.length; j++) {
+          if (String(reqValues[j][3]).toUpperCase() === stCode.toUpperCase() && String(reqValues[j][12]) === 'Chờ duyệt') {
+            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ✅ Đã ghi nhận tiền vào STK & duyệt tự động');
+            shReq.getRange(j + 1, 13).setValue('Đã duyệt');
+            shReq.getRange(j + 1, 14).setValue(nowStr);
+            updatedExistingReq = true;
+          }
+        }
+        if (!updatedExistingReq) {
+          shReq.appendRow([
+            'YC_STK_' + tx.refCode,
+            nowStr,
+            stValues[i][0] || '',
+            stCode,
+            stName,
+            stClass,
+            stPeriod,
+            paidAmount,
+            "'" + stPhone,
+            'Chuyển khoản STK tự động',
+            '✅ Đã ghi nhận tiền vào STK | ND CK: ' + tx.content,
+            '',
+            'Đã duyệt',
+            nowStr
+          ]);
+        }
+
+        // 3. Tự động lưu vào Sổ Thu Chi
+        shTrans.appendRow([
+          'GD_' + tx.refCode,
+          todayDate,
+          'Thu',
+          'Thu học phí',
+          paidAmount,
+          'Tự động lưu CK vào STK: ' + stCode + ' - ' + stName + ' (' + stPeriod + ') | ND: ' + tx.content,
+          stCode,
+          'Chuyển khoản STK (Tự động)',
+          '',
+          'Tự động từ STK (SePay)'
+        ]);
+      } else {
+        // Chế độ Duyệt tự động TẮT -> Ghi nhận kết quả chuyển tiền thành công nhưng giữ ở trạng thái Chờ duyệt để Quản lý bấm Duyệt
+        const curStatus = String(stValues[i][8] || '');
+        if (curStatus !== 'Đã hoàn thành') {
+          shStudents.getRange(i + 1, 9).setValue('Chờ duyệt');
+        }
+        shStudents.getRange(i + 1, 11).setValue(nowStr);
+        shStudents.getRange(i + 1, 12).setValue('✅ Đã ghi nhận CK +' + paidAmount.toLocaleString('vi-VN') + 'đ vào STK — Chờ Quản lý duyệt');
+
+        let updatedPending = false;
+        for (let j = 1; j < reqValues.length; j++) {
+          if (String(reqValues[j][3]).toUpperCase() === stCode.toUpperCase() && String(reqValues[j][12]) === 'Chờ duyệt') {
+            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ✅ Đã ghi nhận chuyển tiền thành công vào STK');
+            updatedPending = true;
+          }
+        }
+        if (!updatedPending) {
+          shReq.appendRow([
+            'YC_STK_' + tx.refCode,
+            nowStr,
+            stValues[i][0] || '',
+            stCode,
+            stName,
+            stClass,
+            stPeriod,
+            paidAmount,
+            "'" + stPhone,
+            'Chuyển khoản STK (SePay)',
+            '✅ Đã ghi nhận chuyển tiền thành công vào STK | ND: ' + tx.content + ' — Chờ Quản lý duyệt',
+            '',
+            'Chờ duyệt',
+            ''
+          ]);
         }
       }
-      if (!updatedExistingReq) {
-        shReq.appendRow([
-          'YC_STK_' + tx.refCode,
-          nowStr,
-          stValues[i][0] || '',
-          stCode,
-          stName,
-          stClass,
-          stPeriod,
-          paidAmount,
-          "'" + stPhone,
-          'Chuyển khoản STK tự động',
-          'ND CK: ' + tx.content,
-          '',
-          'Đã duyệt',
-          nowStr
-        ]);
-      }
-
-      // 3. Tự động lưu vào Sổ Thu Chi
-      shTrans.appendRow([
-        'GD_' + tx.refCode,
-        todayDate,
-        'Thu',
-        'Thu học phí',
-        paidAmount,
-        'Tự động lưu CK vào STK: ' + stCode + ' - ' + stName + ' (' + stPeriod + ') | ND: ' + tx.content,
-        stCode,
-        'Chuyển khoản STK (Tự động)',
-        '',
-        'Tự động từ STK (SePay)'
-      ]);
 
       matchedCount++;
       matchedStudents.push(stCode + ' - ' + stName);
