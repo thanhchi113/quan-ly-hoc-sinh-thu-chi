@@ -4196,13 +4196,21 @@ function enterSandboxDraftMode(silent = false) {
   }
 }
 
-function exitSandboxDraftMode() {
+async function exitSandboxDraftMode() {
   // Nếu đường link được mở trực tiếp từ ?mode=nhap (dành cho bạn bè), yêu cầu mật khẩu chủ hệ thống trước khi cho xem dữ liệu thật
   if (isOpenedViaFriendSandboxUrl) {
     const realStateCandidate = loadStateFromLocal();
     const ownerPass = String(realStateCandidate?.settings?.adminPassword || '123456').trim();
-    const entered = prompt(
-      '🔒 Khu vực Dữ Liệu Thật dành riêng cho Chủ hệ thống (LỚP TOÁN ANH CHÍ).\nNhập mật khẩu quản lý chính để chuyển về dữ liệu thật (Nếu bạn đang dùng thử, hãy bấm Cancel để tiếp tục ở Tab Nháp):'
+    const entered = await appPrompt(
+      '🔒 Khu vực Dữ Liệu Thật dành riêng cho Chủ hệ thống (LỚP TOÁN ANH CHÍ).\nNhập mật khẩu quản lý chính để chuyển về dữ liệu thật (Nếu bạn đang dùng thử, hãy bấm Hủy để tiếp tục ở Tab Nháp):',
+      '',
+      {
+        title: 'Xác Thực Chủ Hệ Thống',
+        icon: 'lock',
+        inputType: 'password',
+        placeholder: 'Nhập mật khẩu quản lý chính...',
+        confirmText: 'Mở Dữ Liệu Thật'
+      }
     );
     if (entered === null) return;
     if (entered.trim() !== ownerPass) {
@@ -4307,7 +4315,12 @@ async function copySandboxShareLink() {
       'success'
     );
   } catch (e) {
-    prompt('Copy đường link Tab Nháp bên dưới để gửi cho bạn bè dùng thử:', shareUrl);
+    await appPrompt('Sao chép đường link Tab Nháp bên dưới để gửi cho bạn bè dùng thử:', shareUrl, {
+      title: 'Chia Sẻ Link Tab Nháp',
+      icon: 'share-2',
+      readOnly: true,
+      confirmText: 'Đã sao chép'
+    });
   }
 }
 
@@ -4366,7 +4379,12 @@ async function copyIosAppLink() {
     await navigator.clipboard.writeText(url);
     showToast('📲 Đã sao chép link cài App Quản Lý! Hãy dán vào trình duyệt Safari trên iPhone.', 'success');
   } catch (e) {
-    prompt('Sao chép link cài App Quản Lý dưới đây để mở bằng Safari trên iPhone:', url);
+    await appPrompt('Sao chép link cài App Quản Lý dưới đây để mở bằng Safari trên iPhone:', url, {
+      title: 'Link Cài App Quản Lý iOS',
+      icon: 'smartphone',
+      readOnly: true,
+      confirmText: 'Đóng'
+    });
   }
 }
 
@@ -7543,9 +7561,10 @@ function renderAdminStudents() {
   if (kpiUnpaidEl) kpiUnpaidEl.textContent = `${unpaidList.length} HS chưa đóng`;
   if (kpiUnpaidSumEl) kpiUnpaidSumEl.textContent = formatCurrency(unpaidSum);
 
-  // Cập nhật dòng TỔNG CỘNG ngay dưới tiêu đề bảng (giống Sổ Theo Dõi Lớp Học)
+  // Cập nhật dòng TỔNG CỘNG khớp chính xác 1:1 theo từng cột tiêu đề
   const sumCountEl = document.getElementById('stu-sum-count');
   const sumClassesEl = document.getElementById('stu-sum-classes-cnt');
+  const sumStartInfoEl = document.getElementById('stu-sum-start-info');
   const sumBatchesEl = document.getElementById('stu-sum-batches');
   const sumPaidRatioEl = document.getElementById('stu-sum-paid-ratio');
   const sumExpectedEl = document.getElementById('stu-sum-expected');
@@ -7554,6 +7573,9 @@ function renderAdminStudents() {
 
   if (sumCountEl) sumCountEl.textContent = `${list.length} HS`;
   if (sumClassesEl) sumClassesEl.textContent = `${activeClassesInList.size} lớp`;
+  if (sumStartInfoEl) {
+    sumStartInfoEl.innerHTML = `<div class="leading-tight"><div class="text-[10px] uppercase tracking-wide text-slate-400">Lũy kế</div><div class="text-[11px] text-slate-600">${list.length} hồ sơ</div></div>`;
+  }
   if (sumBatchesEl) {
     sumBatchesEl.innerHTML = `<div class="leading-tight"><div>${totalBatchesPaidCount} đợt</div><div class="text-[11px] font-bold">${formatCurrency(
       allTimePaidSum
@@ -7562,9 +7584,21 @@ function renderAdminStudents() {
   if (sumPaidRatioEl) {
     sumPaidRatioEl.innerHTML = `<div class="leading-tight"><div>${paidList.length}/${list.length} em</div><div class="text-[11px] text-slate-600">(${paidRateText})</div></div>`;
   }
-  if (sumExpectedEl) sumExpectedEl.textContent = formatCurrency(totalFeeSum);
-  if (sumCollectedEl) sumCollectedEl.textContent = formatCurrency(paidSum);
-  if (sumMissingEl) sumMissingEl.textContent = formatCurrency(unpaidSum);
+  if (sumExpectedEl) {
+    sumExpectedEl.innerHTML = `<div class="leading-tight"><div class="text-[10px] uppercase tracking-wide text-slate-500">Tổng học phí</div><div>${formatCurrency(
+      totalFeeSum
+    )}</div></div>`;
+  }
+  if (sumCollectedEl) {
+    sumCollectedEl.innerHTML = `<div class="leading-tight"><div class="text-[10px] uppercase tracking-wide text-emerald-600">Đã thu kỳ này</div><div>${formatCurrency(
+      paidSum
+    )}</div></div>`;
+  }
+  if (sumMissingEl) {
+    sumMissingEl.innerHTML = `<div class="leading-tight"><div class="text-[10px] uppercase tracking-wide text-rose-500">Còn thiếu</div><div>${formatCurrency(
+      unpaidSum
+    )}</div></div>`;
+  }
 
   // 2. Render bộ lọc nhanh theo Khối lớp (Tầng 2 cân đối ngang hàng với nút + Tạo Khối / Xóa Khối bên phải)
   const gradeFiltersEl = document.getElementById('all-stu-grade-filters');
@@ -7829,13 +7863,13 @@ function renderAdminStudents() {
 
       return `
         <tr class="hover:bg-slate-50 transition">
-          <td class="py-2 px-2 text-center font-bold text-slate-600 text-xs whitespace-nowrap">
+          <td class="py-2 px-1.5 text-center font-bold text-slate-600 text-xs whitespace-nowrap">
             ${idx + 1}
           </td>
-          <td class="py-2 px-2.5 text-center font-mono font-bold text-xs text-blue-700 whitespace-nowrap">
+          <td class="py-2 px-2 text-center font-mono font-bold text-xs text-blue-700 whitespace-nowrap">
             ${escapeHtml(s.studentCode)}
           </td>
-          <td class="py-2 px-3">
+          <td class="py-2 px-3 min-w-[175px] max-w-[240px]">
             <div class="w-full flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -7859,29 +7893,31 @@ function renderAdminStudents() {
                 ? `<div class="text-[11px] text-slate-500 font-mono mt-0.5">SĐT: ${escapeHtml(s.parentPhone)}</div>`
                 : ''
             }
-            ${s.note ? `<div class="text-[11px] text-slate-500 italic mt-0.5">${escapeHtml(s.note)}</div>` : ''}
+            ${s.note ? `<div class="text-[11px] text-slate-500 italic mt-0.5 line-clamp-2">${escapeHtml(s.note)}</div>` : ''}
           </td>
-          <td class="py-2 px-3 whitespace-nowrap">
+          <td class="py-2 px-2 text-center whitespace-nowrap">
             <button
               type="button"
               onclick="quickFilterByClassInAllStudents('${escapeAttr(s.className)}')"
-              class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-xs transition cursor-pointer whitespace-nowrap"
+              class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-xs transition cursor-pointer whitespace-nowrap"
               title="Bấm để lọc riêng Lớp ${escapeAttr(s.className)}"
             >
               Lớp ${escapeHtml(s.className)}
             </button>
           </td>
-          <td class="py-2 px-2.5 text-center whitespace-nowrap">
-            <input
-              type="date"
-              value="${escapeAttr(stats.startDateIso)}"
-              onchange="updateStudentStartDate('${s.id}', this.value)"
+          <td class="py-2 px-2 text-center whitespace-nowrap">
+            <button
+              type="button"
+              onclick="openStudentStartDatePicker(this, '${s.id}', '${escapeAttr(stats.startDateIso)}')"
               title="Bấm để chọn hoặc sửa ngày bắt đầu học của học sinh"
-              class="px-2 py-1 rounded-lg border border-slate-300 hover:border-blue-400 bg-slate-50 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-            />
+              class="tc-date-pill-btn"
+            >
+              <span>${escapeHtml(formatShortDateVN(stats.startDateIso) || 'Chọn ngày')}</span>
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#5B55FF] shrink-0"></i>
+            </button>
           </td>
-          <td class="py-2 px-2.5 text-center whitespace-nowrap">
-            <div class="inline-flex flex-col items-center justify-center px-2 py-1 rounded-lg border leading-tight ${
+          <td class="py-2 px-2 text-center whitespace-nowrap">
+            <div class="inline-flex flex-col items-center justify-center min-w-[98px] px-2 py-1 rounded-lg border leading-tight ${
               stats.paidBatchesCount > 0
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                 : 'bg-slate-100 border-slate-300 text-slate-600'
@@ -7904,59 +7940,62 @@ function renderAdminStudents() {
               <span class="text-[11px] font-bold mt-0.5">${formatCurrency(stats.totalPaidAmount)}</span>
             </div>
           </td>
-          <td class="py-2 px-2.5 text-center whitespace-nowrap">
+          <td class="py-2 px-2 text-center whitespace-nowrap">
             <span class="inline-block px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold text-xs whitespace-nowrap">
               ${escapeHtml(s.period)}
             </span>
           </td>
-          <td class="py-2 px-2.5 text-right font-extrabold text-slate-900 whitespace-nowrap">
+          <td class="py-2 px-2 text-right font-extrabold text-slate-900 whitespace-nowrap">
             <select
               onchange="handleClassbookFeeSelect('${s.id}', this.value)"
               title="Bấm để tùy chọn mức học phí cho học sinh"
-              class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
+              class="tc-fee-select"
             >
               ${getPresetTuitionOptionsHtml(s.tuitionFee)}
               <option value="CUSTOM">+ Số khác...</option>
             </select>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap ${statusCellClass}">
+          <td class="py-2 px-2 text-center whitespace-nowrap min-w-[132px] ${statusCellClass}">
             <select
               onchange="quickChangeStudentStatus('${s.id}', this.value)"
-              class="status-select bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
+              class="status-select bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer"
             >
               <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã hoàn thành</option>
               <option value="Chờ duyệt" ${isPending ? 'selected' : ''}>Chờ duyệt</option>
               <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
             </select>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap">
-            <div class="inline-flex items-center gap-1">
+          <td class="py-2 px-2 text-center whitespace-nowrap min-w-[124px]">
+            <div class="inline-flex items-center justify-center gap-1">
               <button
+                type="button"
                 onclick="openStudentDetailModal('${s.id}')"
                 title="Xem hồ sơ chi tiết học sinh"
-                class="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                class="tc-row-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border-blue-200"
               >
                 <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                <span>Chi tiết</span>
               </button>
               <button
+                type="button"
                 onclick="openPaymentModal('${s.id}')"
                 title="Lấy mã VietQR của học sinh này"
-                class="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
+                class="tc-row-action-btn bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border-indigo-200"
               >
                 <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
               </button>
               <button
+                type="button"
                 onclick="openStudentModal('${s.id}')"
-                title="Chỉnh sửa thông tin"
-                class="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                title="Chỉnh sửa thông tin học sinh"
+                class="tc-row-action-btn bg-slate-100 hover:bg-slate-700 text-slate-700 hover:text-white border-slate-200"
               >
                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
               </button>
               <button
+                type="button"
                 onclick="deleteStudentRecord('${s.id}')"
-                title="Xóa bản ghi"
-                class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                title="Xóa bản ghi học sinh"
+                class="tc-row-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border-rose-200"
               >
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
@@ -8301,10 +8340,19 @@ function saveStudentForm(event) {
   );
 }
 
-function deleteStudentRecord(studentId) {
+async function deleteStudentRecord(studentId) {
   const s = appState.students.find(item => item.id === studentId);
   if (!s) return;
-  if (!confirm(`Bạn có chắc muốn xóa học sinh "${s.fullName} (${s.studentCode}) - ${s.period}"?`)) return;
+  const ok = await appConfirm(
+    `Bạn có chắc muốn xóa hồ sơ học sinh "${s.fullName} (${s.studentCode}) — Lớp ${s.className}"?\n• Kỳ học: ${s.period}\n• Bạn vẫn có thể bấm nút Hoàn tác (Ctrl + Z) nếu xóa nhầm.`,
+    {
+      title: 'Xác Nhận Xóa Học Sinh',
+      icon: 'trash-2',
+      variant: 'danger',
+      confirmText: 'Xóa học sinh'
+    }
+  );
+  if (!ok) return;
 
   appState.students = appState.students.filter(item => item.id !== studentId);
   // Đồng thời dọn các yêu cầu chờ duyệt của học sinh vừa xóa
@@ -9126,11 +9174,12 @@ async function handleBulkDeleteTransactions() {
   const txIds = Array.from(selectedFinanceItemIds).filter(k => !k.startsWith('REQ::'));
 
   if (
-    !confirm(
+    !(await appConfirm(
       `Bạn có chắc chắn muốn xóa ${totalSelected} mục đã chọn (${txIds.length} phiếu thu/chi${
         pendingKeys.length > 0 ? ` và ${pendingKeys.length} yêu cầu chờ duyệt` : ''
-      }) không?`
-    )
+      }) không?`,
+      { title: 'Xóa giao dịch đã chọn', tone: 'rose', okText: 'Xóa ngay' }
+    ))
   ) {
     return;
   }
@@ -9346,8 +9395,16 @@ async function toggleDraftTransactionMainAccount(transId) {
   );
 }
 
-function deleteTransactionRecord(transId) {
-  if (!confirm('Bạn có chắc muốn xóa giao dịch Thu/Chi này khỏi sổ quỹ?')) return;
+async function deleteTransactionRecord(transId) {
+  if (
+    !(await appConfirm('Bạn có chắc muốn xóa giao dịch Thu/Chi này khỏi sổ quỹ?', {
+      title: 'Xóa phiếu Thu / Chi',
+      tone: 'rose',
+      okText: 'Xóa giao dịch'
+    }))
+  ) {
+    return;
+  }
   const targetTx = (appState.transactions || []).find(t => t && t.id === transId);
   if (
     targetTx &&
@@ -10331,13 +10388,29 @@ function downloadCsvFile(filename, headers, rows) {
   showToast(`Đã tải xuống file ${filename}!`, 'success');
 }
 
-function resetDemoData() {
+async function resetDemoData() {
   if (isSandboxDraftMode) {
-    if (!confirm('Khôi phục lại bộ dữ liệu nháp mẫu ban đầu của Tab Nháp?')) return;
+    if (
+      !(await appConfirm('Khôi phục lại bộ dữ liệu nháp mẫu ban đầu của Tab Nháp?', {
+        title: 'Khôi phục dữ liệu Tab Nháp',
+        tone: 'amber',
+        okText: 'Khôi phục'
+      }))
+    ) {
+      return;
+    }
     resetSandboxDraftData();
     return;
   }
-  if (!confirm('Khôi phục lại bộ dữ liệu mẫu ban đầu? Các thay đổi chưa lưu lên Sheet sẽ bị đặt lại.')) return;
+  if (
+    !(await appConfirm('Khôi phục lại bộ dữ liệu mẫu ban đầu? Các thay đổi chưa lưu lên Sheet sẽ bị đặt lại.', {
+      title: 'Khôi phục dữ liệu mẫu',
+      tone: 'amber',
+      okText: 'Khôi phục'
+    }))
+  ) {
+    return;
+  }
   appState = getInitialDemoState();
   saveStateToLocal();
   showToast('Đã khôi phục dữ liệu mẫu thành công!', 'success');
@@ -11423,12 +11496,20 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
 
   let newFee = fromShortMoney(selectedVal);
   if (selectedVal === 'CUSTOM') {
-    const input = prompt(
-      `Nhập số tiền học phí mới cho học sinh ${s.fullName} (Có thể nhập rút gọn 3 số 000 hoặc nhập đầy đủ — VD: nhập 600 hoặc 600000 đều = 600.000 ₫):`,
-      String(toShortMoney(s.tuitionFee || 600000))
+    const input = await appPrompt(
+      `Nhập mức học phí mới cho học sinh ${s.fullName} (Có thể nhập rút gọn 3 số 000 hoặc nhập đầy đủ — VD: nhập 600 hoặc 600000 đều = 600.000 ₫):`,
+      String(toShortMoney(s.tuitionFee || 600000)),
+      {
+        title: `Cập nhật học phí — ${s.fullName}`,
+        badge: 'THANH CHÍ EDU • HỌC PHÍ',
+        tone: 'emerald',
+        moneyPreview: true,
+        okText: 'Lưu học phí'
+      }
     );
     if (input === null) {
       renderAdminClassbook();
+      renderAdminStudents();
       return;
     }
     newFee = fromShortMoney(input);
@@ -11436,6 +11517,7 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
 
   if (isNaN(newFee) || newFee < 0) {
     renderAdminClassbook();
+    renderAdminStudents();
     return;
   }
 
@@ -11444,6 +11526,10 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
   s.updatedAt = getCurrentDateTimeString();
   saveStateToLocal();
   await triggerAutoSyncIfNeeded(`Đã cập nhật học phí của ${s.fullName} thành ${formatCurrency(newFee)}!`);
+}
+
+async function handleAllStudentsFeeSelect(studentId, selectedVal) {
+  return handleClassbookFeeSelect(studentId, selectedVal);
 }
 
 function setClassbookQuickFee(amount) {
@@ -13365,7 +13451,15 @@ async function deleteGradeByKey(gradeKey) {
         `Nhấn OK để xóa "${label}" (bạn vẫn có thể nhấn nút "Hoàn tác" hoặc Ctrl+Z nếu xóa nhầm).`
       : `Bạn có chắc chắn muốn xóa "${label}" khỏi danh sách Khối?`;
 
-  if (!confirm(confirmMsg)) return;
+  if (
+    !(await appConfirm(confirmMsg, {
+      title: `Xác nhận xóa ${label}`,
+      tone: 'rose',
+      okText: `Xóa ${label}`
+    }))
+  ) {
+    return;
+  }
 
   // Lưu snapshot để có thể Hoàn tác (Ctrl + Z) 100%
   if (typeof pushUndoSnapshot === 'function') {
@@ -13587,7 +13681,15 @@ async function deleteClassByName(className) {
       ? `⚠️ Bạn có chắc chắn muốn XÓA LỚP "${cleanTarget}" (cùng ${stuCount} học sinh trong lớp này) khỏi hệ thống?\n\n💡 Bạn vẫn có thể bấm nút "↩️ Quay lại thao tác" (Ctrl + Z) nếu muốn khôi phục lại.`
       : `⚠️ Bạn có chắc chắn muốn XÓA LỚP "${cleanTarget}" khỏi hệ thống?\n\n💡 Bạn vẫn có thể bấm nút "↩️ Quay lại thao tác" (Ctrl + Z) nếu muốn khôi phục lại.`;
 
-  if (!confirm(confirmMsg)) return;
+  if (
+    !(await appConfirm(confirmMsg, {
+      title: `Xác nhận xóa lớp "${cleanTarget}"`,
+      tone: 'rose',
+      okText: `Xóa lớp ${cleanTarget}`
+    }))
+  ) {
+    return;
+  }
 
   // 1. Xóa toàn bộ học sinh thuộc lớp này khỏi appState.students
   appState.students = (appState.students || []).filter(
@@ -14302,9 +14404,14 @@ async function restoreHistoryBatch(histId) {
   const hist = historyList[idx];
 
   if (
-    !confirm(
-      `Bạn có muốn khôi phục lại đợt "${hist.periodLabel} (${hist.batchLabel})" của lớp ${hist.className} về lại Sổ Theo Dõi Lớp Học hiện tại không?`
-    )
+    !(await appConfirm(
+      `Bạn có muốn khôi phục lại đợt "${hist.periodLabel} (${hist.batchLabel})" của lớp ${hist.className} về lại Sổ Theo Dõi Lớp Học hiện tại không?`,
+      {
+        title: `Khôi phục đợt học — Lớp ${hist.className}`,
+        tone: 'indigo',
+        okText: 'Khôi phục ngay'
+      }
+    ))
   ) {
     return;
   }
@@ -14344,7 +14451,16 @@ async function deleteHistoryBatch(histId) {
   if (idx === -1) return;
   const hist = historyList[idx];
 
-  if (!confirm(`Bạn có chắc chắn muốn xóa bản lưu lịch sử "${hist.periodLabel} (${hist.batchLabel})" của lớp ${hist.className}?`)) {
+  if (
+    !(await appConfirm(
+      `Bạn có chắc chắn muốn xóa bản lưu lịch sử "${hist.periodLabel} (${hist.batchLabel})" của lớp ${hist.className}?`,
+      {
+        title: 'Xóa bản lưu lịch sử đợt học',
+        tone: 'rose',
+        okText: 'Xóa bản lưu'
+      }
+    ))
+  ) {
     return;
   }
 
@@ -14674,27 +14790,42 @@ async function selectReceivingBankAccount(profileId, silent = false) {
 }
 
 async function promptAddReceivingBankAccount() {
-  const binInput = prompt(
-    'Nhập Mã Ngân Hàng nhận tiền (VD: BIDV, MB, VCB, TCB, ACB, ICB, VPB, TPB):',
-    'BIDV'
-  );
-  if (binInput === null) return;
-  const bankBin = String(binInput || 'BIDV').trim().toUpperCase() || 'BIDV';
-
-  const accInput = prompt(`Nhập Số Tài Khoản ${bankBin} nhận tiền:`, '');
-  if (accInput === null) return;
-  const bankAccountNo = String(accInput || '').trim();
+  const res = await showTcAppDialog({
+    mode: 'fields',
+    tone: 'indigo',
+    badge: 'THANH CHÍ EDU • TÀI KHOẢN NHẬN TIỀN',
+    title: 'Thêm Tài Khoản Ngân Hàng Nhận Học Phí',
+    message: 'Nhập thông tin tài khoản nhận tiền để tạo mã VietQR và kết nối tự động với SePay:',
+    okText: 'Lưu & Kết nối STK',
+    fields: [
+      {
+        key: 'bankBin',
+        label: 'Mã Ngân Hàng (VD: BIDV, MB, VCB, TCB, ACB, ICB, VPB, TPB)',
+        defaultValue: 'BIDV',
+        placeholder: 'VD: BIDV'
+      },
+      {
+        key: 'bankAccountNo',
+        label: 'Số Tài Khoản Nhận Tiền',
+        defaultValue: '',
+        placeholder: 'Nhập số tài khoản ngân hàng...'
+      },
+      {
+        key: 'bankAccountName',
+        label: 'Tên Chủ Tài Khoản (Viết hoa không dấu)',
+        defaultValue: appState.settings?.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI',
+        placeholder: 'VD: HKD TRUNG TAM HUYNH THANH CHI'
+      }
+    ]
+  });
+  if (!res) return;
+  const bankBin = String(res.bankBin || 'BIDV').trim().toUpperCase() || 'BIDV';
+  const bankAccountNo = String(res.bankAccountNo || '').trim();
   if (!bankAccountNo) {
     showToast('Vui lòng nhập Số tài khoản hợp lệ!', 'warning');
     return;
   }
-
-  const ownerInput = prompt(
-    'Nhập Tên Chủ Tài Khoản (Viết hoa không dấu):',
-    appState.settings?.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI'
-  );
-  if (ownerInput === null) return;
-  const bankAccountName = String(ownerInput || 'HKD TRUNG TAM HUYNH THANH CHI').trim().toUpperCase();
+  const bankAccountName = String(res.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI').trim().toUpperCase();
 
   let customArr = [];
   try {
@@ -14793,13 +14924,18 @@ function updateSepayBalanceModeUI() {
 async function syncSepayBalanceWithWebStats() {
   const b = getWebStatsBalanceBreakdown();
   const currentBal = getComputedSepayBalance();
-  const ok = confirm(
-    `🔄 CẬP NHẬT SỐ DƯ THEO THỐNG KÊ CỦA WEB\n\n` +
-      `• Tổng Thu thực tế: +${formatCurrency(b.totalIn)} (${b.countIn} phiếu)\n` +
+  const ok = await appConfirm(
+    `• Tổng Thu thực tế: +${formatCurrency(b.totalIn)} (${b.countIn} phiếu)\n` +
       `• Tổng Chi thực tế: -${formatCurrency(b.totalOut)} (${b.countOut} phiếu)\n` +
-      `• Số dư theo Web: ${formatCurrency(b.net)}\n\n` +
-      `Số dư đang hiển thị: ${formatCurrency(currentBal)}\n\n` +
-      `Nhấn OK để cập nhật số dư = ${formatCurrency(b.net)} (không tính các giao dịch Test STK).`
+      `• Số dư theo thống kê Web: ${formatCurrency(b.net)}\n` +
+      `• Số dư đang hiển thị: ${formatCurrency(currentBal)}\n\n` +
+      `Xác nhận đồng bộ số dư hiển thị = ${formatCurrency(b.net)} (không tính các giao dịch Test STK)?`,
+    {
+      title: 'Đồng bộ số dư theo thống kê Web',
+      badge: 'THANH CHÍ EDU • ĐỒNG BỘ SỐ DƯ',
+      tone: 'emerald',
+      okText: 'Cập nhật ngay'
+    }
   );
   if (!ok) return;
   if (!appState.settings) appState.settings = {};
@@ -14989,9 +15125,16 @@ async function promptEditSepayBalance() {
   const curBin = appState.settings?.bankBin || 'BIDV';
   const curAcc = appState.settings?.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
   const bankLabel = `${curBin} (${curAcc})${curAcc === '5801434567' ? ' [STK Nháp Test]' : ''}`;
-  const input = prompt(
-    `Nhập số dư hiện tại trong tài khoản ${bankLabel} (Có thể nhập rút gọn 3 số 000 hoặc nhập đầy đủ — VD: 600 hoặc 600000 đều = 600.000 ₫):`,
-    String(toShortMoney(currentBal))
+  const input = await appPrompt(
+    `Nhập số dư hiện tại trong tài khoản ${bankLabel}\n(Có thể nhập rút gọn 3 số 000 hoặc nhập đầy đủ — VD: nhập 2800 hoặc 2800000 đều = 2.800.000 ₫):`,
+    String(toShortMoney(currentBal)),
+    {
+      title: 'Cập nhật số dư tài khoản ngân hàng',
+      badge: 'THANH CHÍ EDU • SỐ DƯ NGÂN HÀNG',
+      tone: 'emerald',
+      moneyPreview: true,
+      okText: 'Lưu số dư'
+    }
   );
   if (input === null) return;
   const cleaned = String(input).trim() === '0' ? 0 : fromShortMoney(input);
@@ -16136,12 +16279,638 @@ function initStickyTableHeaderEngine() {
   updateScrollToTopButtonVisibility();
 }
 
+// ============================================================================
+// HỘP HỘI THOẠI & BỘ CHỌN LỊCH ĐỒNG BỘ PHONG CÁCH THANH CHÍ EDU (SAAS PREMIUM)
+// ============================================================================
+let _activeTcDialogResolver = null;
+let _activeTcDialogConfig = null;
+
+function inferTcDialogTone(text = '', mode = 'confirm') {
+  const s = String(text || '').toLowerCase();
+  if (s.includes('xóa') || s.includes('hủy')) return 'rose';
+  if (s.includes('số dư') || s.includes('học phí') || s.includes('đồng bộ')) return 'emerald';
+  if (s.includes('mật khẩu') || s.includes('khôi phục') || s.includes('nháp') || s.includes('⚠️')) return 'amber';
+  return mode === 'prompt' ? 'indigo' : 'indigo';
+}
+
+function updateTcDialogMoneyPreview(rawVal) {
+  const wrap = document.getElementById('tc-dialog-money-preview');
+  const valEl = document.getElementById('tc-dialog-money-preview-val');
+  if (!wrap || !valEl) return;
+  if (!_activeTcDialogConfig || !_activeTcDialogConfig.moneyPreview) {
+    wrap.classList.add('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+  const str = String(rawVal ?? '').trim();
+  const vnd = str === '0' ? 0 : fromShortMoney(str);
+  valEl.textContent = isNaN(vnd) ? '0 ₫' : formatCurrency(vnd);
+}
+
+function showTcAppDialog(options = {}) {
+  const modal = document.getElementById('tc-app-dialog-modal');
+  const isRealBrowserDom =
+    Boolean(modal) && (Boolean(window.__FORCE_TC_DIALOG_UI__) || typeof window.HTMLElement !== 'undefined');
+
+  const mode = options.mode || 'confirm';
+  const message = String(options.message || '').trim();
+  const defaultValue = options.defaultValue !== undefined ? String(options.defaultValue) : '';
+
+  if (!isRealBrowserDom) {
+    if (mode === 'confirm') {
+      return Promise.resolve(typeof confirm === 'function' ? Boolean(confirm(message)) : true);
+    }
+    if (mode === 'fields') {
+      const out = {};
+      for (const f of options.fields || []) {
+        const ans = typeof prompt === 'function' ? prompt(f.label, f.defaultValue || '') : f.defaultValue || '';
+        if (ans === null) return Promise.resolve(null);
+        out[f.key] = ans;
+      }
+      return Promise.resolve(out);
+    }
+    return Promise.resolve(typeof prompt === 'function' ? prompt(message, defaultValue) : defaultValue);
+  }
+
+  if (_activeTcDialogResolver) {
+    const prev = _activeTcDialogResolver;
+    _activeTcDialogResolver = null;
+    prev(mode === 'confirm' ? false : null);
+  }
+
+  const tone = options.tone || inferTcDialogTone(`${options.title || ''} ${message}`, mode);
+  const title =
+    options.title ||
+    (mode === 'confirm'
+      ? tone === 'rose'
+        ? 'Xác nhận thao tác xóa'
+        : 'Xác nhận thao tác'
+      : 'Nhập thông tin');
+  const badge =
+    options.badge ||
+    (mode === 'confirm'
+      ? tone === 'rose'
+        ? 'THANH CHÍ EDU • CẢNH BÁO XÓA'
+        : 'THANH CHÍ EDU • XÁC NHẬN'
+      : 'THANH CHÍ EDU • NHẬP LIỆU');
+
+  _activeTcDialogConfig = { ...options, mode, tone, title, badge, message, defaultValue };
+
+  const stripEl = document.getElementById('tc-dialog-header-strip');
+  const iconWrap = document.getElementById('tc-dialog-icon-wrap');
+  const badgeEl = document.getElementById('tc-dialog-badge');
+  const titleEl = document.getElementById('tc-dialog-title');
+  const msgEl = document.getElementById('tc-dialog-message');
+  const formEl = document.getElementById('tc-dialog-form');
+  const fieldsWrap = document.getElementById('tc-dialog-fields-wrap');
+  const okBtn = document.getElementById('tc-dialog-ok-btn');
+  const cancelBtn = document.getElementById('tc-dialog-cancel-btn');
+
+  const toneMeta = {
+    indigo: {
+      strip: 'h-1.5 w-full bg-gradient-to-r from-[#25214C] via-[#5B55FF] to-[#7C6BFF]',
+      iconWrap: 'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-2xs',
+      icon: mode === 'prompt' ? 'edit-3' : 'Sparkles',
+      okBtn: 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#5B55FF] to-[#7C6BFF] hover:from-[#4A44F2] hover:to-[#6956F5] text-white text-xs sm:text-sm font-extrabold shadow-md transition inline-flex items-center gap-1.5 cursor-pointer'
+    },
+    emerald: {
+      strip: 'h-1.5 w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400',
+      iconWrap: 'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-2xs',
+      icon: 'wallet',
+      okBtn: 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-extrabold shadow-md transition inline-flex items-center gap-1.5 cursor-pointer'
+    },
+    amber: {
+      strip: 'h-1.5 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400',
+      iconWrap: 'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600 border border-amber-200 shadow-2xs',
+      icon: 'shield-alert',
+      okBtn: 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs sm:text-sm font-extrabold shadow-md transition inline-flex items-center gap-1.5 cursor-pointer'
+    },
+    rose: {
+      strip: 'h-1.5 w-full bg-gradient-to-r from-rose-600 via-red-500 to-orange-500',
+      iconWrap: 'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs',
+      icon: 'trash-2',
+      okBtn: 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white text-xs sm:text-sm font-extrabold shadow-md transition inline-flex items-center gap-1.5 cursor-pointer'
+    }
+  }[tone] || {
+    strip: 'h-1.5 w-full bg-gradient-to-r from-[#25214C] via-[#5B55FF] to-[#7C6BFF]',
+    iconWrap: 'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-2xs',
+    icon: 'check-circle-2',
+    okBtn: 'px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#5B55FF] to-[#7C6BFF] text-white text-xs sm:text-sm font-extrabold shadow-md transition inline-flex items-center gap-1.5 cursor-pointer'
+  };
+
+  if (stripEl) stripEl.className = toneMeta.strip;
+  if (iconWrap) {
+    iconWrap.className = toneMeta.iconWrap;
+    iconWrap.innerHTML = `<i data-lucide="${toneMeta.icon}" class="w-5 h-5"></i>`;
+  }
+  if (badgeEl) badgeEl.textContent = badge;
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+  if (cancelBtn) cancelBtn.textContent = options.cancelText || 'Hủy';
+  if (okBtn) {
+    okBtn.className = toneMeta.okBtn;
+    okBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>${escapeHtml(
+      options.okText || (mode === 'confirm' ? 'Xác nhận' : 'Lưu lại')
+    )}</span>`;
+  }
+
+  if (formEl && fieldsWrap) {
+    if (mode === 'confirm') {
+      formEl.classList.add('hidden');
+      fieldsWrap.innerHTML = '';
+      updateTcDialogMoneyPreview('');
+    } else if (mode === 'fields') {
+      formEl.classList.remove('hidden');
+      const fields = Array.isArray(options.fields) ? options.fields : [];
+      fieldsWrap.innerHTML = fields
+        .map(
+          (f, idx) => `
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">${escapeHtml(f.label || '')}</label>
+            <input
+              id="tc-dialog-input-${idx}"
+              data-field-key="${escapeAttr(f.key || String(idx))}"
+              type="${escapeAttr(f.type || 'text')}"
+              value="${escapeAttr(f.defaultValue || '')}"
+              placeholder="${escapeAttr(f.placeholder || '')}"
+              class="tc-dialog-input"
+              autocomplete="off"
+            />
+          </div>
+        `
+        )
+        .join('');
+      updateTcDialogMoneyPreview('');
+    } else {
+      formEl.classList.remove('hidden');
+      const inputType = options.inputType || 'text';
+      fieldsWrap.innerHTML = `
+        <div>
+          <input
+            id="tc-dialog-input-0"
+            type="${escapeAttr(inputType)}"
+            value="${escapeAttr(defaultValue)}"
+            placeholder="${escapeAttr(options.placeholder || 'Nhập giá trị...')}"
+            oninput="updateTcDialogMoneyPreview(this.value)"
+            class="tc-dialog-input ${options.moneyPreview ? 'text-base font-black tracking-tight' : ''}"
+            autocomplete="off"
+          />
+        </div>
+      `;
+      updateTcDialogMoneyPreview(defaultValue);
+    }
+  }
+
+  modal.classList.remove('hidden');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
+  }
+
+  setTimeout(() => {
+    const firstInput = document.getElementById('tc-dialog-input-0');
+    if (firstInput && typeof firstInput.focus === 'function') {
+      firstInput.focus();
+      if (typeof firstInput.select === 'function') firstInput.select();
+    } else if (okBtn && typeof okBtn.focus === 'function') {
+      okBtn.focus();
+    }
+  }, 20);
+
+  return new Promise(resolve => {
+    _activeTcDialogResolver = resolve;
+  });
+}
+
+function resolveTcAppDialog(confirmed = false) {
+  const modal = document.getElementById('tc-app-dialog-modal');
+  if (modal) modal.classList.add('hidden');
+
+  const resolver = _activeTcDialogResolver;
+  const cfg = _activeTcDialogConfig || { mode: 'confirm' };
+  _activeTcDialogResolver = null;
+  _activeTcDialogConfig = null;
+  if (!resolver) return;
+
+  if (cfg.mode === 'confirm') {
+    resolver(Boolean(confirmed));
+    return;
+  }
+  if (!confirmed) {
+    resolver(null);
+    return;
+  }
+  if (cfg.mode === 'fields') {
+    const out = {};
+    const fields = Array.isArray(cfg.fields) ? cfg.fields : [];
+    fields.forEach((f, idx) => {
+      const el = document.getElementById(`tc-dialog-input-${idx}`);
+      out[f.key || String(idx)] = el ? el.value : f.defaultValue || '';
+    });
+    resolver(out);
+    return;
+  }
+  const inputEl = document.getElementById('tc-dialog-input-0');
+  resolver(inputEl ? String(inputEl.value ?? '') : cfg.defaultValue || '');
+}
+
+function submitTcAppDialogForm(event) {
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
+  resolveTcAppDialog(true);
+}
+
+function appConfirm(message, opts = {}) {
+  return showTcAppDialog({ ...opts, mode: 'confirm', message });
+}
+
+function appPrompt(message, defaultValue = '', opts = {}) {
+  return showTcAppDialog({ ...opts, mode: 'prompt', message, defaultValue });
+}
+
+// ============================================================================
+// BỘ CHỌN NGÀY THÁNG (CUSTOM DATE PICKER POPOVER) ĐỒNG BỘ GIAO DIỆN APP
+// ============================================================================
+let _tcDatePickerState = {
+  open: false,
+  anchorEl: null,
+  selectedIso: '',
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth() + 1,
+  title: 'Chọn ngày',
+  allowClear: true,
+  onSelect: null
+};
+
+function parseIsoYearMonthDay(isoStr) {
+  const m = String(isoStr || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const year = parseInt(m[1], 10);
+  const month = parseInt(m[2], 10);
+  const day = parseInt(m[3], 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { year, month, day };
+}
+
+function formatYearMonthDayIso(year, month, day) {
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function positionTcDatePickerPopover() {
+  const pop = document.getElementById('tc-datepicker-popover');
+  const anchor = _tcDatePickerState.anchorEl;
+  if (!pop || !anchor || typeof anchor.getBoundingClientRect !== 'function') return;
+
+  const rect = anchor.getBoundingClientRect();
+  const popWidth = 296;
+  const popHeight = 338;
+  const vw = window.innerWidth || 1024;
+  const vh = window.innerHeight || 768;
+
+  let left = rect.left;
+  if (left + popWidth > vw - 12) {
+    left = Math.max(12, vw - popWidth - 12);
+  }
+  left = Math.max(12, left);
+
+  let top = rect.bottom + 6;
+  if (top + popHeight > vh - 12 && rect.top > popHeight + 16) {
+    top = rect.top - popHeight - 6;
+  }
+  top = Math.max(12, Math.min(top, Math.max(12, vh - popHeight - 12)));
+
+  pop.style.left = `${Math.round(left)}px`;
+  pop.style.top = `${Math.round(top)}px`;
+}
+
+function renderTcDatePickerPopover() {
+  const pop = document.getElementById('tc-datepicker-popover');
+  if (!pop) return;
+
+  const { viewYear, viewMonth, selectedIso, title, allowClear } = _tcDatePickerState;
+  const now = new Date();
+  const todayIso = formatYearMonthDayIso(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+  const firstDayDate = new Date(viewYear, viewMonth - 1, 1);
+  // Quy đổi Thứ Hai = 0 ... Chủ Nhật = 6
+  const startOffset = (firstDayDate.getDay() + 6) % 7;
+  const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+  const daysInPrevMonth = new Date(viewYear, viewMonth - 1, 0).getDate();
+
+  const cells = [];
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const d = daysInPrevMonth - i;
+    const prevM = viewMonth === 1 ? 12 : viewMonth - 1;
+    const prevY = viewMonth === 1 ? viewYear - 1 : viewYear;
+    cells.push({
+      iso: formatYearMonthDayIso(prevY, prevM, d),
+      day: d,
+      outside: true
+    });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({
+      iso: formatYearMonthDayIso(viewYear, viewMonth, d),
+      day: d,
+      outside: false
+    });
+  }
+  while (cells.length < 42) {
+    const d = cells.length - (startOffset + daysInMonth) + 1;
+    const nextM = viewMonth === 12 ? 1 : viewMonth + 1;
+    const nextY = viewMonth === 12 ? viewYear + 1 : viewYear;
+    cells.push({
+      iso: formatYearMonthDayIso(nextY, nextM, d),
+      day: d,
+      outside: true
+    });
+  }
+
+  const monthOptions = Array.from({ length: 12 }, (_, idx) => {
+    const m = idx + 1;
+    return `<option value="${m}" ${m === viewMonth ? 'selected' : ''}>Tháng ${m}</option>`;
+  }).join('');
+
+  const minYear = Math.min(2020, viewYear - 3);
+  const maxYear = Math.max(2032, viewYear + 3);
+  let yearOptions = '';
+  for (let y = minYear; y <= maxYear; y++) {
+    yearOptions += `<option value="${y}" ${y === viewYear ? 'selected' : ''}>Năm ${y}</option>`;
+  }
+
+  const selectedLabel = selectedIso ? formatShortDateVN(selectedIso) : 'Chưa chọn';
+
+  pop.innerHTML = `
+    <div class="tc-datepicker-header">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 flex items-center gap-1.5">
+          <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-amber-300"></i>
+          <span>${escapeHtml(title || 'Chọn ngày')}</span>
+        </span>
+        <button
+          type="button"
+          onclick="closeTcDatePickerPopover()"
+          class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition cursor-pointer"
+          title="Đóng lịch"
+        >
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+      <div class="flex items-center justify-between gap-1.5">
+        <div class="flex items-center gap-1.5">
+          <select
+            id="tc-dp-month-select"
+            onchange="changeTcDatePickerMonthYear(this.value, null)"
+            class="bg-white/12 hover:bg-white/20 text-white text-xs font-extrabold rounded-lg px-2 py-1 border border-white/15 focus:outline-none cursor-pointer"
+          >
+            ${monthOptions}
+          </select>
+          <select
+            id="tc-dp-year-select"
+            onchange="changeTcDatePickerMonthYear(null, this.value)"
+            class="bg-white/12 hover:bg-white/20 text-white text-xs font-extrabold rounded-lg px-2 py-1 border border-white/15 focus:outline-none cursor-pointer"
+          >
+            ${yearOptions}
+          </select>
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            onclick="stepTcDatePickerMonth(-1)"
+            class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+            title="Tháng trước"
+          >
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <button
+            type="button"
+            onclick="stepTcDatePickerMonth(1)"
+            class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+            title="Tháng sau"
+          >
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="p-3">
+      <div class="grid grid-cols-7 gap-1 mb-1 text-center">
+        <span class="text-[10px] font-extrabold text-slate-400 py-1">T2</span>
+        <span class="text-[10px] font-extrabold text-slate-400 py-1">T3</span>
+        <span class="text-[10px] font-extrabold text-slate-400 py-1">T4</span>
+        <span class="text-[10px] font-extrabold text-slate-400 py-1">T5</span>
+        <span class="text-[10px] font-extrabold text-slate-400 py-1">T6</span>
+        <span class="text-[10px] font-extrabold text-indigo-500 py-1">T7</span>
+        <span class="text-[10px] font-extrabold text-rose-500 py-1">CN</span>
+      </div>
+      <div class="grid grid-cols-7 gap-1">
+        ${cells
+          .map(c => {
+            const isSel = c.iso === selectedIso;
+            const isToday = c.iso === todayIso;
+            return `<button
+              type="button"
+              onclick="selectTcDatePickerDay('${c.iso}')"
+              class="tc-dp-day ${isSel ? 'is-selected' : ''} ${isToday ? 'is-today' : ''} ${
+              c.outside ? 'is-outside' : ''
+            }"
+            >${c.day}</button>`;
+          })
+          .join('')}
+      </div>
+      <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+        ${
+          allowClear
+            ? `<button
+                type="button"
+                onclick="selectTcDatePickerDay('')"
+                class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              >
+                Xóa
+              </button>`
+            : `<span class="text-[11px] font-semibold text-slate-400">Đang chọn:</span>`
+        }
+        <span class="text-[11px] font-extrabold text-indigo-600">${escapeHtml(selectedLabel)}</span>
+        <button
+          type="button"
+          onclick="selectTcDatePickerDay('${todayIso}')"
+          class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-extrabold transition cursor-pointer"
+        >
+          Hôm nay
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
+  }
+}
+
+function openTcDatePicker(options = {}) {
+  const pop = document.getElementById('tc-datepicker-popover');
+  if (!pop) return;
+
+  const parsed = parseIsoYearMonthDay(options.selectedIso);
+  const now = new Date();
+  _tcDatePickerState = {
+    open: true,
+    anchorEl: options.anchorEl || null,
+    selectedIso: parsed ? options.selectedIso : '',
+    viewYear: parsed ? parsed.year : now.getFullYear(),
+    viewMonth: parsed ? parsed.month : now.getMonth() + 1,
+    title: options.title || 'Chọn ngày',
+    allowClear: options.allowClear !== false,
+    onSelect: typeof options.onSelect === 'function' ? options.onSelect : null
+  };
+
+  renderTcDatePickerPopover();
+  pop.classList.remove('hidden');
+  positionTcDatePickerPopover();
+}
+
+function stepTcDatePickerMonth(delta) {
+  let m = _tcDatePickerState.viewMonth + Number(delta || 0);
+  let y = _tcDatePickerState.viewYear;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  } else if (m > 12) {
+    m = 1;
+    y += 1;
+  }
+  _tcDatePickerState.viewMonth = m;
+  _tcDatePickerState.viewYear = y;
+  renderTcDatePickerPopover();
+}
+
+function changeTcDatePickerMonthYear(newMonth, newYear) {
+  if (newMonth !== null && newMonth !== undefined) {
+    _tcDatePickerState.viewMonth = Math.min(12, Math.max(1, parseInt(newMonth, 10) || 1));
+  }
+  if (newYear !== null && newYear !== undefined) {
+    _tcDatePickerState.viewYear = parseInt(newYear, 10) || new Date().getFullYear();
+  }
+  renderTcDatePickerPopover();
+}
+
+function selectTcDatePickerDay(isoStr) {
+  const cb = _tcDatePickerState.onSelect;
+  closeTcDatePickerPopover();
+  if (typeof cb === 'function') {
+    cb(String(isoStr || ''));
+  }
+}
+
+function closeTcDatePickerPopover() {
+  _tcDatePickerState.open = false;
+  const pop = document.getElementById('tc-datepicker-popover');
+  if (pop) pop.classList.add('hidden');
+}
+
+function openStudentStartDatePicker(studentId, currentIso, btnEl) {
+  const s = (appState.students || []).find(item => item.id === studentId);
+  const stuTitle = s ? `Bắt đầu học — ${s.fullName}` : 'Ngày bắt đầu học';
+  openTcDatePicker({
+    anchorEl: btnEl,
+    selectedIso: currentIso || '',
+    title: stuTitle,
+    allowClear: false,
+    onSelect: nextIso => {
+      if (nextIso) {
+        updateStudentStartDate(studentId, nextIso);
+      }
+    }
+  });
+}
+
+function openTcDatePickerForInput(inputEl, customTitle = '') {
+  if (!inputEl) return;
+  const labelEl = inputEl.closest('div')?.querySelector('label');
+  const titleText =
+    customTitle ||
+    inputEl.getAttribute('title') ||
+    (labelEl ? labelEl.textContent.trim() : '') ||
+    'Chọn ngày tháng';
+  openTcDatePicker({
+    anchorEl: inputEl,
+    selectedIso: inputEl.value || '',
+    title: titleText,
+    allowClear: true,
+    onSelect: nextIso => {
+      inputEl.value = nextIso;
+      if (typeof Event === 'function') {
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+      } else if (typeof inputEl.onchange === 'function') {
+        inputEl.onchange();
+      }
+    }
+  });
+}
+
+function initTcCustomDatePickerEngine() {
+  if (typeof document.addEventListener !== 'function') return;
+
+  document.addEventListener('click', e => {
+    const target = e.target;
+    if (!target || typeof target.closest !== 'function') return;
+
+    const dateInput = target.closest('input[type="date"]');
+    if (dateInput && !dateInput.disabled && !dateInput.readOnly) {
+      e.preventDefault();
+      openTcDatePickerForInput(dateInput);
+      return;
+    }
+
+    if (_tcDatePickerState.open) {
+      const pop = document.getElementById('tc-datepicker-popover');
+      const clickedInsidePop = pop && pop.contains(target);
+      const clickedAnchor =
+        _tcDatePickerState.anchorEl &&
+        typeof _tcDatePickerState.anchorEl.contains === 'function' &&
+        _tcDatePickerState.anchorEl.contains(target);
+      if (!clickedInsidePop && !clickedAnchor) {
+        closeTcDatePickerPopover();
+      }
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (_tcDatePickerState.open) {
+        closeTcDatePickerPopover();
+      }
+      if (_activeTcDialogResolver) {
+        resolveTcAppDialog(false);
+      }
+    }
+  });
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (_tcDatePickerState.open) positionTcDatePickerPopover();
+    },
+    { passive: true }
+  );
+  window.addEventListener(
+    'resize',
+    () => {
+      if (_tcDatePickerState.open) positionTcDatePickerPopover();
+    },
+    { passive: true }
+  );
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     bootstrapApp();
     initStickyTableHeaderEngine();
+    initTcCustomDatePickerEngine();
   });
 } else {
   bootstrapApp();
   initStickyTableHeaderEngine();
+  initTcCustomDatePickerEngine();
 }
