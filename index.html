@@ -28,7 +28,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261024_v6" />
+  <link rel="stylesheet" href="styles.css?v=20261024_v8" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -39,21 +39,21 @@
       <div
         onclick="handleGoToHomePage()"
         title="Bấm để quay lại trang đầu — THANH CHÍ EDU"
-        class="flex items-center gap-2.5 min-w-0 max-w-[220px] sm:max-w-[275px] 2xl:max-w-[340px] cursor-pointer group shrink"
+        class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial max-w-[210px] sm:max-w-[275px] 2xl:max-w-[340px] cursor-pointer group"
       >
-        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
-          <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl theme-brand-icon flex items-center justify-center text-white shadow-md shrink-0 group-hover:scale-105 transition">
+          <i data-lucide="graduation-cap" class="w-4 h-4 sm:w-5 sm:h-5"></i>
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5 min-w-0">
-            <span id="header-brand-badge" class="px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0">
+            <span id="header-brand-badge" class="hidden sm:inline-block px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0">
               THANH CHÍ EDU
             </span>
             <h1 id="header-center-name" class="font-extrabold text-[#25214C] group-hover:text-[#5B55FF] transition text-xs sm:text-sm 2xl:text-base leading-tight truncate">
               LỚP TOÁN ANH CHÍ
             </h1>
           </div>
-          <div class="flex items-center gap-1.5 text-[11px] text-[#8986A6] mt-0.5 min-w-0">
+          <div class="flex items-center gap-1 text-[10px] sm:text-[11px] text-[#8986A6] mt-0.5 min-w-0">
             <span class="hidden 2xl:inline font-semibold text-[#25214C]/75 shrink-0">Quản lý HS &amp; Tài chính</span>
             <span class="hidden 2xl:inline text-slate-300 shrink-0">•</span>
             <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0"></span>
@@ -95,7 +95,7 @@
           type="button"
           onclick="handleGoToHomePage()"
           title="Quay lại trang đầu & cuộn lên đỉnh trang"
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white border border-[#E6E1FF] transition cursor-pointer whitespace-nowrap"
+          class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-[#F3F1FF] hover:bg-[#5B55FF] text-[#5B55FF] hover:text-white border border-[#E6E1FF] transition cursor-pointer whitespace-nowrap"
         >
           <i data-lucide="home" class="w-3.5 h-3.5 shrink-0"></i>
           <span class="hidden md:inline">Trang đầu</span>
@@ -107,7 +107,7 @@
           type="button"
           onclick="toggleDarkModeQuick()"
           title="Chuyển đổi nhanh Chế độ Sáng / Tối (Light / Dark Mode)"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#EFEFF7] text-[#25214C] border border-[#EBECF3] transition cursor-pointer whitespace-nowrap"
+          class="inline-flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#EFEFF7] text-[#25214C] border border-[#EBECF3] transition cursor-pointer whitespace-nowrap"
         >
           <span id="darkmode-toggle-icon" class="inline-flex items-center shrink-0">
             <i data-lucide="moon" class="w-3.5 h-3.5 text-[#5B55FF]"></i>
@@ -121,7 +121,7 @@
           type="button"
           onclick="openThemeCustomizerModal()"
           title="Tùy chỉnh màu sắc giao diện & chế độ Sáng / Tối"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#F3F1FF] text-[#25214C] border border-[#EBECF3] transition cursor-pointer whitespace-nowrap"
+          class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-[#FAFAFC] hover:bg-[#F3F1FF] text-[#25214C] border border-[#EBECF3] transition cursor-pointer whitespace-nowrap"
         >
           <i data-lucide="palette" class="w-3.5 h-3.5 text-[#7C6BFF] shrink-0"></i>
           <span class="hidden 2xl:inline">Màu sắc</span>
@@ -134,7 +134,7 @@
           type="button"
           onclick="openIosInstallModal()"
           title="Cài đặt App THANH CHÍ EDU lên Màn hình chính iPhone (iOS)"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] transition cursor-pointer whitespace-nowrap"
+          class="inline-flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] transition cursor-pointer whitespace-nowrap"
         >
           <i data-lucide="smartphone" class="w-3.5 h-3.5 shrink-0"></i>
           <span class="hidden sm:inline">App iOS</span>
@@ -156,10 +156,10 @@
           type="button"
           onclick="handleHeaderNotificationClick()"
           title="Thông báo duyệt học phí & biến động số dư SePay"
-          class="relative w-8 h-8 rounded-full bg-[#FAFAFC] hover:bg-[#F3F1FF] border border-[#EBECF3] flex items-center justify-center text-[#25214C] transition cursor-pointer shrink-0"
+          class="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAFAFC] hover:bg-[#F3F1FF] border border-[#EBECF3] flex items-center justify-center text-[#25214C] transition cursor-pointer shrink-0"
         >
-          <i data-lucide="bell" class="w-4 h-4 text-[#5B55FF]"></i>
-          <span id="header-bell-dot" class="w-2 h-2 rounded-full bg-[#FF4B16] absolute top-1.5 right-1.5"></span>
+          <i data-lucide="bell" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#5B55FF]"></i>
+          <span id="header-bell-dot" class="w-2 h-2 rounded-full bg-[#FF4B16] absolute top-1 right-1 sm:top-1.5 sm:right-1.5"></span>
         </button>
 
         <!-- Role Toggle Pill -->
@@ -167,17 +167,18 @@
           <button
             id="btn-mode-parent"
             onclick="switchAppMode('parent')"
-            class="mode-pill-active flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
+            class="mode-pill-active flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap"
           >
-            <i data-lucide="users" class="w-3.5 h-3.5 shrink-0"></i>
-            <span>Phụ huynh / HS</span>
+            <i data-lucide="users" class="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0"></i>
+            <span class="sm:hidden">Phụ huynh</span>
+            <span class="hidden sm:inline">Phụ huynh / HS</span>
           </button>
           <button
             id="btn-mode-admin"
             onclick="switchAppMode('admin')"
-            class="mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
+            class="mode-pill-inactive relative flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap"
           >
-            <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0"></i>
+            <i data-lucide="shield-check" class="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0"></i>
             <span>Quản lý</span>
             <span
               id="nav-pending-badge"
@@ -188,7 +189,7 @@
             id="btn-mode-sandbox"
             onclick="toggleSandboxDraftMode()"
             title="Mở Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử (Không dùng dữ liệu thật của bạn)"
-            class="mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
+            class="mode-pill-inactive hidden md:flex relative items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap"
           >
             <i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16] shrink-0"></i>
             <span>Tab Nháp</span>
@@ -660,12 +661,12 @@
                 </div>
               </div>
 
-              <!-- Row 2: Horizontal Pill Tabs -->
-              <div class="flex flex-wrap items-center gap-1.5">
+              <!-- Row 2: Horizontal Pill Tabs (Vuốt ngang mượt trên iPhone, tự xuống dòng trên màn lớn) -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 lg:flex-wrap lg:overflow-visible no-scrollbar">
                 <button
                   onclick="switchAdminTab('classbook')"
                   id="tab-btn-classbook"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition bg-blue-600 text-white cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition bg-blue-600 text-white cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="book-open-check" class="w-4 h-4 shrink-0"></i>
                   <span>Lớp học</span>
@@ -674,7 +675,7 @@
                 <button
                   onclick="switchAdminTab('attendance')"
                   id="tab-btn-attendance"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="calendar-check-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>
                   <span>Điểm Danh Học Sinh</span>
@@ -684,7 +685,7 @@
                 <button
                   onclick="switchAdminTab('dashboard')"
                   id="tab-btn-dashboard"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="layout-grid" class="w-4 h-4 text-[#5B55FF] shrink-0"></i>
                   <span>Tổng quan &amp; Duyệt CK</span>
@@ -694,7 +695,7 @@
                 <button
                   onclick="switchAdminTab('students')"
                   id="tab-btn-students"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="graduation-cap" class="w-4 h-4 text-[#7C6BFF] shrink-0"></i>
                   <span>Thống Kê Tất Cả Học Sinh</span>
@@ -704,7 +705,7 @@
                 <button
                   onclick="switchAdminTab('finance')"
                   id="tab-btn-finance"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="wallet" class="w-4 h-4 text-emerald-600 shrink-0"></i>
                   <span>Thu - Chi &amp; Giao Dịch</span>
@@ -714,7 +715,7 @@
                 <button
                   onclick="switchAdminTab('history')"
                   id="tab-btn-history"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="history" class="w-4 h-4 text-purple-600 shrink-0"></i>
                   <span>Lịch Sử Các Đợt</span>
@@ -724,7 +725,7 @@
                 <button
                   onclick="switchAdminTab('settings')"
                   id="tab-btn-settings"
-                  class="admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
+                  class="admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap"
                 >
                   <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#8986A6] shrink-0"></i>
                   <span>Google Sheet &amp; Cài đặt QR</span>
@@ -735,7 +736,7 @@
                   onclick="toggleSandboxDraftMode()"
                   id="tab-btn-sandbox"
                   title="Chuyển sang Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử"
-                  class="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs whitespace-nowrap"
+                  class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs whitespace-nowrap"
                 >
                   <i data-lucide="flask-conical" class="w-4 h-4 shrink-0"></i>
                   <span id="tab-btn-sandbox-label">Tab Nháp (Dùng Thử Cho Bạn Bè)</span>
@@ -757,19 +758,19 @@
               <select
                 id="sepay-banner-account-select"
                 onchange="selectReceivingBankAccount(this.value)"
-                class="px-2.5 py-1.5 rounded-xl bg-slate-900/75 hover:bg-slate-900 text-white border border-amber-400/50 text-xs font-extrabold cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-300 max-w-full sm:max-w-[340px]"
+                class="w-full sm:w-auto min-w-0 max-w-full sm:max-w-[340px] px-2.5 py-1.5 rounded-xl bg-slate-900/75 hover:bg-slate-900 text-white border border-amber-400/50 text-xs font-extrabold cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-300 truncate"
               >
                 <option value="MAIN_BIDV">🏦 STK Chính: BIDV • 8601774789 (HKD TRUNG TAM HUYNH THANH CHI)</option>
                 <option value="TEST_BIDV">🧪 STK Nháp (Test thử): BIDV • 5801434567 (TK NHAP TEST SEPAY)</option>
               </select>
 
               <!-- Nút chuyển nhanh 1 chạm giữa STK Chính & STK Nháp 5801434567 -->
-              <div class="inline-flex items-center rounded-xl bg-white/10 p-0.5 border border-white/15">
+              <div class="flex flex-wrap sm:inline-flex items-center rounded-xl bg-white/10 p-0.5 border border-white/15 max-w-full">
                 <button
                   type="button"
                   id="btn-quick-stk-main"
                   onclick="selectReceivingBankAccount('MAIN_BIDV')"
-                  class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap bg-amber-400 text-slate-950"
+                  class="px-2 sm:px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap bg-amber-400 text-slate-950"
                   title="Hiển thị STK Chính (BIDV 8601774789) cho Phụ huynh chuyển khoản"
                 >
                   🏦 Chính (8601774789)
@@ -778,7 +779,7 @@
                   type="button"
                   id="btn-quick-stk-test"
                   onclick="selectReceivingBankAccount('TEST_BIDV')"
-                  class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap text-blue-100 hover:text-white"
+                  class="px-2 sm:px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap text-blue-100 hover:text-white"
                   title="Hiển thị STK Nháp Test (BIDV 5801434567) để test thử SePay"
                 >
                   🧪 Nháp Test (5801434567)
@@ -797,25 +798,25 @@
             </div>
 
             <!-- Trạng thái Tự Động Kết Nối SePay & Nút Bật/Tắt Duyệt Tự Động -->
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
               <button
                 type="button"
                 id="btn-sepay-auto-approve-toggle"
                 onclick="toggleAutoApprovePayment()"
                 title="Bật/Tắt cơ chế tự động duyệt khi ghi nhận chuyển tiền thành công vào STK"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-300/60 text-[11px] font-extrabold cursor-pointer transition whitespace-nowrap shadow-2xs"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-300/60 text-[11px] font-extrabold cursor-pointer transition max-w-full shadow-2xs"
               >
                 <i data-lucide="check-circle-2" class="w-3.5 h-3.5 shrink-0"></i>
-                <span id="sepay-auto-approve-label">Tự động duyệt khi CK thành công: ĐANG BẬT</span>
+                <span id="sepay-auto-approve-label" class="truncate">Tự động duyệt khi CK thành công: ĐANG BẬT</span>
               </button>
               <span
                 id="sepay-auto-connect-badge"
                 onclick="autoConnectAndVerifySepay()"
                 title="Bấm để kiểm tra & đồng bộ liên kết tự động với SePay Webhook"
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-extrabold text-emerald-200 cursor-pointer hover:bg-emerald-500/30 transition whitespace-nowrap"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-extrabold text-emerald-200 cursor-pointer hover:bg-emerald-500/30 transition max-w-full"
               >
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span id="sepay-auto-connect-text">Đã tự kết nối SePay (BIDV • 8601774789)</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                <span id="sepay-auto-connect-text" class="truncate">Đã tự kết nối SePay (BIDV • 8601774789)</span>
               </span>
             </div>
           </div>
@@ -824,7 +825,7 @@
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
             <!-- Left (4 cols): Live Bank Account Balance -->
             <div class="lg:col-span-4 flex items-center gap-3.5 min-w-0">
-              <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+              <div class="hidden sm:flex w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 items-center justify-center shrink-0">
                 <i data-lucide="wallet" class="w-6 h-6 text-emerald-300"></i>
               </div>
               <div class="min-w-0 flex-1">
@@ -959,12 +960,12 @@
                   <i data-lucide="school" class="w-4 h-4 text-amber-300"></i>
                   <span>Chọn Lớp Đang Xem</span>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto min-w-0">
                   <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
                   <select
                     id="classbook-class-dropdown"
                     onchange="selectClassbookClass(this.value)"
-                    class="h-9 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[220px] sm:min-w-[250px]"
+                    class="h-9 px-3 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer w-full sm:w-auto sm:min-w-[240px] max-w-full"
                   >
                     <!-- Rendered by JS -->
                   </select>
@@ -1033,7 +1034,7 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 shrink-0">
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onclick="openGradeManagerModal()"
@@ -1375,14 +1376,14 @@
                 </div>
 
                 <!-- RIGHT TABLE (4 cols): SỐ BUỔI HỌC & LỊCH TÔ MÀU (Cố định theo chiều dọc khi cuộn danh sách học sinh) -->
-                <div class="xl:col-span-4 space-y-2.5 xl:sticky xl:top-20">
+                <div class="xl:col-span-4 space-y-2.5 xl:sticky xl:top-20 min-w-0">
                   <!-- 1 Nút Lớn Duy Nhất Ở Trên Để Chụp Hình Số Buổi Học Tự Động Lưu Vào Clipboard -->
                   <button
                     type="button"
                     id="btn-capture-schedule-main"
                     onclick="captureCurrentScheduleToClipboard(this)"
                     title="Bấm 1 lần để chụp bảng Số buổi học và tự động lưu vào Clipboard — Bạn chỉ việc nhấn Ctrl + V để dán ngay vào Zalo / Messenger"
-                    class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-sm sm:text-base font-extrabold shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-center gap-2.5 whitespace-nowrap"
+                    class="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xs sm:text-base font-extrabold shadow-md hover:shadow-lg transition cursor-pointer flex items-center justify-center gap-2"
                   >
                     <i data-lucide="camera" class="w-5 h-5 text-amber-300 shrink-0"></i>
                     <span>Chụp hình Số buổi học (Chỉ việc dán)</span>
@@ -1418,12 +1419,12 @@
                   <i data-lucide="calendar-check-2" class="w-4 h-4 text-emerald-300"></i>
                   <span>Chọn Lớp Điểm Danh</span>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto min-w-0">
                   <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Lớp đang chọn:</span>
                   <select
                     id="att-class-dropdown"
                     onchange="selectAttendanceClass(this.value)"
-                    class="h-9 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[220px] sm:min-w-[260px]"
+                    class="h-9 px-3 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer w-full sm:w-auto sm:min-w-[240px] max-w-full"
                   >
                     <!-- Rendered by JS -->
                   </select>
@@ -1764,12 +1765,12 @@
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 min-w-0 w-full sm:w-auto">
               <span class="text-xs font-bold text-slate-500 uppercase">Lọc theo Lớp:</span>
               <select
                 id="history-filter-class"
                 onchange="renderAdminHistory()"
-                class="px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                class="w-full sm:w-auto min-w-0 max-w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="ALL">Tất cả các lớp</option>
               </select>
@@ -2193,12 +2194,12 @@
                   <i data-lucide="graduation-cap" class="w-4 h-4 text-amber-300"></i>
                   <span>Đếm &amp; Chọn Lớp Xem Thống Kê</span>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto min-w-0">
                   <span class="text-xs font-bold text-slate-500 whitespace-nowrap">Chuyển nhanh:</span>
                   <select
                     id="filter-student-class"
                     onchange="renderAdminStudents()"
-                    class="h-9 px-3.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer min-w-[220px] sm:min-w-[250px]"
+                    class="h-9 px-3 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer w-full sm:w-auto sm:min-w-[240px] max-w-full"
                   >
                     <option value="ALL">Tất cả lớp / khóa học</option>
                   </select>
@@ -2269,7 +2270,7 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 shrink-0">
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onclick="openGradeManagerModal()"
@@ -2931,7 +2932,7 @@
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             <!-- Left Column: Google Sheet 2-way Sync Config -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5 min-w-0">
               <div class="flex items-start gap-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                   <i data-lucide="sheet" class="w-5 h-5"></i>
@@ -3000,7 +3001,7 @@
                   <span id="setting-sheet-guide-title" class="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     File Google Sheet của bạn đã được gắn sẵn ID
                   </span>
-                  <div class="flex items-center gap-1.5">
+                  <div class="flex flex-wrap items-center gap-1.5">
                     <a
                       href="https://docs.google.com/spreadsheets/d/1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0/edit?usp=sharing"
                       onclick="return handleOpenGoogleSheetLink(event)"
@@ -3108,7 +3109,7 @@
 
                 <!-- Webhook URL to paste into SePay / Casso -->
                 <div class="bg-white p-2.5 rounded-lg border border-emerald-200 space-y-1">
-                  <div class="flex items-center justify-between text-[11px]">
+                  <div class="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
                     <span class="font-bold text-slate-700">Đường dẫn Webhook nhận biến động số dư (Dán vào SePay.vn hoặc Casso.vn):</span>
                     <button
                       type="button"
@@ -3255,7 +3256,7 @@
             </div>
 
             <!-- Right Column: Bank VietQR & Center Settings -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-5 min-w-0">
               <div class="flex items-start gap-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                   <i data-lucide="qr-code" class="w-5 h-5"></i>
@@ -4542,7 +4543,7 @@
               <select
                 id="sepay-modal-account-select"
                 onchange="selectReceivingBankAccount(this.value)"
-                class="flex-1 px-3 py-2 rounded-xl border-2 border-emerald-400 bg-white text-xs sm:text-sm font-extrabold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                class="flex-1 w-full min-w-0 max-w-full truncate px-3 py-2 rounded-xl border-2 border-emerald-400 bg-white text-xs sm:text-sm font-extrabold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="MAIN_BIDV">🏦 STK Chính: BIDV • 8601774789 — HKD TRUNG TAM HUYNH THANH CHI</option>
                 <option value="TEST_BIDV">🧪 STK Nháp (Test thử): BIDV • 5801434567 — HKD TRUNG TAM HUYNH THANH CHI</option>
@@ -4907,7 +4908,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+      <div class="bg-slate-50 px-4 sm:px-6 py-3.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onclick="resetDefaultTheme()"
@@ -4959,7 +4960,7 @@
         </div>
       </div>
 
-      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+      <div class="bg-slate-50 px-4 sm:px-6 py-3.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
         <span class="text-xs text-slate-500 font-medium inline-flex items-center gap-1.5">
           <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i>
           <span>Mẹo: Bạn cũng có thể bấm biểu tượng thùng rác ngay trên từng thẻ lớp.</span>
@@ -5063,7 +5064,7 @@
         </div>
       </div>
 
-      <div class="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-2">
+      <div class="bg-slate-50 px-4 sm:px-6 py-3.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onclick="closeGradeManagerModal(); openClassScheduleModal(true);"
@@ -5200,9 +5201,9 @@
   </button>
 
   <!-- TOAST NOTIFICATION CONTAINER -->
-  <div id="toast-container" class="fixed bottom-20 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+  <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261024_v11"></script>
+  <script src="app.js?v=20261024_v13"></script>
 </body>
 </html>
