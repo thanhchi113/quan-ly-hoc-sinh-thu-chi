@@ -2,8 +2,16 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Thanh Chí Edu" />
+  <meta name="theme-color" content="#FAFAFC" id="meta-theme-color" />
   <title>THANH CHÍ EDU — Quản Lý Học Sinh, Học Phí &amp; Tài Chính</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdn.tailwindcss.com" />
@@ -20,7 +28,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261024_v5" />
+  <link rel="stylesheet" href="styles.css?v=20261024_v6" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -118,6 +126,18 @@
           <i data-lucide="palette" class="w-3.5 h-3.5 text-[#7C6BFF] shrink-0"></i>
           <span class="hidden 2xl:inline">Màu sắc</span>
           <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#5B55FF] border border-white shadow-2xs shrink-0"></span>
+        </button>
+
+        <!-- Nút Cài App iOS lên Màn Hình Chính iPhone -->
+        <button
+          id="btn-install-ios-app"
+          type="button"
+          onclick="openIosInstallModal()"
+          title="Cài đặt App THANH CHÍ EDU lên Màn hình chính iPhone (iOS)"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] transition cursor-pointer whitespace-nowrap"
+        >
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 shrink-0"></i>
+          <span class="hidden sm:inline">App iOS</span>
         </button>
 
         <button
@@ -372,6 +392,7 @@
             <input
               id="admin-password-input"
               type="password"
+              autocomplete="current-password"
               placeholder="Nhập mật khẩu quản lý..."
               required
               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -398,7 +419,7 @@
           <!-- ============================================================= -->
           <aside
             id="admin-left-sidebar"
-            class="tc-sidebar w-full lg:w-[218px] lg:sticky lg:top-20 shrink-0 p-3.5 flex flex-col justify-between gap-4"
+            class="tc-sidebar hidden lg:flex w-full lg:w-[218px] lg:sticky lg:top-20 shrink-0 p-3.5 flex-col justify-between gap-4"
           >
             <div class="space-y-3">
               <!-- Sidebar Brand Header + Collapse Toggle -->
@@ -5062,6 +5083,110 @@
     </div>
   </div>
 
+  <!-- THANH ĐIỀU HƯỚNG ĐÁY DÀNH CHO APP iPHONE / DI ĐỘNG (iOS BOTTOM TAB BAR) -->
+  <nav
+    id="ios-bottom-tabbar"
+    class="ios-bottom-tabbar hidden lg:hidden fixed bottom-0 inset-x-0 z-40"
+    aria-label="Điều hướng nhanh trên điện thoại"
+  >
+    <div class="grid grid-cols-5 items-center max-w-lg mx-auto px-1 pt-1.5 pb-1">
+      <button type="button" id="ios-tab-classbook" onclick="switchAdminTab('classbook')" class="ios-tab-item is-active">
+        <i data-lucide="school" class="w-5 h-5"></i>
+        <span>Lớp học</span>
+      </button>
+      <button type="button" id="ios-tab-attendance" onclick="switchAdminTab('attendance')" class="ios-tab-item">
+        <i data-lucide="calendar-check-2" class="w-5 h-5"></i>
+        <span>Điểm danh</span>
+      </button>
+      <button type="button" id="ios-tab-finance" onclick="switchAdminTab('finance')" class="ios-tab-item relative">
+        <i data-lucide="wallet" class="w-5 h-5"></i>
+        <span>Thu - Chi</span>
+        <span id="ios-finance-pending-badge" class="hidden absolute top-0.5 right-3 px-1.5 py-0.2 rounded-full bg-[#FF4B16] text-white text-[9px] font-extrabold leading-tight">0</span>
+      </button>
+      <button type="button" id="ios-tab-students" onclick="switchAdminTab('students')" class="ios-tab-item">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span>Học sinh</span>
+      </button>
+      <button type="button" id="ios-tab-settings" onclick="switchAdminTab('settings')" class="ios-tab-item">
+        <i data-lucide="settings" class="w-5 h-5"></i>
+        <span>Cài đặt</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL HƯỚNG DẪN & QUÉT QR CÀI APP LÊN iPHONE (iOS) -->
+  <div
+    id="ios-install-modal"
+    onclick="closeIosInstallModal()"
+    class="fixed inset-0 z-50 hidden bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden my-6 animate-fade-in"
+    >
+      <div class="bg-gradient-to-r from-[#25214C] via-[#48409E] to-[#5B55FF] text-white px-5 py-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <img src="apple-touch-icon.png" alt="Thanh Chí Edu Icon" class="w-10 h-10 rounded-xl shadow-md border border-white/25 shrink-0" />
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Cài App lên iPhone cá nhân (iOS)</h3>
+            <p class="text-[11px] text-indigo-100">Mở thẳng Cổng Quản Lý • Bảo mật mật khẩu • Đồng bộ 2 chiều</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeIosInstallModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs sm:text-sm text-slate-700">
+        <!-- QR quét từ máy tính sang Camera iPhone -->
+        <div class="p-3.5 rounded-2xl bg-[#F4F2FF] border border-[#E2DEFF] flex flex-col items-center text-center space-y-2">
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#5B55FF]">
+            Mở Camera iPhone quét mã này để mở link App Quản Lý
+          </span>
+          <img
+            id="ios-install-qr-img"
+            alt="QR Cài App iOS"
+            class="w-40 h-40 rounded-xl bg-white p-2 border border-slate-200 shadow-xs"
+          />
+          <button
+            type="button"
+            onclick="copyIosAppLink()"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#5B55FF] hover:bg-[#4842E8] text-white text-xs font-extrabold transition cursor-pointer"
+          >
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Sao chép link cài App Quản Lý</span>
+          </button>
+        </div>
+
+        <!-- 3 bước cài trên Safari iOS -->
+        <div class="space-y-2.5">
+          <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-5 h-5 rounded-full bg-[#5B55FF] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <div>
+              <strong>Mở link bằng trình duyệt Safari</strong> trên iPhone (quét mã QR phía trên hoặc dán link vào Safari).
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-5 h-5 rounded-full bg-[#5B55FF] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <div>
+              Bấm nút <strong>Chia sẻ</strong> (biểu tượng ô vuông có mũi tên hướng lên <strong>[↑]</strong> ở thanh dưới cùng Safari).
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-5 h-5 rounded-full bg-[#5B55FF] text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</span>
+            <div>
+              Kéo xuống chọn <strong>"Thêm vào Màn hình chính"</strong> (<em>Add to Home Screen</em>) → bấm <strong>"Thêm"</strong> ở góc trên phải.
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-500 leading-relaxed">
+          Sau khi thêm, biểu tượng <strong>Thanh Chí Edu</strong> sẽ nằm ngay trên màn hình chính iPhone như ứng dụng thật, tràn viền toàn màn hình, mở thẳng vào mục <strong>Quản lý</strong> và luôn hỏi mật khẩu quản trị mỗi lần mở App.
+        </p>
+      </div>
+    </div>
+  </div>
+
   <!-- NÚT NỔI QUAY LẠI ĐẦU TRANG (HIỆN KHI CUỘN XUỐNG XEM DANH SÁCH HỌC SINH) -->
   <button
     id="btn-scroll-to-top"
@@ -5078,6 +5203,6 @@
   <div id="toast-container" class="fixed bottom-20 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261024_v10"></script>
+  <script src="app.js?v=20261024_v11"></script>
 </body>
 </html>
