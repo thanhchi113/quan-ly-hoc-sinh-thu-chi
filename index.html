@@ -286,7 +286,7 @@
         </div>
 
         <!-- Search Input Row -->
-        <div class="py-5 border-b border-[#e6e6e6]">
+        <div class="pt-5">
           <div class="flex flex-col sm:flex-row gap-2.5">
             <div class="relative flex-1 flex items-center">
               <i data-lucide="search" class="w-4 h-4 text-[#595c5f] absolute left-3.5"></i>
@@ -309,108 +309,11 @@
             </button>
           </div>
         </div>
-
-        <!-- Divided 4-Cell KPI Strip -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 pt-5 gap-4 lg:gap-0 lg:divide-x lg:divide-[#e6e6e6]">
-          <div class="lg:pr-6">
-            <div class="text-[13px] font-medium text-[#595c5f]">Tổng học sinh đang theo học</div>
-            <div class="mt-1 text-2xl sm:text-[28px] font-semibold text-[#0a0a0a] tabular-nums leading-tight">130 <span class="text-sm font-normal text-[#595c5f]">học sinh</span></div>
-            <div class="mt-1 text-[13px] text-[#595c5f]">Đồng bộ trực tiếp từ sổ điểm danh</div>
-          </div>
-          <div class="lg:px-6">
-            <div class="text-[13px] font-medium text-[#595c5f]">Lớp đang hoạt động</div>
-            <div class="mt-1 text-2xl sm:text-[28px] font-normal text-[#0a0a0a] tabular-nums leading-tight">17 <span class="text-sm font-normal text-[#595c5f]">lớp</span></div>
-            <div class="mt-1 text-[13px] text-[#595c5f]">Khối 8 đến Khối 12 luyện thi</div>
-          </div>
-          <div class="lg:px-6">
-            <div class="text-[13px] font-medium text-[#595c5f]">Học phí tiêu chuẩn (8 buổi)</div>
-            <div class="mt-1 text-2xl sm:text-[28px] font-normal text-[#0a0a0a] tabular-nums leading-tight">500.000 <span class="text-sm font-normal text-[#595c5f]">đ/kỳ</span></div>
-            <div class="mt-1 text-[13px] text-[#595c5f]">Tự động tính theo chu kỳ 8 buổi</div>
-          </div>
-          <div class="lg:pl-6">
-            <div class="text-[13px] font-medium text-[#595c5f]">Cổng thanh toán VietQR</div>
-            <div class="mt-1 text-2xl sm:text-[28px] font-normal text-[#0a0a0a] tabular-nums leading-tight">24/7 <span class="text-sm font-normal text-[#595c5f]">tự động</span></div>
-            <div class="mt-1 text-[13px] text-[#595c5f]">Điền sẵn số tiền &amp; nội dung CK</div>
-          </div>
-        </div>
       </div>
 
       <!-- Parent Search Results -->
       <div id="parent-results-container" class="space-y-4">
         <!-- Rendered by JS -->
-      </div>
-
-      <!-- Tuition Schedule Table -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div class="lg:col-span-12 bg-[#ffffff] rounded-lg border border-[#e6e6e6] p-5 sm:p-6">
-          <div class="flex items-baseline justify-between gap-3 pb-4 border-b border-[#e6e6e6]">
-            <div>
-              <h2 class="text-base font-semibold text-[#0a0a0a]">Bảng lịch học &amp; mức học phí niêm yết theo khối</h2>
-              <p class="text-[13px] text-[#595c5f] mt-0.5">Chu kỳ thu tiêu chuẩn 8 buổi/kỳ · cập nhật tự động theo sổ điểm danh</p>
-            </div>
-            <span class="text-[13px] font-medium text-[#595c5f] tabular-nums shrink-0">Năm học 2026-2027</span>
-          </div>
-
-          <div class="overflow-x-auto mt-2">
-            <table class="w-full text-sm border-collapse">
-              <thead>
-                <tr class="border-b border-[#e6e6e6] text-[#595c5f]">
-                  <th class="py-2.5 pr-3 text-left font-normal text-[13px]">Khối / Chương trình học</th>
-                  <th class="py-2.5 px-3 text-right font-normal text-[13px] tabular-nums">Số lớp</th>
-                  <th class="py-2.5 px-3 text-right font-normal text-[13px] tabular-nums">Sĩ số</th>
-                  <th class="py-2.5 px-3 text-right font-normal text-[13px] tabular-nums">Số buổi/kỳ</th>
-                  <th class="py-2.5 pl-3 text-right font-normal text-[13px] tabular-nums">Học phí/kỳ</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-[#eeeeee] text-[#0a0a0a]">
-                <tr>
-                  <td class="py-3 pr-3 font-medium">Khối 12 - Luyện thi Tốt nghiệp THPT</td>
-                  <td class="py-3 px-3 text-right tabular-nums">5</td>
-                  <td class="py-3 px-3 text-right tabular-nums">38</td>
-                  <td class="py-3 px-3 text-right tabular-nums">8</td>
-                  <td class="py-3 pl-3 text-right font-medium tabular-nums">500.000 đ</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-medium">Khối 11 - Toán THPT chương trình mới</td>
-                  <td class="py-3 px-3 text-right tabular-nums">4</td>
-                  <td class="py-3 px-3 text-right tabular-nums">32</td>
-                  <td class="py-3 px-3 text-right tabular-nums">8</td>
-                  <td class="py-3 pl-3 text-right font-medium tabular-nums">500.000 đ</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-medium">Khối 10 - Toán nền tảng &amp; vận dụng</td>
-                  <td class="py-3 px-3 text-right tabular-nums">3</td>
-                  <td class="py-3 px-3 text-right tabular-nums">26</td>
-                  <td class="py-3 px-3 text-right tabular-nums">8</td>
-                  <td class="py-3 pl-3 text-right font-medium tabular-nums">500.000 đ</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-medium">Khối 9 - Luyện thi tuyển sinh vào lớp 10</td>
-                  <td class="py-3 px-3 text-right tabular-nums">3</td>
-                  <td class="py-3 px-3 text-right tabular-nums">20</td>
-                  <td class="py-3 px-3 text-right tabular-nums">8</td>
-                  <td class="py-3 pl-3 text-right font-medium tabular-nums">500.000 đ</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-medium">Khối 8 - Bồi dưỡng năng lực Toán THCS</td>
-                  <td class="py-3 px-3 text-right tabular-nums">2</td>
-                  <td class="py-3 px-3 text-right tabular-nums">14</td>
-                  <td class="py-3 px-3 text-right tabular-nums">8</td>
-                  <td class="py-3 pl-3 text-right font-medium tabular-nums">500.000 đ</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="border-t border-[#e6e6e6] font-semibold text-[#0a0a0a]">
-                  <td class="pt-3 pr-3">Tổng toàn trung tâm</td>
-                  <td class="pt-3 px-3 text-right tabular-nums">17</td>
-                  <td class="pt-3 px-3 text-right tabular-nums">130</td>
-                  <td class="pt-3 px-3 text-right tabular-nums">8</td>
-                  <td class="pt-3 pl-3 text-right tabular-nums">500.000 đ</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
       </div>
     </section>
 
