@@ -9572,31 +9572,31 @@ function openTransactionDetailModal(itemKey) {
     if (titleEl) titleEl.textContent = `${req.studentName || 'Học sinh'} (${req.studentCode || 'HS'})`;
 
     bodyEl.innerHTML = `
-      <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
+      <div class="tc-detail-amount-card is-pending">
         <div>
-          <span class="text-[11px] font-bold text-amber-800 uppercase block">Số tiền chờ duyệt</span>
-          <span class="text-lg sm:text-xl font-black tabular-nums text-emerald-700">+${formatCurrency(amtVal)}</span>
+          <span class="tc-detail-label">Số tiền chờ duyệt</span>
+          <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value">+${formatCurrency(amtVal)}</span>
         </div>
-        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-200/90 text-amber-950 border border-amber-400 text-xs font-extrabold">
+        <span class="tc-detail-badge-type">
           <i data-lucide="clock" class="w-3.5 h-3.5"></i>
           <span>Đang chờ duyệt</span>
         </span>
       </div>
       <div class="grid grid-cols-2 gap-2.5 text-xs">
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="text-slate-400 font-semibold block">Mã yêu cầu</span>
+          <span class="tc-detail-label">Mã yêu cầu</span>
           <span class="tabular-nums font-bold text-slate-800 break-all">${escapeHtml(req.id)}</span>
         </div>
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="text-slate-400 font-semibold block">Thời gian gửi</span>
+          <span class="tc-detail-label">Thời gian gửi</span>
           <span class="font-bold text-slate-800">${escapeHtml(req.submittedAt || 'Vừa gửi')}</span>
         </div>
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="text-slate-400 font-semibold block">Học sinh / Lớp</span>
+          <span class="tc-detail-label">Học sinh / Lớp</span>
           <span class="font-bold text-slate-900">${escapeHtml(req.studentName || '---')} (${escapeHtml(req.studentCode || '---')}) • Lớp ${escapeHtml(req.className || '---')}</span>
         </div>
         <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="text-slate-400 font-semibold block">Kỳ thu / Người gửi</span>
+          <span class="tc-detail-label">Kỳ thu / Người gửi</span>
           <span class="font-bold text-slate-800">${escapeHtml(req.period || '---')} • ${escapeHtml(req.payerName || 'Phụ huynh')}</span>
         </div>
       </div>
@@ -9609,7 +9609,7 @@ function openTransactionDetailModal(itemKey) {
           : ''
       }
       <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-        <span class="text-[11px] font-bold text-slate-500 uppercase block">Ghi chú / Nội dung chuyển khoản đầy đủ</span>
+        <span class="tc-detail-label">Ghi chú / Nội dung chuyển khoản đầy đủ</span>
         <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(req.note || 'Phụ huynh xác nhận chuyển khoản học phí')}</p>
       </div>
     `;
@@ -9672,34 +9672,26 @@ function openTransactionDetailModal(itemKey) {
   }
 
   bodyEl.innerHTML = `
-    <div class="p-3.5 rounded-2xl ${
-      isIncome ? 'bg-emerald-50/90 border border-emerald-200' : 'bg-rose-50/90 border border-rose-200'
-    } flex flex-wrap items-center justify-between gap-3">
+    <div class="tc-detail-amount-card ${isIncome ? 'is-income' : 'is-expense'}">
       <div>
-        <span class="text-[11px] font-bold ${isIncome ? 'text-emerald-800' : 'text-rose-800'} uppercase block">
+        <span class="tc-detail-label">
           Số tiền giao dịch
         </span>
-        <span class="text-xl sm:text-2xl font-black tabular-nums ${isIncome ? 'text-emerald-700' : 'text-rose-700'}">
+        <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value">
           ${isIncome ? '+' : '-'}${formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount)}
         </span>
       </div>
-      <div class="flex flex-col items-end gap-1">
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
-          isIncome ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
-        }">
+      <div class="flex flex-col items-end gap-1.5">
+        <span class="tc-detail-badge-type">
           ${isIncome ? '+ Phiếu Thu' : '- Phiếu Chi'} • ${escapeHtml(tx.category || 'Sổ quỹ')}
         </span>
         ${
           isDraftTx
-            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold border ${
-                isDraftIncluded
-                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                  : 'bg-amber-100 text-amber-900 border-amber-400'
-              }">
+            ? `<span class="tc-detail-badge-draft">
                 <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
                 <span>STK Nháp (5801434567) • ${isDraftIncluded ? 'Đang cộng TK chính' : 'Chưa cộng TK chính'}</span>
               </span>`
-            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-extrabold">
+            : `<span class="tc-detail-badge-account">
                 <i data-lucide="landmark" class="w-3 h-3 shrink-0"></i>
                 <span>Tài khoản Chính</span>
               </span>`
@@ -9709,18 +9701,18 @@ function openTransactionDetailModal(itemKey) {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
       <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-        <span class="text-slate-400 font-semibold block">Mã giao dịch đầy đủ</span>
+        <span class="tc-detail-label">Mã giao dịch đầy đủ</span>
         <span class="tabular-nums font-bold text-slate-800 break-all">${escapeHtml(tx.id)}</span>
       </div>
       <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-        <span class="text-slate-400 font-semibold block">Ngày ghi nhận & Phương thức</span>
+        <span class="tc-detail-label">Ngày ghi nhận & Phương thức</span>
         <span class="font-bold text-slate-800">${escapeHtml(tx.date || '---')} • ${escapeHtml(tx.method || 'Chuyển khoản')}</span>
       </div>
       ${
         compact.matchedStu || compact.studentCode
-          ? `<div class="sm:col-span-2 p-2.5 rounded-xl bg-slate-100/70 border border-slate-200 flex items-center justify-between gap-2">
+          ? `<div class="sm:col-span-2 p-2.5 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-between gap-2">
                <div>
-                 <span class="text-slate-700 font-bold text-[11px] uppercase block">Học sinh liên kết</span>
+                 <span class="tc-detail-label">Học sinh liên kết</span>
                  <span class="font-extrabold text-slate-900 text-xs sm:text-sm">
                    ${escapeHtml(compact.matchedStu ? compact.matchedStu.fullName : 'Học sinh')} (${escapeHtml(compact.studentCode)})
                    ${compact.matchedStu?.className ? ` • Lớp ${escapeHtml(compact.matchedStu.className)}` : ''}
@@ -9744,13 +9736,13 @@ function openTransactionDetailModal(itemKey) {
     </div>
 
     <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-      <span class="text-[11px] font-bold text-slate-500 uppercase block">Nội dung chi tiết & Nội dung chuyển khoản gốc</span>
+      <span class="tc-detail-label">Nội dung chi tiết & Nội dung chuyển khoản gốc</span>
       <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(
         tx.description || tx.category || '---'
       )}</p>
       ${
         tx.createdBy
-          ? `<p class="text-[11px] text-slate-400 pt-1">Nguồn tạo: <strong>${escapeHtml(tx.createdBy)}</strong></p>`
+          ? `<p class="text-[11px] text-slate-400 pt-1">Nguồn tạo: <strong class="text-slate-800">${escapeHtml(tx.createdBy)}</strong></p>`
           : ''
       }
     </div>
