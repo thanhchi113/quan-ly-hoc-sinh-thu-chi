@@ -28,7 +28,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261025_v12" />
+  <link rel="stylesheet" href="styles.css?v=20261025_v13" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -95,11 +95,11 @@
           id="btn-open-theme-modal"
           type="button"
           onclick="openThemeCustomizerModal()"
-          title="Tùy chỉnh màu sắc giao diện & chế độ Sáng / Tối"
-          class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium bg-[#ffffff] hover:bg-[#eeeeee] text-[#0a0a0a] border border-[#d5d7da] transition cursor-pointer whitespace-nowrap"
+          title="Tùy chỉnh màu sắc giao diện, tự pha màu & chế độ Sáng / Tối"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium bg-[#ffffff] hover:bg-[#eeeeee] text-[#0a0a0a] border border-[#d5d7da] transition cursor-pointer whitespace-nowrap"
         >
           <i data-lucide="palette" class="w-3.5 h-3.5 text-[#0a0a0a] shrink-0"></i>
-          <span>Giao diện</span>
+          <span class="hidden sm:inline">Giao diện</span>
           <span id="header-theme-color-dot" class="w-2.5 h-2.5 rounded-full bg-[#141414] border border-white shrink-0"></span>
         </button>
 
@@ -4824,52 +4824,64 @@
       </div>
 
       <!-- Body -->
-      <div class="p-5 sm:p-6 space-y-5">
+      <div class="p-5 sm:p-6 space-y-5 max-h-[78vh] overflow-y-auto">
         <!-- 1. Chế độ Sáng / Tối -->
         <div class="space-y-2.5">
           <label class="block text-xs font-extrabold uppercase tracking-normal text-slate-600">
-            1. Chế độ hiển thị (Sáng / Tối)
+            1. Chế độ hiển thị (Sáng / Tối - Tương phản cao)
           </label>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
               id="theme-mode-light-btn"
               onclick="setDarkMode(false)"
-              class="p-3.5 rounded-2xl border-2 flex items-center gap-3 text-left transition cursor-pointer"
+              class="p-3.5 rounded-2xl border-2 flex items-center justify-between gap-3 text-left transition cursor-pointer"
             >
-              <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
-                <i data-lucide="sun" class="w-5 h-5"></i>
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 border border-amber-300 flex items-center justify-center text-lg shrink-0">
+                  <i data-lucide="sun" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="font-extrabold text-sm text-slate-900">Chế độ Sáng</div>
+                  <div class="text-[11px] text-slate-500 truncate">Nền sáng rõ nét, chữ đậm</div>
+                </div>
               </div>
-              <div>
-                <div class="font-extrabold text-sm text-slate-900">Chế độ Sáng</div>
-                <div class="text-[11px] text-slate-500">Nền trắng thanh lịch</div>
-              </div>
+              <span id="theme-light-active-badge" class="px-2 py-0.5 rounded-full text-[11px] font-extrabold shrink-0">
+                Đang bật
+              </span>
             </button>
 
             <button
               type="button"
               id="theme-mode-dark-btn"
               onclick="setDarkMode(true)"
-              class="p-3.5 rounded-2xl border-2 flex items-center gap-3 text-left transition cursor-pointer"
+              class="p-3.5 rounded-2xl border-2 flex items-center justify-between gap-3 text-left transition cursor-pointer"
             >
-              <div class="w-10 h-10 rounded-xl bg-slate-800 text-amber-300 flex items-center justify-center text-lg shrink-0">
-                <i data-lucide="moon" class="w-5 h-5"></i>
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-slate-900 text-amber-300 border border-slate-700 flex items-center justify-center text-lg shrink-0">
+                  <i data-lucide="moon" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="font-extrabold text-sm text-slate-900">Chế độ Tối</div>
+                  <div class="text-[11px] text-slate-500 truncate">Nền đêm dịu mắt, tương phản cao</div>
+                </div>
               </div>
-              <div>
-                <div class="font-extrabold text-sm text-slate-900">Chế độ Tối</div>
-                <div class="text-[11px] text-slate-500">Dịu mắt ban đêm</div>
-              </div>
+              <span id="theme-dark-active-badge" class="px-2 py-0.5 rounded-full text-[11px] font-extrabold shrink-0">
+                Tắt
+              </span>
             </button>
           </div>
         </div>
 
-        <!-- 2. Chọn Tông Màu Chủ Đạo -->
+        <!-- 2. Chọn Tông Màu Chủ Đạo Có Sẵn -->
         <div class="space-y-2.5">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <label class="block text-xs font-extrabold uppercase tracking-normal text-slate-600">
-              2. Tông màu chủ đạo của trang web
+              2. Bảng màu chủ đạo chuẩn (Tương thích Sáng &amp; Tối)
             </label>
-            <span id="theme-current-label" class="text-xs font-bold text-blue-600">Xanh Navy Chuẩn</span>
+            <span id="theme-current-label" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              Xanh Navy Chuẩn
+            </span>
           </div>
 
           <div id="theme-preset-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -4877,21 +4889,80 @@
           </div>
         </div>
 
-        <!-- 3. Tùy chọn mã màu tự do -->
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-bold text-xs sm:text-sm text-slate-800">Tự pha màu theo ý thích</div>
-            <div class="text-[11px] text-slate-500">Bấm vào ô màu bên phải để chọn bất kỳ màu nào</div>
+        <!-- 3. Tự chọn màu riêng & Lưu lại Tên + Mã màu -->
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5">
+                <i data-lucide="pipette" class="w-4 h-4 text-blue-600"></i>
+                <span>3. Tự chọn màu riêng &amp; Lưu bộ màu cá nhân</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5">
+                Chọn màu trên bảng màu hoặc nhập mã HEX (VD: <code>#2563EB</code>), đặt tên và bấm <strong>Lưu màu</strong> để dùng lâu dài.
+              </div>
+            </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <input
-              type="color"
-              id="theme-custom-color-picker"
-              value="#1d5fbf"
-              oninput="applyCustomHexTheme(this.value)"
-              class="w-10 h-10 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white"
-              title="Chọn màu tùy thích"
-            />
+
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+            <!-- Ô chọn màu + Mã HEX -->
+            <div class="sm:col-span-5">
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Chọn màu &amp; Mã màu HEX</label>
+              <div class="flex items-center gap-2">
+                <input
+                  type="color"
+                  id="theme-custom-color-picker"
+                  value="#1d5fbf"
+                  oninput="handleCustomColorPickerInput(this.value)"
+                  class="w-11 h-10 rounded-xl border border-slate-300 cursor-pointer p-0.5 bg-white shrink-0"
+                  title="Bấm để mở bảng pha màu tự chọn"
+                />
+                <input
+                  type="text"
+                  id="theme-custom-hex-input"
+                  value="#1D5FBF"
+                  maxlength="7"
+                  placeholder="#1D5FBF"
+                  oninput="handleCustomHexTextInput(this.value)"
+                  class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-extrabold uppercase tabular-nums text-slate-900"
+                />
+              </div>
+            </div>
+
+            <!-- Ô đặt tên màu -->
+            <div class="sm:col-span-4">
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Tên màu muốn lưu</label>
+              <input
+                type="text"
+                id="theme-custom-name-input"
+                placeholder="VD: Xanh Thương Hiệu..."
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold text-slate-900"
+              />
+            </div>
+
+            <!-- Nút Lưu màu riêng -->
+            <div class="sm:col-span-3">
+              <button
+                type="button"
+                onclick="saveCustomNamedTheme()"
+                class="w-full px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="bookmark-plus" class="w-4 h-4 shrink-0"></i>
+                <span>Lưu màu</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Danh sách các màu tự chọn đã lưu -->
+          <div id="theme-saved-custom-section" class="pt-2 border-t border-slate-200/80 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase text-slate-500">
+                Danh sách màu tự chọn đã lưu (<span id="theme-saved-custom-count">0</span>)
+              </span>
+              <span class="text-[11px] text-slate-400">Bấm vào thẻ màu để áp dụng ngay</span>
+            </div>
+            <div id="theme-saved-custom-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Rendered by JS -->
+            </div>
           </div>
         </div>
       </div>
@@ -5373,6 +5444,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261025_v22"></script>
+  <script src="app.js?v=20261025_v25"></script>
 </body>
 </html>
