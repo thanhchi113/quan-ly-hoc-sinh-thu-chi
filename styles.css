@@ -554,6 +554,10 @@ a.rounded-xl {
   overflow: hidden;
 }
 
+#admin-tab-finance .modern-sheet-card {
+  border-radius: 0 !important;
+}
+
 /* Thẻ lớp học ở Chế độ Sáng (Soft Premium Floating Cards) */
 .class-selector-item {
   background-color: #FFFFFF;
