@@ -37,7 +37,7 @@ html.dark-mode {
   --surface-primary: #0f172a;
   --surface-secondary: #1e293b;
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-secondary: #cbd5e1;
   --border-subtle: #334155;
 }
 
@@ -970,22 +970,21 @@ html.dark-mode .modern-kpi-card:hover {
 
 /* Tầng 2: Các hộp con / ô thống kê bên trong Card (.bg-slate-50, .bg-slate-100, .bg-slate-200) */
 html.dark-mode .bg-slate-50,
-html.dark-mode .bg-slate-50\/80,
-html.dark-mode .bg-slate-50\/70,
-html.dark-mode .bg-slate-50\/60 {
+html.dark-mode [class*="bg-slate-50"] {
   background-color: #1e293b !important;
   color: #f1f5f9 !important;
-  border-color: #475569 !important;
+  border-color: #334155 !important;
 }
 
-html.dark-mode .bg-slate-100 {
-  background-color: #263449 !important;
+html.dark-mode .bg-slate-100,
+html.dark-mode [class*="bg-slate-100"] {
+  background-color: #1e293b !important;
   color: #f8fafc !important;
-  border-color: #475569 !important;
+  border-color: #334155 !important;
 }
 
 html.dark-mode .bg-slate-200,
-html.dark-mode .bg-slate-200\/80 {
+html.dark-mode [class*="bg-slate-200"] {
   background-color: #334155 !important;
   color: #ffffff !important;
   border-color: #475569 !important;
@@ -1032,10 +1031,10 @@ html.dark-mode .bg-\[\#eeeeee\] {
 }
 
 html.dark-mode .bg-\[\#FFF3EE\],
-html.dark-mode .bg-\[\#FFF3EE\]\/60,
+html.dark-mode [class*="bg-\[\#FFF3EE\]"],
 html.dark-mode .bg-orange-50,
-html.dark-mode .bg-orange-50\/50 {
-  background-color: rgba(255, 75, 22, 0.18) !important;
+html.dark-mode [class*="bg-orange-50"] {
+  background-color: rgba(255, 75, 22, 0.16) !important;
   border-color: rgba(251, 146, 60, 0.45) !important;
   color: #ffedd5 !important;
 }
@@ -1043,81 +1042,68 @@ html.dark-mode .bg-orange-50\/50 {
 html.dark-mode .from-\[\#eeeeee\],
 html.dark-mode .from-\[\#eeeeee\]\/70 {
   background-color: #1e293b !important;
-  border-color: rgba(129, 140, 248, 0.38) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
 }
 
 html.dark-mode .bg-blue-50,
-html.dark-mode .bg-blue-50\/80,
-html.dark-mode .bg-blue-50\/70,
-html.dark-mode .bg-blue-50\/60,
-html.dark-mode .bg-blue-50\/50,
-html.dark-mode .bg-blue-50\/40,
+html.dark-mode [class*="bg-blue-50"],
 html.dark-mode .bg-blue-100,
-html.dark-mode .bg-blue-100\/70 {
-  background-color: rgba(37, 99, 235, 0.24) !important;
-  border-color: rgba(96, 165, 250, 0.5) !important;
+html.dark-mode [class*="bg-blue-100"] {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
   color: #dbeafe !important;
 }
 
-html.dark-mode .bg-slate-100,
-html.dark-mode .bg-slate-100\/80,
-html.dark-mode .bg-slate-100\/70,
-html.dark-mode .bg-slate-100\/50,
-html.dark-mode .bg-slate-100 {
-  background-color: rgba(99, 102, 241, 0.25) !important;
-  border-color: rgba(129, 140, 248, 0.5) !important;
+html.dark-mode .bg-indigo-50,
+html.dark-mode [class*="bg-indigo-50"],
+html.dark-mode .bg-indigo-100,
+html.dark-mode [class*="bg-indigo-100"] {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(129, 140, 248, 0.45) !important;
   color: #e0e7ff !important;
 }
 
 html.dark-mode .bg-emerald-50,
-html.dark-mode .bg-emerald-50\/80,
-html.dark-mode .bg-emerald-50\/70,
-html.dark-mode .bg-emerald-50\/60,
-html.dark-mode .bg-emerald-50\/50,
+html.dark-mode [class*="bg-emerald-50"],
 html.dark-mode .bg-emerald-100,
-html.dark-mode .bg-teal-50 {
-  background-color: rgba(16, 185, 129, 0.22) !important;
-  border-color: rgba(52, 211, 153, 0.5) !important;
+html.dark-mode [class*="bg-emerald-100"],
+html.dark-mode .bg-teal-50,
+html.dark-mode [class*="bg-teal-50"] {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(52, 211, 153, 0.45) !important;
   color: #d1fae5 !important;
 }
 
 html.dark-mode .bg-amber-50,
-html.dark-mode .bg-amber-50\/80,
-html.dark-mode .bg-amber-50\/70,
-html.dark-mode .bg-amber-50\/60,
-html.dark-mode .bg-amber-50\/45,
-html.dark-mode .bg-amber-50\/40,
-html.dark-mode .bg-amber-50\/20,
+html.dark-mode [class*="bg-amber-50"],
 html.dark-mode .bg-amber-100,
-html.dark-mode .bg-amber-100\/80,
+html.dark-mode [class*="bg-amber-100"],
 html.dark-mode .bg-amber-200,
-html.dark-mode .bg-amber-200\/80,
-html.dark-mode .bg-amber-200\/90 {
-  background-color: rgba(245, 158, 11, 0.22) !important;
-  border-color: rgba(251, 191, 36, 0.5) !important;
+html.dark-mode [class*="bg-amber-200"] {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
   color: #fef3c7 !important;
 }
 
 html.dark-mode .bg-rose-50,
-html.dark-mode .bg-rose-50\/80,
-html.dark-mode .bg-rose-50\/70,
-html.dark-mode .bg-rose-50\/60,
-html.dark-mode .bg-rose-50\/50,
+html.dark-mode [class*="bg-rose-50"],
 html.dark-mode .bg-rose-100,
-html.dark-mode .bg-rose-200 {
-  background-color: rgba(244, 63, 94, 0.24) !important;
-  border-color: rgba(251, 113, 133, 0.55) !important;
+html.dark-mode [class*="bg-rose-100"],
+html.dark-mode .bg-rose-200,
+html.dark-mode [class*="bg-rose-200"],
+html.dark-mode .bg-red-50,
+html.dark-mode [class*="bg-red-50"] {
+  background-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(251, 113, 133, 0.45) !important;
   color: #ffe4e6 !important;
 }
 
-html.dark-mode .bg-slate-100,
-html.dark-mode .bg-slate-100\/80,
-html.dark-mode .bg-slate-100\/60,
-html.dark-mode .bg-slate-100\/50,
-html.dark-mode .bg-slate-100\/40,
-html.dark-mode .bg-slate-100 {
-  background-color: rgba(168, 85, 247, 0.24) !important;
-  border-color: rgba(192, 132, 252, 0.5) !important;
+html.dark-mode .bg-purple-50,
+html.dark-mode [class*="bg-purple-50"],
+html.dark-mode .bg-purple-100,
+html.dark-mode [class*="bg-purple-100"] {
+  background-color: rgba(168, 85, 247, 0.18) !important;
+  border-color: rgba(192, 132, 252, 0.45) !important;
   color: #f3e8ff !important;
 }
 
@@ -1179,10 +1165,12 @@ html.dark-mode .session-state-3 {
   color: #fda4af !important;
 }
 
-/* Chữ trắng / sáng rõ cho toàn bộ Text màu tối trong Dark Mode */
+/* Chữ trắng / sáng rõ cho toàn bộ Text màu tối trong Dark Mode (Đảm bảo tương phản cao nhất) */
 html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-800 {
-  color: #f8fafc !important;
+html.dark-mode .text-slate-800,
+html.dark-mode .text-\[\#0a0a0a\],
+html.dark-mode .text-\[\#141414\] {
+  color: #ffffff !important;
 }
 
 html.dark-mode .text-slate-700,
@@ -1191,23 +1179,19 @@ html.dark-mode .text-slate-600 {
 }
 
 html.dark-mode .text-slate-500,
-html.dark-mode .text-slate-400 {
-  color: #94a3b8 !important;
+html.dark-mode .text-slate-400,
+html.dark-mode .text-\[\#0a0a0a\]\/75,
+html.dark-mode .text-\[\#595c5f\] {
+  color: #cbd5e1 !important;
 }
 
 html.dark-mode .text-\[\#1f3d6e\] {
   color: #93c5fd !important;
 }
 
-html.dark-mode .text-\[\#141414\] {
-  color: #a5b4fc !important;
-}
-
-html.dark-mode .text-\[\#141414\] {
-  color: #c4b5fd !important;
-}
-
-html.dark-mode .text-\[\#FF4B16\] {
+html.dark-mode .text-\[\#FF4B16\],
+html.dark-mode .text-orange-600,
+html.dark-mode .text-orange-700 {
   color: #fb923c !important;
 }
 
@@ -1224,12 +1208,20 @@ html.dark-mode .text-blue-950 {
   color: #93c5fd !important;
 }
 
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900 {
+html.dark-mode .text-indigo-600,
+html.dark-mode .text-indigo-700,
+html.dark-mode .text-indigo-800,
+html.dark-mode .text-indigo-900,
+html.dark-mode .text-indigo-950 {
   color: #a5b4fc !important;
+}
+
+html.dark-mode .text-purple-600,
+html.dark-mode .text-purple-700,
+html.dark-mode .text-purple-800,
+html.dark-mode .text-purple-900,
+html.dark-mode .text-purple-950 {
+  color: #d8b4fe !important;
 }
 
 html.dark-mode .text-emerald-600,
@@ -1369,8 +1361,8 @@ html.dark-mode .hover\:bg-blue-600:hover {
   color: #ffffff !important;
 }
 
-html.dark-mode .hover\:bg-slate-100:hover,
-html.dark-mode .hover\:bg-slate-100:hover {
+html.dark-mode .hover\:bg-indigo-50:hover,
+html.dark-mode .hover\:bg-indigo-100:hover {
   background-color: rgba(99, 102, 241, 0.36) !important;
 }
 
@@ -1385,9 +1377,8 @@ html.dark-mode .hover\:bg-amber-200\/70:hover {
   background-color: rgba(245, 158, 11, 0.34) !important;
 }
 
-html.dark-mode .hover\:bg-slate-100:hover,
-html.dark-mode .hover\:bg-slate-100\/40:hover,
-html.dark-mode .hover\:bg-slate-100:hover {
+html.dark-mode .hover\:bg-purple-50:hover,
+html.dark-mode .hover\:bg-purple-100:hover {
   background-color: rgba(168, 85, 247, 0.34) !important;
 }
 
@@ -1396,8 +1387,6 @@ html.dark-mode .hover\:bg-rose-100:hover {
   background-color: rgba(244, 63, 94, 0.34) !important;
 }
 
-html.dark-mode .hover\:bg-\[\#eeeeee\]:hover,
-html.dark-mode .hover\:bg-\[\#eeeeee\]:hover,
 html.dark-mode .hover\:bg-\[\#eeeeee\]:hover {
   background-color: #28374f !important;
 }
@@ -1804,15 +1793,227 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .tc-dialog-header-indigo {
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, #1e3a8a, #2563eb) !important;
+  color: #ffffff !important;
+}
+html.dark-mode .tc-dialog-header-indigo {
+  background: linear-gradient(135deg, #172554, #0f172a) !important;
+  border-bottom: 1.5px solid rgba(96, 165, 250, 0.45) !important;
 }
 
 .tc-dialog-header-danger {
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, #9f1239, #be123c) !important;
+  color: #ffffff !important;
+}
+html.dark-mode .tc-dialog-header-danger {
+  background: linear-gradient(135deg, #881337, #0f172a) !important;
+  border-bottom: 1.5px solid rgba(251, 113, 133, 0.45) !important;
 }
 
 .tc-dialog-header-emerald {
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, #065f46, #047857) !important;
+  color: #ffffff !important;
+}
+html.dark-mode .tc-dialog-header-emerald {
+  background: linear-gradient(135deg, #064e3b, #0f172a) !important;
+  border-bottom: 1.5px solid rgba(52, 211, 153, 0.45) !important;
+}
+
+/* Chi Tiết Giao Dịch Thu - Chi & Yêu Cầu Chờ Duyệt (Tương phản cao tuyệt đối) */
+.tc-detail-amount-card {
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+.tc-detail-amount-card.is-income {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  color: #166534;
+}
+.tc-detail-amount-card.is-income .tc-detail-amount-value {
+  color: #15803d;
+}
+.tc-detail-amount-card.is-expense {
+  background: #fff1f2;
+  border: 1.5px solid #fecdd3;
+  color: #9f1239;
+}
+.tc-detail-amount-card.is-expense .tc-detail-amount-value {
+  color: #be123c;
+}
+.tc-detail-amount-card.is-pending {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  color: #92400e;
+}
+.tc-detail-amount-card.is-pending .tc-detail-amount-value {
+  color: #b45309;
+}
+
+html.dark-mode .tc-detail-amount-card.is-income {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border: 1.5px solid rgba(52, 211, 153, 0.5) !important;
+  color: #a7f3d0 !important;
+}
+html.dark-mode .tc-detail-amount-card.is-income .tc-detail-amount-value {
+  color: #34d399 !important;
+  text-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
+}
+
+html.dark-mode .tc-detail-amount-card.is-expense {
+  background: rgba(244, 63, 94, 0.16) !important;
+  border: 1.5px solid rgba(251, 113, 133, 0.5) !important;
+  color: #fecdd3 !important;
+}
+html.dark-mode .tc-detail-amount-card.is-expense .tc-detail-amount-value {
+  color: #fb7185 !important;
+  text-shadow: 0 0 16px rgba(251, 113, 133, 0.35);
+}
+
+html.dark-mode .tc-detail-amount-card.is-pending {
+  background: rgba(245, 158, 11, 0.16) !important;
+  border: 1.5px solid rgba(251, 191, 36, 0.5) !important;
+  color: #fef3c7 !important;
+}
+html.dark-mode .tc-detail-amount-card.is-pending .tc-detail-amount-value {
+  color: #fbbf24 !important;
+  text-shadow: 0 0 16px rgba(251, 191, 36, 0.35);
+}
+
+.tc-detail-badge-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.tc-detail-amount-card.is-income .tc-detail-badge-type {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.tc-detail-amount-card.is-expense .tc-detail-badge-type {
+  background: #ffe4e6;
+  color: #9f1239;
+  border: 1px solid #fecdd3;
+}
+.tc-detail-amount-card.is-pending .tc-detail-badge-type {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+html.dark-mode .tc-detail-amount-card.is-income .tc-detail-badge-type {
+  background: rgba(6, 78, 59, 0.85) !important;
+  color: #ecfdf5 !important;
+  border: 1px solid #34d399 !important;
+}
+html.dark-mode .tc-detail-amount-card.is-expense .tc-detail-badge-type {
+  background: rgba(136, 19, 55, 0.85) !important;
+  color: #fff1f2 !important;
+  border: 1px solid #fb7185 !important;
+}
+html.dark-mode .tc-detail-amount-card.is-pending .tc-detail-badge-type {
+  background: rgba(120, 53, 15, 0.85) !important;
+  color: #fffbeb !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+.tc-detail-badge-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+html.dark-mode .tc-detail-badge-account {
+  background: rgba(30, 58, 138, 0.8) !important;
+  color: #eff6ff !important;
+  border: 1px solid #60a5fa !important;
+}
+
+.tc-detail-badge-draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+html.dark-mode .tc-detail-badge-draft {
+  background: rgba(146, 64, 14, 0.85) !important;
+  color: #fffbeb !important;
+  border: 1px solid #fbbf24 !important;
+}
+
+.tc-detail-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #64748b;
+}
+html.dark-mode .tc-detail-label {
+  color: #93c5fd !important;
+  font-weight: 800 !important;
+}
+
+/* Modals & Dialogs in Dark Mode */
+html.dark-mode .tc-dialog-card,
+html.dark-mode [id$="-modal"] > div.bg-white,
+html.dark-mode [id$="-modal"] .bg-white {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark-mode #transaction-detail-modal .tc-detail-label,
+html.dark-mode #transaction-detail-modal span[class*="text-slate-400"],
+html.dark-mode #transaction-detail-modal span[class*="text-slate-500"],
+html.dark-mode .tc-dialog-card span[class*="text-slate-400"],
+html.dark-mode .tc-dialog-card span[class*="text-slate-500"] {
+  color: #93c5fd !important;
+  font-weight: 800 !important;
+}
+
+html.dark-mode #tx-detail-footer button[onclick*="closeTransactionDetailModal"],
+html.dark-mode .tc-dialog-card button[onclick*="close"]:not([class*="hover:bg-white"]) {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+}
+html.dark-mode #tx-detail-footer button[onclick*="closeTransactionDetailModal"]:hover,
+html.dark-mode .tc-dialog-card button[onclick*="close"]:not([class*="hover:bg-white"]):hover {
+  background-color: #475569 !important;
+  color: #ffffff !important;
+}
+
+html.dark-mode #tx-detail-footer button[onclick*="deleteTransactionRecord"] {
+  background-color: rgba(225, 29, 72, 0.22) !important;
+  color: #fecdd3 !important;
+  border: 1px solid #f43f5e !important;
+}
+html.dark-mode #tx-detail-footer button[onclick*="deleteTransactionRecord"]:hover {
+  background-color: #e11d48 !important;
+  color: #ffffff !important;
 }
 
 .tc-dialog-input {
