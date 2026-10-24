@@ -3065,33 +3065,33 @@
                       type="button"
                       onclick="openSepayDirectLink('bank')"
                       class="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 text-[11px] font-bold flex items-center justify-between gap-1.5 cursor-pointer transition"
-                      title="Tự động copy STK đang chọn (5801434567 hoặc 8601774789) và mở thẳng trang Thêm Ngân Hàng của SePay.vn"
+                      title="Tự động copy STK đang chọn (5801434567 hoặc 8601774789) và mở thẳng trang Thêm Ngân Hàng của SePay.vn để lấy mã VA 96247..."
                     >
-                      <span class="truncate">🔗 1. Liên kết STK trên my.sepay.vn</span>
+                      <span class="truncate">🔗 1. Liên kết BIDV &amp; lấy mã VA 96247...</span>
                       <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 text-emerald-700"></i>
                     </button>
                     <button
                       type="button"
-                      onclick="openSepayDirectLink('webhook')"
+                      onclick="openSepayDirectLink('gsheet')"
                       class="p-2 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-950 text-[11px] font-bold flex items-center justify-between gap-1.5 cursor-pointer transition"
-                      title="Tự động copy đường dẫn Webhook URL và mở thẳng trang Tích hợp Webhooks của SePay.vn"
+                      title="Copy ID Google Sheet và mở my.sepay.vn -> Tích hợp Google Sheets (Không bị lỗi 302 Redirect của Apps Script)"
                     >
-                      <span class="truncate">🔗 2. Tự động gắn Webhook trên SePay</span>
+                      <span class="truncate">🔗 2. Bật "Tích hợp Google Sheets" trên SePay</span>
                       <i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0 text-amber-700"></i>
                     </button>
                   </div>
                 </div>
 
-                <!-- Webhook URL to paste into SePay / Casso -->
+                <!-- Webhook URL / Sheet ID info -->
                 <div class="bg-white p-2.5 rounded-lg border border-emerald-200 space-y-1">
                   <div class="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
-                    <span class="font-bold text-slate-700">Đường dẫn Webhook nhận biến động số dư (Dán vào SePay.vn hoặc Casso.vn):</span>
+                    <span class="font-bold text-slate-700">Đường dẫn Apps Script / Webhook (Dành cho Casso hoặc SMS Forwarder):</span>
                     <button
                       type="button"
                       onclick="copyTextById('bank-webhook-url-display')"
                       class="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
                     >
-                      Copy Webhook URL
+                      Copy URL
                     </button>
                   </div>
                   <p id="bank-webhook-url-display" class="font-mono text-[11px] text-emerald-800 break-all bg-emerald-50/60 p-1.5 rounded">
@@ -3099,13 +3099,12 @@
                   </p>
                 </div>
 
-                <!-- 3-step guide for BIDV + SePay -->
+                <!-- 2-step guide for BIDV + SePay -->
                 <div class="text-xs text-slate-700 space-y-1 bg-white/80 p-3 rounded-lg border border-emerald-200/80">
-                  <p id="setting-autobank-guide-title" class="font-bold text-emerald-900">Cách kích hoạt tự động 100% cho STK BIDV (Chính: 8601774789 / Nháp Test: 5801434567):</p>
+                  <p id="setting-autobank-guide-title" class="font-bold text-emerald-900">Cách kích hoạt SePay tự động 100% cho STK BIDV (8601774789 / 5801434567):</p>
                   <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-600">
-                    <li>Cập nhật lại mã <strong>Code.gs</strong> mới nhất vào Google Sheet của bạn (Bấm nút <strong>"2. Copy mã Code.gs"</strong> ở trên &rarr; Dán vào Apps Script &rarr; Bấm <strong>Triển khai &rarr; Quản lý nội dung triển khai &rarr; Chỉnh sửa &rarr; Phiên bản mới</strong>).</li>
-                    <li>Bấm nút <strong>"🔗 1. Liên kết STK trên my.sepay.vn"</strong> để thêm STK <strong>5801434567 (BIDV - Nháp Test)</strong> hoặc <strong>8601774789 (BIDV - Chính)</strong> vào SePay.</li>
-                    <li>Bấm nút <strong>"🔗 2. Tự động gắn Webhook trên SePay"</strong> (hệ thống tự copy sẵn Webhook URL) &rarr; Dán vào mục <strong>Cấu hình Webhook</strong> trên SePay. Hễ có chuyển khoản chứa <strong>Mã HS</strong> hoặc <strong>Họ tên HS</strong>, sau 3 giây hệ thống tự động tích <code class="text-emerald-700 font-bold">Đã hoàn thành</code>!</li>
+                    <li><strong>Với BIDV cá nhân (Bắt buộc):</strong> Khi thêm STK trên <code>my.sepay.vn</code>, SePay cấp cho bạn <strong>Mã TK ảo VA bắt đầu bằng 96247...</strong> (chuyển thẳng vào số 5801434567/8601774789 SePay sẽ không nhận được thông báo). Hãy dán mã <code>96247...</code> vào ô <strong>Mã TK Ảo VA SePay</strong> bên phải để gắn lên QR (tiền vẫn chảy 100% vào TK gốc của bạn).</li>
+                    <li><strong>Kết nối SePay &rarr; Google Sheets (Không lỗi 302):</strong> Vào <code>my.sepay.vn</code> &rarr; menu <strong>Tích hợp Google Sheets</strong> &rarr; Đăng nhập Google &rarr; chọn file Sheet <strong>LỚP TOÁN ANH CHÍ</strong>. Hễ có tiền vào, Web tự đọc bảng SePay và duyệt <code class="text-emerald-700 font-bold">Đã hoàn thành</code> ngay lập tức!</li>
                   </ol>
                 </div>
 
@@ -3345,7 +3344,7 @@
                     </select>
                   </div>
                   <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Số tài khoản nhận học phí</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Số tài khoản gốc nhận học phí</label>
                     <input
                       id="setting-bank-acc"
                       type="text"
@@ -3354,6 +3353,22 @@
                       class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono"
                     />
                   </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-300 space-y-1">
+                  <label for="setting-sepay-va-acc" class="block text-xs font-extrabold text-amber-950">
+                    Mã TK Ảo VA SePay gắn lên VietQR (Với BIDV bắt buộc nhập mã <code>96247...</code> từ my.sepay.vn)
+                  </label>
+                  <input
+                    id="setting-sepay-va-acc"
+                    type="text"
+                    placeholder="VD: 96247HTCHI (Để trống nếu ngân hàng không dùng VA)"
+                    oninput="this.value = this.value.toUpperCase(); updateQrPreviewInSettings()"
+                    class="w-full px-3 py-2 rounded-xl border border-amber-400 bg-white text-sm font-mono font-bold text-slate-900 uppercase"
+                  />
+                  <p class="text-[11px] text-amber-900 leading-snug">
+                    💡 Tiền quét QR qua mã <code>96247...</code> vẫn chảy 100% thẳng vào STK BIDV gốc ở trên, đồng thời kích hoạt SePay báo số dư &amp; duyệt tự động tức thì.
+                  </p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -4533,6 +4548,29 @@
             </div>
           </div>
 
+          <!-- Nhập Mã Tài Khoản Ảo VA 96247... của BIDV trên SePay -->
+          <div class="pt-2 border-t border-emerald-200/80 space-y-1.5">
+            <label for="sepay-va-account-input" class="block text-xs font-extrabold text-amber-950">
+              Mã TK Ảo VA SePay gắn lên QR (Bắt buộc với BIDV cá nhân — bắt đầu bằng <code>96247...</code>):
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                id="sepay-va-account-input"
+                type="text"
+                placeholder="VD: 96247HTCHI (Lấy tại mục Ngân hàng -> Tài khoản ảo VA trên my.sepay.vn)"
+                oninput="this.value = this.value.toUpperCase()"
+                class="flex-1 px-3 py-1.5 rounded-xl border-2 border-amber-400 bg-white text-xs font-mono font-bold uppercase text-slate-900"
+              />
+              <button
+                type="button"
+                onclick="saveSepayVaAccountFromModal()"
+                class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold cursor-pointer whitespace-nowrap"
+              >
+                Lưu Mã VA Lên QR
+              </button>
+            </div>
+          </div>
+
           <!-- Tùy chọn nhập SePay API Token để đồng bộ trực tiếp -->
           <div class="pt-2 border-t border-emerald-200/80 flex flex-col sm:flex-row sm:items-center gap-2">
             <label for="sepay-api-token-input" class="text-xs font-bold text-slate-700 whitespace-nowrap">
@@ -4541,7 +4579,7 @@
             <input
               id="sepay-api-token-input"
               type="password"
-              placeholder="Dán API Token từ my.sepay.vn (nếu có) hoặc dùng Webhook tự động miễn phí..."
+              placeholder="Hoặc dán API Token từ my.sepay.vn (nếu không dùng Tích hợp Google Sheets)..."
               class="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-mono"
             />
             <button
@@ -4554,11 +4592,66 @@
           </div>
         </div>
 
-        <!-- Bước 1 -->
+        <!-- Bước 1: Liên kết BIDV & lấy mã VA 96247... -->
+        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span id="sepay-modal-step2-title" class="font-extrabold text-emerald-950 text-sm">
+              Bước 1: Liên kết STK BIDV trên my.sepay.vn &amp; lấy mã TK ảo VA 96247...
+            </span>
+            <button
+              type="button"
+              onclick="openSepayDirectLink('bank')"
+              class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Copy STK &amp; Mở SePay Thêm Ngân Hàng</span>
+            </button>
+          </div>
+          <ol class="list-decimal list-inside space-y-1 text-xs text-slate-700">
+            <li>Vào <strong>Ngân hàng &rarr; Thêm ngân hàng</strong> trên <code>my.sepay.vn</code>, chọn <strong>BIDV</strong> và liên kết STK đang dùng.</li>
+            <li id="sepay-modal-step2-desc">Lưu ý bắt buộc của BIDV &amp; SePay: Chuyển thẳng vào STK gốc sẽ <strong>KHÔNG báo về SePay</strong>! Hãy tạo/copy mã <strong>Tài khoản ảo VA (96247...)</strong> trên SePay rồi dán vào ô <strong>Mã TK Ảo VA SePay</strong> ở trên và bấm <strong>Lưu Mã VA Lên QR</strong>.</li>
+          </ol>
+        </div>
+
+        <!-- Bước 2: Tích hợp Google Sheets chính thức của SePay (Không lỗi 302, không cần sửa Code.gs) -->
+        <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-300 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-extrabold text-amber-950 text-sm">
+              Bước 2 (Khuyên dùng - Không lỗi 302): Bật "Tích hợp Google Sheets" trên my.sepay.vn
+            </span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onclick="copyTextById('modal-sepay-webhook-url')"
+                class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy ID Sheet</span>
+              </button>
+              <button
+                type="button"
+                onclick="openSepayDirectLink('gsheet')"
+                class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                <span>Mở SePay Tích Hợp Google Sheets</span>
+              </button>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white border border-amber-300 font-mono text-xs text-emerald-800 break-all">
+            File Google Sheet đích: <strong>LỚP TOÁN ANH CHÍ</strong> (ID: <span id="modal-sepay-webhook-url">1dObYu0uf1pdSvYLWDdi45zKK2n67TzfbrfkDuOlsvq0</span>)
+          </div>
+          <ul class="list-disc list-inside space-y-1 text-xs text-slate-700">
+            <li><em>Vì sao không dán link Apps Script vào Webhook SePay?</em> Google Apps Script luôn trả mã chuyển hướng <code>HTTP 302</code> nên SePay Webhook từ chối ghi nhận.</li>
+            <li>Thay vào đó, trên <code>my.sepay.vn</code> hãy bấm menu <strong>Tích hợp Google Sheets</strong> &rarr; <strong>Đăng nhập Google</strong> &rarr; chọn đúng file Google Sheet của bạn &rarr; <strong>Lưu</strong> (hoạt động tức thì, không cần sửa Apps Script!).</li>
+          </ul>
+        </div>
+
+        <!-- Tùy chọn nâng cao: Cập nhật Code.gs mới nếu dùng API Token -->
         <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="font-extrabold text-blue-950 text-sm">
-              Bước 1: Cập nhật mã Code.gs mới nhất (Hỗ trợ tự kết nối SePay cho cả STK 5801434567 &amp; 8601774789)
+              Tùy chọn thêm: Cập nhật Code.gs mới nhất (Hỗ trợ đọc trực tiếp SePay API Token)
             </span>
             <div class="flex items-center gap-1.5">
               <button
@@ -4580,69 +4673,9 @@
               </a>
             </div>
           </div>
-          <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600">
-            <li>Bấm nút <strong>"Copy mã Code.gs mới"</strong> ở trên, mở Google Sheet của bạn &rarr; vào <strong>Tiện ích mở rộng &rarr; Apps Script</strong>.</li>
-            <li>Xóa code cũ, dán code mới vào &rarr; Bấm biểu tượng Lưu 💾.</li>
-            <li>Bấm <strong>Triển khai (Deploy) &rarr; Quản lý nội dung triển khai (Manage deployments)</strong> &rarr; Bấm biểu tượng cây bút ✏️ (Chỉnh sửa) &rarr; mục <em>Phiên bản (Version)</em> chọn <strong>Phiên bản mới (New version)</strong> &rarr; Bấm <strong>Triển khai</strong>.</li>
-          </ol>
-        </div>
-
-        <!-- Bước 2 -->
-        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <span id="sepay-modal-step2-title" class="font-extrabold text-emerald-950 text-sm">
-              Bước 2: Liên kết nhanh STK BIDV (5801434567 hoặc 8601774789) trên SePay.vn
-            </span>
-            <button
-              type="button"
-              onclick="openSepayDirectLink('bank')"
-              class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-            >
-              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-              <span>Copy STK &amp; Mở SePay Thêm Ngân Hàng</span>
-            </button>
-          </div>
-          <ol class="list-decimal list-inside space-y-1 text-xs text-slate-600">
-            <li>Bấm nút <strong>"Copy STK &amp; Mở SePay Thêm Ngân Hàng"</strong> ở trên (hệ thống tự copy sẵn STK đang chọn).</li>
-            <li>Trong menu <strong>Ngân hàng &rarr; Thêm ngân hàng</strong> trên SePay, chọn <strong>BIDV</strong>.</li>
-            <li id="sepay-modal-step2-desc">Dán số tài khoản <strong>5801434567</strong> (STK Nháp Test) hoặc <strong>8601774789</strong> (STK Chính) vào và xác thực theo hướng dẫn của SePay.</li>
-          </ol>
-        </div>
-
-        <!-- Bước 3 -->
-        <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-300 space-y-2.5">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="font-extrabold text-amber-950 text-sm">
-              Bước 3: Tự động gắn đường dẫn Webhook URL này vào SePay
-            </span>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onclick="copyTextById('modal-sepay-webhook-url')"
-                class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                <span>Copy Webhook URL</span>
-              </button>
-              <button
-                type="button"
-                onclick="openSepayDirectLink('webhook')"
-                class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                <span>Copy URL &amp; Mở Trang Webhook SePay</span>
-              </button>
-            </div>
-          </div>
-          <div class="p-2.5 rounded-xl bg-white border border-amber-300 font-mono text-xs text-emerald-800 break-all" id="modal-sepay-webhook-url">
-            https://script.google.com/macros/s/AKfycbz6CZ6W-WRxFP67uj3or2arPYHc_VLqCUQsG8L5vNMI4DNAqDquBT7OFvR7FRTvjYcx6w/exec
-          </div>
-          <ul class="list-disc list-inside space-y-1 text-xs text-slate-700">
-            <li>Trên SePay, vào mục <strong>Tích hợp Webhooks &rarr; Thêm Webhook</strong>.</li>
-            <li><strong>Khi có:</strong> Chọn <em>Có tiền vào (hoặc Cả tiền vào và tiền ra)</em>.</li>
-            <li><strong>Gọi đến URL:</strong> Dán đường dẫn Webhook URL vừa copy ở trên vào.</li>
-            <li><strong>Kiểu chứng thực:</strong> Chọn <em>Không chứng thực (No Auth)</em> &rarr; <strong>Content-Type:</strong> Chọn <code>application/json</code> &rarr; Bấm <strong>Lưu</strong>!</li>
-          </ul>
+          <p class="text-xs text-slate-600">
+            Nếu bạn dùng <strong>SePay API Token</strong> thay vì <em>Tích hợp Google Sheets</em>: Bấm <strong>Copy mã Code.gs mới</strong> &rarr; mở Google Sheet &rarr; <strong>Tiện ích mở rộng &rarr; Apps Script</strong> &rarr; dán đè &rarr; <strong>Triển khai &rarr; Quản lý nội dung triển khai &rarr; Phiên bản mới</strong>.
+          </p>
         </div>
       </div>
 
@@ -5179,6 +5212,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261024_v15"></script>
+  <script src="app.js?v=20261024_v16"></script>
 </body>
 </html>
