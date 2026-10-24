@@ -1738,12 +1738,36 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .tc-datepicker-header {
   background: linear-gradient(135deg, #25214C 0%, #3E3784 55%, var(--accent-indigo) 100%);
-  padding: 0.65rem 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem;
+  padding: 0.7rem 0.85rem;
+  display: block;
   color: #FFFFFF;
+}
+
+/* Cột nút thao tác xếp thẳng hàng dọc trong bảng Giao dịch */
+.tc-tx-action-col {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.32rem;
+  width: 116px;
+  margin: 0 auto;
+}
+
+.tc-tx-action-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 9px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .tc-dp-nav-btn {
