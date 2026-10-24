@@ -716,7 +716,8 @@ function processIncomingBankWebhook(ss, payload) {
       amount: Number(payload.transferAmount) || 0,
       accumulated: payload.accumulated !== undefined ? Number(payload.accumulated) : null,
       gateway: String(payload.gateway || 'BIDV'),
-      accountNumber: String(payload.accountNumber || '8601774789'),
+      accountNumber: String(payload.accountNumber || payload.subAccount || payload.sub_account || '8601774789'),
+      subAccount: String(payload.subAccount || payload.sub_account || ''),
       content: String(payload.content || payload.description || ''),
       refCode: String(payload.referenceCode || payload.id || ('SEPAY_' + Date.now())),
       dateStr: String(payload.transactionDate || new Date().toISOString().slice(0, 10))
@@ -742,7 +743,8 @@ function processIncomingBankWebhook(ss, payload) {
       amount: Number(payload.amount || payload.transferAmount) || 0,
       accumulated: payload.accumulated !== undefined ? Number(payload.accumulated) : null,
       gateway: String(payload.gateway || payload.bankBin || 'BIDV'),
-      accountNumber: String(payload.accountNumber || payload.bankAccountNo || '5801434567'),
+      accountNumber: String(payload.accountNumber || payload.bankAccountNo || payload.subAccount || '5801434567'),
+      subAccount: String(payload.subAccount || payload.sub_account || ''),
       content: String(payload.content || payload.description || payload.text || ''),
       refCode: String(payload.referenceCode || ('AUTO_' + Date.now())),
       dateStr: new Date().toISOString().slice(0, 10)
@@ -757,10 +759,33 @@ function processIncomingBankWebhook(ss, payload) {
   const stValues = shStudents.getDataRange().getValues();
   const reqValues = shReq.getDataRange().getValues();
   const trValues = shTrans.getDataRange().getValues();
+  const deletedKeys = {};
+  if (shSettings) {
+    try {
+      const rawDel = getSettingValueByKey(shSettings, 'deletedTxIdsJson');
+      const arrDel = rawDel ? JSON.parse(rawDel) : [];
+      if (Array.isArray(arrDel)) {
+        arrDel.forEach(function (k) {
+          if (k) deletedKeys[String(k).trim()] = true;
+        });
+      }
+    } catch (e) {}
+  }
+  const buildGasSig = function (dStr, amtVal, txt) {
+    const amt = Number(amtVal) || 0;
+    if (!amt) return '';
+    const m = String(txt || '').match(/\|\s*ND:\s*(.+)$/i) || String(txt || '').match(/Tự động lưu GD[^:]*:\s*(.+)$/i);
+    const core = removeAccentsGas(String(m ? m[1] : txt || '').toLowerCase())
+      .replace(/\[stk\s*nhap[^\]]*\]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+    return core ? 'SIG_' + String(dStr || '').slice(0, 10) + '_' + amt + '_' + core.slice(0, 48) : '';
+  };
   const existingTxIds = {};
   for (let tIdx = 1; tIdx < trValues.length; tIdx++) {
     const tid = String(trValues[tIdx][0] || '').trim();
     if (tid) existingTxIds[tid] = true;
+    const tSig = buildGasSig(formatCell(trValues[tIdx][1]), trValues[tIdx][4], trValues[tIdx][5]);
+    if (tSig) existingTxIds[tSig] = true;
   }
   const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   const todayDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
@@ -772,6 +797,9 @@ function processIncomingBankWebhook(ss, payload) {
   // Lưu thông báo số dư mới nhất từ SePay vào sheet CaiDat để hiển thị trên Web App
   if (incomingList.length > 0 && shSettings) {
     const latestTx = incomingList[incomingList.length - 1];
+    const isLatestDraftAcc =
+      /^(5801434567|962478SJJ2)$/i.test(String(latestTx.accountNumber || '').trim()) ||
+      /^(5801434567|962478SJJ2)$/i.test(String(latestTx.subAccount || '').trim());
     let computedBalance = latestTx.accumulated !== undefined && latestTx.accumulated !== null ? Number(latestTx.accumulated) : null;
     if (computedBalance === null) {
       const curBal = Number(getSettingValueByKey(shSettings, 'sepayBalance') || 0);
@@ -787,16 +815,36 @@ function processIncomingBankWebhook(ss, payload) {
       balance: computedBalance,
       content: latestTx.content || '',
       gateway: latestTx.gateway || 'BIDV',
-      accountNumber: latestTx.accountNumber || '8601774789'
+      accountNumber: isLatestDraftAcc ? '5801434567' : (latestTx.accountNumber || '8601774789')
     };
     upsertSettingKey(shSettings, 'lastBankAlertJson', JSON.stringify(alertObj), 'Thông báo biến động số dư gần nhất từ SePay');
-    upsertSettingKey(shSettings, 'sepayBalance', String(computedBalance), 'Số dư tài khoản ngân hàng thực tế từ SePay');
+    if (!isLatestDraftAcc) {
+      upsertSettingKey(shSettings, 'sepayBalance', String(computedBalance), 'Số dư tài khoản ngân hàng thực tế từ SePay');
+    }
   }
 
   incomingList.forEach(tx => {
     const txIdKey = 'GD_' + tx.refCode;
-    if (existingTxIds[txIdKey] || existingTxIds['GD_SEPAY_' + tx.refCode]) return;
+    const txDateOnly = /^\d{4}-\d{2}-\d{2}/.test(String(tx.dateStr || '')) ? String(tx.dateStr).slice(0, 10) : todayDate;
+    const incomingSig = buildGasSig(txDateOnly, tx.amount, '| ND: ' + tx.content);
+    if (
+      deletedKeys[txIdKey] ||
+      deletedKeys['GD_SEPAY_' + tx.refCode] ||
+      (incomingSig && deletedKeys[incomingSig]) ||
+      existingTxIds[txIdKey] ||
+      existingTxIds['GD_SEPAY_' + tx.refCode] ||
+      (incomingSig && existingTxIds[incomingSig])
+    ) {
+      return;
+    }
     existingTxIds[txIdKey] = true;
+    if (incomingSig) existingTxIds[incomingSig] = true;
+
+    const isDraftAcc =
+      /^(5801434567|962478SJJ2)$/i.test(String(tx.accountNumber || '').trim()) ||
+      /^(5801434567|962478SJJ2)$/i.test(String(tx.subAccount || '').trim());
+    const draftPrefix = isDraftAcc ? '[STK Nháp 5801434567] ' : '';
+    const txMethodLabel = isDraftAcc ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (Tự động)';
 
     const cleanContent = removeAccentsGas(tx.content).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
     const contentForName = cleanContent.replace(/\b(HO KINH DOANH\s+|HKD\s+)?(TRUNG TAM\s+)?HUYNH THANH CHI\b/g, ' ').replace(/\s+/g, ' ').trim();
@@ -853,13 +901,13 @@ function processIncomingBankWebhook(ss, payload) {
         // 1. Chế độ Duyệt tự động BẬT + Đã có kết quả chuyển tiền thành công -> Cập nhật sang Đã hoàn thành
         shStudents.getRange(i + 1, 9).setValue('Đã hoàn thành');
         shStudents.getRange(i + 1, 11).setValue(nowStr);
-        shStudents.getRange(i + 1, 12).setValue('Đã CK thành công vào STK: +' + paidAmount.toLocaleString('vi-VN') + 'đ (' + nowStr + ')');
+        shStudents.getRange(i + 1, 12).setValue(draftPrefix + 'Đã CK thành công vào STK: +' + paidAmount.toLocaleString('vi-VN') + 'đ (' + nowStr + ')');
 
         // 2. Tự động lưu / cập nhật vào bảng XacNhanChuyenKhoan
         let updatedExistingReq = false;
         for (let j = 1; j < reqValues.length; j++) {
           if (String(reqValues[j][3]).toUpperCase() === stCode.toUpperCase() && String(reqValues[j][12]) === 'Chờ duyệt') {
-            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ✅ Đã ghi nhận tiền vào STK & duyệt tự động');
+            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ' + draftPrefix + '✅ Đã ghi nhận tiền vào STK & duyệt tự động');
             shReq.getRange(j + 1, 13).setValue('Đã duyệt');
             shReq.getRange(j + 1, 14).setValue(nowStr);
             updatedExistingReq = true;
@@ -876,8 +924,8 @@ function processIncomingBankWebhook(ss, payload) {
             stPeriod,
             paidAmount,
             "'" + stPhone,
-            'Chuyển khoản STK tự động',
-            '✅ Đã ghi nhận tiền vào STK | ND CK: ' + tx.content,
+            isDraftAcc ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK tự động',
+            draftPrefix + '✅ Đã ghi nhận tiền vào STK | ND CK: ' + tx.content,
             '',
             'Đã duyệt',
             nowStr
@@ -887,13 +935,13 @@ function processIncomingBankWebhook(ss, payload) {
         // 3. Tự động lưu vào Sổ Thu Chi
         shTrans.appendRow([
           'GD_' + tx.refCode,
-          todayDate,
+          txDateOnly,
           'Thu',
           'Thu học phí',
           paidAmount,
-          'Tự động lưu CK vào STK: ' + stCode + ' - ' + stName + ' (' + stPeriod + ') | ND: ' + tx.content,
+          draftPrefix + 'Tự động lưu CK vào STK: ' + stCode + ' - ' + stName + ' (' + stPeriod + ') | ND: ' + tx.content,
           stCode,
-          'Chuyển khoản STK (Tự động)',
+          txMethodLabel,
           '',
           'Tự động từ STK (SePay)'
         ]);
@@ -904,12 +952,12 @@ function processIncomingBankWebhook(ss, payload) {
           shStudents.getRange(i + 1, 9).setValue('Chờ duyệt');
         }
         shStudents.getRange(i + 1, 11).setValue(nowStr);
-        shStudents.getRange(i + 1, 12).setValue('✅ Đã ghi nhận CK +' + paidAmount.toLocaleString('vi-VN') + 'đ vào STK — Chờ Quản lý duyệt');
+        shStudents.getRange(i + 1, 12).setValue(draftPrefix + '✅ Đã ghi nhận CK +' + paidAmount.toLocaleString('vi-VN') + 'đ vào STK — Chờ Quản lý duyệt');
 
         let updatedPending = false;
         for (let j = 1; j < reqValues.length; j++) {
           if (String(reqValues[j][3]).toUpperCase() === stCode.toUpperCase() && String(reqValues[j][12]) === 'Chờ duyệt') {
-            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ✅ Đã ghi nhận chuyển tiền thành công vào STK');
+            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ' + draftPrefix + '✅ Đã ghi nhận chuyển tiền thành công vào STK');
             updatedPending = true;
           }
         }
@@ -924,8 +972,8 @@ function processIncomingBankWebhook(ss, payload) {
             stPeriod,
             paidAmount,
             "'" + stPhone,
-            'Chuyển khoản STK (SePay)',
-            '✅ Đã ghi nhận chuyển tiền thành công vào STK | ND: ' + tx.content + ' — Chờ Quản lý duyệt',
+            isDraftAcc ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (SePay)',
+            draftPrefix + '✅ Đã ghi nhận chuyển tiền thành công vào STK | ND: ' + tx.content + ' — Chờ Quản lý duyệt',
             '',
             'Chờ duyệt',
             ''
@@ -941,13 +989,13 @@ function processIncomingBankWebhook(ss, payload) {
       if (txAmount > 0) {
         shTrans.appendRow([
           'GD_' + tx.refCode,
-          todayDate,
+          txDateOnly,
           isOut ? 'Chi' : 'Thu',
           isOut ? 'Khác' : 'Thu học phí',
           txAmount,
-          'Tự động lưu GD từ STK (' + (tx.accountNumber || '8601774789') + '): ' + (tx.content || 'Chuyển khoản ngân hàng'),
+          draftPrefix + 'Tự động lưu GD từ STK (' + (isDraftAcc ? '5801434567' : (tx.accountNumber || '8601774789')) + '): ' + (tx.content || 'Chuyển khoản ngân hàng'),
           '',
-          'Chuyển khoản STK (Tự động)',
+          txMethodLabel,
           '',
           'Tự động từ STK (SePay)'
         ]);
@@ -1059,15 +1107,32 @@ function pullSepayApiTransactions(ss, tokenOverride, useThrottle) {
     const tid = String(trValues[i][0] || '').trim();
     if (tid) seenIds[tid] = true;
   }
+  try {
+    const rawDel = getSettingValueByKey(shSettings, 'deletedTxIdsJson');
+    const arrDel = rawDel ? JSON.parse(rawDel) : [];
+    if (Array.isArray(arrDel)) {
+      arrDel.forEach(function (k) {
+        if (k) seenIds[String(k).trim()] = true;
+      });
+    }
+  } catch (e) {}
 
   const chronological = list.slice().reverse();
   let ingestedCount = 0;
   for (let k = 0; k < chronological.length; k++) {
     const item = chronological[k] || {};
     const rawId = String(item.id || item.reference_number || item.referenceCode || '').trim();
+    const rawRef = String(item.reference_number || item.referenceCode || '').trim();
     if (!rawId) continue;
     const refCode = 'SEPAY_' + rawId;
-    if (seenIds['GD_' + refCode] || seenIds['GD_SEPAY_' + rawId] || seenIds['GD_' + rawId]) continue;
+    if (
+      seenIds['GD_' + refCode] ||
+      seenIds['GD_SEPAY_' + rawId] ||
+      seenIds['GD_' + rawId] ||
+      (rawRef && (seenIds['GD_' + rawRef] || seenIds['GD_SEPAY_' + rawRef]))
+    ) {
+      continue;
+    }
 
     const amtIn = Number(String(item.amount_in || '0').replace(/\.\d{1,2}$/, '')) || 0;
     const amtOut = Number(String(item.amount_out || '0').replace(/\.\d{1,2}$/, '')) || 0;
@@ -1085,7 +1150,8 @@ function pullSepayApiTransactions(ss, tokenOverride, useThrottle) {
       transferAmount: finalAmt,
       accumulated: isFinite(accumRaw) ? accumRaw : undefined,
       gateway: item.bank_brand_name || item.gateway || 'BIDV',
-      accountNumber: item.account_number || item.accountNumber || '',
+      accountNumber: item.account_number || item.accountNumber || item.sub_account || '',
+      subAccount: item.sub_account || item.subAccount || '',
       content: item.transaction_content || item.content || item.description || '',
       referenceCode: refCode,
       transactionDate: item.transaction_date || item.transactionDate || ''
