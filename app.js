@@ -3902,7 +3902,7 @@ function updateSandboxModeButtonsUI() {
     if (headerBrandBadge) {
       headerBrandBadge.textContent = 'ALPHA EDU • NHÁP';
       headerBrandBadge.className =
-        'px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold tracking-wider uppercase shrink-0';
+        'hidden sm:inline-block px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold tracking-wider uppercase shrink-0';
     }
     if (sidebarBrandTitle) sidebarBrandTitle.textContent = 'ALPHA EDU (NHÁP)';
     if (sidebarBrandSub) sidebarBrandSub.textContent = 'Bản Dùng Thử Mẫu';
@@ -3919,7 +3919,7 @@ function updateSandboxModeButtonsUI() {
     if (headerBrandBadge) {
       headerBrandBadge.textContent = 'THANH CHÍ EDU';
       headerBrandBadge.className =
-        'px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0';
+        'hidden sm:inline-block px-2 py-0.5 rounded-full bg-[#E6E1FF] text-[#5B55FF] text-[10px] font-extrabold tracking-wider uppercase shrink-0';
     }
     if (sidebarBrandTitle) sidebarBrandTitle.textContent = 'THANH CHÍ EDU';
     if (sidebarBrandSub) sidebarBrandSub.textContent = 'Hệ thống Quản trị';
@@ -3936,11 +3936,11 @@ function updateSandboxModeButtonsUI() {
   if (topBtn) {
     if (isSandboxDraftMode) {
       topBtn.className =
-        'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white shadow-sm transition cursor-pointer whitespace-nowrap';
+        'hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white shadow-sm transition cursor-pointer whitespace-nowrap';
       topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5 shrink-0"></i><span>Tab Nháp</span>`;
     } else {
       topBtn.className =
-        'mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
+        'mode-pill-inactive hidden md:flex relative items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
       topBtn.innerHTML = `<i data-lucide="flask-conical" class="w-3.5 h-3.5 text-[#FF4B16] shrink-0"></i><span>Tab Nháp</span>`;
     }
   }
@@ -3960,11 +3960,11 @@ function updateSandboxModeButtonsUI() {
   if (tabBtn && tabLabel) {
     if (isSandboxDraftMode) {
       tabBtn.className =
-        'flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold transition bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white cursor-pointer shadow-sm';
+        'shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold transition bg-gradient-to-r from-[#FF4B16] to-[#7C6BFF] text-white cursor-pointer shadow-sm';
       tabLabel.textContent = 'Đang ở Tab Nháp (Bấm để về Dữ liệu thật)';
     } else {
       tabBtn.className =
-        'flex items-center gap-2 px-4 py-2 rounded-full text-xs sm:text-sm font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs';
+        'shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold transition bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] cursor-pointer shadow-2xs';
       tabLabel.textContent = 'Tab Nháp (Dùng Thử Cho Bạn Bè)';
     }
   }
@@ -4682,13 +4682,13 @@ function switchAppMode(mode) {
     parentView.classList.remove('hidden');
     adminView.classList.add('hidden');
     document.getElementById('ios-bottom-tabbar')?.classList.add('hidden');
-    btnParent.className = 'mode-pill-active flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
-    btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
+    btnParent.className = 'mode-pill-active flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap';
+    btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap';
   } else {
     parentView.classList.add('hidden');
     adminView.classList.remove('hidden');
-    btnAdmin.className = 'mode-pill-active relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
-    btnParent.className = 'mode-pill-inactive flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
+    btnAdmin.className = 'mode-pill-active relative flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap';
+    btnParent.className = 'mode-pill-inactive flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap';
 
     checkAdminAuthStatus();
   }
@@ -4952,10 +4952,10 @@ function switchAdminTab(tabName, customSideKey = '') {
     if (!contentEl || !btnEl) return;
     if (t === tabName) {
       contentEl.classList.remove('hidden');
-      btnEl.className = 'admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition bg-blue-600 text-white cursor-pointer whitespace-nowrap';
+      btnEl.className = 'admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition bg-blue-600 text-white cursor-pointer whitespace-nowrap';
     } else {
       contentEl.classList.add('hidden');
-      btnEl.className = 'admin-tab-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap';
+      btnEl.className = 'admin-tab-btn shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition text-[#25214C] hover:bg-[#F3F1FF] cursor-pointer whitespace-nowrap';
     }
   });
 
@@ -13661,8 +13661,8 @@ function updateAutoApprovePaymentUI() {
       ? 'Tự động duyệt khi CK thành công: ĐANG BẬT'
       : 'Tự động duyệt: ĐANG TẮT (Chờ Quản lý bấm Duyệt)';
     bannerBtn.className = isEnabled
-      ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-300/60 text-[11px] font-extrabold cursor-pointer transition whitespace-nowrap shadow-2xs'
-      : 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 border border-amber-200 text-[11px] font-extrabold cursor-pointer transition whitespace-nowrap shadow-2xs';
+      ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-300/60 text-[11px] font-extrabold cursor-pointer transition max-w-full shadow-2xs'
+      : 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 border border-amber-200 text-[11px] font-extrabold cursor-pointer transition max-w-full shadow-2xs';
   }
 
   const dashBtn = document.getElementById('btn-dashboard-auto-approve-toggle');
@@ -14873,6 +14873,7 @@ function resetDefaultTheme() {
   updateDarkModeHeaderUI(false);
   applyCssThemeVariables(THEME_PRESETS.thanhchi || THEME_PRESETS.navy);
   renderThemeCustomizerControls();
+  if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
   showToast('Đã khôi phục giao diện Thanh Chí Edu (Soft Premium) mặc định!', 'success');
 }
 
