@@ -1,32 +1,44 @@
 :root {
-  /* THANH CHÍ EDU - Achromatic Ledger (seed 597563325 · kind finance · light) */
+  /* THANH CHÍ EDU - Dynamic Theme & High-Contrast Light/Dark Tokens */
   --bg-main: #f2f4f7;
   --surface-primary: #ffffff;
-  --surface-secondary: #eeeeee;
-  --text-primary: #0a0a0a;
-  --text-secondary: #595c5f;
-  --accent-indigo: #141414;
-  --accent-violet: #262626;
+  --surface-secondary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-indigo: var(--brand-primary);
+  --accent-violet: var(--brand-navy);
   --accent-orange: #b45309;
-  --soft-lavender: #eeeeee;
-  --border-subtle: #e6e6e6;
+  --soft-lavender: var(--brand-soft);
+  --border-subtle: #e2e8f0;
 
-  --brand-navy: #0a0a0a;
-  --brand-navy-mid: #262626;
+  --brand-navy: #0f294a;
+  --brand-navy-mid: #1e3a6d;
   --brand-primary: #141414;
   --brand-primary-hover: #262626;
   --brand-primary-rgb: 20, 20, 20;
-  --brand-soft: #f2f4f7;
-  --brand-border: #e6e6e6;
-  --brand-banner-from: #ffffff;
-  --brand-banner-via: #ffffff;
-  --brand-banner-to: #ffffff;
+  --brand-on-primary: #ffffff;
+  --brand-primary-darkmode: #3b82f6;
+  --brand-on-primary-darkmode: #ffffff;
+  --brand-soft: #f1f5f9;
+  --brand-border: #cbd5e1;
+  --brand-banner-from: #0f172a;
+  --brand-banner-via: #1e293b;
+  --brand-banner-to: #334155;
   --primary: var(--brand-primary);
   --primary-hover: var(--brand-primary-hover);
   --success: #15803d;
   --warning: #b45309;
   --danger: #b91c1c;
   --chart-blue: #1d5fbf;
+}
+
+html.dark-mode {
+  --bg-main: #060b16;
+  --surface-primary: #0f172a;
+  --surface-secondary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-subtle: #334155;
 }
 
 * {
@@ -179,10 +191,11 @@ h1, h2, h3, h4,
 }
 
 .mode-pill-active {
-  background-color: #141414;
-  color: #ffffff !important;
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
   border-radius: 6px !important;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(var(--brand-primary-rgb), 0.25);
 }
 
 .mode-pill-inactive {
@@ -204,30 +217,31 @@ h1, h2, h3, h4,
 
 /* Dynamic Theme Bindings */
 .theme-brand-icon {
-  background-color: #141414 !important;
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
 }
 
 .theme-hero-banner {
-  background-color: #ffffff !important;
+  background-color: var(--surface-primary) !important;
   border: 1px solid var(--border-subtle);
   border-radius: 8px !important;
 }
 
 .sepay-live-banner {
-  background-color: #141414;
-  border: 1px solid #262626;
+  background: linear-gradient(135deg, var(--brand-banner-from), var(--brand-banner-via), var(--brand-banner-to)) !important;
+  border: 1px solid var(--brand-navy-mid);
   border-radius: 8px !important;
 }
 
 .classbook-selector-card {
-  background-color: #ffffff;
+  background-color: var(--surface-primary);
   border: 1px solid var(--border-subtle);
   border-radius: 8px !important;
 }
 
 .theme-navy-badge {
-  background-color: #141414 !important;
-  color: #ffffff !important;
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
   border-radius: 6px !important;
 }
 
@@ -237,8 +251,17 @@ h1, h2, h3, h4,
 }
 
 .admin-tab-btn.bg-blue-600 {
-  background-color: #141414 !important;
-  color: #ffffff !important;
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
+}
+
+.bg-\[\#141414\] {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-on-primary) !important;
+}
+
+.hover\:bg-\[\#262626\]:hover {
+  background-color: var(--brand-primary-hover) !important;
 }
 
 /* ========================================================================== */
@@ -292,14 +315,15 @@ h1, h2, h3, h4,
 }
 
 .tc-nav-item.is-active {
-  color: #0a0a0a !important;
-  background-color: #dedede !important;
-  font-weight: 600;
+  color: var(--brand-on-primary) !important;
+  background-color: var(--brand-primary) !important;
+  border-color: var(--brand-primary) !important;
+  font-weight: 700;
 }
 
 .tc-nav-item.is-active i,
 .tc-nav-item.is-active svg {
-  color: #0a0a0a !important;
+  color: var(--brand-on-primary) !important;
 }
 
 /* Ledger Panel Containers (8px radius + 1px quiet border) */
@@ -520,9 +544,9 @@ a.rounded-xl {
 }
 
 .class-selector-item.is-active {
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-navy)) !important;
   color: #ffffff !important;
-  border-color: #141414 !important;
+  border-color: var(--brand-primary) !important;
 }
 
 /* Thanh tiến độ đóng học phí mini trên mỗi thẻ lớp */
@@ -530,24 +554,24 @@ a.rounded-xl {
   width: 100%;
   height: 4px;
   border-radius: 9999px;
-  background-color: #eeeeee;
+  background-color: #e2e8f0;
   overflow: hidden;
   margin-top: 2px;
 }
 
 .class-selector-item.is-active .class-card-progress-track {
-  background-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.28);
 }
 
 .class-card-progress-fill {
   height: 100%;
   border-radius: 9999px;
-  background-color: var(--surface-primary);
+  background-color: var(--brand-primary);
   transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .class-selector-item.is-active .class-card-progress-fill {
-  background-color: var(--surface-primary);
+  background-color: #34d399;
 }
 
 /* Nút xóa nhanh trên thẻ lớp */
@@ -699,7 +723,7 @@ html.dark-mode .ios-tab-item.is-active {
 
 /* Sổ Theo Dõi Lớp Học & Sổ Thống Kê - Modern Executive Header & Table */
 .sheet-navy-header {
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, var(--brand-banner-from), var(--brand-banner-via), var(--brand-banner-to)) !important;
   color: #ffffff !important;
 }
 
@@ -709,8 +733,8 @@ html.dark-mode .ios-tab-item.is-active {
 }
 
 .sheet-sub-bar {
-  background-color: var(--surface-primary);
-  border-bottom: 1.5px solid rgba(30, 58, 138, 0.18);
+  background-color: var(--brand-soft);
+  border-bottom: 1.5px solid var(--brand-border);
 }
 
 .sheet-main-frame {
@@ -790,14 +814,14 @@ html.dark-mode #floating-sticky-thead-bar {
 
 /* 1: Đã dạy (Tô màu Xanh lá Emerald hiện đại) */
 .session-state-1 {
-  background-color: var(--surface-primary);
+  background-color: #059669 !important;
   color: #ffffff !important;
   font-weight: 800;
 }
 
 /* 2: Đã xác nhận / Chốt (Tô màu Vàng Cam nổi bật) */
 .session-state-2 {
-  background-color: var(--surface-primary);
+  background-color: #d97706 !important;
   color: #ffffff !important;
   font-weight: 800;
 }
@@ -814,9 +838,8 @@ html.dark-mode #floating-sticky-thead-bar {
 /* CHẾ ĐỘ TỐI (DARK MODE) - PHÂN TẦNG NỀN RÕ RÀNG & CHỮ TƯƠNG PHẢN CAO 100%   */
 /* ========================================================================== */
 html.dark-mode body {
-  background-color: #060a13;
-  background-color: var(--surface-primary);
-  color: #f8fafc;
+  background-color: #060b16 !important;
+  color: #f8fafc !important;
 }
 
 html.dark-mode ::-webkit-scrollbar-track {
@@ -828,7 +851,7 @@ html.dark-mode ::-webkit-scrollbar-thumb {
 }
 
 html.dark-mode .glass-nav {
-  background: rgba(10, 15, 29, 0.9);
+  background: rgba(10, 15, 29, 0.94) !important;
   border-color: #1e293b !important;
 }
 
@@ -839,8 +862,9 @@ html.dark-mode .role-switch-pill {
 }
 
 html.dark-mode .mode-pill-active {
-  background-color: var(--surface-primary);
-  color: #ffffff !important;
+  background-color: var(--brand-primary-darkmode) !important;
+  color: var(--brand-on-primary-darkmode) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
 html.dark-mode .mode-pill-inactive {
@@ -853,8 +877,24 @@ html.dark-mode .mode-pill-inactive:hover {
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Tầng 1: Khung Card chính (.bg-white, .modern-sheet-card, .modern-kpi-card) */
+html.dark-mode .admin-tab-btn.bg-blue-600,
+html.dark-mode .tc-nav-item.is-active,
+html.dark-mode .theme-brand-icon,
+html.dark-mode .theme-navy-badge,
+html.dark-mode .bg-\[\#141414\] {
+  background-color: var(--brand-primary-darkmode) !important;
+  color: var(--brand-on-primary-darkmode) !important;
+  border-color: var(--brand-primary-darkmode) !important;
+}
+
+html.dark-mode .tc-nav-item.is-active i,
+html.dark-mode .tc-nav-item.is-active svg {
+  color: var(--brand-on-primary-darkmode) !important;
+}
+
+/* Tầng 1: Khung Card chính (.bg-white, .bg-[#ffffff], .modern-sheet-card, .modern-kpi-card) */
 html.dark-mode .bg-white,
+html.dark-mode .bg-\[\#ffffff\],
 html.dark-mode .bg-white\/95,
 html.dark-mode .bg-white\/90,
 html.dark-mode .bg-white\/85,
@@ -862,10 +902,27 @@ html.dark-mode .bg-white\/80,
 html.dark-mode .bg-white\/75,
 html.dark-mode .bg-white\/70,
 html.dark-mode .bg-white\/60,
-html.dark-mode .modern-sheet-card {
+html.dark-mode .modern-sheet-card,
+html.dark-mode .theme-hero-banner {
   background-color: #0f172a !important;
-  color: #f8fafc;
+  color: #f8fafc !important;
   border-color: #334155 !important;
+}
+
+html.dark-mode header .bg-\[\#ffffff\] {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+html.dark-mode header .bg-\[\#ffffff\]:hover {
+  background-color: #334155 !important;
+}
+
+html.dark-mode #btn-darkmode-toggle {
+  background-color: rgba(251, 191, 36, 0.16) !important;
+  border-color: #f59e0b !important;
+  color: #fde68a !important;
 }
 
 /* 4 Hộp thông tin Lớp học / Môn học / Kỳ học / Trạng thái trong thanh Sub-bar */
@@ -875,14 +932,14 @@ html.dark-mode .modern-sheet-card {
 }
 
 html.dark-mode .sheet-sub-bar {
-  background-color: var(--surface-primary);
+  background-color: #162033 !important;
   color: #f8fafc !important;
   border-bottom-color: #263449 !important;
 }
 
 html.dark-mode .sheet-meta-pill,
 html.dark-mode .sheet-sub-bar > div {
-  background-color: var(--surface-primary);
+  background-color: #1e293b !important;
   border: 1.5px solid #3b4f6b !important;
   color: #f8fafc !important;
 }
@@ -903,7 +960,7 @@ html.dark-mode #stu-meta-batches {
 }
 
 html.dark-mode .modern-kpi-card {
-  background-color: var(--surface-primary);
+  background-color: #0f172a !important;
   border-color: #334155 !important;
 }
 
@@ -936,8 +993,8 @@ html.dark-mode .bg-slate-200\/80 {
 
 /* Khung chọn lớp & Thẻ từng lớp ở Chế độ Tối */
 html.dark-mode .classbook-selector-card {
-  background-color: var(--surface-primary);
-  border: 1.5px solid rgba(96, 165, 250, 0.35) !important;
+  background-color: #0f172a !important;
+  border: 1.5px solid #334155 !important;
 }
 
 html.dark-mode .class-selector-item {
@@ -948,11 +1005,11 @@ html.dark-mode .class-selector-item {
 
 html.dark-mode .class-selector-item:hover {
   background-color: #28374f !important;
-  border-color: #1d5fbf !important;
+  border-color: var(--brand-primary-darkmode) !important;
 }
 
 html.dark-mode .class-selector-item.is-active {
-  background-color: var(--surface-primary);
+  background: linear-gradient(135deg, var(--brand-primary-darkmode), var(--brand-navy)) !important;
   border-color: #93c5fd !important;
   color: #ffffff !important;
 }
@@ -961,14 +1018,8 @@ html.dark-mode .class-card-progress-track {
   background-color: #334155;
 }
 
-html.dark-mode .sheet-sub-bar {
-  background-color: var(--surface-primary);
-  color: #f8fafc !important;
-  border-bottom-color: #334155 !important;
-}
-
 html.dark-mode .qr-frame {
-  background-color: var(--surface-primary);
+  background-color: #1e293b !important;
   border-color: #475569 !important;
 }
 
@@ -978,14 +1029,6 @@ html.dark-mode .bg-\[\#eeeeee\] {
   background-color: #1e293b !important;
   color: #f8fafc !important;
   border-color: #334155 !important;
-}
-
-html.dark-mode .bg-\[\#eeeeee\],
-html.dark-mode .bg-\[\#eeeeee\],
-html.dark-mode .bg-\[\#eeeeee\] {
-  background-color: rgba(99, 102, 241, 0.22) !important;
-  border-color: rgba(129, 140, 248, 0.45) !important;
-  color: #e0e7ff !important;
 }
 
 html.dark-mode .bg-\[\#FFF3EE\],
@@ -999,28 +1042,8 @@ html.dark-mode .bg-orange-50\/50 {
 
 html.dark-mode .from-\[\#eeeeee\],
 html.dark-mode .from-\[\#eeeeee\]\/70 {
-  background-color: var(--surface-primary);
   background-color: #1e293b !important;
   border-color: rgba(129, 140, 248, 0.38) !important;
-}
-
-html.dark-mode .,
-html.dark-mode .\/90 {
-  background-color: var(--surface-primary);
-  background-color: #162033 !important;
-  border-color: rgba(52, 211, 153, 0.4) !important;
-}
-
-html.dark-mode . {
-  background-color: var(--surface-primary);
-  background-color: #162033 !important;
-  border-color: rgba(251, 191, 36, 0.4) !important;
-}
-
-html.dark-mode . {
-  background-color: var(--surface-primary);
-  background-color: #162033 !important;
-  border-color: rgba(96, 165, 250, 0.4) !important;
 }
 
 html.dark-mode .bg-blue-50,
@@ -1234,14 +1257,6 @@ html.dark-mode .text-rose-950 {
   color: #fb7185 !important;
 }
 
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900,
-html.dark-mode .text-slate-900 {
-  color: #141414 !important;
-}
-
 /* Giữ chữ đậm sắc nét trên các nút/nhãn nền Vàng tươi (.bg-amber-300 / .bg-amber-400 / .bg-amber-500) */
 html.dark-mode .bg-amber-300,
 html.dark-mode .bg-amber-400,
@@ -1268,13 +1283,16 @@ html.dark-mode .border-slate-200\/80,
 html.dark-mode .border-slate-200\/90,
 html.dark-mode .border-slate-300,
 html.dark-mode .border-slate-400,
+html.dark-mode .border-\[\#e6e6e6\],
+html.dark-mode .border-\[\#d5d7da\],
 html.dark-mode .border-\[\#EBECF3\],
 html.dark-mode .border-\[\#eeeeee\],
 html.dark-mode .border-\[\#E2DEFF\],
 html.dark-mode .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
 html.dark-mode .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark-mode .divide-\[\#e6e6e6\] > :not([hidden]) ~ :not([hidden]),
 html.dark-mode .divide-\[\#EBECF3\] > :not([hidden]) ~ :not([hidden]) {
-  border-color: #263449 !important;
+  border-color: #334155 !important;
 }
 
 html.dark-mode .border-\[\#FFD9CC\],
@@ -1403,7 +1421,7 @@ html.dark-mode .hover\:bg-\[\#FF4B16\]:hover * {
 /* Soft Premium Bento & Sidebar in Dark Mode */
 html.dark-mode .tc-sidebar,
 html.dark-mode .bento-card {
-  background-color: var(--surface-primary);
+  background-color: #0f172a !important;
   border-color: #334155 !important;
   color: #f8fafc !important;
 }
@@ -1883,8 +1901,8 @@ html.dark-mode .tc-dialog-input:focus {
 
 /* Achromatic Ledger Overrides */
 .bento-card {
-  background-color: #ffffff !important;
-  border: 1px solid #e6e6e6 !important;
+  background-color: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px !important;
 }
 
