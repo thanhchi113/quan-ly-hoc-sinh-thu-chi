@@ -112,7 +112,8 @@ h1, h2, h3, h4,
   color: #065f46 !important;
   border: 1px solid #6ee7b7 !important;
   border-radius: 9999px;
-  padding: 3px 10px;
+  padding: 4px 10px;
+  min-width: 120px;
   font-weight: 800;
 }
 
@@ -127,7 +128,8 @@ h1, h2, h3, h4,
   color: #92400e !important;
   border: 1px solid #fcd34d !important;
   border-radius: 9999px;
-  padding: 3px 10px;
+  padding: 4px 10px;
+  min-width: 120px;
   font-weight: 800;
 }
 
@@ -142,7 +144,8 @@ h1, h2, h3, h4,
   color: #be123c !important;
   border: 1px solid #fda4af !important;
   border-radius: 9999px;
-  padding: 3px 10px;
+  padding: 4px 10px;
+  min-width: 120px;
   font-weight: 700;
 }
 
@@ -1631,5 +1634,322 @@ html.dark-mode .att-cell-state-3 {
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
   color: #0f172a !important;
 }
+
+/* ========================================================================== */
+/* BẢNG TẤT CẢ HỌC SINH CÂN BẰNG CỘT + HỘP HỘI THOẠI & LỊCH CHỌN NGÀY ĐỒNG BỘ */
+/* ========================================================================== */
+#all-students-stat-table th,
+#all-students-stat-table td {
+  vertical-align: middle;
+}
+
+.tc-date-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  width: 112px;
+  height: 30px;
+  padding: 0 0.6rem;
+  border-radius: 10px;
+  background-color: #F8F8FC;
+  border: 1px solid #DCD8F8;
+  color: #25214C;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.tc-date-pill-btn:hover {
+  background-color: #F3F1FF;
+  border-color: var(--accent-indigo);
+  color: var(--accent-indigo);
+  box-shadow: 0 3px 10px -2px rgba(91, 85, 255, 0.18);
+}
+
+.tc-fee-select {
+  min-width: 74px;
+  padding: 0.25rem 0.45rem;
+  border-radius: 9px;
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  color: #1E293B;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: right;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tc-fee-select:hover,
+.tc-fee-select:focus {
+  background-color: #F3F1FF;
+  border-color: var(--accent-indigo);
+  outline: none;
+}
+
+.tc-row-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+/* Ẩn icon lịch mặc định thô của trình duyệt & thay bằng icon đồng bộ App */
+input[type="date"] {
+  position: relative;
+  cursor: pointer;
+  padding-right: 2.05rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%235B55FF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='4' rx='2' ry='2'/%3E%3Cline x1='16' x2='16' y1='2' y2='6'/%3E%3Cline x1='8' x2='8' y1='2' y2='6'/%3E%3Cline x1='3' x2='21' y1='10' y2='10'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 15px 15px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+input[type="date"]:hover {
+  border-color: var(--accent-indigo) !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
+  pointer-events: none;
+}
+
+/* Hộp Lịch Chọn Ngày Chuyên Nghiệp (#tc-datepicker-popover) */
+.tc-datepicker-card {
+  width: 292px;
+  background: #FFFFFF;
+  border: 1.5px solid #DCD8F8;
+  border-radius: 22px;
+  box-shadow:
+    0 24px 52px -12px rgba(37, 33, 76, 0.28),
+    0 6px 18px -4px rgba(91, 85, 255, 0.14);
+  overflow: hidden;
+  user-select: none;
+}
+
+.tc-datepicker-header {
+  background: linear-gradient(135deg, #25214C 0%, #3E3784 55%, var(--accent-indigo) 100%);
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  color: #FFFFFF;
+}
+
+.tc-dp-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.tc-dp-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+  transform: scale(1.04);
+}
+
+.tc-dp-select {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  font-size: 0.76rem;
+  font-weight: 800;
+  border-radius: 9px;
+  padding: 0.22rem 0.45rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.tc-dp-select option {
+  background: #1E1A3E;
+  color: #FFFFFF;
+}
+
+.tc-dp-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0.55rem 0.65rem 0.25rem;
+  text-align: center;
+  font-size: 0.69rem;
+  font-weight: 800;
+  color: #8986A6;
+  background: #FAFAFC;
+  border-bottom: 1px solid #F0EFF8;
+}
+
+.tc-dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  padding: 0.55rem 0.65rem;
+}
+
+.tc-dp-day {
+  height: 34px;
+  border-radius: 11px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #25214C;
+  background: transparent;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.tc-dp-day:hover:not(.is-selected) {
+  background-color: #F3F1FF;
+  color: var(--accent-indigo);
+  border-color: #DCD8F8;
+}
+
+.tc-dp-day.is-outside {
+  color: #CBD5E1;
+  font-weight: 600;
+}
+
+.tc-dp-day.is-today:not(.is-selected) {
+  background-color: #F3F1FF;
+  color: var(--accent-indigo);
+  border-color: var(--accent-indigo);
+  font-weight: 800;
+}
+
+.tc-dp-day.is-selected {
+  background: linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-violet) 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  box-shadow: 0 6px 14px -2px rgba(91, 85, 255, 0.48);
+}
+
+.tc-dp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem 0.65rem;
+  border-top: 1px solid #F0EFF8;
+  background: #FAFAFC;
+}
+
+/* Hộp Hội Thoại Chuyên Nghiệp Thay Thế Prompt / Confirm Mặc Định (#tc-app-dialog-modal) */
+.tc-dialog-card {
+  background: #FFFFFF;
+  border: 1.5px solid #DCD8F8;
+  border-radius: 26px;
+  box-shadow:
+    0 28px 64px -12px rgba(24, 20, 56, 0.36),
+    0 8px 24px -6px rgba(91, 85, 255, 0.16);
+}
+
+.tc-dialog-header-indigo {
+  background: linear-gradient(135deg, #25214C 0%, #3E3784 55%, var(--accent-indigo) 100%);
+}
+
+.tc-dialog-header-danger {
+  background: linear-gradient(135deg, #881337 0%, #be123c 55%, #e11d48 100%);
+}
+
+.tc-dialog-header-emerald {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #059669 100%);
+}
+
+.tc-dialog-input {
+  width: 100%;
+  padding: 0.68rem 0.9rem;
+  border-radius: 14px;
+  border: 1.5px solid #CBD5E1;
+  background-color: #F8FAFC;
+  color: #1E293B;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.16s ease;
+}
+
+.tc-dialog-input:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 0 3.5px rgba(91, 85, 255, 0.16);
+}
+
+/* Dark Mode cho bảng cân bằng, lịch chọn ngày & hộp hội thoại */
+html.dark-mode .tc-date-pill-btn,
+html.dark-mode .tc-fee-select {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark-mode .tc-date-pill-btn:hover,
+html.dark-mode .tc-fee-select:hover {
+  border-color: #818cf8 !important;
+  background-color: rgba(91, 85, 255, 0.2) !important;
+}
+
+html.dark-mode .tc-datepicker-card,
+html.dark-mode .tc-dialog-card {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 28px 64px -8px rgba(0, 0, 0, 0.72);
+}
+
+html.dark-mode .tc-dp-weekdays,
+html.dark-mode .tc-dp-footer {
+  background: #162033 !important;
+  border-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+html.dark-mode .tc-dp-day {
+  color: #f1f5f9;
+}
+
+html.dark-mode .tc-dp-day.is-outside {
+  color: #475569;
+}
+
+html.dark-mode .tc-dp-day:hover:not(.is-selected) {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #a5b4fc;
+}
+
+html.dark-mode .tc-dp-day.is-today:not(.is-selected) {
+  background-color: rgba(91, 85, 255, 0.2);
+  border-color: #818cf8;
+  color: #c7d2fe;
+}
+
+html.dark-mode .tc-dialog-input {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+html.dark-mode .tc-dialog-input:focus {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 0 3.5px rgba(129, 140, 248, 0.25) !important;
+}
+
 
 
