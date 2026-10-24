@@ -632,12 +632,73 @@ a.rounded-xl {
 }
 
 /* Mobile bottom bar & iOS Safe Area calibration */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 1023px) {
   .mobile-safe-bottom {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
   #btn-scroll-to-top {
     bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Chống tràn nút bấm, thẻ lọc & dropdown ra ngoài màn hình điện thoại (< 640px) */
+@media (max-width: 639px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  #admin-view,
+  #parent-view,
+  #admin-workspace,
+  .bento-card,
+  .classbook-selector-card,
+  .sepay-live-banner,
+  .modern-sheet-card {
+    max-width: 100%;
+  }
+
+  main select {
+    max-width: 100%;
+  }
+
+  main button:not(.admin-tab-btn):not(#tab-btn-sandbox),
+  main a,
+  main label {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  main button.h-9:not(.admin-tab-btn) {
+    height: auto;
+    min-height: 2.25rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  main button.h-8:not(.admin-tab-btn) {
+    height: auto;
+    min-height: 2rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  /* Giữ nguyên các nút thao tác nhỏ bên trong bảng cuộn ngang */
+  main table button,
+  main table a,
+  main table label {
+    max-width: none;
+    white-space: nowrap;
   }
 }
 
@@ -992,7 +1053,57 @@ html.dark-mode .qr-frame {
   border-color: #475569 !important;
 }
 
-/* Tầng 3: Các hộp màu nhạt (Blue, Indigo, Emerald, Amber, Rose, Purple) trong Dark Mode */
+/* Tầng 3: Các hộp màu nhạt & dải Gradient nền sáng trong Dark Mode */
+html.dark-mode .bg-\[\#FAFAFC\],
+html.dark-mode .bg-\[\#EFEFF7\] {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark-mode .bg-\[\#F3F1FF\],
+html.dark-mode .bg-\[\#F4F2FF\],
+html.dark-mode .bg-\[\#E6E1FF\] {
+  background-color: rgba(99, 102, 241, 0.22) !important;
+  border-color: rgba(129, 140, 248, 0.45) !important;
+  color: #e0e7ff !important;
+}
+
+html.dark-mode .bg-\[\#FFF3EE\],
+html.dark-mode .bg-\[\#FFF3EE\]\/60,
+html.dark-mode .bg-orange-50,
+html.dark-mode .bg-orange-50\/50 {
+  background-color: rgba(255, 75, 22, 0.18) !important;
+  border-color: rgba(251, 146, 60, 0.45) !important;
+  color: #ffedd5 !important;
+}
+
+html.dark-mode .from-\[\#F3F1FF\],
+html.dark-mode .from-\[\#F3F1FF\]\/70 {
+  background-image: linear-gradient(145deg, rgba(91, 85, 255, 0.18) 0%, #1e293b 100%) !important;
+  background-color: #1e293b !important;
+  border-color: rgba(129, 140, 248, 0.38) !important;
+}
+
+html.dark-mode .from-emerald-50,
+html.dark-mode .from-emerald-50\/90 {
+  background-image: linear-gradient(145deg, rgba(16, 185, 129, 0.16) 0%, #162033 100%) !important;
+  background-color: #162033 !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+html.dark-mode .from-amber-50 {
+  background-image: linear-gradient(145deg, rgba(245, 158, 11, 0.16) 0%, #162033 100%) !important;
+  background-color: #162033 !important;
+  border-color: rgba(251, 191, 36, 0.4) !important;
+}
+
+html.dark-mode .from-blue-50 {
+  background-image: linear-gradient(145deg, rgba(37, 99, 235, 0.18) 0%, #162033 100%) !important;
+  background-color: #162033 !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+
 html.dark-mode .bg-blue-50,
 html.dark-mode .bg-blue-50\/80,
 html.dark-mode .bg-blue-50\/70,
@@ -1021,7 +1132,8 @@ html.dark-mode .bg-emerald-50\/80,
 html.dark-mode .bg-emerald-50\/70,
 html.dark-mode .bg-emerald-50\/60,
 html.dark-mode .bg-emerald-50\/50,
-html.dark-mode .bg-emerald-100 {
+html.dark-mode .bg-emerald-100,
+html.dark-mode .bg-teal-50 {
   background-color: rgba(16, 185, 129, 0.22) !important;
   border-color: rgba(52, 211, 153, 0.5) !important;
   color: #d1fae5 !important;
@@ -1031,8 +1143,14 @@ html.dark-mode .bg-amber-50,
 html.dark-mode .bg-amber-50\/80,
 html.dark-mode .bg-amber-50\/70,
 html.dark-mode .bg-amber-50\/60,
+html.dark-mode .bg-amber-50\/45,
 html.dark-mode .bg-amber-50\/40,
-html.dark-mode .bg-amber-100 {
+html.dark-mode .bg-amber-50\/20,
+html.dark-mode .bg-amber-100,
+html.dark-mode .bg-amber-100\/80,
+html.dark-mode .bg-amber-200,
+html.dark-mode .bg-amber-200\/80,
+html.dark-mode .bg-amber-200\/90 {
   background-color: rgba(245, 158, 11, 0.22) !important;
   border-color: rgba(251, 191, 36, 0.5) !important;
   color: #fef3c7 !important;
@@ -1040,6 +1158,9 @@ html.dark-mode .bg-amber-100 {
 
 html.dark-mode .bg-rose-50,
 html.dark-mode .bg-rose-50\/80,
+html.dark-mode .bg-rose-50\/70,
+html.dark-mode .bg-rose-50\/60,
+html.dark-mode .bg-rose-50\/50,
 html.dark-mode .bg-rose-100,
 html.dark-mode .bg-rose-200 {
   background-color: rgba(244, 63, 94, 0.24) !important;
@@ -1132,12 +1253,25 @@ html.dark-mode .text-slate-400 {
   color: #94a3b8 !important;
 }
 
-html.dark-mode .text-slate-300 {
-  color: #64748b !important;
-}
-
 html.dark-mode .text-\[\#1f3d6e\] {
   color: #93c5fd !important;
+}
+
+html.dark-mode .text-\[\#5B55FF\] {
+  color: #a5b4fc !important;
+}
+
+html.dark-mode .text-\[\#7C6BFF\] {
+  color: #c4b5fd !important;
+}
+
+html.dark-mode .text-\[\#FF4B16\] {
+  color: #fb923c !important;
+}
+
+html.dark-mode .text-teal-600,
+html.dark-mode .text-teal-700 {
+  color: #2dd4bf !important;
 }
 
 html.dark-mode .text-blue-600,
@@ -1189,12 +1323,23 @@ html.dark-mode .text-purple-950 {
   color: #c084fc !important;
 }
 
-/* Giữ chữ đậm sắc nét trên các nút/nhãn nền Vàng tươi (.bg-amber-300 / .bg-amber-400) */
+/* Giữ chữ đậm sắc nét trên các nút/nhãn nền Vàng tươi (.bg-amber-300 / .bg-amber-400 / .bg-amber-500) */
 html.dark-mode .bg-amber-300,
 html.dark-mode .bg-amber-400,
+html.dark-mode .bg-amber-500.text-white,
 html.dark-mode .bg-amber-300 *,
-html.dark-mode .bg-amber-400 * {
+html.dark-mode .bg-amber-400 *,
+html.dark-mode .bg-amber-500.text-white * {
   color: #0f172a !important;
+}
+
+html.dark-mode .bg-emerald-500.text-white,
+html.dark-mode .bg-emerald-600 {
+  background-color: #047857 !important;
+}
+
+html.dark-mode .bg-\[\#FF4B16\].text-white {
+  background-color: #c2410c !important;
 }
 
 /* Đường viền (Borders & Dividers) rõ nét trong Dark Mode */
@@ -1204,9 +1349,18 @@ html.dark-mode .border-slate-200\/80,
 html.dark-mode .border-slate-200\/90,
 html.dark-mode .border-slate-300,
 html.dark-mode .border-slate-400,
+html.dark-mode .border-\[\#EBECF3\],
+html.dark-mode .border-\[\#E6E1FF\],
+html.dark-mode .border-\[\#E2DEFF\],
 html.dark-mode .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
-html.dark-mode .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+html.dark-mode .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark-mode .divide-\[\#EBECF3\] > :not([hidden]) ~ :not([hidden]) {
   border-color: #263449 !important;
+}
+
+html.dark-mode .border-\[\#FFD9CC\],
+html.dark-mode .border-\[\#FF4B16\]\/40 {
+  border-color: rgba(251, 146, 60, 0.45) !important;
 }
 
 html.dark-mode .sheet-table th,
@@ -1305,6 +1459,28 @@ html.dark-mode .hover\:bg-rose-100:hover {
   background-color: rgba(244, 63, 94, 0.34) !important;
 }
 
+html.dark-mode .hover\:bg-\[\#F3F1FF\]:hover,
+html.dark-mode .hover\:bg-\[\#EFEFF7\]:hover,
+html.dark-mode .hover\:bg-\[\#E6E1FF\]:hover {
+  background-color: #28374f !important;
+}
+
+html.dark-mode .hover\:bg-\[\#5B55FF\]:hover {
+  background-color: #5B55FF !important;
+  color: #ffffff !important;
+}
+
+html.dark-mode .hover\:bg-\[\#FF4B16\]:hover {
+  background-color: #ea580c !important;
+  color: #ffffff !important;
+}
+
+html.dark-mode .hover\:text-white:hover,
+html.dark-mode .hover\:bg-\[\#5B55FF\]:hover *,
+html.dark-mode .hover\:bg-\[\#FF4B16\]:hover * {
+  color: #ffffff !important;
+}
+
 /* Soft Premium Bento & Sidebar in Dark Mode */
 html.dark-mode .tc-sidebar,
 html.dark-mode .bento-card {
@@ -1331,6 +1507,13 @@ html.dark-mode .tc-nav-item:hover {
   color: #ffffff;
 }
 
+html.dark-mode .admin-tab-btn.bg-blue-600 span[class*="rounded-full"]:not([class*="bg-[#FF4B16]"]):not(.bg-rose-600),
+html.dark-mode .tc-nav-item.is-active .tc-sidebar-badge:not([class*="bg-[#FF4B16]"]) {
+  background-color: rgba(15, 23, 42, 0.55) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
 html.dark-mode .forecast-ring-inner {
   background-color: #1e293b !important;
   border-color: #4f46e5 !important;
@@ -1341,8 +1524,20 @@ html.dark-mode .text-\[\#25214C\] {
   color: #f8fafc !important;
 }
 
+html.dark-mode .text-\[\#25214C\]\/75 {
+  color: #cbd5e1 !important;
+}
+
 html.dark-mode .text-\[\#8986A6\] {
   color: #94a3b8 !important;
+}
+
+/* Giữ nền trắng chuẩn quang học quanh mã QR để camera điện thoại / app ngân hàng luôn quét nhạy */
+html.dark-mode #ios-install-qr-img,
+html.dark-mode #setting-qr-preview,
+html.dark-mode div:has(> #pay-modal-qr-img) {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* ========================================================================== */
@@ -1421,8 +1616,20 @@ html.dark-mode .att-sticky-col-left {
 
 html.dark-mode .att-cell-state-0 {
   background-color: #0f172a;
-  color: #64748b;
+  color: #94a3b8;
   border-color: #334155;
+}
+
+html.dark-mode .session-state-1,
+html.dark-mode .att-cell-state-1 {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  color: #ffffff !important;
+}
+
+html.dark-mode .session-state-2,
+html.dark-mode .att-cell-state-3 {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  color: #0f172a !important;
 }
 
 
