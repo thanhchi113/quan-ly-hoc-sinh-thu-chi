@@ -4592,10 +4592,6 @@ function refreshAllViews() {
       isSandboxDraftMode && rawCenterName.length > 24 ? 'ALPHA EDU (BẢN NHÁP)' : rawCenterName;
     centerNameEl.title = rawCenterName;
   }
-  const activePeriodTextEl = document.getElementById('header-active-period-text');
-  if (activePeriodTextEl) {
-    activePeriodTextEl.textContent = appState.settings.defaultPeriod || 'Tháng 9-10/2026';
-  }
 
   // Đếm số yêu cầu chờ duyệt
   const pendingCount = (appState.paymentRequests || []).filter(r => r.status === 'Chờ duyệt').length;
@@ -4879,56 +4875,6 @@ function debouncedStudentSearch() {
 }
 function debouncedTransSearch() {
   _scheduleDebouncedSearch(() => renderAdminTransactions());
-}
-
-function handleGlobalHeaderSearch(query, isEnter = false) {
-  if (!isEnter) {
-    _scheduleDebouncedSearch(() => _runGlobalHeaderSearchNow(query, false));
-    return;
-  }
-  if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
-  _runGlobalHeaderSearchNow(query, true);
-}
-
-function _runGlobalHeaderSearchNow(query, isEnter = false) {
-  const clean = String(query || '').trim();
-  if (currentMode === 'parent') {
-    const parentInput = document.getElementById('parent-search-input');
-    if (parentInput) {
-      parentInput.value = clean;
-      handleParentSearch(Boolean(isEnter));
-    }
-    return;
-  }
-
-  // Nếu ở chế độ Quản lý -> Tự động tìm trong Thống kê Học sinh (hoặc Sổ Thu Chi nếu đang mở Sổ Thu Chi)
-  const isAuth = isAdminAuthenticated();
-  if (!isAuth) return;
-
-  if (currentAdminTab === 'finance') {
-    const transInput = document.getElementById('filter-trans-search');
-    if (transInput) {
-      transInput.value = clean;
-      renderAdminTransactions();
-    }
-  } else {
-    const stuInput = document.getElementById('filter-student-search');
-    if (stuInput) stuInput.value = clean;
-    if (currentAdminTab !== 'students' && clean.length >= 1) {
-      switchAdminTab('students');
-    } else if (stuInput) {
-      renderAdminStudents();
-    }
-  }
-}
-
-function handleHeaderPeriodClick() {
-  const isAuth = isAdminAuthenticated();
-  if (currentMode === 'admin' && isAuth) {
-    openClassScheduleModal(false);
-  } else {
-    switchAppMode('admin');
-  }
 }
 
 function handleHeaderNotificationClick() {
