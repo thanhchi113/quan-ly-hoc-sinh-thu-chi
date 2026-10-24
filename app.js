@@ -6105,8 +6105,9 @@ function renderAdminDashboard() {
     pendingReqsForRows.forEach(req => {
       const isTestReq = isSimulatedBankTestItem(req);
       recentTxRows.push({
-        title: `Học phí ${req.period || 'kỳ này'} • ${req.studentName}`,
-        subtitle: `${req.studentCode} • ${req.className}`,
+        detailKey: `REQ::${req.id}`,
+        title: `${req.studentName || 'Học sinh'} (${req.studentCode || 'HS'})`,
+        subtitle: `Lớp ${req.className || '---'} • ${req.period || 'Kỳ hiện tại'}`,
         amount: isTestReq ? 0 : Number(req.amount) || 0,
         testDisplayAmount: req.testDisplayAmount || Number(req.amount) || 600000,
         isIncome: true,
@@ -6121,10 +6122,13 @@ function renderAdminDashboard() {
       const isDraftTx = !isTestTx && isDraftBankTransaction(tx);
       const isDraftIncluded = isDraftTx && isDraftTxIncludedInMain(tx);
       const isInc = tx.type === 'Thu';
-      const rawTitle = tx.description || tx.category || (isInc ? 'Thu học phí' : 'Chi phí vận hành');
+      const compact = typeof buildCompactTransactionInfo === 'function'
+        ? buildCompactTransactionInfo(tx, appState)
+        : { headline: tx.description || tx.category || 'Giao dịch', subline: tx.date || '' };
       recentTxRows.push({
-        title: isTestTx ? stripRedundantTestPrefix(rawTitle) || 'Kiểm tra hoạt động STK' : rawTitle,
-        subtitle: `${tx.date || ''} • ${isTestTx ? 'Test STK (0 ₫)' : isDraftTx ? '🏷️ STK Nháp (5801434567)' : tx.method || 'Chuyển khoản'}`,
+        detailKey: tx.id,
+        title: compact.headline,
+        subtitle: `${tx.date || ''} • ${isTestTx ? 'Test STK (0 ₫)' : isDraftTx ? '🏷️ STK Nháp' : compact.shortMethod || tx.method || 'Chuyển khoản'}`,
         amount: isTestTx ? 0 : Number(tx.amount) || 0,
         testDisplayAmount: tx.testDisplayAmount || Number(tx.amount) || 600000,
         isIncome: isInc,
@@ -6132,8 +6136,8 @@ function renderAdminDashboard() {
           ? '🧪 Test không cộng tiền'
           : isDraftTx
           ? isDraftIncluded
-            ? '🏷️ Nháp • Đã cộng TK chính'
-            : '🏷️ Nháp • Chưa cộng TK chính'
+            ? '🏷️ Nháp • Đã cộng'
+            : '🏷️ Nháp • Tắt cộng'
           : 'Đã đối soát',
         isPending: false,
         isTest: isTestTx
@@ -6143,6 +6147,7 @@ function renderAdminDashboard() {
     if (recentTxRows.length === 0) {
       recentTxRows.push(
         {
+          detailKey: '',
           title: 'Học phí tháng 10',
           subtitle: 'VietQR SePay • Tự động',
           amount: 1200000,
@@ -6151,6 +6156,7 @@ function renderAdminDashboard() {
           isPending: false
         },
         {
+          detailKey: '',
           title: 'Học phí tháng 10',
           subtitle: 'VietQR SePay • Tự động',
           amount: 1500000,
@@ -6159,6 +6165,7 @@ function renderAdminDashboard() {
           isPending: false
         },
         {
+          detailKey: '',
           title: 'Chi phí vận hành',
           subtitle: 'Sổ quỹ trung tâm',
           amount: 850000,
@@ -6184,16 +6191,21 @@ function renderAdminDashboard() {
           ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-400 text-[10px] font-extrabold">🧪 Test không cộng tiền</span>`
           : item.isPending
           ? `<span class="px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] border border-[#FFD9CC] text-[10px] font-extrabold">Chờ xác nhận</span>`
-          : `<span class="px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[10px] font-extrabold">Đã đối soát</span>`;
+          : `<span class="px-2 py-0.5 rounded-full bg-[#F3F1FF] text-[#5B55FF] border border-[#E6E1FF] text-[10px] font-extrabold">${escapeHtml(item.statusLabel || 'Đã đối soát')}</span>`;
+        const clickAttr = item.detailKey
+          ? `onclick="openTransactionDetailModal('${escapeAttr(item.detailKey)}')" title="Bấm để xem chi tiết giao dịch & chỉnh sửa"`
+          : '';
 
         return `
-          <div class="bento-inner-tile py-2.5 px-3 flex items-center justify-between gap-2.5 ${item.isTest ? 'border border-amber-300 bg-amber-50/40' : ''}">
+          <div ${clickAttr} class="bento-inner-tile py-2.5 px-3 flex items-center justify-between gap-2.5 ${
+          item.detailKey ? 'cursor-pointer hover:border-[#5B55FF]/40 transition' : ''
+        } ${item.isTest ? 'border border-amber-300 bg-amber-50/40' : ''}">
             <div class="flex items-center gap-2.5 min-w-0">
               <div class="w-8 h-8 rounded-xl border ${iconBg} flex items-center justify-center shrink-0">
                 <i data-lucide="${iconName}" class="w-4 h-4"></i>
               </div>
               <div class="min-w-0">
-                <div class="text-xs font-extrabold text-[#25214C] truncate" title="${escapeAttr(item.title)}">
+                <div class="text-xs font-extrabold text-[#25214C] truncate">
                   ${escapeHtml(item.title)}
                 </div>
                 <div class="text-[10px] font-semibold text-[#8986A6] truncate">
@@ -7908,7 +7920,7 @@ function renderAdminStudents() {
           <td class="py-2 px-2 text-center whitespace-nowrap">
             <button
               type="button"
-              onclick="openStudentStartDatePicker(this, '${s.id}', '${escapeAttr(stats.startDateIso)}')"
+              onclick="openStudentStartDatePicker('${s.id}', '${escapeAttr(stats.startDateIso)}', this)"
               title="Bấm để chọn hoặc sửa ngày bắt đầu học của học sinh"
               class="tc-date-pill-btn"
             >
@@ -8695,10 +8707,18 @@ function renderAdminTransactions() {
         ? req.testDisplayAmount || 600000
         : normalizeStoredVnd(req.amount) || (linkedStu ? normalizeStoredVnd(linkedStu.tuitionFee) : 600000);
       const cleanNote = isTestReq ? stripRedundantTestPrefix(req.note) : req.note;
+      const shortReqId = formatCompactTxId(req.id);
+      const quickSub = cleanNote
+        ? String(cleanNote).replace(/^\[STK[^\]]*\]\s*/i, '').slice(0, 65)
+        : `Phụ huynh xác nhận CK (${req.payerName || 'Phụ huynh'})`;
 
       return `
-        <tr class="bg-amber-50/70 hover:bg-amber-100/60 transition align-middle border-l-4 border-l-amber-500">
-          <td class="py-2.5 px-2.5 text-center align-middle">
+        <tr
+          onclick="openTransactionDetailModal('${escapeAttr(rowKey)}')"
+          title="Bấm vào dòng để xem thông tin chi tiết yêu cầu chuyển khoản"
+          class="bg-amber-50/70 hover:bg-amber-100/60 transition align-middle border-l-4 border-l-amber-500 cursor-pointer"
+        >
+          <td class="py-2.5 px-2.5 text-center align-middle" onclick="event.stopPropagation()">
             <input
               type="checkbox"
               ${isSelected ? 'checked' : ''}
@@ -8708,37 +8728,38 @@ function renderAdminTransactions() {
             />
           </td>
           <td class="py-2.5 px-3 whitespace-nowrap align-middle">
-            <div class="font-mono font-bold text-xs text-amber-900 truncate max-w-[140px]" title="${escapeAttr(req.id)}">${escapeHtml(req.id)}</div>
+            <div class="font-mono font-extrabold text-xs text-amber-900" title="${escapeAttr(req.id)}">${escapeHtml(shortReqId)}</div>
             <div class="text-[11px] font-semibold text-amber-700 mt-0.5">${escapeHtml(req.submittedAt || 'Vừa gửi')}</div>
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
             <span class="inline-flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-amber-200/90 text-amber-950 border-amber-400">
-              ⏳ Chờ duyệt CK
+              ⏳ Chờ duyệt
             </span>
           </td>
           <td class="py-2.5 px-2.5 text-center align-middle">
-            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs leading-tight max-w-[130px] text-center">
-              Thu học phí (Chờ duyệt)
+            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs leading-tight max-w-[120px] text-center">
+              Thu học phí
             </span>
           </td>
           <td class="py-2.5 px-3.5 align-middle">
-            <div class="space-y-1">
+            <div class="space-y-0.5 max-w-[360px]">
               <div class="flex flex-wrap items-center gap-1.5">
                 ${
                   isDraftReq
-                    ? `<span class="px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-[10px] whitespace-nowrap">🏷️ STK Nháp</span>`
+                    ? `<span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-[10px] whitespace-nowrap">🏷️ STK Nháp</span>`
                     : ''
                 }
-                <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white font-mono font-bold text-[10px] whitespace-nowrap">Mã HS: ${escapeHtml(
-                  req.studentCode || '---'
+                <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white font-mono font-bold text-[10px] whitespace-nowrap">${escapeHtml(
+                  req.studentCode || 'HS'
                 )}</span>
-                <span class="font-extrabold text-xs text-slate-900">${escapeHtml(req.studentName)}</span>
-                <span class="text-[11px] font-semibold text-slate-600">• Lớp ${escapeHtml(req.className || '---')} (${escapeHtml(
-        req.period || ''
-      )})</span>
+                <span class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(req.studentName || 'Học sinh')}</span>
               </div>
-              <div class="text-slate-800 font-semibold text-xs sm:text-sm leading-snug">
-                ${escapeHtml(cleanNote || `Phụ huynh xác nhận chuyển khoản học phí (${req.payerName || 'Phụ huynh'})`)}
+              <div class="text-[11px] font-semibold text-slate-600 truncate">
+                Lớp ${escapeHtml(req.className || '---')} • ${escapeHtml(req.period || 'Kỳ hiện tại')}
+              </div>
+              <div class="text-[11px] text-slate-500 truncate flex items-center gap-1">
+                <span class="truncate">${escapeHtml(quickSub)}</span>
+                <span class="text-[10px] font-extrabold text-[#5B55FF] shrink-0">Chi tiết ↗</span>
               </div>
             </div>
           </td>
@@ -8757,7 +8778,7 @@ function renderAdminTransactions() {
               QR Web / CK
             </div>
           </td>
-          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
+          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             ${
               req.receiptUrl
                 ? `<button
@@ -8771,24 +8792,34 @@ function renderAdminTransactions() {
                 : `<span class="text-xs font-bold text-slate-400">---</span>`
             }
           </td>
-          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
-            <div class="inline-flex items-center justify-center gap-1.5">
+          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
+            <div class="tc-tx-action-col">
               <button
                 type="button"
                 onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Đã duyệt')"
                 title="Duyệt yêu cầu chuyển khoản này và ghi vào Sổ Thu - Chi"
-                class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition cursor-pointer shadow-2xs"
+                class="tc-tx-action-btn bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-2xs"
               >
                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 <span>Duyệt</span>
               </button>
               <button
                 type="button"
+                onclick="openTransactionDetailModal('${escapeAttr(rowKey)}')"
+                title="Xem đầy đủ thông tin yêu cầu chuyển khoản"
+                class="tc-tx-action-btn bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200"
+              >
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span>Chi tiết</span>
+              </button>
+              <button
+                type="button"
                 onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Từ chối')"
                 title="Từ chối / Đóng yêu cầu chờ duyệt này"
-                class="inline-flex items-center justify-center p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 transition cursor-pointer"
+                class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
               >
                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                <span>Từ chối</span>
               </button>
             </div>
           </td>
@@ -8804,12 +8835,16 @@ function renderAdminTransactions() {
       const isTestTx = isSimulatedBankTestItem(t);
       const isDraftTx = !isTestTx && isDraftBankTransaction(t);
       const isDraftIncluded = isDraftTx && isDraftTxIncludedInMain(t);
-      const cleanDesc = isTestTx ? stripRedundantTestPrefix(t.description) || 'Kiểm tra hoạt động STK' : t.description;
+      const compact = buildCompactTransactionInfo(t, appState);
       return `
-        <tr class="hover:bg-slate-50/80 transition align-middle ${
-          isTestTx ? 'bg-amber-50/45' : isDraftTx ? (isDraftIncluded ? 'bg-emerald-50/35' : 'bg-amber-50/35') : ''
-        } ${isSelected ? 'bg-blue-50/60' : ''}">
-          <td class="py-2.5 px-2.5 text-center align-middle">
+        <tr
+          onclick="openTransactionDetailModal('${escapeAttr(t.id)}')"
+          title="Bấm vào dòng để xem chi tiết giao dịch & chỉnh sửa"
+          class="hover:bg-slate-50/90 transition align-middle cursor-pointer ${
+            isTestTx ? 'bg-amber-50/45' : isDraftTx ? (isDraftIncluded ? 'bg-emerald-50/35' : 'bg-amber-50/35') : ''
+          } ${isSelected ? 'bg-blue-50/60' : ''}"
+        >
+          <td class="py-2.5 px-2.5 text-center align-middle" onclick="event.stopPropagation()">
             <input
               type="checkbox"
               ${isSelected ? 'checked' : ''}
@@ -8819,8 +8854,8 @@ function renderAdminTransactions() {
             />
           </td>
           <td class="py-2.5 px-3 whitespace-nowrap align-middle">
-            <div class="font-mono font-bold text-xs text-slate-800 truncate max-w-[140px]" title="${escapeAttr(t.id)}">${escapeHtml(t.id)}</div>
-            <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${escapeHtml(t.date)}</div>
+            <div class="font-mono font-extrabold text-xs text-slate-800" title="Mã đầy đủ: ${escapeAttr(t.id)}">${escapeHtml(compact.shortId)}</div>
+            <div class="text-[11px] font-semibold text-slate-400 mt-0.5">${escapeHtml(t.date || '')}</div>
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
             ${
@@ -8839,7 +8874,7 @@ function renderAdminTransactions() {
                     ${
                       isDraftTx
                         ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-900 border-amber-400">
-                            🏷️ Nháp
+                            🏷️ STK Nháp
                           </span>`
                         : ''
                     }
@@ -8851,47 +8886,38 @@ function renderAdminTransactions() {
               isTestTx
                 ? 'bg-amber-100/80 text-amber-900 border border-amber-300'
                 : 'bg-slate-100 text-slate-700 border border-slate-200'
-            } font-bold text-xs leading-tight max-w-[130px] text-center">
+            } font-bold text-xs leading-tight max-w-[120px] text-center">
               ${escapeHtml(isTestTx ? 'Test STK' : t.category)}
             </span>
           </td>
           <td class="py-2.5 px-3.5 align-middle">
-            <div class="space-y-1">
-              ${
-                isTestTx || isDraftTx || t.studentCode
-                  ? `<div class="flex flex-wrap items-center gap-1.5">
-                      ${
-                        isTestTx
-                          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 border border-amber-400 text-[10px] font-extrabold">
-                              🧪 Test không cộng tiền
-                            </span>`
-                          : ''
-                      }
-                      ${
-                        isDraftTx
-                          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/90 text-amber-950 border border-amber-400 text-[10px] font-extrabold">
-                              🏷️ STK Nháp (5801434567)
-                            </span>
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${
-                              isDraftIncluded
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : 'bg-slate-100 text-slate-600 border-slate-300'
-                            }">
-                              ${isDraftIncluded ? '✓ Đang cộng TK chính' : '⏸ Chưa cộng TK chính'}
-                            </span>`
-                          : ''
-                      }
-                      ${
-                        t.studentCode
-                          ? `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-mono font-bold text-[10px] whitespace-nowrap">Mã HS: ${escapeHtml(
-                              t.studentCode
-                            )}</span>`
-                          : ''
-                      }
-                    </div>`
-                  : ''
-              }
-              <div class="text-slate-900 font-semibold text-xs sm:text-sm leading-snug">${escapeHtml(cleanDesc)}</div>
+            <div class="space-y-0.5 max-w-[360px]">
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${
+                  isTestTx
+                    ? `<span class="px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-950 border border-amber-400 text-[10px] font-extrabold">🧪 Test</span>`
+                    : ''
+                }
+                ${
+                  isDraftTx
+                    ? `<span class="px-1.5 py-0.5 rounded bg-amber-200/90 text-amber-950 border border-amber-400 text-[10px] font-extrabold">🏷️ STK Nháp</span>`
+                    : ''
+                }
+                ${
+                  compact.studentCode
+                    ? `<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-mono font-bold text-[10px] whitespace-nowrap">${escapeHtml(
+                        compact.studentCode
+                      )}</span>`
+                    : ''
+                }
+                <span class="text-slate-900 font-extrabold text-xs sm:text-sm leading-snug truncate" title="${escapeAttr(compact.headline)}">
+                  ${escapeHtml(compact.headline)}
+                </span>
+              </div>
+              <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1.5">
+                <span class="truncate">${escapeHtml(compact.subline)}</span>
+                <span class="text-[10px] font-extrabold text-[#5B55FF] shrink-0">Chi tiết ↗</span>
+              </div>
             </div>
           </td>
           <td class="py-2.5 px-3 text-right font-mono font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
@@ -8907,7 +8933,7 @@ function renderAdminTransactions() {
               isTestTx
                 ? `<div class="inline-flex flex-col items-end leading-tight">
                      <span class="text-[10px] font-sans font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
-                       🧪 Test không cộng tiền
+                       🧪 Test
                      </span>
                      <span class="text-xs sm:text-sm font-black text-amber-700 mt-0.5">
                        ${formatCurrency(t.testDisplayAmount || 600000)}
@@ -8920,7 +8946,7 @@ function renderAdminTransactions() {
                          ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
                          : 'text-slate-600 bg-slate-100 border-slate-300'
                      }">
-                       ${isDraftIncluded ? '✓ Đã cộng TK chính' : '⏸ Tắt cộng TK chính'}
+                       ${isDraftIncluded ? '✓ Đã cộng TK chính' : '⏸ Chưa cộng TK chính'}
                      </span>
                      <span class="text-xs sm:text-sm font-black mt-0.5 ${
                        isDraftIncluded ? (isIncome ? 'text-emerald-600' : 'text-rose-600') : 'line-through text-slate-400'
@@ -8940,7 +8966,7 @@ function renderAdminTransactions() {
               ${formatCompactMethodHtml(t.method, isTestTx, isDraftTx)}
             </div>
           </td>
-          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
+          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             ${
               t.receiptUrl
                 ? `<button
@@ -8954,8 +8980,8 @@ function renderAdminTransactions() {
                 : `<span class="text-xs font-bold text-slate-400">---</span>`
             }
           </td>
-          <td class="py-3 px-3 text-center whitespace-nowrap align-middle">
-            <div class="inline-flex items-center justify-center gap-1.5">
+          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
+            <div class="tc-tx-action-col">
               ${
                 isDraftTx
                   ? `<button
@@ -8966,7 +8992,7 @@ function renderAdminTransactions() {
                           ? 'Bấm để tắt, không cộng khoản STK Nháp này vào Tài khoản chính'
                           : 'Bấm để cộng khoản tiền từ STK Nháp này vào Tài khoản chính'
                       }"
-                      class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-extrabold transition cursor-pointer border ${
+                      class="tc-tx-action-btn border ${
                         isDraftIncluded
                           ? 'bg-amber-50 hover:bg-amber-500 text-amber-800 hover:text-white border-amber-300'
                           : 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-300'
@@ -8980,7 +9006,7 @@ function renderAdminTransactions() {
                 type="button"
                 onclick="editTransactionRecord('${escapeAttr(t.id)}')"
                 title="Chỉnh sửa thông tin phiếu thu/chi này"
-                class="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 text-xs font-extrabold transition cursor-pointer"
+                class="tc-tx-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200"
               >
                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                 <span>Sửa</span>
@@ -8989,7 +9015,7 @@ function renderAdminTransactions() {
                 type="button"
                 onclick="deleteTransactionRecord('${escapeAttr(t.id)}')"
                 title="Xóa vĩnh viễn giao dịch này khỏi Sổ Thu - Chi"
-                class="inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold transition cursor-pointer"
+                class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
               >
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 <span>Xóa</span>
@@ -9038,8 +9064,8 @@ function clearSelectedTransactions() {
 
 function updateFinanceBulkActionBarUI() {
   const bar = document.getElementById('finance-bulk-action-bar');
-  const countEl = document.getElementById('finance-bulk-selected-count');
-  const approveBtn = document.getElementById('btn-bulk-approve-tx');
+  const countEl = document.getElementById('finance-bulk-selected-count') || document.getElementById('finance-selected-count');
+  const approveBtn = document.getElementById('btn-bulk-approve-tx') || document.getElementById('btn-bulk-approve-trans');
   const selectAllCb = document.getElementById('finance-select-all-cb');
 
   const pendingList = getFilteredPendingRequestsForFinance();
@@ -9075,6 +9101,381 @@ function updateFinanceBulkActionBarUI() {
       bar.classList.remove('flex');
     }
   }
+}
+
+function getEditedTxOverridesMap(stateObj = appState) {
+  try {
+    const raw = stateObj?.settings?.editedTxOverridesJson;
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function recordEditedTransactionOverride(stateObj, oldTx, updatedTx) {
+  if (!stateObj || !updatedTx || !updatedTx.id) return;
+  if (!stateObj.settings) stateObj.settings = {};
+  const map = { ...getEditedTxOverridesMap(stateObj) };
+  const prevEntry = map[updatedTx.id] || {};
+  const origDesc = prevEntry.origDesc || String(oldTx?.description || updatedTx.description || '');
+  const origAmount = prevEntry.origAmount !== undefined ? prevEntry.origAmount : Number(oldTx?.amount || updatedTx.amount || 0);
+  const origDate = prevEntry.origDate || String(oldTx?.date || updatedTx.date || '');
+  map[updatedTx.id] = {
+    id: updatedTx.id,
+    date: updatedTx.date,
+    type: updatedTx.type,
+    category: updatedTx.category,
+    amount: updatedTx.amount,
+    description: updatedTx.description,
+    studentCode: updatedTx.studentCode || '',
+    method: updatedTx.method || 'Chuyển khoản',
+    origDesc,
+    origAmount,
+    origDate,
+    updatedAtMs: Date.now()
+  };
+  stateObj.settings.editedTxOverridesJson = JSON.stringify(map);
+}
+
+function formatCompactTxId(rawId) {
+  const id = String(rawId || '').trim();
+  if (!id) return '#GD';
+  if (id.startsWith('GD_SEPAY_')) return `#SP-${id.slice(9, 17)}`;
+  if (id.startsWith('GD_REAL_')) return `#GD-${id.slice(8)}`;
+  if (id.startsWith('YC_SEPAY_')) return `#YC-${id.slice(9, 17)}`;
+  if (id.startsWith('YC_')) return `#YC-${id.slice(3, 9).toUpperCase()}`;
+  if (/^GD_[0-9a-f]{8}-/i.test(id)) return `#GD-${id.slice(3, 9).toUpperCase()}`;
+  if (/^GD_\d{10,}/.test(id)) return `#GD-${id.slice(-6)}`;
+  return id.length > 12 ? `#${id.slice(0, 10)}` : id;
+}
+
+function buildCompactTransactionInfo(tx, stateObj = appState) {
+  if (!tx) {
+    return {
+      shortId: '#GD',
+      headline: 'Giao dịch',
+      subline: 'Bấm để xem chi tiết',
+      studentCode: '',
+      shortMethod: 'CK',
+      rawNote: ''
+    };
+  }
+  const isTestTx = isSimulatedBankTestItem(tx);
+  const rawDesc = isTestTx ? stripRedundantTestPrefix(tx.description) || 'Kiểm tra hoạt động STK' : String(tx.description || '');
+  let body = rawDesc
+    .replace(/^\[STK\s*Nh[aá]p[^\]]*\]\s*/i, '')
+    .replace(/^Tự động lưu (?:CK|GD) SePay(?:\s*\([^)]*\))?:\s*/i, '')
+    .replace(/^Tự động lưu CK vào STK:\s*/i, '')
+    .trim();
+
+  let bankMemo = '';
+  const ndIdx = body.indexOf('| ND:');
+  if (ndIdx !== -1) {
+    bankMemo = body.slice(ndIdx + 5).trim();
+    body = body.slice(0, ndIdx).trim();
+  }
+
+  const stuCode = String(tx.studentCode || '').trim().toUpperCase();
+  const matchedStu = stuCode
+    ? (stateObj?.students || []).find(s => String(s?.studentCode || '').trim().toUpperCase() === stuCode)
+    : null;
+
+  let headline = body || tx.category || (tx.type === 'Chi' ? 'Khoản chi' : 'Khoản thu');
+  let subline = '';
+
+  if (matchedStu) {
+    headline = `${matchedStu.fullName}${matchedStu.className ? ` • Lớp ${matchedStu.className}` : ''}`;
+    subline = `${tx.category || 'Thu học phí'}${matchedStu.period ? ` (${matchedStu.period})` : ''}${
+      bankMemo ? ` • ND: ${bankMemo}` : ''
+    }`;
+  } else if (stuCode && body) {
+    headline = body.replace(new RegExp(`^${stuCode}\\s*-\\s*`, 'i'), '').trim() || body;
+    subline = bankMemo ? `ND CK: ${bankMemo}` : `${tx.category || 'Thu học phí'} • ${tx.date || ''}`;
+  } else {
+    headline = body || tx.category || 'Giao dịch sổ quỹ';
+    subline = bankMemo
+      ? `ND CK: ${bankMemo}`
+      : `${tx.category || 'Sổ quỹ'} • ${tx.createdBy || tx.method || 'Ghi nhận trên hệ thống'}`;
+  }
+
+  return {
+    shortId: formatCompactTxId(tx.id),
+    headline,
+    subline,
+    studentCode: stuCode,
+    matchedStu,
+    bankMemo,
+    rawDesc,
+    shortMethod: String(tx.method || '').includes('Tiền mặt') ? 'Tiền mặt' : 'Chuyển khoản'
+  };
+}
+
+let _activeDetailTxKey = '';
+
+function openTransactionDetailModal(itemKey) {
+  const modal = document.getElementById('transaction-detail-modal');
+  const headerEl = document.getElementById('tx-detail-header');
+  const badgeEl = document.getElementById('tx-detail-badge');
+  const titleEl = document.getElementById('tx-detail-title');
+  const bodyEl = document.getElementById('tx-detail-body');
+  const footerEl = document.getElementById('tx-detail-footer');
+  if (!modal || !bodyEl || !footerEl) return;
+
+  const key = String(itemKey || '').trim();
+  if (!key) return;
+  _activeDetailTxKey = key;
+
+  if (key.startsWith('REQ::')) {
+    const reqId = key.replace(/^REQ::/, '');
+    const req = (appState.paymentRequests || []).find(r => r && r.id === reqId);
+    if (!req) {
+      showToast('Không tìm thấy yêu cầu chuyển khoản này!', 'warning');
+      return;
+    }
+    const isDraftReq = isDraftPaymentRequest(req);
+    const linkedStu = (appState.students || []).find(
+      s => s.id === req.studentRecordId || (s.studentCode && s.studentCode === req.studentCode)
+    );
+    const amtVal = normalizeStoredVnd(req.amount) || (linkedStu ? normalizeStoredVnd(linkedStu.tuitionFee) : 600000);
+
+    if (headerEl) headerEl.className = 'tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3';
+    if (badgeEl) badgeEl.textContent = 'THANH CHÍ EDU • YÊU CẦU CHỜ DUYỆT';
+    if (titleEl) titleEl.textContent = `${req.studentName || 'Học sinh'} (${req.studentCode || 'HS'})`;
+
+    bodyEl.innerHTML = `
+      <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
+        <div>
+          <span class="text-[11px] font-bold text-amber-800 uppercase block">Số tiền chờ duyệt</span>
+          <span class="text-lg sm:text-xl font-black font-mono text-emerald-700">+${formatCurrency(amtVal)}</span>
+        </div>
+        <span class="px-2.5 py-1 rounded-full bg-amber-200/90 text-amber-950 border border-amber-400 text-xs font-extrabold">
+          ⏳ Đang chờ duyệt
+        </span>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 text-xs">
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-semibold block">Mã yêu cầu</span>
+          <span class="font-mono font-bold text-slate-800 break-all">${escapeHtml(req.id)}</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-semibold block">Thời gian gửi</span>
+          <span class="font-bold text-slate-800">${escapeHtml(req.submittedAt || 'Vừa gửi')}</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-semibold block">Học sinh / Lớp</span>
+          <span class="font-bold text-slate-900">${escapeHtml(req.studentName || '---')} (${escapeHtml(req.studentCode || '---')}) • Lớp ${escapeHtml(req.className || '---')}</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 font-semibold block">Kỳ thu / Người gửi</span>
+          <span class="font-bold text-slate-800">${escapeHtml(req.period || '---')} • ${escapeHtml(req.payerName || 'Phụ huynh')}</span>
+        </div>
+      </div>
+      ${
+        isDraftReq
+          ? `<div class="p-2.5 rounded-xl bg-amber-100/80 border border-amber-300 text-xs font-bold text-amber-950">
+               🏷️ Yêu cầu này thuộc <strong>STK Nháp (5801434567)</strong>.
+             </div>`
+          : ''
+      }
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+        <span class="text-[11px] font-bold text-slate-500 uppercase block">Ghi chú / Nội dung chuyển khoản đầy đủ</span>
+        <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(req.note || 'Phụ huynh xác nhận chuyển khoản học phí')}</p>
+      </div>
+    `;
+
+    footerEl.innerHTML = `
+      <button
+        type="button"
+        onclick="closeTransactionDetailModal()"
+        class="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+      >
+        Đóng
+      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onclick="closeTransactionDetailModal(); handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Từ chối')"
+          class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1"
+        >
+          <i data-lucide="x-circle" class="w-4 h-4"></i>
+          <span>Từ chối</span>
+        </button>
+        <button
+          type="button"
+          onclick="closeTransactionDetailModal(); handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Đã duyệt')"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer inline-flex items-center gap-1.5"
+        >
+          <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+          <span>Duyệt & Ghi Sổ Thu</span>
+        </button>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    return;
+  }
+
+  const tx = (appState.transactions || []).find(t => t && t.id === key);
+  if (!tx) {
+    showToast('Không tìm thấy giao dịch này!', 'warning');
+    return;
+  }
+
+  const isIncome = tx.type === 'Thu';
+  const isTestTx = isSimulatedBankTestItem(tx);
+  const isDraftTx = !isTestTx && isDraftBankTransaction(tx);
+  const isDraftIncluded = isDraftTx && isDraftTxIncludedInMain(tx);
+  const compact = buildCompactTransactionInfo(tx, appState);
+
+  if (headerEl) {
+    headerEl.className = `${
+      isIncome ? 'tc-dialog-header-emerald' : 'tc-dialog-header-danger'
+    } px-5 py-4 text-white flex items-center justify-between gap-3`;
+  }
+  if (badgeEl) {
+    badgeEl.textContent = `THANH CHÍ EDU • CHI TIẾT PHIẾU ${isIncome ? 'THU (+)' : 'CHI (-)'}`;
+  }
+  if (titleEl) {
+    titleEl.textContent = compact.headline;
+  }
+
+  bodyEl.innerHTML = `
+    <div class="p-3.5 rounded-2xl ${
+      isIncome ? 'bg-emerald-50/90 border border-emerald-200' : 'bg-rose-50/90 border border-rose-200'
+    } flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <span class="text-[11px] font-bold ${isIncome ? 'text-emerald-800' : 'text-rose-800'} uppercase block">
+          Số tiền giao dịch
+        </span>
+        <span class="text-xl sm:text-2xl font-black font-mono ${isIncome ? 'text-emerald-700' : 'text-rose-700'}">
+          ${isIncome ? '+' : '-'}${formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount)}
+        </span>
+      </div>
+      <div class="flex flex-col items-end gap-1">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
+          isIncome ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
+        }">
+          ${isIncome ? '+ Phiếu Thu' : '- Phiếu Chi'} • ${escapeHtml(tx.category || 'Sổ quỹ')}
+        </span>
+        ${
+          isDraftTx
+            ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold border ${
+                isDraftIncluded
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                  : 'bg-amber-100 text-amber-900 border-amber-400'
+              }">
+                🏷️ STK Nháp (5801434567) • ${isDraftIncluded ? '✓ Đang cộng TK chính' : '⏸ Chưa cộng TK chính'}
+              </span>`
+            : `<span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-extrabold">
+                🏦 Tài khoản Chính
+              </span>`
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+      <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+        <span class="text-slate-400 font-semibold block">Mã giao dịch đầy đủ</span>
+        <span class="font-mono font-bold text-slate-800 break-all">${escapeHtml(tx.id)}</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+        <span class="text-slate-400 font-semibold block">Ngày ghi nhận & Phương thức</span>
+        <span class="font-bold text-slate-800">${escapeHtml(tx.date || '---')} • ${escapeHtml(tx.method || 'Chuyển khoản')}</span>
+      </div>
+      ${
+        compact.matchedStu || compact.studentCode
+          ? `<div class="sm:col-span-2 p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 flex items-center justify-between gap-2">
+               <div>
+                 <span class="text-indigo-500 font-bold text-[11px] uppercase block">Học sinh liên kết</span>
+                 <span class="font-extrabold text-slate-900 text-xs sm:text-sm">
+                   ${escapeHtml(compact.matchedStu ? compact.matchedStu.fullName : 'Học sinh')} (${escapeHtml(compact.studentCode)})
+                   ${compact.matchedStu?.className ? ` • Lớp ${escapeHtml(compact.matchedStu.className)}` : ''}
+                   ${compact.matchedStu?.period ? ` • ${escapeHtml(compact.matchedStu.period)}` : ''}
+                 </span>
+               </div>
+               ${
+                 compact.matchedStu
+                   ? `<button
+                        type="button"
+                        onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(compact.matchedStu.id)}')"
+                        class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                      >
+                        Hồ sơ HS ↗
+                      </button>`
+                   : ''
+               }
+             </div>`
+          : ''
+      }
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+      <span class="text-[11px] font-bold text-slate-500 uppercase block">Nội dung chi tiết & Nội dung chuyển khoản gốc</span>
+      <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(
+        tx.description || tx.category || '---'
+      )}</p>
+      ${
+        tx.createdBy
+          ? `<p class="text-[11px] text-slate-400 pt-1">Nguồn tạo: <strong>${escapeHtml(tx.createdBy)}</strong></p>`
+          : ''
+      }
+    </div>
+  `;
+
+  footerEl.innerHTML = `
+    <button
+      type="button"
+      onclick="closeTransactionDetailModal()"
+      class="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+    >
+      Đóng
+    </button>
+    <div class="flex flex-wrap items-center gap-1.5">
+      ${
+        isDraftTx
+          ? `<button
+               type="button"
+               onclick="toggleDraftTransactionMainAccount('${escapeAttr(tx.id)}')"
+               class="px-3 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer border inline-flex items-center gap-1 ${
+                 isDraftIncluded
+                   ? 'bg-amber-50 hover:bg-amber-500 text-amber-800 hover:text-white border-amber-300'
+                   : 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-300'
+               }"
+             >
+               <span>${isDraftIncluded ? '⏸ Tắt cộng TK chính' : '➕ Cộng vào TK chính'}</span>
+             </button>`
+          : ''
+      }
+      <button
+        type="button"
+        onclick="closeTransactionDetailModal(); editTransactionRecord('${escapeAttr(tx.id)}')"
+        class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-2xs transition cursor-pointer inline-flex items-center gap-1"
+      >
+        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+        <span>Chỉnh sửa</span>
+      </button>
+      <button
+        type="button"
+        onclick="closeTransactionDetailModal(); deleteTransactionRecord('${escapeAttr(tx.id)}')"
+        class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1"
+      >
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        <span>Xóa</span>
+      </button>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function closeTransactionDetailModal() {
+  _activeDetailTxKey = '';
+  const modal = document.getElementById('transaction-detail-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 async function handleBulkApproveTransactions() {
@@ -9149,6 +9550,7 @@ async function saveBulkEditTransactionsForm(event) {
   let updatedCount = 0;
   (appState.transactions || []).forEach(tx => {
     if (!txIds.includes(tx.id)) return;
+    const oldCopy = { ...tx };
     if (newType) tx.type = newType;
     if (newDate) tx.date = newDate;
     if (newCategory) tx.category = newCategory;
@@ -9158,6 +9560,7 @@ async function saveBulkEditTransactionsForm(event) {
     }
     if (newMethod) tx.method = newMethod;
     if (newDesc) tx.description = newDesc;
+    recordEditedTransactionOverride(appState, oldCopy, tx);
     updatedCount++;
   });
 
@@ -9218,7 +9621,7 @@ async function handleBulkDeleteTransactions() {
 
 function ensureSelectHasOption(selectEl, value) {
   if (!selectEl || !value) return;
-  const exists = Array.from(selectEl.options).some(opt => opt.value === value);
+  const exists = Array.from(selectEl.options || []).some(opt => opt.value === value);
   if (!exists) {
     const opt = document.createElement('option');
     opt.value = value;
@@ -9327,7 +9730,7 @@ function saveTransactionForm(event) {
     if (existingIdx !== -1) {
       const oldTx = appState.transactions[existingIdx];
       recordExactSmallAmount(appState, editId, '', amount);
-      appState.transactions[existingIdx] = {
+      const updatedTx = {
         ...oldTx,
         date,
         type,
@@ -9337,9 +9740,11 @@ function saveTransactionForm(event) {
         studentCode,
         method
       };
+      appState.transactions[existingIdx] = updatedTx;
+      recordEditedTransactionOverride(appState, oldTx, updatedTx);
       closeTransactionModal();
       saveStateToLocal();
-      triggerAutoSyncIfNeeded(`✏️ Đã cập nhật thông tin phiếu ${type} (${editId}: ${formatCurrency(amount)}) thành công!`);
+      triggerAutoSyncIfNeeded(`✏️ Đã cập nhật thông tin phiếu ${type} (${formatCompactTxId(editId)}: ${formatCurrency(amount)}) thành công!`);
       return;
     }
   }
@@ -9388,6 +9793,9 @@ async function toggleDraftTransactionMainAccount(transId) {
   }
 
   saveStateToLocal();
+  if (_activeDetailTxKey === transId) {
+    openTransactionDetailModal(transId);
+  }
   await triggerAutoSyncIfNeeded(
     nextIncluded
       ? `✅ Đã BẬT cộng giao dịch STK Nháp (${formatCurrency(tx.amount)}) vào Tài khoản chính!`
@@ -10043,20 +10451,24 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       ].filter(Boolean);
       if (candidateKeys.some(k => deletedTxSet.has(k))) continue;
 
+      const editedOverrides = getEditedTxOverridesMap(state);
       const existingMatchedTx = state.transactions.find(t => {
         if (!t) return false;
         const tid = String(t.id || '');
         if (tid === sepayTxId || tid === `GD_${cleanKey}` || tid === `GD_SEPAY_${rawRefCell}` || tid === `GD_${rawRefCell}`) {
           return true;
         }
-        if (rawRefCell && rawRefCell.length >= 5 && String(t.description || '').includes(rawRefCell)) {
+        const ov = editedOverrides[tid];
+        const descToMatch = ov && ov.origDesc ? `${t.description || ''} ${ov.origDesc}` : String(t.description || '');
+        const amtToMatch = ov && ov.origAmount !== undefined ? Number(ov.origAmount) : Number(t.amount);
+        if (rawRefCell && rawRefCell.length >= 5 && descToMatch.includes(rawRefCell)) {
           return true;
         }
         return Boolean(
           (tid.startsWith('GD_SEPAY_') || /^GD_[0-9a-f]{8}-/i.test(tid)) &&
-          Number(t.amount) === amount &&
+          (Number(t.amount) === amount || amtToMatch === amount) &&
           rawContent &&
-          String(t.description || '').includes(rawContent)
+          descToMatch.includes(rawContent)
         );
       });
       if (existingMatchedTx) {
@@ -10305,18 +10717,56 @@ function mergeServerData(serverData) {
   if (unionDraftTx.size > 0) {
     mergedSettings.draftBankTxIdsJson = JSON.stringify(Array.from(unionDraftTx));
   }
+  // Ưu tiên trạng thái Bật/Tắt Cộng TK chính và nội dung chỉnh sửa giao dịch vừa thao tác trên máy người dùng
   const mergedIncludeMap = {
-    ...getDraftTxIncludeMap({ settings: appState.settings }),
-    ...getDraftTxIncludeMap({ settings: serverSettings })
+    ...getDraftTxIncludeMap({ settings: serverSettings }),
+    ...getDraftTxIncludeMap({ settings: appState.settings })
   };
   if (Object.keys(mergedIncludeMap).length > 0) {
     mergedSettings.draftTxIncludeJson = JSON.stringify(mergedIncludeMap);
   }
+  const mergedEditedTxMap = {
+    ...getEditedTxOverridesMap({ settings: serverSettings }),
+    ...getEditedTxOverridesMap({ settings: appState.settings })
+  };
+  if (Object.keys(mergedEditedTxMap).length > 0) {
+    mergedSettings.editedTxOverridesJson = JSON.stringify(mergedEditedTxMap);
+  }
   mergedSettings.defaultPeriod = normalizePeriodValue(mergedSettings.defaultPeriod);
+
+  let mergedTransactions = Array.isArray(serverData.transactions)
+    ? serverData.transactions.map(tx => {
+        const ov = tx && tx.id ? mergedEditedTxMap[tx.id] : null;
+        if (!ov) return tx;
+        return {
+          ...tx,
+          date: ov.date || tx.date,
+          type: ov.type || tx.type,
+          category: ov.category || tx.category,
+          amount: ov.amount !== undefined ? ov.amount : tx.amount,
+          description: ov.description || tx.description,
+          studentCode: ov.studentCode !== undefined ? ov.studentCode : tx.studentCode,
+          method: ov.method || tx.method
+        };
+      })
+    : appState.transactions;
+
+  // Giữ lại phiếu Thu/Chi vừa được tạo cục bộ trong 60s gần nhất nếu gói đồng bộ lên Google Sheet chưa kịp ghi xong
+  if (Array.isArray(serverData.transactions) && Array.isArray(appState.transactions)) {
+    const serverTxIds = new Set(mergedTransactions.map(t => String(t?.id || '')));
+    const nowMs = Date.now();
+    appState.transactions.forEach(localTx => {
+      const tid = String(localTx?.id || '');
+      const createdMs = /^GD_\d{12,}$/.test(tid) ? Number(tid.slice(3)) : 0;
+      if (createdMs && nowMs - createdMs < 60000 && !serverTxIds.has(tid) && !unionDeletedTx.has(tid)) {
+        mergedTransactions.unshift({ ...localTx });
+      }
+    });
+  }
 
   const purged = purgeDraftDataFromState({
     students,
-    transactions: Array.isArray(serverData.transactions) ? serverData.transactions : appState.transactions,
+    transactions: mergedTransactions,
     paymentRequests,
     settings: mergedSettings
   });
@@ -16415,12 +16865,13 @@ function showTcAppDialog(options = {}) {
   }
 
   if (formEl && fieldsWrap) {
+    formEl.classList.remove('hidden');
     if (mode === 'confirm') {
-      formEl.classList.add('hidden');
+      fieldsWrap.classList.add('hidden');
       fieldsWrap.innerHTML = '';
       updateTcDialogMoneyPreview('');
     } else if (mode === 'fields') {
-      formEl.classList.remove('hidden');
+      fieldsWrap.classList.remove('hidden');
       const fields = Array.isArray(options.fields) ? options.fields : [];
       fieldsWrap.innerHTML = fields
         .map(
@@ -16442,7 +16893,7 @@ function showTcAppDialog(options = {}) {
         .join('');
       updateTcDialogMoneyPreview('');
     } else {
-      formEl.classList.remove('hidden');
+      fieldsWrap.classList.remove('hidden');
       const inputType = options.inputType || 'text';
       fieldsWrap.innerHTML = `
         <div>
@@ -16661,14 +17112,14 @@ function renderTcDatePickerPopover() {
           <select
             id="tc-dp-month-select"
             onchange="changeTcDatePickerMonthYear(this.value, null)"
-            class="bg-white/12 hover:bg-white/20 text-white text-xs font-extrabold rounded-lg px-2 py-1 border border-white/15 focus:outline-none cursor-pointer"
+            class="tc-dp-select"
           >
             ${monthOptions}
           </select>
           <select
             id="tc-dp-year-select"
             onchange="changeTcDatePickerMonthYear(null, this.value)"
-            class="bg-white/12 hover:bg-white/20 text-white text-xs font-extrabold rounded-lg px-2 py-1 border border-white/15 focus:outline-none cursor-pointer"
+            class="tc-dp-select"
           >
             ${yearOptions}
           </select>
@@ -16755,6 +17206,7 @@ function openTcDatePicker(options = {}) {
   const now = new Date();
   _tcDatePickerState = {
     open: true,
+    openedAt: Date.now(),
     anchorEl: options.anchorEl || null,
     selectedIso: parsed ? options.selectedIso : '',
     viewYear: parsed ? parsed.year : now.getFullYear(),
@@ -16808,7 +17260,11 @@ function closeTcDatePickerPopover() {
   if (pop) pop.classList.add('hidden');
 }
 
-function openStudentStartDatePicker(studentId, currentIso, btnEl) {
+function openStudentStartDatePicker(arg1, arg2, arg3) {
+  const isFirstEl = Boolean(arg1 && typeof arg1 === 'object');
+  const btnEl = isFirstEl ? arg1 : arg3;
+  const studentId = isFirstEl ? String(arg2 || '') : String(arg1 || '');
+  const currentIso = isFirstEl ? String(arg3 || '') : String(arg2 || '');
   const s = (appState.students || []).find(item => item.id === studentId);
   const stuTitle = s ? `Bắt đầu học — ${s.fullName}` : 'Ngày bắt đầu học';
   openTcDatePicker({
@@ -16852,20 +17308,33 @@ function openTcDatePickerForInput(inputEl, customTitle = '') {
 function initTcCustomDatePickerEngine() {
   if (typeof document.addEventListener !== 'function') return;
 
-  document.addEventListener('click', e => {
+  const handleDateInputTrigger = e => {
     const target = e.target;
-    if (!target || typeof target.closest !== 'function') return;
-
+    if (!target || typeof target.closest !== 'function') return false;
     const dateInput = target.closest('input[type="date"]');
     if (dateInput && !dateInput.disabled && !dateInput.readOnly) {
       e.preventDefault();
       openTcDatePickerForInput(dateInput);
-      return;
+      return true;
     }
+    return false;
+  };
+
+  document.addEventListener('mousedown', e => {
+    handleDateInputTrigger(e);
+  });
+
+  document.addEventListener('click', e => {
+    if (handleDateInputTrigger(e)) return;
+    const target = e.target;
+    if (!target || typeof target.closest !== 'function') return;
 
     if (_tcDatePickerState.open) {
+      if (_tcDatePickerState.openedAt && Date.now() - _tcDatePickerState.openedAt < 90) {
+        return;
+      }
       const pop = document.getElementById('tc-datepicker-popover');
-      const clickedInsidePop = pop && pop.contains(target);
+      const clickedInsidePop = pop && typeof pop.contains === 'function' && pop.contains(target);
       const clickedAnchor =
         _tcDatePickerState.anchorEl &&
         typeof _tcDatePickerState.anchorEl.contains === 'function' &&
