@@ -1,0 +1,31 @@
+{
+  "name": "THANH CHÍ EDU — Quản Lý Lớp Học & Thu Chi",
+  "short_name": "Thanh Chí Edu",
+  "description": "Ứng dụng quản lý học sinh, điểm danh, học phí VietQR & sổ thu chi đồng bộ Google Sheet",
+  "start_url": "./?app=admin",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FAFAFC",
+  "theme_color": "#FAFAFC",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
