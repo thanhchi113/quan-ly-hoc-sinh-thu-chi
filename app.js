@@ -4128,9 +4128,97 @@ async function copySandboxShareLink() {
   }
 }
 
+function isRunningAsStandaloneApp() {
+  try {
+    return Boolean(
+      window.navigator?.standalone === true ||
+      (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches)
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
+function isAdminAppBootRequested() {
+  if (isRunningAsStandaloneApp()) return true;
+  try {
+    const appParam = (new URLSearchParams(window.location.search).get('app') || '').toLowerCase();
+    return appParam === 'admin' || appParam === 'ios';
+  } catch (e) {
+    return false;
+  }
+}
+
+function getIosAdminAppInstallUrl() {
+  try {
+    if (window.location.origin && window.location.origin.startsWith('http')) {
+      const u = new URL(window.location.pathname || '/', window.location.origin);
+      u.searchParams.set('app', 'admin');
+      return u.toString();
+    }
+  } catch (e) {}
+  return 'https://thanhchi113.github.io/quan-ly-hoc-sinh-thu-chi/?app=admin';
+}
+
+function openIosInstallModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (!modal) return;
+  const qrImg = document.getElementById('ios-install-qr-img');
+  const installUrl = getIosAdminAppInstallUrl();
+  if (qrImg) {
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(installUrl)}`;
+  }
+  modal.classList.remove('hidden');
+  lucide.createIcons({ root: modal });
+}
+
+function closeIosInstallModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function copyIosAppLink() {
+  const url = getIosAdminAppInstallUrl();
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('📲 Đã sao chép link cài App Quản Lý! Hãy dán vào trình duyệt Safari trên iPhone.', 'success');
+  } catch (e) {
+    prompt('Sao chép link cài App Quản Lý dưới đây để mở bằng Safari trên iPhone:', url);
+  }
+}
+
+// shortcut: tự khóa lại sau 3 phút chạy nền trên iOS để vừa tránh phải gõ lại khi chuyển sang app Ngân hàng/Ảnh vừa bảo mật mỗi lần mở lại App
+const STANDALONE_BG_LOCK_MS = 3 * 60 * 1000;
+let _standaloneHiddenAtMs = 0;
+
+function initStandaloneIosLifecycle() {
+  const installBtn = document.getElementById('btn-install-ios-app');
+  if (installBtn && isRunningAsStandaloneApp()) {
+    installBtn.classList.add('hidden');
+  }
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  if (isRunningAsStandaloneApp() && typeof document.addEventListener === 'function') {
+    document.addEventListener('visibilitychange', () => {
+      if (isSandboxDraftMode) return;
+      if (document.hidden) {
+        _standaloneHiddenAtMs = Date.now();
+      } else if (_standaloneHiddenAtMs > 0 && Date.now() - _standaloneHiddenAtMs >= STANDALONE_BG_LOCK_MS) {
+        _standaloneHiddenAtMs = 0;
+        sessionStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+        switchAppMode('admin');
+      }
+    });
+  }
+}
+
 function bootstrapApp() {
   initThemeSystem();
   enableSourceProtection();
+  initStandaloneIosLifecycle();
   lucide.createIcons();
 
   if (isSandboxDraftMode) {
@@ -4142,7 +4230,16 @@ function bootstrapApp() {
     return;
   }
 
+  const openDirectAdminApp = isAdminAppBootRequested();
+  if (openDirectAdminApp) {
+    sessionStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+  }
+
   initAppUI();
+
+  if (openDirectAdminApp) {
+    switchAppMode('admin');
+  }
 
   // Nếu đã cấu hình link Google Sheet thì tự động tải dữ liệu mới nhất về & bật lắng nghe biến động số dư
   const gasUrl = getGasUrl();
@@ -4507,8 +4604,9 @@ function refreshAllViews() {
   const sidePendingBadge = document.getElementById('sidebar-pending-badge');
   const sideFinanceBadge = document.getElementById('sidebar-finance-pending-badge');
   const tabFinanceBadge = document.getElementById('tab-finance-pending-count');
+  const iosFinanceBadge = document.getElementById('ios-finance-pending-badge');
 
-  [navBadge, tabBadge, sidePendingBadge, sideFinanceBadge, tabFinanceBadge].forEach(badge => {
+  [navBadge, tabBadge, sidePendingBadge, sideFinanceBadge, tabFinanceBadge, iosFinanceBadge].forEach(badge => {
     if (!badge) return;
     if (pendingCount > 0) {
       badge.textContent = pendingCount;
@@ -4583,6 +4681,7 @@ function switchAppMode(mode) {
   if (mode === 'parent') {
     parentView.classList.remove('hidden');
     adminView.classList.add('hidden');
+    document.getElementById('ios-bottom-tabbar')?.classList.add('hidden');
     btnParent.className = 'mode-pill-active flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
     btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition cursor-pointer whitespace-nowrap';
   } else {
@@ -4600,14 +4699,17 @@ function checkAdminAuthStatus() {
   const isAuth = isAdminAuthenticated();
   const loginBox = document.getElementById('admin-login-box');
   const workspace = document.getElementById('admin-workspace');
+  const iosTabBar = document.getElementById('ios-bottom-tabbar');
 
   if (isAuth) {
     loginBox.classList.add('hidden');
     workspace.classList.remove('hidden');
+    if (iosTabBar && currentMode === 'admin') iosTabBar.classList.remove('hidden');
     refreshAllViews();
   } else {
     loginBox.classList.remove('hidden');
     workspace.classList.add('hidden');
+    if (iosTabBar) iosTabBar.classList.add('hidden');
   }
 }
 
@@ -4700,6 +4802,17 @@ function updateSidebarActiveUI(sideKey) {
       el.classList.add('is-active');
     } else {
       el.classList.remove('is-active');
+    }
+  });
+
+  const iosTabs = ['classbook', 'attendance', 'finance', 'students', 'settings'];
+  iosTabs.forEach(k => {
+    const btn = document.getElementById('ios-tab-' + k);
+    if (!btn) return;
+    if (k === currentAdminTab) {
+      btn.classList.add('is-active');
+    } else {
+      btn.classList.remove('is-active');
     }
   });
 
@@ -14661,6 +14774,10 @@ function updateDarkModeHeaderUI(isDark) {
     root.classList.add('dark-mode');
   } else {
     root.classList.remove('dark-mode');
+  }
+  const themeMeta = document.getElementById('meta-theme-color');
+  if (themeMeta) {
+    themeMeta.setAttribute('content', isDark ? '#0f172a' : '#FAFAFC');
   }
 
   const iconEl = document.getElementById('darkmode-toggle-icon');
