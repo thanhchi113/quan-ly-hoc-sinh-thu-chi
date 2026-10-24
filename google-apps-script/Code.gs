@@ -116,6 +116,11 @@ function setupSheets() {
     defaultSettings.forEach(r => shSettings.appendRow(r));
   }
 
+  // 5. Sheet nhận giao dịch trực tiếp từ Tích hợp Google Sheets của SePay
+  if (!ss.getSheetByName('SePay_GiaoDich')) {
+    ss.insertSheet('SePay_GiaoDich');
+  }
+
   return true;
 }
 
@@ -422,7 +427,7 @@ function normalizeMoneyVnd(val) {
   if (typeof val === 'number') {
     if (!isFinite(val) || val === 0) return 0;
     const abs = Math.abs(Math.round(val));
-    return (abs >= 3000 && abs % 1000 === 0) ? Math.round(val) : Math.round(val * 1000);
+    return (abs >= 1000 && abs % 1000 === 0) ? Math.round(val) : Math.round(val * 1000);
   }
   const s = String(val).trim();
   if (!s) return 0;
@@ -431,7 +436,7 @@ function normalizeMoneyVnd(val) {
   if (!digits) return 0;
   const num = Number(digits);
   if (!isFinite(num) || num === 0) return 0;
-  const full = (num >= 3000 && num % 1000 === 0) ? Math.round(num) : Math.round(num * 1000);
+  const full = (num >= 1000 && num % 1000 === 0) ? Math.round(num) : Math.round(num * 1000);
   return isNeg ? -full : full;
 }
 
@@ -537,11 +542,24 @@ function getAllSheetData() {
     const sh = allSheets[sIdx];
     const shName = sh.getName();
     if (systemSheetSet.has(shName)) continue;
-    const range = sh.getDataRange();
+    const isSepayNamed = /sepay/i.test(shName);
+    const lastRow = sh.getLastRow();
+    const lastCol = Math.min(sh.getLastColumn(), 20);
+    if (lastRow === 0 || lastCol === 0) {
+      if (isSepayNamed) rawClassSheets.push({ sheetName: shName, values: [] });
+      continue;
+    }
+    const headerVals = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+    if (!isSepayNamed && !/gateway|ngan\s*hang|ngân\s*hàng|transferamount|amount_in|tien\s*vao|tiền\s*vào/i.test(headerVals.join(' '))) {
+      continue;
+    }
+    const startRow = Math.max(2, lastRow - 199);
+    const bodyValues = lastRow >= 2
+      ? [headerVals].concat(sh.getRange(startRow, 1, lastRow - startRow + 1, lastCol).getDisplayValues())
+      : [headerVals];
     rawClassSheets.push({
       sheetName: shName,
-      values: range.getDisplayValues(),
-      backgrounds: range.getBackgrounds()
+      values: bodyValues
     });
   }
 
@@ -781,6 +799,7 @@ function processIncomingBankWebhook(ss, payload) {
     existingTxIds[txIdKey] = true;
 
     const cleanContent = removeAccentsGas(tx.content).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const contentForName = cleanContent.replace(/\b(HO KINH DOANH\s+|HKD\s+)?(TRUNG TAM\s+)?HUYNH THANH CHI\b/g, ' ').replace(/\s+/g, ' ').trim();
     const isOut = tx.transferType === 'out';
     let matchedRowIdx = -1;
 
@@ -792,7 +811,7 @@ function processIncomingBankWebhook(ss, payload) {
         const stPhone = String(stValues[i][5] || '').replace(/[^0-9]/g, '');
 
         const matchByCode = stCode && stCode.length >= 3 && cleanContent.indexOf(stCode) !== -1;
-        const matchByName = stName && stName.length >= 2 && !nameStopwords[stName] && (` ${cleanContent} `).indexOf(` ${stName} `) !== -1;
+        const matchByName = stName && stName.length >= 2 && !nameStopwords[stName] && (` ${contentForName} `).indexOf(` ${stName} `) !== -1;
         const matchByPhone = stPhone && stPhone.length >= 8 && cleanContent.indexOf(stPhone) !== -1;
 
         if (matchByCode || matchByName || matchByPhone) {
@@ -802,13 +821,13 @@ function processIncomingBankWebhook(ss, payload) {
       }
 
       // Vòng 2: Nếu chưa khớp, thử khớp theo 2 từ cuối của tên học sinh (VD: MINH ANH, GIA HUY)
-      if (matchedRowIdx === -1) {
+      if (matchedRowIdx === -1 && contentForName) {
         for (let i = 1; i < stValues.length; i++) {
           const stName = removeAccentsGas(String(stValues[i][2] || '')).toUpperCase().replace(/\s+/g, ' ').trim();
           const words = stName.split(' ').filter(Boolean);
           if (words.length >= 2) {
             const shortName = words.slice(-2).join(' ');
-            if (shortName.length >= 5 && cleanContent.indexOf(shortName) !== -1) {
+            if (shortName.length >= 5 && contentForName.indexOf(shortName) !== -1) {
               matchedRowIdx = i;
               break;
             }
