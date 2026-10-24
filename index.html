@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>THANH CHÍ EDU — Quản Lý Học Sinh, Học Phí &amp; Tài Chính</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+  />
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -11,7 +20,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261023_v3" />
+  <link rel="stylesheet" href="styles.css?v=20261024_v4" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -276,7 +285,7 @@
                   id="parent-search-input"
                   type="text"
                   placeholder="Nhập Tên học sinh, Mã HS (VD: HS001) hoặc SĐT Phụ huynh..."
-                  oninput="handleParentSearch(false)"
+                  oninput="debouncedParentSearch()"
                   onkeyup="if(event.key==='Enter') handleParentSearch(true)"
                   class="w-full pl-11 pr-4 py-2.5 text-slate-900 placeholder-slate-400 text-sm sm:text-base font-medium focus:outline-none rounded-lg"
                 />
@@ -2437,7 +2446,7 @@
                 <input
                   id="filter-student-search"
                   type="text"
-                  oninput="renderAdminStudents()"
+                  oninput="debouncedStudentSearch()"
                   placeholder="Tìm mã HS, họ tên, SĐT, lớp..."
                   class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -2776,7 +2785,7 @@
                 <input
                   id="filter-trans-search"
                   type="text"
-                  oninput="renderAdminTransactions()"
+                  oninput="debouncedTransSearch()"
                   placeholder="Tìm mã GD, tên học sinh, nội dung, mã HS..."
                   class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -5069,6 +5078,6 @@
   <div id="toast-container" class="fixed bottom-20 right-5 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261023_v9"></script>
+  <script src="app.js?v=20261024_v10"></script>
 </body>
 </html>
