@@ -28,7 +28,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261024_v8" />
+  <link rel="stylesheet" href="styles.css?v=20261024_v9" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -2609,38 +2609,41 @@
                 <table id="all-students-stat-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
                   <thead class="sticky-table-thead">
                     <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
-                      <th class="py-2.5 px-2 w-12">STT</th>
-                      <th class="py-2.5 px-2.5 w-20">Mã HS</th>
-                      <th class="py-2.5 px-3 text-left min-w-[170px]">Họ và tên Học sinh</th>
-                      <th class="py-2.5 px-3 text-left min-w-[165px]">Lớp đang học</th>
-                      <th class="py-2.5 px-2.5 w-32">Bắt đầu học</th>
-                      <th class="py-2.5 px-2.5 w-32">Số đợt đã đóng</th>
-                      <th class="py-2.5 px-2.5 w-32">Kỳ / Tháng</th>
-                      <th class="py-2.5 px-2.5 text-right w-28" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">Học phí (.000₫)</th>
-                      <th class="py-2.5 px-2.5 w-32">Tình trạng</th>
-                      <th class="py-2.5 px-2.5 w-32">Thao tác</th>
+                      <th class="py-2.5 px-2 w-10">STT</th>
+                      <th class="py-2.5 px-2 w-16">Mã HS</th>
+                      <th class="py-2.5 px-3 text-left min-w-[175px]">Họ và tên Học sinh</th>
+                      <th class="py-2.5 px-2 w-28 text-center">Lớp đang học</th>
+                      <th class="py-2.5 px-2 w-28 text-center">Bắt đầu học</th>
+                      <th class="py-2.5 px-2 w-28 text-center">Số đợt đã đóng</th>
+                      <th class="py-2.5 px-2 w-32 text-center">Kỳ / Tháng</th>
+                      <th class="py-2.5 px-2 text-right w-24" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">Học phí (.000₫)</th>
+                      <th class="py-2.5 px-2 w-32 min-w-[132px] text-center">Tình trạng</th>
+                      <th class="py-2.5 px-2 w-28 min-w-[124px] text-center">Thao tác</th>
                     </tr>
-                    <!-- Dòng TỔNG CỘNG ngay dưới tiêu đề giống hệt Sổ Theo Dõi Lớp Học -->
+                    <!-- Dòng TỔNG CỘNG khớp chính xác 1:1 theo từng cột tiêu đề -->
                     <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
-                      <td colspan="4" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
+                      <td colspan="3" class="py-2 px-3 text-center uppercase tracking-wider text-slate-900">
                         TỔNG CỘNG (<span id="stu-sum-count" class="text-blue-700">0 HS</span>)
                       </td>
-                      <td id="stu-sum-classes-cnt" class="py-2 px-2.5 text-center text-slate-700">
+                      <td id="stu-sum-classes-cnt" class="py-2 px-2 text-center text-slate-700">
                         0 lớp
                       </td>
-                      <td id="stu-sum-batches" class="py-2 px-2.5 text-center text-emerald-700">
-                        0 đợt đã đóng
+                      <td id="stu-sum-start-info" class="py-2 px-2 text-center text-slate-500 text-[11px] font-bold">
+                        Theo dõi
                       </td>
-                      <td id="stu-sum-paid-ratio" class="py-2 px-2.5 text-center text-slate-900">
-                        0/0 em đã đóng
+                      <td id="stu-sum-batches" class="py-2 px-2 text-center text-emerald-700">
+                        0 đợt
                       </td>
-                      <td id="stu-sum-expected" class="py-2 px-2.5 text-right text-slate-900">
+                      <td id="stu-sum-paid-ratio" class="py-2 px-2 text-center text-slate-900">
+                        0/0 em
+                      </td>
+                      <td id="stu-sum-expected" class="py-2 px-2 text-right text-slate-900">
                         0 ₫
                       </td>
-                      <td id="stu-sum-collected" class="py-2 px-2.5 text-right text-emerald-700">
+                      <td id="stu-sum-collected" class="py-2 px-2 text-center text-emerald-700">
                         Thu: 0 ₫
                       </td>
-                      <td id="stu-sum-missing" class="py-2 px-2.5 text-right text-rose-600">
+                      <td id="stu-sum-missing" class="py-2 px-2 text-center text-rose-600">
                         Thiếu: 0 ₫
                       </td>
                     </tr>
@@ -5213,10 +5216,70 @@
     <span>Lên đầu trang</span>
   </button>
 
+  <!-- HỘP HỘI THOẠI HỆ THỐNG ĐỒNG BỘ PHONG CÁCH APP (THAY THẾ PROMPT / CONFIRM MẶC ĐỊNH) -->
+  <div
+    id="tc-app-dialog-modal"
+    onclick="resolveTcAppDialog(null)"
+    class="fixed inset-0 z-[95] hidden bg-[#1E1A3E]/55 backdrop-blur-xs flex items-center justify-center p-4"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="tc-dialog-card max-w-md w-full overflow-hidden animate-fade-in"
+    >
+      <div id="tc-dialog-header" class="tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i id="tc-dialog-icon" data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/75 block">THANH CHÍ EDU</span>
+            <h3 id="tc-dialog-title" class="font-extrabold text-sm sm:text-base leading-tight truncate">Thông báo hệ thống</h3>
+          </div>
+        </div>
+        <button
+          type="button"
+          onclick="resolveTcAppDialog(null)"
+          class="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition cursor-pointer shrink-0"
+        >
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="submitTcAppDialogForm(event)" class="p-5 space-y-4">
+        <div id="tc-dialog-message" class="text-xs sm:text-sm text-slate-600 leading-relaxed space-y-2"></div>
+        <div id="tc-dialog-fields" class="space-y-3 hidden"></div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <button
+            id="tc-dialog-cancel-btn"
+            type="button"
+            onclick="resolveTcAppDialog(null)"
+            class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition cursor-pointer"
+          >
+            Hủy
+          </button>
+          <button
+            id="tc-dialog-confirm-btn"
+            type="submit"
+            class="px-5 py-2 rounded-xl bg-gradient-to-r from-[#5B55FF] to-[#7C6BFF] hover:opacity-95 text-white text-xs sm:text-sm font-extrabold shadow-sm transition cursor-pointer"
+          >
+            Xác nhận
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HỘP LỊCH CHỌN NGÀY ĐỒNG BỘ PHONG CÁCH APP (THAY THẾ DATE PICKER MẶC ĐỊNH TRÌNH DUYỆT) -->
+  <div
+    id="tc-datepicker-popover"
+    onclick="event.stopPropagation()"
+    class="fixed z-[96] hidden tc-datepicker-card animate-fade-in"
+  ></div>
+
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261024_v19"></script>
+  <script src="app.js?v=20261024_v20"></script>
 </body>
 </html>
