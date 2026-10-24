@@ -256,7 +256,8 @@ function purgeDraftDataFromState(state) {
       if (
         noteStr.includes('5801434567') ||
         noteStr.includes('SEPAY_STK_') ||
-        noteStr.includes('TEST THỬ STK')
+        noteStr.includes('TEST THỬ STK') ||
+        (s.status === 'Chờ duyệt' && noteStr.startsWith('Phụ huynh đã mở QR học phí'))
       ) {
         if (s.status === 'Đã hoàn thành' || s.status === 'Chờ duyệt') {
           s.status = 'Chưa đóng';
@@ -321,9 +322,17 @@ function purgeDraftDataFromState(state) {
         if (!r) return false;
         const cls = String(r.className || '').trim();
         const nameLower = String(r.studentName || '').trim().toLowerCase();
+        const noteStr = String(r.note || '');
         if (DRAFT_CLASS_NAMES.has(cls) || userDeletedClasses.has(cls)) return false;
         if (DRAFT_STUDENT_IDS.has(String(r.studentRecordId || ''))) return false;
         if (DRAFT_STUDENT_NAMES.has(nameLower)) return false;
+        if (
+          r.status === 'Chờ duyệt' &&
+          (noteStr.includes('Phụ huynh đã mở mã QR chuyển khoản học phí trên Web') ||
+            noteStr.includes('Phụ huynh mở QR trên Web & chọn học sinh'))
+        ) {
+          return false;
+        }
         return true;
       })
       .map(r => {
@@ -5100,85 +5109,6 @@ function renderParentStudentCard(s) {
   `;
 }
 
-let modalBankPollTimer = null;
-let autoPendingQrSyncTimer = null;
-
-// Tự động tạo / cập nhật bản ghi Chờ duyệt tại mục Thu - Chi ngay khi Phụ huynh mở mã QR trên web & tìm đúng tên học sinh
-function registerOrUpdateParentQrPendingRequest(student, source = 'QR_OPEN') {
-  if (!student || student.status === 'Đã hoàn thành') return null;
-  if (!appState.paymentRequests) appState.paymentRequests = [];
-
-  const nowStr = getCurrentDateTimeString();
-  const feeAmount = normalizeStoredVnd(student.tuitionFee) || 600000;
-  let existingPending = appState.paymentRequests.find(
-    r =>
-      r &&
-      r.status === 'Chờ duyệt' &&
-      !isSimulatedBankTestItem(r) &&
-      (r.studentRecordId === student.id ||
-        (r.studentCode && student.studentCode && r.studentCode === student.studentCode))
-  );
-
-  if (!existingPending) {
-    existingPending = {
-      id: 'YC_STK_' + Date.now(),
-      submittedAt: nowStr,
-      studentRecordId: student.id,
-      studentCode: student.studentCode,
-      studentName: student.fullName,
-      className: student.className,
-      period: student.period,
-      amount: feeAmount,
-      parentPhone: student.parentPhone || '',
-      payerName: student.parentName || ('PH em ' + student.fullName),
-      note:
-        source === 'QR_SEARCH'
-          ? `Phụ huynh mở QR trên Web & chọn học sinh ${student.fullName} — Chờ kiểm tra / duyệt CK`
-          : `Phụ huynh đã mở mã QR chuyển khoản học phí trên Web — Chờ kiểm tra / duyệt CK`,
-      receiptUrl: student.receiptUrl || '',
-      receiptBase64: '',
-      bankVerified: false,
-      status: 'Chờ duyệt',
-      reviewedAt: ''
-    };
-    appState.paymentRequests.unshift(existingPending);
-  } else {
-    existingPending.submittedAt = nowStr;
-    existingPending.studentRecordId = student.id;
-    existingPending.studentCode = student.studentCode;
-    existingPending.studentName = student.fullName;
-    existingPending.className = student.className;
-    existingPending.period = student.period;
-    if (feeAmount > 0) existingPending.amount = feeAmount;
-  }
-
-  if (student.status !== 'Đã hoàn thành') {
-    student.status = 'Chờ duyệt';
-    student.updatedAt = nowStr;
-    if (!student.note) {
-      student.note = `Phụ huynh đã mở QR học phí (${formatCurrency(feeAmount)}) — Chờ duyệt`;
-    }
-  }
-
-  if (feeAmount > 0 && feeAmount < 20000) {
-    recordExactSmallAmount(appState, existingPending.id, student.studentCode, feeAmount);
-    recordExactSmallAmount(appState, student.id, student.studentCode, feeAmount);
-  }
-
-  saveStateToLocal();
-
-  // Đồng bộ ngầm lên Google Sheet để mọi thiết bị Quản lý đều thấy ngay ở mục Thu - Chi
-  if (autoPendingQrSyncTimer) clearTimeout(autoPendingQrSyncTimer);
-  autoPendingQrSyncTimer = setTimeout(() => {
-    const gasUrl = getGasUrl();
-    if (gasUrl && !isSandboxDraftMode) {
-      syncAllToGoogleSheet(false).catch(() => {});
-    }
-  }, 600);
-
-  return existingPending;
-}
-
 function applyMatchedStudentToPaymentModal(student, updateFullnameInput = false) {
   if (!student) return;
   const stg = appState.settings || {};
@@ -5220,11 +5150,6 @@ function selectSuggestedParentStudent(studentId) {
   if (!student) return;
 
   applyMatchedStudentToPaymentModal(student, true);
-  registerOrUpdateParentQrPendingRequest(student, 'QR_SEARCH');
-  showToast(
-    `Đã chọn học sinh ${student.fullName} (${student.studentCode}) • Học phí: ${formatCurrency(student.tuitionFee)}!`,
-    'success'
-  );
 }
 
 function handleParentAmountInput(inputEl, forceNow = false) {
@@ -5236,7 +5161,7 @@ function handleParentAmountInput(inputEl, forceNow = false) {
   }
 }
 
-// Mở Modal Quét QR & Xác nhận chuyển khoản
+// Mở Modal Quét QR & Xác nhận chuyển khoản (Chỉ hiển thị mã QR, tuyệt đối chưa ghi nhận hay báo thành công cho đến khi Phụ huynh bấm Xác nhận)
 function openPaymentModal(studentRecordId = '') {
   const student = studentRecordId ? appState.students.find(s => s.id === studentRecordId) : null;
 
@@ -5275,10 +5200,6 @@ function openPaymentModal(studentRecordId = '') {
 
   if (student) {
     applyMatchedStudentToPaymentModal(student, true);
-    // Nếu phụ huynh mở QR từ cổng Phụ huynh cho đúng tên học sinh -> Tự động đưa vào danh sách Chờ duyệt ở mục Thu - Chi
-    if (currentMode === 'parent') {
-      registerOrUpdateParentQrPendingRequest(student, 'QR_OPEN');
-    }
   } else {
     if (infoBanner) infoBanner.classList.add('hidden');
     if (fullNameInput) fullNameInput.value = '';
@@ -5289,49 +5210,10 @@ function openPaymentModal(studentRecordId = '') {
 
   document.getElementById('pay-form-note').value = '';
   document.getElementById('payment-modal').classList.remove('hidden');
-  startModalLiveBankCheck();
   setTimeout(() => {
     if (fullNameInput && !fullNameInput.value) fullNameInput.focus();
   }, 100);
   lucide.createIcons();
-}
-
-function startModalLiveBankCheck() {
-  if (modalBankPollTimer) clearInterval(modalBankPollTimer);
-  modalBankPollTimer = setInterval(async () => {
-    const modal = document.getElementById('payment-modal');
-    if (!modal || modal.classList.contains('hidden')) {
-      clearInterval(modalBankPollTimer);
-      modalBankPollTimer = null;
-      return;
-    }
-    const gasUrl = getGasUrl();
-    if (!gasUrl) return;
-    try {
-      const recordId = document.getElementById('pay-student-record-id')?.value || '';
-      const typedName = removeVietnameseTones((document.getElementById('pay-form-student-fullname')?.value || '').trim().toLowerCase());
-      const res = await fetch(`${gasUrl}?action=getAll&t=${Date.now()}`, { method: 'GET', redirect: 'follow' });
-      const json = await res.json();
-      if (json && json.success && json.data) {
-        const nextState = mergeServerData(json.data);
-        const matched = (nextState.students || []).find(s =>
-          (recordId && s.id === recordId) ||
-          (typedName.length >= 2 && removeVietnameseTones((s.fullName || '').toLowerCase()).includes(typedName))
-        );
-        if (matched && matched.status === 'Đã hoàn thành') {
-          appState = nextState;
-          saveStateToLocal();
-          playTingSound();
-          closePaymentModal();
-          handleParentSearch(false);
-          showToast(
-            `✅ Đã nhận được chuyển khoản vào STK (${appState.settings?.bankAccountNo || '8601774789'}) và tự động lưu thông tin học phí cho ${matched.fullName}!`,
-            'success'
-          );
-        }
-      }
-    } catch (e) {}
-  }, 4500);
 }
 
 function handleParentTypedStudentName(typedName) {
@@ -5383,7 +5265,7 @@ function handleParentTypedStudentName(typedName) {
     }
   }
 
-  // Khớp chính xác tên học sinh hoặc chỉ có 1 học sinh khớp khi gõ >= 2 ký tự
+  // Khớp chính xác tên học sinh hoặc mã học sinh để điền sẵn thông tin QR (chưa gửi xác nhận)
   let matched = null;
   if (cleanTyped.length >= 2) {
     matched =
@@ -5391,12 +5273,11 @@ function handleParentTypedStudentName(typedName) {
         s =>
           removeVietnameseTones((s.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim() === cleanTyped ||
           removeVietnameseTones((s.studentCode || '').toLowerCase()).trim() === cleanTyped
-      ) || (candidates.length === 1 ? candidates[0] : null);
+      ) || null;
   }
 
   if (matched) {
     applyMatchedStudentToPaymentModal(matched, false);
-    registerOrUpdateParentQrPendingRequest(matched, 'QR_SEARCH');
     return;
   }
 
@@ -5419,10 +5300,6 @@ function handleParentTypedStudentName(typedName) {
 }
 
 function closePaymentModal() {
-  if (modalBankPollTimer) {
-    clearInterval(modalBankPollTimer);
-    modalBankPollTimer = null;
-  }
   document.getElementById('payment-modal').classList.add('hidden');
 }
 
@@ -5523,22 +5400,24 @@ function compressImageFile(file, maxDimension, quality, callback) {
 
 // Kiểm tra xem học sinh đã có giao dịch chuyển tiền THẬT thành công được ngân hàng / SePay ghi nhận kết quả hay chưa (Loại trừ các lần bấm Test thử STK)
 function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
-  if (!student && !typedStudentName) return false;
-  const code = student ? String(student.studentCode || '').trim().toUpperCase() : '';
-  const period = student ? String(student.period || '').trim() : '';
+  if (!student) return false;
+  const code = String(student.studentCode || '').trim().toUpperCase();
+  if (!code) return false;
+  const period = String(student.period || '').trim();
+  const todayDate = new Date().toISOString().slice(0, 10);
 
-  // 1. Kiểm tra trong danh sách Yêu cầu xác nhận xem đã có bản ghi THẬT nào được đánh dấu bankVerified = true chưa
+  // 1. Kiểm tra trong danh sách Yêu cầu xác nhận xem đã có bản ghi THẬT nào được đánh dấu bankVerified = true cho đúng kỳ này chưa
   const requests = appState.paymentRequests || [];
   const hasVerifiedReq = requests.some(r => {
-    if (!r || !r.bankVerified || isSimulatedBankTestItem(r)) return false;
-    if (code && String(r.studentCode || '').trim().toUpperCase() === code && (!period || r.period === period)) {
+    if (!r || !r.bankVerified || r.status === 'Từ chối' || isSimulatedBankTestItem(r)) return false;
+    if (String(r.studentCode || '').trim().toUpperCase() === code && (!period || r.period === period)) {
       return true;
     }
     return false;
   });
   if (hasVerifiedReq) return true;
 
-  // 2. Kiểm tra trong Sổ Thu - Chi xem đã có giao dịch SePay / Auto-Bank THẬT xác thực cho học sinh này chưa
+  // 2. Kiểm tra trong Sổ Thu - Chi xem đã có giao dịch SePay / Auto-Bank THẬT xác thực cho đúng kỳ học phí này chưa
   const transactions = appState.transactions || [];
   const hasVerifiedTx = transactions.some(t => {
     if (!t || t.type !== 'Thu' || isSimulatedBankTestItem(t)) return false;
@@ -5549,14 +5428,16 @@ function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
       String(t.createdBy || '').includes('SePay') ||
       String(t.createdBy || '').includes('Auto-Bank');
     if (!isBankWebhookTx) return false;
-    if (code && String(t.studentCode || '').trim().toUpperCase() === code) {
-      if (!period || !t.description || t.description.includes(period)) return true;
+    if (String(t.studentCode || '').trim().toUpperCase() === code) {
+      if (period ? Boolean(t.description && t.description.includes(period)) : t.date === todayDate) {
+        return true;
+      }
     }
     return false;
   });
   if (hasVerifiedTx) return true;
 
-  // 3. Kiểm tra thông báo biến động số dư gần nhất từ SePay (lastBankAlertJson) - Bỏ qua nếu là bản ghi Test thử STK
+  // 3. Kiểm tra thông báo biến động số dư vừa mới nhận (trong vòng 30 phút gần nhất) từ SePay - Bỏ qua bản ghi cũ hoặc Test STK
   if (appState.settings?.lastBankAlertJson) {
     try {
       const alertObj = JSON.parse(appState.settings.lastBankAlertJson);
@@ -5565,9 +5446,11 @@ function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
           String(alertObj?.id || '').includes('TEST_STK_') ||
           String(alertObj?.id || '').includes('SEPAY_STK_')
       );
-      if (alertObj && !isTestAlert && alertObj.type !== 'out' && alertObj.content) {
+      const alertMs = alertObj?.time ? Date.parse(String(alertObj.time).replace(' ', 'T')) : NaN;
+      const isRecentAlert = isFinite(alertMs) && Math.abs(Date.now() - alertMs) <= 30 * 60 * 1000;
+      if (alertObj && !isTestAlert && isRecentAlert && alertObj.type !== 'out' && alertObj.content) {
         const matched = findStudentFromTransferContent(alertObj.content);
-        if (matched && student && matched.id === student.id) {
+        if (matched && matched.id === student.id) {
           return true;
         }
       }
@@ -5731,7 +5614,9 @@ async function submitParentPaymentConfirm(event) {
     }
   }
 
-  playTingSound();
+  if (shouldAutoApproveNow) {
+    playTingSound();
+  }
   saveStateToLocal();
 
   const feedbackMsg = shouldAutoApproveNow
@@ -14317,29 +14202,33 @@ function startLiveBankPolling() {
         if (newlyPaid.length > 0 || hasNewBankAlert) {
           appState = nextState;
           saveStateToLocal();
-          playTingSound();
 
-          if (hasNewBankAlert) {
-            try {
-              const alertObj = JSON.parse(nextAlertJson);
-              const sign = alertObj.type === 'out' ? '-' : '+';
+          // Chỉ phát âm báo & hiển thị thông báo số dư / duyệt tự động khi đang ở Cổng Quản lý đã đăng nhập
+          if (currentMode === 'admin' && isAdminAuthenticated()) {
+            playTingSound();
+
+            if (hasNewBankAlert) {
+              try {
+                const alertObj = JSON.parse(nextAlertJson);
+                const sign = alertObj.type === 'out' ? '-' : '+';
+                showToast(
+                  `💰 SEPAY BÁO SỐ DƯ (${alertObj.gateway || 'BIDV'} ${alertObj.accountNumber || ''}): ${sign}${formatCurrency(alertObj.amount)} | Số dư mới: ${formatCurrency(
+                    alertObj.balance ?? getComputedSepayBalance()
+                  )} | ND: ${alertObj.content}`,
+                  'success'
+                );
+              } catch (e) {}
+            }
+
+            newlyPaid.forEach(st => {
               showToast(
-                `💰 SEPAY BÁO SỐ DƯ (${alertObj.gateway || 'BIDV'} ${alertObj.accountNumber || ''}): ${sign}${formatCurrency(alertObj.amount)} | Số dư mới: ${formatCurrency(
-                  alertObj.balance ?? getComputedSepayBalance()
-                )} | ND: ${alertObj.content}`,
+                `🔔 ĐÃ DUYỆT TỰ ĐỘNG: Học sinh ${st.fullName} (${st.studentCode}) vừa hoàn thành học phí (${formatCurrency(
+                  st.tuitionFee
+                )})!`,
                 'success'
               );
-            } catch (e) {}
+            });
           }
-
-          newlyPaid.forEach(st => {
-            showToast(
-              `🔔 ĐÃ DUYỆT TỰ ĐỘNG: Học sinh ${st.fullName} (${st.studentCode}) vừa hoàn thành học phí (${formatCurrency(
-                st.tuitionFee
-              )})!`,
-              'success'
-            );
-          });
         }
       }
     } catch (e) {
