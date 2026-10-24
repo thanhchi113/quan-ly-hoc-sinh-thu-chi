@@ -137,6 +137,9 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
 
     if (action === 'getAll') {
+      try {
+        pullSepayApiTransactions(getTargetSpreadsheet(), '', true);
+      } catch (sepayErr) {}
       const data = getAllSheetData();
       return jsonResponse({ success: true, data: data, timestamp: new Date().toISOString() });
     }
@@ -181,6 +184,9 @@ function doPost(e) {
     // 2. Phụ huynh / Học sinh gửi thông tin xác nhận chuyển khoản
     // Chỉ duyệt tự động khi ĐÃ CÓ kết quả chuyển tiền thành công vào STK và đang bật Duyệt tự động
     if (action === 'submitParentPayment') {
+      try {
+        pullSepayApiTransactions(ss, '', false);
+      } catch (sepayErr) {}
       const req = payload.request;
       const shouldAutoApprove = Boolean(payload.autoApprove && req.status === 'Đã duyệt');
       const finalReqStatus = shouldAutoApprove ? 'Đã duyệt' : 'Chờ duyệt';
@@ -347,7 +353,7 @@ function doPost(e) {
       });
     }
 
-    // 4. Kiểm tra & Tự động liên kết SePay (Auto-Connect & Verify SePay Link)
+    // 4. Kiểm tra & Tự động liên kết SePay (Auto-Connect & Verify SePay Link + Pull REST API)
     if (action === 'verifySepayConnection') {
       const shSettings = ss.getSheetByName(SHEET_NAMES.SETTINGS);
       const bankBin = String(payload.bankBin || 'BIDV');
@@ -356,18 +362,32 @@ function doPost(e) {
       const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
 
       if (shSettings) {
-        upsertSettingKey(shSettings, 'sepayLinkedStatus', 'CONNECTED', 'Trạng thái tự động kết nối SePay');
-        upsertSettingKey(shSettings, 'sepayLinkedAt', nowStr, 'Thời điểm kết nối SePay gần nhất');
-        upsertSettingKey(shSettings, 'sepayLinkedAccount', bankBin + ' • ' + bankAccountNo, 'Tài khoản đang kết nối SePay');
+        if (payload.sepayApiToken !== undefined && payload.sepayApiToken !== '***MASKED***') {
+          upsertSettingKey(shSettings, 'sepayApiToken', String(payload.sepayApiToken || '').trim(), 'API Token kết nối trực tiếp my.sepay.vn');
+        }
+        if (payload.sepayVaByAccJson !== undefined) {
+          upsertSettingKey(shSettings, 'sepayVaByAccJson', String(payload.sepayVaByAccJson || ''), 'Mã tài khoản ảo VA SePay (96247...)');
+        }
+        upsertSettingKey(shSettings, 'sepayLinkedAt', nowStr, 'Thời điểm kiểm tra kết nối SePay gần nhất');
+        upsertSettingKey(shSettings, 'sepayLinkedAccount', bankBin + ' • ' + bankAccountNo, 'Tài khoản đang cấu hình SePay');
+      }
+
+      const apiRes = pullSepayApiTransactions(ss, '', false);
+      if (shSettings && apiRes.ok) {
+        upsertSettingKey(shSettings, 'sepayLinkedStatus', 'CONNECTED', 'Trạng thái kết nối SePay API');
+        upsertSettingKey(shSettings, 'sepayApiVerifiedAt', nowStr, 'Xác thực SePay API thành công');
       }
 
       return jsonResponse({
         success: true,
-        connected: true,
+        connected: Boolean(apiRes.ok),
+        apiResult: apiRes,
         linkedAccount: bankBin + ' • ' + bankAccountNo,
         linkedOwner: bankAccountName,
         connectedAt: nowStr,
-        message: 'Đã tự động liên kết & kết nối SePay Webhook thành công cho STK ' + bankAccountNo + ' (' + bankBin + ')!',
+        message: apiRes.ok
+          ? 'Đã kết nối SePay API thành công & đồng bộ ' + (apiRes.ingestedCount || 0) + ' giao dịch mới!'
+          : (apiRes.error || 'Đã kiểm tra Google Sheet cho STK ' + bankAccountNo + ' (' + bankBin + ').'),
         data: getAllSheetData()
       });
     }
@@ -499,6 +519,10 @@ function getAllSheetData() {
     const val = String(stgRows[i][1] || '').replace(/^'/, '').trim();
     if (key) settings[key] = val;
   }
+  if (settings.sepayApiToken && settings.sepayApiToken !== '***MASKED***') {
+    settings.hasSepayApiToken = 'true';
+    settings.sepayApiToken = '***MASKED***';
+  }
 
   // 5. Đọc toàn bộ các Sheet lớp học gốc trong file Google Sheet (ngoài 4 sheet hệ thống)
   const systemSheetSet = new Set([
@@ -604,14 +628,22 @@ function writeSettingsToSheet(sheet, settings) {
     bankAccountName: 'Tên chủ tài khoản',
     defaultPeriod: 'Kỳ thu học phí mặc định hiện tại',
     adminPassword: 'Mật khẩu đăng nhập Quản lý trên Web App',
-    teacherPhone: 'Số điện thoại/Zalo liên hệ giáo viên'
+    teacherPhone: 'Số điện thoại/Zalo liên hệ giáo viên',
+    sepayApiToken: 'API Token kết nối trực tiếp my.sepay.vn',
+    sepayVaByAccJson: 'Mã tài khoản ảo VA SePay (96247...)'
   };
+  const existingToken = getSettingValueByKey(sheet, 'sepayApiToken');
   if (sheet.getLastRow() > 1) {
     sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).clearContent();
   }
-  const keys = Object.keys(settings || {});
+  const safeSettings = Object.assign({}, settings || {});
+  delete safeSettings._sepaySheetConnected;
+  if (safeSettings.sepayApiToken === '***MASKED***' || (safeSettings.sepayApiToken === undefined && existingToken)) {
+    safeSettings.sepayApiToken = existingToken;
+  }
+  const keys = Object.keys(safeSettings);
   if (keys.length === 0) return;
-  const rows = keys.map(k => [k, "'" + String(settings[k] ?? ''), descriptions[k] || '']);
+  const rows = keys.map(k => [k, "'" + String(safeSettings[k] ?? ''), descriptions[k] || '']);
   sheet.getRange(2, 1, rows.length, 3).setValues(rows);
 }
 
@@ -706,11 +738,18 @@ function processIncomingBankWebhook(ss, payload) {
 
   const stValues = shStudents.getDataRange().getValues();
   const reqValues = shReq.getDataRange().getValues();
+  const trValues = shTrans.getDataRange().getValues();
+  const existingTxIds = {};
+  for (let tIdx = 1; tIdx < trValues.length; tIdx++) {
+    const tid = String(trValues[tIdx][0] || '').trim();
+    if (tid) existingTxIds[tid] = true;
+  }
   const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   const todayDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 
   let matchedCount = 0;
   const matchedStudents = [];
+  const nameStopwords = { HP: 1, HOC: 1, PHI: 1, THANG: 1, LOP: 1, CK: 1, BIDV: 1, MB: 1, VCB: 1, CHUYEN: 1, KHOAN: 1, IBFT: 1, EM: 1, PH: 1 };
 
   // Lưu thông báo số dư mới nhất từ SePay vào sheet CaiDat để hiển thị trên Web App
   if (incomingList.length > 0 && shSettings) {
@@ -725,6 +764,7 @@ function processIncomingBankWebhook(ss, payload) {
       id: latestTx.refCode || ('TX_' + Date.now()),
       time: nowStr,
       type: latestTx.transferType || 'in',
+      rawVnd: true,
       amount: latestTx.amount || 0,
       balance: computedBalance,
       content: latestTx.content || '',
@@ -736,19 +776,23 @@ function processIncomingBankWebhook(ss, payload) {
   }
 
   incomingList.forEach(tx => {
+    const txIdKey = 'GD_' + tx.refCode;
+    if (existingTxIds[txIdKey] || existingTxIds['GD_SEPAY_' + tx.refCode]) return;
+    existingTxIds[txIdKey] = true;
+
     const cleanContent = removeAccentsGas(tx.content).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
     const isOut = tx.transferType === 'out';
     let matchedRowIdx = -1;
 
     if (!isOut && cleanContent) {
-      // Vòng 1: Khớp theo Mã HS, Họ tên đầy đủ hoặc SĐT
+      // Vòng 1: Khớp theo Mã HS, Họ tên đầy đủ (hỗ trợ tên ngắn >= 2 ký tự như def, Nam) hoặc SĐT
       for (let i = 1; i < stValues.length; i++) {
         const stCode = removeAccentsGas(String(stValues[i][1] || '')).toUpperCase().trim();
         const stName = removeAccentsGas(String(stValues[i][2] || '')).toUpperCase().replace(/\s+/g, ' ').trim();
         const stPhone = String(stValues[i][5] || '').replace(/[^0-9]/g, '');
 
         const matchByCode = stCode && stCode.length >= 3 && cleanContent.indexOf(stCode) !== -1;
-        const matchByName = stName && stName.length >= 2 && (` ${cleanContent} `).indexOf(` ${stName} `) !== -1;
+        const matchByName = stName && stName.length >= 2 && !nameStopwords[stName] && (` ${cleanContent} `).indexOf(` ${stName} `) !== -1;
         const matchByPhone = stPhone && stPhone.length >= 8 && cleanContent.indexOf(stPhone) !== -1;
 
         if (matchByCode || matchByName || matchByPhone) {
@@ -929,4 +973,107 @@ function removeAccentsGas(str) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'D');
+}
+
+/**
+ * Chủ động đọc danh sách giao dịch thực tế từ SePay REST API (tránh lỗi Google Apps Script redirect 302 khi nhận Webhook)
+ */
+function pullSepayApiTransactions(ss, tokenOverride, useThrottle) {
+  const shSettings = ss.getSheetByName(SHEET_NAMES.SETTINGS);
+  if (!shSettings) return { ok: false, skipped: true };
+  const token = String(tokenOverride || getSettingValueByKey(shSettings, 'sepayApiToken') || '').trim();
+  if (!token || token === '***MASKED***') {
+    return { ok: false, skipped: true, error: 'Chưa nhập SePay API Token' };
+  }
+
+  if (useThrottle) {
+    try {
+      const cache = CacheService.getScriptCache();
+      if (cache.get('SEPAY_LAST_PULL_LOCK')) {
+        return { ok: true, throttled: true, ingestedCount: 0 };
+      }
+      cache.put('SEPAY_LAST_PULL_LOCK', '1', 10);
+    } catch (e) {}
+  }
+
+  const endpoints = [
+    'https://my.sepay.vn/userapi/transactions/list?limit=25',
+    'https://userapi.sepay.vn/v2/transactions?per_page=25'
+  ];
+
+  let list = null;
+  let lastErr = '';
+  for (let idx = 0; idx < endpoints.length; idx++) {
+    try {
+      const resp = UrlFetchApp.fetch(endpoints[idx], {
+        method: 'get',
+        headers: {
+          Authorization: 'Bearer ' + token,
+          Accept: 'application/json'
+        },
+        muteHttpExceptions: true
+      });
+      const code = resp.getResponseCode();
+      if (code === 200) {
+        const parsed = JSON.parse(resp.getContentText() || '{}');
+        const arr = parsed.transactions || parsed.data || [];
+        if (Array.isArray(arr)) {
+          list = arr;
+          break;
+        }
+      } else {
+        lastErr = 'HTTP ' + code;
+      }
+    } catch (fetchErr) {
+      lastErr = fetchErr.toString();
+    }
+  }
+
+  if (!list) {
+    return { ok: false, error: 'Không kết nối được API SePay (' + (lastErr || 'Kiểm tra lại API Token') + ')' };
+  }
+
+  const shTrans = ss.getSheetByName(SHEET_NAMES.TRANSACTIONS);
+  const trValues = shTrans ? shTrans.getDataRange().getValues() : [];
+  const seenIds = {};
+  for (let i = 1; i < trValues.length; i++) {
+    const tid = String(trValues[i][0] || '').trim();
+    if (tid) seenIds[tid] = true;
+  }
+
+  const chronological = list.slice().reverse();
+  let ingestedCount = 0;
+  for (let k = 0; k < chronological.length; k++) {
+    const item = chronological[k] || {};
+    const rawId = String(item.id || item.reference_number || item.referenceCode || '').trim();
+    if (!rawId) continue;
+    const refCode = 'SEPAY_' + rawId;
+    if (seenIds['GD_' + refCode] || seenIds['GD_SEPAY_' + rawId] || seenIds['GD_' + rawId]) continue;
+
+    const amtIn = Number(String(item.amount_in || '0').replace(/\.\d{1,2}$/, '')) || 0;
+    const amtOut = Number(String(item.amount_out || '0').replace(/\.\d{1,2}$/, '')) || 0;
+    const directAmt = Number(String(item.transferAmount || item.amount || '0').replace(/\.\d{1,2}$/, '')) || 0;
+    const isOut = (amtOut > 0 && amtIn === 0) || String(item.transferType || '').toLowerCase() === 'out';
+    const finalAmt = amtIn > 0 ? amtIn : (amtOut > 0 ? amtOut : directAmt);
+    if (finalAmt <= 0) continue;
+
+    const accumRaw = item.accumulated !== undefined && item.accumulated !== null
+      ? Number(String(item.accumulated).replace(/\.\d{1,2}$/, ''))
+      : undefined;
+
+    processIncomingBankWebhook(ss, {
+      transferType: isOut ? 'out' : 'in',
+      transferAmount: finalAmt,
+      accumulated: isFinite(accumRaw) ? accumRaw : undefined,
+      gateway: item.bank_brand_name || item.gateway || 'BIDV',
+      accountNumber: item.account_number || item.accountNumber || '',
+      content: item.transaction_content || item.content || item.description || '',
+      referenceCode: refCode,
+      transactionDate: item.transaction_date || item.transactionDate || ''
+    });
+    seenIds['GD_' + refCode] = true;
+    ingestedCount++;
+  }
+
+  return { ok: true, ingestedCount: ingestedCount };
 }
