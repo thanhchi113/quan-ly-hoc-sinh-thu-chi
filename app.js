@@ -26,6 +26,24 @@ const STORAGE_KEYS = {
   SANDBOX_AUTH: 'edupay_sandbox_authenticated'
 };
 
+// Chỉ chuyển đổi các icon chưa render hoặc vừa đổi data-lucide thay vì quét lại toàn bộ SVG trên trang
+if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function' && !lucide.__optimizedCreateIcons) {
+  const rawCreateIcons = lucide.createIcons.bind(lucide);
+  lucide.createIcons = function optimizedCreateIcons(opts = {}) {
+    const root = (opts && (opts.root || (opts.nodes && opts.nodes[0]))) || document;
+    const attr = (opts && opts.nameAttr) || 'data-lucide';
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    const pending = root.querySelectorAll(`[${attr}]`);
+    if (!pending.length) return;
+    rawCreateIcons({ ...opts, root });
+    const rendered = root.querySelectorAll(`svg[${attr}]`);
+    for (let i = 0; i < rendered.length; i++) {
+      rendered[i].removeAttribute(attr);
+    }
+  };
+  lucide.__optimizedCreateIcons = true;
+}
+
 // Ảnh biên lai mẫu dạng SVG Data URI để người dùng xem thử ngay lập tức
 const SAMPLE_RECEIPT_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="420" height="580" viewBox="0 0 420 580">
@@ -3986,7 +4004,6 @@ function enterSandboxDraftMode(silent = false) {
   updateSyncStatusBanner();
   populateSettingsForm();
   switchAppMode('admin');
-  refreshAllViews();
 
   if (!silent) {
     showToast(
@@ -4219,10 +4236,10 @@ function loadStateFromLocal() {
   return initial;
 }
 
-function detectActionDescription(prevJson, nextJson) {
+function detectActionDescription(prevJson, nextJsonOrObj) {
   try {
-    const prev = JSON.parse(prevJson);
-    const next = JSON.parse(nextJson);
+    const prev = typeof prevJson === 'string' ? JSON.parse(prevJson) : prevJson || {};
+    const next = typeof nextJsonOrObj === 'string' ? JSON.parse(nextJsonOrObj) : nextJsonOrObj || {};
     const prevSt = prev.students || [];
     const nextSt = next.students || [];
 
@@ -4399,7 +4416,7 @@ function saveStateToLocal() {
   ) {
     actionUndoStack.push({
       stateJson: lastCommittedStateJson,
-      desc: detectActionDescription(lastCommittedStateJson, currentJson),
+      desc: detectActionDescription(lastCommittedStateJson, appState),
       time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       createdAtMs: Date.now()
     });
@@ -4445,6 +4462,25 @@ function initAppUI() {
   refreshAllViews();
 }
 
+function renderActiveAdminTab() {
+  if (currentAdminTab === 'classbook') {
+    renderAdminClassbook();
+  } else if (currentAdminTab === 'attendance') {
+    if (typeof renderAdminAttendance === 'function') renderAdminAttendance();
+  } else if (currentAdminTab === 'history') {
+    renderAdminHistory();
+  } else if (currentAdminTab === 'dashboard') {
+    renderAdminDashboard();
+  } else if (currentAdminTab === 'students') {
+    populateStudentFilterDropdowns();
+    renderAdminStudents();
+  } else if (currentAdminTab === 'finance') {
+    renderAdminTransactions();
+  } else if (currentAdminTab === 'settings') {
+    populateSettingsForm();
+  }
+}
+
 function refreshAllViews() {
   // Cập nhật nút & banner Tab Nháp nếu đang bật
   if (typeof updateSandboxModeButtonsUI === 'function') {
@@ -4482,56 +4518,56 @@ function refreshAllViews() {
     }
   });
 
-  // Đếm tổng số học sinh trên nút Tab "Tất cả Học sinh", Sidebar & số đợt Lịch sử
-  const totalStudentsCount = (appState.students || []).length;
-  const totalStudentsBadge = document.getElementById('tab-all-students-count');
-  if (totalStudentsBadge) {
-    totalStudentsBadge.textContent = `${totalStudentsCount} HS`;
-  }
-  const sideStudentsBadge = document.getElementById('sidebar-students-badge');
-  if (sideStudentsBadge) {
-    sideStudentsBadge.textContent = `${totalStudentsCount}`;
-  }
-  const sideClassesBadge = document.getElementById('sidebar-classes-badge');
-  if (sideClassesBadge && typeof getClassSchedulesMap === 'function') {
-    const clsMap = getClassSchedulesMap();
-    const clsSet = new Set([
-      ...Object.keys(clsMap),
-      ...(appState.students || []).map(s => (s.className || '').trim()).filter(Boolean)
-    ]);
-    sideClassesBadge.textContent = `${clsSet.size}`;
-  }
-  const historyBadge = document.getElementById('tab-history-count');
-  if (historyBadge) {
-    const histList = getClassHistoryList();
-    historyBadge.textContent = `${histList.length}`;
-  }
+  if (currentMode === 'admin' && isAdminAuthenticated()) {
+    // Đếm tổng số học sinh trên nút Tab "Tất cả Học sinh", Sidebar & số đợt Lịch sử
+    const totalStudentsCount = (appState.students || []).length;
+    const totalStudentsBadge = document.getElementById('tab-all-students-count');
+    if (totalStudentsBadge) {
+      totalStudentsBadge.textContent = `${totalStudentsCount} HS`;
+    }
+    const sideStudentsBadge = document.getElementById('sidebar-students-badge');
+    if (sideStudentsBadge) {
+      sideStudentsBadge.textContent = `${totalStudentsCount}`;
+    }
+    const sideClassesBadge = document.getElementById('sidebar-classes-badge');
+    if (sideClassesBadge && typeof getClassSchedulesMap === 'function') {
+      const clsMap = getClassSchedulesMap();
+      const clsSet = new Set([
+        ...Object.keys(clsMap),
+        ...(appState.students || []).map(s => (s.className || '').trim()).filter(Boolean)
+      ]);
+      sideClassesBadge.textContent = `${clsSet.size}`;
+    }
+    const historyBadge = document.getElementById('tab-history-count');
+    if (historyBadge) {
+      const histList = getClassHistoryList();
+      historyBadge.textContent = `${histList.length}`;
+    }
+    const tabAutoBadge = document.getElementById('tab-attendance-auto-badge');
+    if (tabAutoBadge && typeof isAutoAttendanceEnabled === 'function') {
+      const autoOn = isAutoAttendanceEnabled();
+      tabAutoBadge.textContent = autoOn ? 'Tự động: BẬT' : 'Tự động: TẮT';
+      tabAutoBadge.className = autoOn
+        ? 'px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-800 font-extrabold whitespace-nowrap'
+        : 'px-2 py-0.5 text-[10px] rounded-full bg-slate-200 text-slate-700 font-extrabold whitespace-nowrap';
+    }
 
-  // Cập nhật các bộ lọc Lớp và Kỳ học phí
-  populateStudentFilterDropdowns();
-
-  // Render Thanh Số Dư Ngân Hàng SePay, Sổ Theo Dõi Lớp Học, Điểm Danh, Lịch Sử, Dashboard, Bảng Học sinh, Bảng Thu Chi
-  updateUndoRedoButtonsUI();
-  renderSepayBalanceBanner();
-  renderAdminClassbook();
-  if (typeof renderAdminAttendance === 'function') {
-    renderAdminAttendance();
-  }
-  renderAdminHistory();
-  renderAdminDashboard();
-  renderAdminStudents();
-  renderAdminTransactions();
-
-  // Nếu đang có tìm kiếm bên Phụ huynh thì làm mới lại kết quả
-  const currentSearch = document.getElementById('parent-search-input')?.value.trim() || '';
-  if (currentSearch) {
-    handleParentSearch(false);
+    // Chỉ render thanh số dư SePay và đúng Tab đang mở thay vì render cả 6 Tab ẩn cùng lúc
+    updateUndoRedoButtonsUI();
+    renderSepayBalanceBanner();
+    renderActiveAdminTab();
+    if (typeof syncFloatingStickyTableHeader === 'function') {
+      requestAnimationFrame(() => syncFloatingStickyTableHeader(true));
+    }
+  } else {
+    // Nếu đang có tìm kiếm bên Phụ huynh thì làm mới lại kết quả
+    const currentSearch = document.getElementById('parent-search-input')?.value.trim() || '';
+    if (currentSearch) {
+      handleParentSearch(false);
+    }
   }
 
   lucide.createIcons();
-  if (typeof syncFloatingStickyTableHeader === 'function') {
-    requestAnimationFrame(() => syncFloatingStickyTableHeader(true));
-  }
 }
 
 // ============================================================================
@@ -4717,7 +4753,31 @@ function toggleAdminSidebar() {
   }
 }
 
+let _searchDebounceTimer = null;
+function _scheduleDebouncedSearch(fn) {
+  if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
+  _searchDebounceTimer = setTimeout(fn, 120);
+}
+function debouncedParentSearch() {
+  _scheduleDebouncedSearch(() => handleParentSearch(false));
+}
+function debouncedStudentSearch() {
+  _scheduleDebouncedSearch(() => renderAdminStudents());
+}
+function debouncedTransSearch() {
+  _scheduleDebouncedSearch(() => renderAdminTransactions());
+}
+
 function handleGlobalHeaderSearch(query, isEnter = false) {
+  if (!isEnter) {
+    _scheduleDebouncedSearch(() => _runGlobalHeaderSearchNow(query, false));
+    return;
+  }
+  if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
+  _runGlobalHeaderSearchNow(query, true);
+}
+
+function _runGlobalHeaderSearchNow(query, isEnter = false) {
   const clean = String(query || '').trim();
   if (currentMode === 'parent') {
     const parentInput = document.getElementById('parent-search-input');
@@ -4739,12 +4799,11 @@ function handleGlobalHeaderSearch(query, isEnter = false) {
       renderAdminTransactions();
     }
   } else {
+    const stuInput = document.getElementById('filter-student-search');
+    if (stuInput) stuInput.value = clean;
     if (currentAdminTab !== 'students' && clean.length >= 1) {
       switchAdminTab('students');
-    }
-    const stuInput = document.getElementById('filter-student-search');
-    if (stuInput) {
-      stuInput.value = clean;
+    } else if (stuInput) {
       renderAdminStudents();
     }
   }
@@ -4790,23 +4849,7 @@ function switchAdminTab(tabName, customSideKey = '') {
   const normalizedSideKey = customSideKey === 'transactions' ? 'finance' : (customSideKey || tabName);
   updateSidebarActiveUI(normalizedSideKey);
 
-  if (tabName === 'classbook') {
-    renderAdminClassbook();
-  } else if (tabName === 'attendance') {
-    if (typeof renderAdminAttendance === 'function') {
-      renderAdminAttendance();
-    }
-  } else if (tabName === 'history') {
-    renderAdminHistory();
-  } else if (tabName === 'dashboard') {
-    renderAdminDashboard();
-  } else if (tabName === 'students') {
-    renderAdminStudents();
-  } else if (tabName === 'finance') {
-    renderAdminTransactions();
-  } else if (tabName === 'settings') {
-    populateSettingsForm();
-  }
+  renderActiveAdminTab();
   lucide.createIcons();
   if (typeof scheduleStickyHeaderSync === 'function') {
     requestAnimationFrame(() => scheduleStickyHeaderSync(true));
@@ -6248,112 +6291,129 @@ function renderDashboardCharts(
   orangeGrad.addColorStop(0, 'rgba(255, 75, 22, 0.22)');
   orangeGrad.addColorStop(1, 'rgba(255, 75, 22, 0.01)');
 
-  if (financeBarChartInstance) financeBarChartInstance.destroy();
-  financeBarChartInstance = new Chart(barCtx, {
-    type: 'line',
-    data: {
-      labels: lineLabels,
-      datasets: [
-        {
-          label: 'Tổng thu (Triệu đ)',
-          data: incomeSeries,
-          borderColor: '#7C6BFF',
-          backgroundColor: violetGrad,
-          borderWidth: 2.5,
-          tension: 0.42,
-          fill: true,
-          pointRadius: 3.5,
-          pointHoverRadius: 5.5,
-          pointBackgroundColor: '#FFFFFF',
-          pointBorderColor: '#7C6BFF',
-          pointBorderWidth: 2
-        },
-        {
-          label: 'Tổng chi (Triệu đ)',
-          data: expenseSeries,
-          borderColor: '#FF4B16',
-          backgroundColor: orangeGrad,
-          borderWidth: 2.5,
-          tension: 0.42,
-          fill: true,
-          pointRadius: 3.5,
-          pointHoverRadius: 5.5,
-          pointBackgroundColor: '#FFFFFF',
-          pointBorderColor: '#FF4B16',
-          pointBorderWidth: 2
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#25214C',
-          titleColor: '#FFFFFF',
-          bodyColor: '#E6E1FF',
-          cornerRadius: 12,
-          padding: 10
-        }
+  if (financeBarChartInstance && financeBarChartInstance.canvas === barCtx) {
+    financeBarChartInstance.data.datasets[0].data = incomeSeries;
+    financeBarChartInstance.data.datasets[0].backgroundColor = violetGrad;
+    financeBarChartInstance.data.datasets[1].data = expenseSeries;
+    financeBarChartInstance.data.datasets[1].backgroundColor = orangeGrad;
+    financeBarChartInstance.options.scales.x.ticks.color = tickColor;
+    financeBarChartInstance.options.scales.y.ticks.color = tickColor;
+    financeBarChartInstance.options.scales.y.grid.color = gridColor;
+    financeBarChartInstance.update('none');
+  } else {
+    if (financeBarChartInstance) financeBarChartInstance.destroy();
+    financeBarChartInstance = new Chart(barCtx, {
+      type: 'line',
+      data: {
+        labels: lineLabels,
+        datasets: [
+          {
+            label: 'Tổng thu (Triệu đ)',
+            data: incomeSeries,
+            borderColor: '#7C6BFF',
+            backgroundColor: violetGrad,
+            borderWidth: 2.5,
+            tension: 0.42,
+            fill: true,
+            pointRadius: 3.5,
+            pointHoverRadius: 5.5,
+            pointBackgroundColor: '#FFFFFF',
+            pointBorderColor: '#7C6BFF',
+            pointBorderWidth: 2
+          },
+          {
+            label: 'Tổng chi (Triệu đ)',
+            data: expenseSeries,
+            borderColor: '#FF4B16',
+            backgroundColor: orangeGrad,
+            borderWidth: 2.5,
+            tension: 0.42,
+            fill: true,
+            pointRadius: 3.5,
+            pointHoverRadius: 5.5,
+            pointBackgroundColor: '#FFFFFF',
+            pointBorderColor: '#FF4B16',
+            pointBorderWidth: 2
+          }
+        ]
       },
-      scales: {
-        x: {
-          ticks: { color: tickColor, font: { size: 11, weight: '600' } },
-          grid: { display: false }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#25214C',
+            titleColor: '#FFFFFF',
+            bodyColor: '#E6E1FF',
+            cornerRadius: 12,
+            padding: 10
+          }
         },
-        y: {
-          beginAtZero: true,
-          grid: { color: gridColor, drawBorder: false },
-          ticks: {
-            color: tickColor,
-            font: { size: 10, weight: '600' },
-            callback: function (val) {
-              return val + 'M';
+        scales: {
+          x: {
+            ticks: { color: tickColor, font: { size: 11, weight: '600' } },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor, drawBorder: false },
+            ticks: {
+              color: tickColor,
+              font: { size: 10, weight: '600' },
+              callback: function (val) {
+                return val + 'M';
+              }
             }
           }
         }
       }
-    }
-  });
+    });
+  }
 
   // Biểu đồ Donut Học Phí (Card B: Kết hợp Violet #7C6BFF và Orange #FF4B16)
   const hasStudentStatus = paidCount + pendingCount + unpaidCount > 0;
   const donutData = hasStudentStatus ? [Math.max(1, paidCount), pendingCount, unpaidCount] : [88, 4, 8];
 
-  if (tuitionPieChartInstance) tuitionPieChartInstance.destroy();
-  tuitionPieChartInstance = new Chart(pieCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Đã hoàn thành', 'Chờ xác nhận', 'Chưa thu'],
-      datasets: [
-        {
-          data: donutData,
-          backgroundColor: ['#7C6BFF', '#5B55FF', '#FF4B16'],
-          borderWidth: 3,
-          borderColor: isDark ? '#151F32' : '#FAFAFC',
-          hoverOffset: 4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '72%',
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          backgroundColor: '#25214C',
-          titleColor: '#FFFFFF',
-          bodyColor: '#E6E1FF',
-          cornerRadius: 12,
-          padding: 10
+  if (tuitionPieChartInstance && tuitionPieChartInstance.canvas === pieCtx) {
+    tuitionPieChartInstance.data.datasets[0].data = donutData;
+    tuitionPieChartInstance.data.datasets[0].borderColor = isDark ? '#151F32' : '#FAFAFC';
+    tuitionPieChartInstance.update('none');
+  } else {
+    if (tuitionPieChartInstance) tuitionPieChartInstance.destroy();
+    tuitionPieChartInstance = new Chart(pieCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Đã hoàn thành', 'Chờ xác nhận', 'Chưa thu'],
+        datasets: [
+          {
+            data: donutData,
+            backgroundColor: ['#7C6BFF', '#5B55FF', '#FF4B16'],
+            borderWidth: 3,
+            borderColor: isDark ? '#151F32' : '#FAFAFC',
+            hoverOffset: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: '#25214C',
+            titleColor: '#FFFFFF',
+            bodyColor: '#E6E1FF',
+            cornerRadius: 12,
+            padding: 10
+          }
         }
       }
-    }
-  });
+    });
+  }
 }
 
 // ============================================================================
@@ -6493,13 +6553,13 @@ function getStudentPaymentDatesIso(s) {
   return Array.from(dates);
 }
 
-function matchesStudentTimeFilter(s) {
+function matchesStudentTimeFilter(s, ctx = null) {
   if (selectedStuStatTimeMode === 'ALL') return true;
 
   const dateTarget = document.getElementById('filter-student-date-target')?.value || 'ALL';
-  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+  const scheduleMap = ctx?.scheduleMap || (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {});
   const clsCfg = scheduleMap[s.className] || {};
-  const stats = getStudentStatistics(s);
+  const stats = getStudentStatistics(s, ctx);
   const startDateIso = stats.startDateIso || clsCfg.startDate || '';
   const paymentDates = getStudentPaymentDatesIso(s);
   const periodInfo = extractMonthsAndYearsFromText(s.period, clsCfg.startDate, clsCfg.endDate);
@@ -6595,7 +6655,7 @@ function matchesStudentTimeFilter(s) {
   return true;
 }
 
-function getFilteredStudents() {
+function getFilteredStudents(ctx = null) {
   const q = removeVietnameseTones((document.getElementById('filter-student-search')?.value || '').trim().toLowerCase());
   const classFilter = document.getElementById('filter-student-class')?.value || 'ALL';
   const periodFilter = document.getElementById('filter-student-period')?.value || 'ALL';
@@ -6608,7 +6668,7 @@ function getFilteredStudents() {
     if (classFilter !== 'ALL' && s.className !== classFilter) return false;
     if (periodFilter !== 'ALL' && s.period !== periodFilter) return false;
     if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
-    if (!matchesStudentTimeFilter(s)) return false;
+    if (!matchesStudentTimeFilter(s, ctx)) return false;
     if (q) {
       const hay = removeVietnameseTones(
         `${s.studentCode} ${s.fullName} ${s.parentName} ${s.parentPhone} ${s.className} ${s.period}`.toLowerCase()
@@ -6733,12 +6793,26 @@ function saveStudentMetaMap(map, syncMsg = '') {
   }
 }
 
-function getStudentStatistics(s) {
-  const metaMap = getStudentMetaMap();
+function buildStudentStatsContext(scheduleMap = null) {
+  const historyList = typeof getClassHistoryList === 'function' ? getClassHistoryList() : [];
+  return {
+    metaMap: getStudentMetaMap(),
+    chronologicalHist: [...historyList].reverse(),
+    scheduleMap: scheduleMap || (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {}),
+    incomeTxs: (appState.transactions || []).filter(t => t && t.type === 'Thu' && !isSimulatedBankTestItem(t))
+  };
+}
+
+function getStudentStatistics(s, ctx = null) {
+  const metaMap = ctx ? ctx.metaMap : getStudentMetaMap();
   const codeKey = s.studentCode || s.id;
   const meta = metaMap[codeKey] || {};
-  const historyList = typeof getClassHistoryList === 'function' ? getClassHistoryList() : [];
-  const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+  const chronologicalHist = ctx
+    ? ctx.chronologicalHist
+    : [...(typeof getClassHistoryList === 'function' ? getClassHistoryList() : [])].reverse();
+  const scheduleMap = ctx
+    ? ctx.scheduleMap
+    : (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {});
 
   // 1. Tính ngày bắt đầu học (Ưu tiên ngày đã lưu trong meta -> ngày bắt đầu của đợt lịch sử cũ nhất -> ngày bắt đầu của lớp hiện tại)
   let startDateIso = meta.startDate || s.startDate || '';
@@ -6750,7 +6824,6 @@ function getStudentStatistics(s) {
 
   // Nguồn A: Duyệt tự động tất cả các đợt đã lưu trong Lịch sử (từ cũ nhất đến mới nhất)
   // Bắt buộc kiểm tra khớp tên học sinh để tránh trường hợp mã HS cũ (của lớp đã xóa) bị tái sử dụng cho học sinh mới
-  const chronologicalHist = [...historyList].reverse();
   chronologicalHist.forEach(hist => {
     const matchedInHist = (hist.studentsSnapshot || []).find(hs => {
       const hsNameClean = removeVietnameseTones((hs.fullName || '').toLowerCase()).trim();
@@ -6802,8 +6875,10 @@ function getStudentStatistics(s) {
   });
 
   // Nguồn C: Kiểm tra Sổ Thu - Chi (Chỉ cộng bù nếu giao dịch khớp cả Mã HS lẫn Tên HS và học sinh không phải là học sinh mới chưa đóng đợt nào)
-  const studentIncomeTxs = (appState.transactions || []).filter(t => {
-    if (!t || t.type !== 'Thu' || isSimulatedBankTestItem(t)) return false;
+  const baseIncomeTxs = ctx
+    ? ctx.incomeTxs
+    : (appState.transactions || []).filter(t => t && t.type === 'Thu' && !isSimulatedBankTestItem(t));
+  const studentIncomeTxs = baseIncomeTxs.filter(t => {
     const codeMatch =
       (t.studentCode && s.studentCode && t.studentCode.toUpperCase() === s.studentCode.toUpperCase()) ||
       (s.studentCode && String(t.description || '').toUpperCase().includes(s.studentCode.toUpperCase()));
@@ -7154,7 +7229,8 @@ function renderAdminStudents() {
 
   const allStudents = appState.students || [];
   const scheduleMap = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
-  const list = getFilteredStudents();
+  const statsCtx = buildStudentStatsContext(scheduleMap);
+  const list = getFilteredStudents(statsCtx);
 
   // 1. Tính toán các chỉ số thống kê của danh sách đang hiển thị
   const paidList = list.filter(s => s.status === 'Đã hoàn thành');
@@ -7169,7 +7245,7 @@ function renderAdminStudents() {
   let allTimePaidSum = 0;
   const studentStatsCache = new Map();
   list.forEach(s => {
-    const st = getStudentStatistics(s);
+    const st = getStudentStatistics(s, statsCtx);
     studentStatsCache.set(s.id, st);
     totalBatchesPaidCount += st.paidBatchesCount;
     allTimePaidSum += st.totalPaidAmount;
@@ -9690,12 +9766,21 @@ function getCurrentDateTimeString() {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }
 
+// shortcut: xóa toàn bộ cache khi vượt 3000 chuỗi, nâng cấp sang LRU nếu dữ liệu >10.000 học sinh
+const _vnToneCache = new Map();
 function removeVietnameseTones(str) {
-  return String(str || '')
+  const key = String(str || '');
+  if (!key) return '';
+  const hit = _vnToneCache.get(key);
+  if (hit !== undefined) return hit;
+  const out = key
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'D');
+  if (_vnToneCache.size > 3000) _vnToneCache.clear();
+  _vnToneCache.set(key, out);
+  return out;
 }
 
 function escapeHtml(str) {
@@ -10270,11 +10355,12 @@ function renderAdminClassbook() {
       </tr>
     `;
   } else {
+    const cbStatsCtx = buildStudentStatsContext(map);
     stTbody.innerHTML = classStudents
       .map((s, idx) => {
         const isPaid = s.status === 'Đã hoàn thành';
         const isPending = s.status === 'Chờ duyệt';
-        const stats = getStudentStatistics(s);
+        const stats = getStudentStatistics(s, cbStatsCtx);
         const statusCellClass = isPaid
           ? 'status-cell-paid'
           : isPending
@@ -14826,50 +14912,47 @@ function syncFloatingStickyTableHeader(forceRebuild = false) {
 
   const wrap = targetTable.closest('.js-sticky-table-wrap') || targetTable.parentElement;
   const wrapRect = wrap ? wrap.getBoundingClientRect() : targetTableRect;
+  const needRebuild = forceRebuild || activeStickySourceTable !== targetTable || !floatingStickyTableEl.innerHTML;
+
+  // Đọc toàn bộ kích thước cột trước khi ghi DOM để tránh ép trình duyệt reflow lặp lại khi cuộn
+  let measuredColWidths = null;
+  if (needRebuild) {
+    const origFirstRowCells = targetThead.querySelectorAll('tr:first-child > th, tr:first-child > td');
+    measuredColWidths = Array.from(origFirstRowCells, cell => cell.getBoundingClientRect().width);
+  }
 
   bar.classList.remove('hidden');
-  bar.style.top = `${stickyTopOffset}px`;
-  bar.style.left = `${Math.round(wrapRect.left)}px`;
-  bar.style.width = `${Math.round(wrapRect.width)}px`;
+  const nextTop = `${stickyTopOffset}px`;
+  const nextLeft = `${Math.round(wrapRect.left)}px`;
+  const nextWidth = `${Math.round(wrapRect.width)}px`;
+  if (bar.style.top !== nextTop) bar.style.top = nextTop;
+  if (bar.style.left !== nextLeft) bar.style.left = nextLeft;
+  if (bar.style.width !== nextWidth) bar.style.width = nextWidth;
 
-  if (forceRebuild || activeStickySourceTable !== targetTable || !floatingStickyTableEl.innerHTML) {
+  if (needRebuild) {
     activeStickySourceTable = targetTable;
     floatingStickyTableEl.className = targetTable.className.replace('js-sticky-header-table', '');
     const clonedThead = targetThead.cloneNode(true);
     clonedThead.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
     floatingStickyTableEl.innerHTML = '';
     floatingStickyTableEl.appendChild(clonedThead);
-  } else {
-    // Cập nhật nhanh nội dung dòng TỔNG CỘNG nếu có thay đổi
-    const origRows = targetThead.querySelectorAll('tr');
-    const cloneRows = floatingStickyTableEl.querySelectorAll('thead tr');
-    if (origRows.length > 1 && cloneRows.length > 1) {
-      const origSumCells = origRows[1].children;
-      const cloneSumCells = cloneRows[1].children;
-      for (let c = 0; c < origSumCells.length && c < cloneSumCells.length; c++) {
-        if (cloneSumCells[c].textContent !== origSumCells[c].textContent) {
-          cloneSumCells[c].textContent = origSumCells[c].textContent;
-        }
-      }
+
+    const tblWidthPx = `${targetTableRect.width}px`;
+    floatingStickyTableEl.style.width = tblWidthPx;
+    floatingStickyTableEl.style.minWidth = tblWidthPx;
+
+    const cloneFirstRowCells = floatingStickyTableEl.querySelectorAll('thead tr:first-child > th, thead tr:first-child > td');
+    for (let c = 0; c < measuredColWidths.length && c < cloneFirstRowCells.length; c++) {
+      const px = `${measuredColWidths[c].toFixed(2)}px`;
+      cloneFirstRowCells[c].style.width = px;
+      cloneFirstRowCells[c].style.minWidth = px;
+      cloneFirstRowCells[c].style.maxWidth = px;
+      cloneFirstRowCells[c].style.boxSizing = 'border-box';
     }
   }
 
-  // Đồng bộ chính xác 100% độ rộng của từng cột (th / td) để luôn thẳng hàng với các ô học sinh bên dưới
-  floatingStickyTableEl.style.width = `${targetTableRect.width}px`;
-  floatingStickyTableEl.style.minWidth = `${targetTableRect.width}px`;
   const scrollLeft = wrap ? wrap.scrollLeft : 0;
   floatingStickyTableEl.style.transform = `translate3d(${-scrollLeft}px, 0, 0)`;
-
-  const origFirstRowCells = targetThead.querySelectorAll('tr:first-child > th, tr:first-child > td');
-  const cloneFirstRowCells = floatingStickyTableEl.querySelectorAll('thead tr:first-child > th, thead tr:first-child > td');
-  for (let c = 0; c < origFirstRowCells.length && c < cloneFirstRowCells.length; c++) {
-    const w = origFirstRowCells[c].getBoundingClientRect().width;
-    const px = `${w.toFixed(2)}px`;
-    cloneFirstRowCells[c].style.width = px;
-    cloneFirstRowCells[c].style.minWidth = px;
-    cloneFirstRowCells[c].style.maxWidth = px;
-    cloneFirstRowCells[c].style.boxSizing = 'border-box';
-  }
 }
 
 function scrollToPageTop() {
@@ -14888,10 +14971,14 @@ function handleGoToHomePage() {
   scrollToPageTop();
 }
 
+let _scrollTopBtnShown = false;
 function updateScrollToTopButtonVisibility() {
+  const shouldShow = window.scrollY > 220;
+  if (shouldShow === _scrollTopBtnShown) return;
   const btn = document.getElementById('btn-scroll-to-top');
   if (!btn) return;
-  if (window.scrollY > 220) {
+  _scrollTopBtnShown = shouldShow;
+  if (shouldShow) {
     btn.classList.remove('hidden');
     btn.classList.add('inline-flex');
   } else {
@@ -14901,14 +14988,15 @@ function updateScrollToTopButtonVisibility() {
 }
 
 function scheduleStickyHeaderSync(forceRebuild = false) {
-  updateScrollToTopButtonVisibility();
   if (forceRebuild) {
+    updateScrollToTopButtonVisibility();
     syncFloatingStickyTableHeader(true);
     return;
   }
   if (stickyHeaderRafId) return;
   stickyHeaderRafId = requestAnimationFrame(() => {
     stickyHeaderRafId = null;
+    updateScrollToTopButtonVisibility();
     syncFloatingStickyTableHeader(false);
   });
 }
