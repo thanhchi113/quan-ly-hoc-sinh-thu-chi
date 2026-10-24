@@ -6823,7 +6823,7 @@ function renderDashboardCharts(
 ) {
   const barCtx = document.getElementById('financeBarChart');
   const pieCtx = document.getElementById('tuitionPieChart');
-  if (!barCtx || !pieCtx) return;
+  if (!barCtx || !pieCtx || typeof barCtx.getContext !== 'function' || typeof pieCtx.getContext !== 'function') return;
 
   const isDark = document.documentElement.classList.contains('dark-mode');
   const tickColor = isDark ? '#cbd5e1' : '#595c5f';
@@ -16536,33 +16536,36 @@ async function simulateIncomingBankTransfer() {
 // HỆ THỐNG CÀI ĐẶT MÀU SẮC GIAO DIỆN & CHẾ ĐỘ SÁNG / TỐI (LIGHT / DARK MODE)
 // ============================================================================
 const THEME_STORAGE_KEY = 'edupay_ui_theme_v2';
+const CUSTOM_SAVED_THEMES_KEY = 'edupay_custom_saved_themes_v1';
 
 const THEME_PRESETS = {
   thanhchi: {
     key: 'thanhchi',
-    name: 'Thanh Chí Edu (Achromatic Ledger)',
-    desc: 'Achromatic #141414 & Chart Blue #1D5FBF chuẩn sổ cái tài chính',
+    name: 'Thanh Chí Edu (Achromatic & Navy)',
+    desc: 'Đen #141414 & Xanh Chart #1D5FBF chuẩn sổ cái tài chính',
     primary: '#141414',
     primaryHover: '#262626',
     primaryRgb: '20, 20, 20',
-    navy: '#0a0a0a',
-    navyMid: '#262626',
-    soft: '#f2f4f7',
-    border: '#e6e6e6',
-    bannerFrom: '#ffffff',
-    bannerVia: '#ffffff',
-    bannerTo: '#ffffff'
+    primaryDark: '#3b82f6',
+    navy: '#0f294a',
+    navyMid: '#1e3a6d',
+    soft: '#f1f5f9',
+    border: '#cbd5e1',
+    bannerFrom: '#0f172a',
+    bannerVia: '#1e293b',
+    bannerTo: '#334155'
   },
   navy: {
     key: 'navy',
     name: 'Xanh Navy Chuẩn',
     desc: 'Chuyên nghiệp, chuẩn giáo dục',
     primary: '#1d5fbf',
-    primaryHover: '#1d5fbf',
-    primaryRgb: '37, 99, 235',
+    primaryHover: '#174ea6',
+    primaryRgb: '29, 95, 191',
+    primaryDark: '#60a5fa',
     navy: '#1f3d6e',
     navyMid: '#25477d',
-    soft: '#eef4fb',
+    soft: '#eff6ff',
     border: '#bfdbfe',
     bannerFrom: '#0f294a',
     bannerVia: '#173b6c',
@@ -16575,6 +16578,7 @@ const THEME_PRESETS = {
     primary: '#059669',
     primaryHover: '#047857',
     primaryRgb: '5, 150, 105',
+    primaryDark: '#10b981',
     navy: '#064e3b',
     navyMid: '#065f46',
     soft: '#ecfdf5',
@@ -16587,9 +16591,10 @@ const THEME_PRESETS = {
     key: 'indigo',
     name: 'Tím Indigo Hiện Đại',
     desc: 'Sang trọng, công nghệ cao',
-    primary: '#141414',
+    primary: '#4f46e5',
     primaryHover: '#4338ca',
     primaryRgb: '79, 70, 229',
+    primaryDark: '#818cf8',
     navy: '#312e81',
     navyMid: '#3730a3',
     soft: '#eef2ff',
@@ -16605,6 +16610,7 @@ const THEME_PRESETS = {
     primary: '#0d9488',
     primaryHover: '#0f766e',
     primaryRgb: '13, 148, 136',
+    primaryDark: '#2dd4bf',
     navy: '#134e4a',
     navyMid: '#115e59',
     soft: '#f0fdfa',
@@ -16620,6 +16626,7 @@ const THEME_PRESETS = {
     primary: '#e11d48',
     primaryHover: '#be123c',
     primaryRgb: '225, 29, 72',
+    primaryDark: '#f43f5e',
     navy: '#881337',
     navyMid: '#9f1239',
     soft: '#fff1f2',
@@ -16635,6 +16642,7 @@ const THEME_PRESETS = {
     primary: '#d97706',
     primaryHover: '#b45309',
     primaryRgb: '217, 119, 6',
+    primaryDark: '#f59e0b',
     navy: '#78350f',
     navyMid: '#92400e',
     soft: '#fffbeb',
@@ -16644,6 +16652,23 @@ const THEME_PRESETS = {
     bannerTo: '#b45309'
   }
 };
+
+function getCustomSavedThemes() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_SAVED_THEMES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function saveCustomSavedThemes(list) {
+  try {
+    localStorage.setItem(CUSTOM_SAVED_THEMES_KEY, JSON.stringify(list || []));
+  } catch (e) {}
+}
 
 function getSavedThemePreferences() {
   try {
@@ -16656,7 +16681,8 @@ function getSavedThemePreferences() {
   return {
     darkMode: false,
     themeKey: 'thanhchi',
-    customHex: ''
+    customHex: '',
+    customName: ''
   };
 }
 
@@ -16665,7 +16691,10 @@ function saveThemePreferences(prefs) {
 }
 
 function hexToRgbTuple(hex) {
-  const clean = String(hex || '#1d5fbf').replace('#', '').trim();
+  let clean = String(hex || '#1d5fbf').replace('#', '').trim();
+  if (clean.length === 3) {
+    clean = clean.split('').map(c => c + c).join('');
+  }
   if (clean.length !== 6) return [37, 99, 235];
   const r = parseInt(clean.slice(0, 2), 16) || 37;
   const g = parseInt(clean.slice(2, 4), 16) || 99;
@@ -16673,34 +16702,71 @@ function hexToRgbTuple(hex) {
   return [r, g, b];
 }
 
+function getLuminance(r, g, b) {
+  const a = [r, g, b].map(v => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
 function darkenHex(hex, factor = 0.7) {
   const [r, g, b] = hexToRgbTuple(hex);
-  const toHex = n => Math.max(0, Math.min(255, Math.round(n * factor))).toString(16).padStart(2, '0'); /* taste-skill-ignore */
+  const toHex = n => Math.max(0, Math.min(255, Math.round(n * factor))).toString(16).padStart(2, '0');
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 function lightenHex(hex, mixWhite = 0.92) {
   const [r, g, b] = hexToRgbTuple(hex);
-  const mix = c => Math.round(c + (255 - c) * mixWhite).toString(16).padStart(2, '0'); /* taste-skill-ignore */
+  const mix = c => Math.round(c + (255 - c) * mixWhite).toString(16).padStart(2, '0');
   return `#${mix(r)}${mix(g)}${mix(b)}`;
+}
+
+function adaptColorForDarkMode(hex) {
+  const [r, g, b] = hexToRgbTuple(hex);
+  const lum = getLuminance(r, g, b);
+  if (lum < 0.2) {
+    return lightenHex(hex, 0.45);
+  }
+  return hex;
 }
 
 function applyCssThemeVariables(cfg) {
   const root = document.documentElement;
-  root.style.setProperty('--brand-primary', cfg.primary);
-  root.style.setProperty('--brand-primary-hover', cfg.primaryHover);
-  root.style.setProperty('--brand-primary-rgb', cfg.primaryRgb);
-  root.style.setProperty('--brand-navy', cfg.navy);
-  root.style.setProperty('--brand-navy-mid', cfg.navyMid);
-  root.style.setProperty('--brand-soft', cfg.soft);
-  root.style.setProperty('--brand-border', cfg.border);
-  root.style.setProperty('--brand-banner-from', cfg.bannerFrom);
-  root.style.setProperty('--brand-banner-via', cfg.bannerVia);
-  root.style.setProperty('--brand-banner-to', cfg.bannerTo);
+  const isDark = root.classList.contains('dark-mode');
 
-  const swatchDot = document.getElementById('header-theme-swatch-dot');
+  const [r, g, b] = hexToRgbTuple(cfg.primary);
+  const lum = getLuminance(r, g, b);
+  const onPrimary = lum > 0.6 ? '#0a0a0a' : '#ffffff';
+
+  let darkPrimary = cfg.primaryDark || cfg.primary;
+  if (!cfg.primaryDark && lum < 0.22) {
+    darkPrimary = adaptColorForDarkMode(cfg.primary);
+  }
+  const [dr, dg, db] = hexToRgbTuple(darkPrimary);
+  const darkLum = getLuminance(dr, dg, db);
+  const onDarkPrimary = darkLum > 0.6 ? '#0a0a0a' : '#ffffff';
+
+  root.style.setProperty('--brand-primary', cfg.primary);
+  root.style.setProperty('--brand-primary-hover', cfg.primaryHover || darkenHex(cfg.primary, 0.85));
+  root.style.setProperty('--brand-primary-rgb', `${r}, ${g}, ${b}`);
+  root.style.setProperty('--brand-on-primary', onPrimary);
+
+  root.style.setProperty('--brand-primary-darkmode', darkPrimary);
+  root.style.setProperty('--brand-on-primary-darkmode', onDarkPrimary);
+
+  root.style.setProperty('--brand-navy', cfg.navy || darkenHex(cfg.primary, 0.52));
+  root.style.setProperty('--brand-navy-mid', cfg.navyMid || darkenHex(cfg.primary, 0.65));
+  root.style.setProperty('--brand-soft', cfg.soft || lightenHex(cfg.primary, 0.92));
+  root.style.setProperty('--brand-border', cfg.border || lightenHex(cfg.primary, 0.72));
+
+  root.style.setProperty('--brand-banner-from', cfg.bannerFrom || darkenHex(cfg.primary, 0.35));
+  root.style.setProperty('--brand-banner-via', cfg.bannerVia || darkenHex(cfg.primary, 0.5));
+  root.style.setProperty('--brand-banner-to', cfg.bannerTo || darkenHex(cfg.primary, 0.68));
+
+  const swatchDot = document.getElementById('header-theme-color-dot') || document.getElementById('header-theme-swatch-dot');
   if (swatchDot) {
-    swatchDot.style.backgroundColor = cfg.primary;
+    swatchDot.style.backgroundColor = isDark ? darkPrimary : cfg.primary;
   }
 }
 
@@ -16713,7 +16779,7 @@ function updateDarkModeHeaderUI(isDark) {
   }
   const themeMeta = document.getElementById('meta-theme-color');
   if (themeMeta) {
-    themeMeta.setAttribute('content', isDark ? '#0f172a' : '#FAFAFC');
+    themeMeta.setAttribute('content', isDark ? '#060b16' : '#FAFAFC');
   }
 
   const iconEl = document.getElementById('darkmode-toggle-icon');
@@ -16727,13 +16793,22 @@ function updateDarkModeHeaderUI(isDark) {
     }
   }
   if (labelEl) labelEl.textContent = isDark ? 'Sáng' : 'Tối';
+
+  // Re-apply variables so dark mode adapt tokens update
+  const prefs = getSavedThemePreferences();
+  if (prefs.themeKey === 'custom' && prefs.customHex) {
+    applyCustomHexTheme(prefs.customHex, false, false, prefs.customName);
+  } else {
+    const preset = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.thanhchi || THEME_PRESETS.navy;
+    applyCssThemeVariables(preset);
+  }
 }
 
 function initThemeSystem() {
   const prefs = getSavedThemePreferences();
   updateDarkModeHeaderUI(Boolean(prefs.darkMode));
   if (prefs.themeKey === 'custom' && prefs.customHex) {
-    applyCustomHexTheme(prefs.customHex, false);
+    applyCustomHexTheme(prefs.customHex, false, false, prefs.customName);
   } else {
     const preset = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.thanhchi || THEME_PRESETS.navy;
     applyCssThemeVariables(preset);
@@ -16757,7 +16832,7 @@ function setDarkMode(isDark, showMsg = true) {
   }
   if (showMsg) {
     showToast(
-      prefs.darkMode ? 'Đã bật Chế độ Tối (Dark Mode) dịu mắt!' : 'Đã chuyển về Chế độ Sáng (Light Mode)!',
+      prefs.darkMode ? 'Đã bật Chế độ Tối (Dark Mode) dịu mắt & tương phản cao!' : 'Đã chuyển về Chế độ Sáng (Light Mode)!',
       'info'
     );
   }
@@ -16768,6 +16843,7 @@ function applyColorTheme(themeKey, showMsg = true) {
   const prefs = getSavedThemePreferences();
   prefs.themeKey = preset.key;
   prefs.customHex = '';
+  prefs.customName = '';
   saveThemePreferences(prefs);
   applyCssThemeVariables(preset);
   renderThemeCustomizerControls();
@@ -16776,41 +16852,136 @@ function applyColorTheme(themeKey, showMsg = true) {
   }
 }
 
-function applyCustomHexTheme(hexColor, savePref = true) {
-  const cleanHex = String(hexColor || '#141414').trim();
+function applyCustomHexTheme(hexColor, savePref = true, showMsg = false, customName = '') {
+  let cleanHex = String(hexColor || '#141414').trim();
+  if (!cleanHex.startsWith('#')) cleanHex = '#' + cleanHex;
   const [r, g, b] = hexToRgbTuple(cleanHex);
+  const darkAdapted = adaptColorForDarkMode(cleanHex);
+  const displayName = customName || `Màu tùy chỉnh (${cleanHex.toUpperCase()})`;
+
   const customCfg = {
     key: 'custom',
-    name: `Màu tùy chỉnh (${cleanHex.toUpperCase()})`,
+    name: displayName,
     primary: cleanHex,
     primaryHover: darkenHex(cleanHex, 0.85),
     primaryRgb: `${r}, ${g}, ${b}`,
-    navy: darkenHex(cleanHex, 0.52),
-    navyMid: darkenHex(cleanHex, 0.65),
-    soft: lightenHex(cleanHex, 0.92),
-    border: lightenHex(cleanHex, 0.72),
+    primaryDark: darkAdapted,
+    navy: darkenHex(cleanHex, 0.45),
+    navyMid: darkenHex(cleanHex, 0.6),
+    soft: lightenHex(cleanHex, 0.94),
+    border: lightenHex(cleanHex, 0.75),
     bannerFrom: darkenHex(cleanHex, 0.35),
     bannerVia: darkenHex(cleanHex, 0.5),
     bannerTo: darkenHex(cleanHex, 0.68)
   };
+
   applyCssThemeVariables(customCfg);
+
   if (savePref) {
     const prefs = getSavedThemePreferences();
     prefs.themeKey = 'custom';
-    prefs.customHex = cleanHex;
+    prefs.customHex = cleanHex.toUpperCase();
+    if (customName) prefs.customName = customName;
     saveThemePreferences(prefs);
     renderThemeCustomizerControls();
   }
+
+  if (showMsg) {
+    showToast(`Đã áp dụng màu "${displayName}"!`, 'success');
+  }
+}
+
+function handleCustomColorPickerInput(hexVal) {
+  const cleanHex = String(hexVal || '#1D5FBF').toUpperCase();
+  const hexInput = document.getElementById('theme-custom-hex-input');
+  if (hexInput) hexInput.value = cleanHex;
+  applyCustomHexTheme(cleanHex, true, false);
+}
+
+function handleCustomHexTextInput(textVal) {
+  let raw = String(textVal || '').trim();
+  if (!raw.startsWith('#')) raw = '#' + raw;
+  if (/^#([0-9A-Fa-f]{6})$/.test(raw)) {
+    const picker = document.getElementById('theme-custom-color-picker');
+    if (picker) picker.value = raw;
+    applyCustomHexTheme(raw, true, false);
+  }
+}
+
+function saveCustomNamedTheme() {
+  const hexInput = document.getElementById('theme-custom-hex-input');
+  const picker = document.getElementById('theme-custom-color-picker');
+  const nameInput = document.getElementById('theme-custom-name-input');
+
+  let hex = (hexInput?.value || picker?.value || '#1D5FBF').trim();
+  if (!hex.startsWith('#')) hex = '#' + hex;
+  if (!/^#([0-9A-Fa-f]{6})$/.test(hex)) {
+    showToast('Mã màu HEX không hợp lệ! Vui lòng nhập đúng định dạng (VD: #2563EB)', 'error');
+    if (hexInput) hexInput.focus();
+    return;
+  }
+
+  hex = hex.toUpperCase();
+  const name = (nameInput?.value || '').trim() || `Màu ${hex}`;
+
+  const savedList = getCustomSavedThemes();
+  const existingIdx = savedList.findIndex(t => t && (t.hex === hex || t.name.toLowerCase() === name.toLowerCase()));
+  if (existingIdx !== -1) {
+    savedList[existingIdx] = { ...savedList[existingIdx], name, hex, updatedAt: Date.now() };
+  } else {
+    savedList.unshift({
+      id: 'CT_' + Date.now(),
+      name,
+      hex,
+      createdAt: Date.now()
+    });
+  }
+
+  // Cap at 20 themes
+  saveCustomSavedThemes(savedList.slice(0, 20));
+  applyCustomHexTheme(hex, true, false, name);
+
+  if (nameInput) nameInput.value = '';
+  showToast(`Đã lưu và áp dụng bộ màu "${name}" (${hex}) thành công!`, 'success');
+  renderThemeCustomizerControls();
+}
+
+function applySavedCustomTheme(themeId) {
+  const savedList = getCustomSavedThemes();
+  const found = savedList.find(t => t && t.id === themeId);
+  if (!found) return;
+  applyCustomHexTheme(found.hex, true, true, found.name);
+}
+
+function deleteSavedCustomTheme(themeId, event) {
+  if (event && typeof event.stopPropagation === 'function') {
+    event.stopPropagation();
+  }
+  const savedList = getCustomSavedThemes();
+  const nextList = savedList.filter(t => t && t.id !== themeId);
+  saveCustomSavedThemes(nextList);
+
+  const prefs = getSavedThemePreferences();
+  if (prefs.themeKey === 'custom') {
+    // If deleted theme was active, check if another exists or fall back to default
+    const stillExists = nextList.some(t => t.hex.toUpperCase() === (prefs.customHex || '').toUpperCase());
+    if (!stillExists) {
+      applyColorTheme('thanhchi', false);
+    }
+  }
+
+  showToast('Đã xóa màu tùy chọn khỏi danh sách lưu.', 'info');
+  renderThemeCustomizerControls();
 }
 
 function resetDefaultTheme() {
-  const prefs = { darkMode: false, themeKey: 'thanhchi', customHex: '' };
+  const prefs = { darkMode: false, themeKey: 'thanhchi', customHex: '', customName: '' };
   saveThemePreferences(prefs);
   updateDarkModeHeaderUI(false);
   applyCssThemeVariables(THEME_PRESETS.thanhchi || THEME_PRESETS.navy);
   renderThemeCustomizerControls();
   if (typeof renderAdminDashboard === 'function') renderAdminDashboard();
-  showToast('Đã khôi phục giao diện Thanh Chí Edu (Soft Premium) mặc định!', 'success');
+  showToast('Đã khôi phục giao diện Thanh Chí Edu mặc định!', 'success');
 }
 
 function openThemeCustomizerModal() {
@@ -16828,39 +16999,65 @@ function closeThemeCustomizerModal() {
 
 function renderThemeCustomizerControls() {
   const prefs = getSavedThemePreferences();
+  const isDark = Boolean(prefs.darkMode);
+
+  // 1. Sáng / Tối High Contrast Toggle Buttons
   const lightBtn = document.getElementById('theme-mode-light-btn');
   const darkBtn = document.getElementById('theme-mode-dark-btn');
+  const lightBadge = document.getElementById('theme-light-active-badge');
+  const darkBadge = document.getElementById('theme-dark-active-badge');
 
   if (lightBtn && darkBtn) {
-    if (!prefs.darkMode) {
-      lightBtn.className = 'p-3.5 rounded-2xl border-2 border-blue-600 bg-blue-50/50 flex items-center gap-3 text-left transition cursor-pointer ring-2 ring-blue-200';
-      darkBtn.className = 'p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 flex items-center gap-3 text-left transition cursor-pointer';
+    if (!isDark) {
+      lightBtn.className =
+        'p-3.5 rounded-2xl border-2 border-amber-500 bg-amber-50/90 text-amber-950 flex items-center justify-between gap-3 text-left transition cursor-pointer ring-2 ring-amber-400 shadow-md';
+      darkBtn.className =
+        'p-3.5 rounded-2xl border-2 border-slate-200 bg-white/80 text-slate-600 hover:border-slate-300 flex items-center justify-between gap-3 text-left transition cursor-pointer opacity-75';
     } else {
-      darkBtn.className = 'p-3.5 rounded-2xl border-2 border-blue-600 bg-blue-50/50 flex items-center gap-3 text-left transition cursor-pointer ring-2 ring-blue-200';
-      lightBtn.className = 'p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 flex items-center gap-3 text-left transition cursor-pointer';
+      darkBtn.className =
+        'p-3.5 rounded-2xl border-2 border-blue-500 bg-slate-900 text-white flex items-center justify-between gap-3 text-left transition cursor-pointer ring-2 ring-blue-400 shadow-md';
+      lightBtn.className =
+        'p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-800/80 text-slate-300 hover:border-slate-600 flex items-center justify-between gap-3 text-left transition cursor-pointer opacity-75';
     }
   }
 
+  if (lightBadge && darkBadge) {
+    if (!isDark) {
+      lightBadge.className = 'px-2 py-0.5 rounded-full bg-amber-600 text-white text-[11px] font-extrabold shrink-0 shadow-sm';
+      lightBadge.textContent = '✓ Đang bật';
+      darkBadge.className = 'px-2 py-0.5 rounded-full bg-slate-200 text-slate-500 text-[11px] font-bold shrink-0';
+      darkBadge.textContent = 'Tắt';
+    } else {
+      darkBadge.className = 'px-2 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-extrabold shrink-0 shadow-sm';
+      darkBadge.textContent = '✓ Đang bật';
+      lightBadge.className = 'px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[11px] font-bold shrink-0 border border-slate-700';
+      lightBadge.textContent = 'Tắt';
+    }
+  }
+
+  // 2. Active Theme Label & Custom Inputs
   const labelEl = document.getElementById('theme-current-label');
   if (labelEl) {
     if (prefs.themeKey === 'custom' && prefs.customHex) {
-      labelEl.textContent = `Màu tùy chỉnh (${prefs.customHex.toUpperCase()})`;
+      const activeName = prefs.customName || 'Màu tự chọn';
+      labelEl.textContent = `${activeName} (${prefs.customHex.toUpperCase()})`;
+      labelEl.className = 'text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200';
     } else {
-      const p = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.navy;
+      const p = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.thanhchi;
       labelEl.textContent = p.name;
+      labelEl.className = 'text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200';
     }
   }
 
   const pickerEl = document.getElementById('theme-custom-color-picker');
-  if (pickerEl) {
-    if (prefs.themeKey === 'custom' && prefs.customHex) {
-      pickerEl.value = prefs.customHex;
-    } else {
-      const p = THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.navy;
-      pickerEl.value = p.primary;
-    }
+  const hexInputEl = document.getElementById('theme-custom-hex-input');
+  if (pickerEl && hexInputEl) {
+    const activeHex = prefs.customHex || (THEME_PRESETS[prefs.themeKey] || THEME_PRESETS.navy).primary;
+    pickerEl.value = activeHex;
+    hexInputEl.value = activeHex.toUpperCase();
   }
 
+  // 3. Preset Cards Grid
   const gridEl = document.getElementById('theme-preset-grid');
   if (gridEl) {
     gridEl.innerHTML = Object.values(THEME_PRESETS)
@@ -16872,29 +17069,90 @@ function renderThemeCustomizerControls() {
             onclick="applyColorTheme('${p.key}')"
             class="p-3 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
               isSelected
-                ? 'border-blue-600 bg-blue-50/40 ring-2 ring-blue-200 '
+                ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-300 shadow-sm'
                 : 'border-slate-200 bg-white hover:border-slate-300'
             }"
           >
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-1.5">
-                <span class="w-5 h-5 rounded-full  border border-white/60 inline-block" style="background-color: ${p.primary}"></span>
-                <span class="w-3.5 h-3.5 rounded-full inline-block" style="background-color: ${p.navy}"></span>
+                <span class="w-5 h-5 rounded-full border border-white/60 inline-block shrink-0 shadow-sm" style="background-color: ${p.primary}"></span>
+                <span class="w-3.5 h-3.5 rounded-full inline-block shrink-0" style="background-color: ${p.navy}"></span>
               </div>
               ${
                 isSelected
-                  ? `<span class="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-xs font-extrabold">Đang dùng</span>`
+                  ? `<span class="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-extrabold">Đang dùng</span>`
                   : ''
               }
             </div>
-            <div>
-              <div class="font-extrabold text-xs text-slate-900">${escapeHtml(p.name)}</div>
-              <div class="text-xs text-slate-500 truncate">${escapeHtml(p.desc)}</div>
+            <div class="min-w-0">
+              <div class="font-extrabold text-xs text-slate-900 truncate">${escapeHtml(p.name)}</div>
+              <div class="text-[11px] text-slate-500 truncate">${escapeHtml(p.desc)}</div>
             </div>
           </button>
         `;
       })
       .join('');
+  }
+
+  // 4. Saved Custom Themes List
+  const savedList = getCustomSavedThemes();
+  const countEl = document.getElementById('theme-saved-custom-count');
+  if (countEl) countEl.textContent = String(savedList.length);
+
+  const savedListEl = document.getElementById('theme-saved-custom-list');
+  if (savedListEl) {
+    if (savedList.length === 0) {
+      savedListEl.innerHTML = `
+        <div class="sm:col-span-2 p-3 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">
+          Chưa có màu tự chọn nào được lưu. Bạn có thể chọn màu bất kỳ ở trên và bấm <strong>"Lưu màu"</strong> để lưu giữ.
+        </div>
+      `;
+    } else {
+      savedListEl.innerHTML = savedList
+        .map(item => {
+          const isActive =
+            prefs.themeKey === 'custom' &&
+            String(prefs.customHex || '').toUpperCase() === String(item.hex || '').toUpperCase();
+          return `
+            <div
+              onclick="applySavedCustomTheme('${escapeAttr(item.id)}')"
+              class="p-2.5 rounded-xl border-2 flex items-center justify-between gap-2 transition cursor-pointer ${
+                isActive
+                  ? 'border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-300 shadow-sm'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-6 h-6 rounded-lg border border-white/60 inline-block shrink-0 shadow-sm" style="background-color: ${item.hex}"></span>
+                <div class="min-w-0">
+                  <div class="font-extrabold text-xs text-slate-900 truncate">${escapeHtml(item.name)}</div>
+                  <div class="text-[11px] font-mono font-semibold text-slate-500">${escapeHtml(item.hex)}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0" onclick="event.stopPropagation()">
+                ${
+                  isActive
+                    ? `<span class="px-1.5 py-0.2 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold">Đang dùng</span>`
+                    : ''
+                }
+                <button
+                  type="button"
+                  onclick="deleteSavedCustomTheme('${escapeAttr(item.id)}', event)"
+                  title="Xóa màu này khỏi danh sách lưu"
+                  class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                >
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  if (typeof lucide !== 'undefined' && lucide.createIcons) {
+    lucide.createIcons();
   }
 }
 
