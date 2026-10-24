@@ -9387,13 +9387,13 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
     const dateIdx = findColIdx(normHeaders, ['transactiondate', 'ngaygiaodich', 'thoigian', 'ngay', 'date']);
     const accIdx = findColIdx(normHeaders, ['accountnumber', 'sotaikhoan', 'stk', 'taikhoan']);
     const subAccIdx = findColIdx(normHeaders, ['subaccount', 'taikhoanphu', 'va', 'tkphu']);
-    const codeIdx = findColIdx(normHeaders, ['code', 'codethanhtoan', 'macode']);
+    const codeIdx = findColIdx(normHeaders, ['code', 'codett', 'codethanhtoan', 'macode']);
     const typeIdx = findColIdx(normHeaders, ['transfertype', 'loai', 'loaigiaodich']);
     const amountIdx = findColIdx(normHeaders, ['transferamount', 'sotien', 'amount']);
     const amountInIdx = findColIdx(normHeaders, ['tienvao', 'amountin', 'in']);
     const amountOutIdx = findColIdx(normHeaders, ['tienra', 'amountout', 'out']);
     const accumIdx = findColIdx(normHeaders, ['accumulated', 'luyke', 'sodu', 'soduluyke', 'balance']);
-    const contentIdx = findColIdx(normHeaders, ['content', 'noidung', 'noidungchuyenkhoan', 'description', 'mota']);
+    const contentIdx = findColIdx(normHeaders, ['content', 'noidung', 'noidungthanhtoan', 'noidungchuyenkhoan', 'description', 'mota']);
     const refIdx = findColIdx(normHeaders, ['referencenumber', 'referencecode', 'mathamchieu', 'sohieugd']);
 
     const isSepayTab =
@@ -9422,13 +9422,14 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       const directAmt = amountIdx !== -1 ? parseSepayRawVnd(r[amountIdx]) : 0;
       const isOut =
         (amtOut > 0 && amtIn === 0) ||
-        (typeIdx !== -1 && /^(out|ra|chi|debit|-)/i.test(removeVietnameseTones(String(r[typeIdx] || '').trim())));
+        (typeIdx !== -1 && /^(out|ra|tien\s*ra|chi|debit|-)/i.test(removeVietnameseTones(String(r[typeIdx] || '').trim())));
       const amount = amtIn > 0 ? amtIn : amtOut > 0 ? amtOut : directAmt;
       if (amount <= 0) continue;
 
       const rawIdCell = idIdx !== -1 ? String(r[idIdx] || '').trim() : '';
       const rawRefCell = refIdx !== -1 ? String(r[refIdx] || '').trim() : '';
       const rawDateCell = dateIdx !== -1 ? String(r[dateIdx] || '').trim() : '';
+      const txDateOnly = /^\d{4}-\d{2}-\d{2}/.test(rawDateCell) ? rawDateCell.slice(0, 10) : todayDate;
       const cleanKey = (rawIdCell || rawRefCell || `${rawDateCell}_${amount}_${rIdx}`).replace(/[^A-Za-z0-9_-]/g, '');
       if (!cleanKey) continue;
       const sepayTxId = `GD_SEPAY_${cleanKey}`;
@@ -9439,7 +9440,15 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         if (tid === sepayTxId || tid === `GD_${cleanKey}` || tid === `GD_SEPAY_${rawRefCell}` || tid === `GD_${rawRefCell}`) {
           return true;
         }
-        return Boolean(rawRefCell && rawRefCell.length >= 5 && String(t.description || '').includes(rawRefCell));
+        if (rawRefCell && rawRefCell.length >= 5 && String(t.description || '').includes(rawRefCell)) {
+          return true;
+        }
+        return Boolean(
+          tid.startsWith('GD_SEPAY_') &&
+          Number(t.amount) === amount &&
+          rawContent &&
+          String(t.description || '').includes(rawContent)
+        );
       });
       if (alreadyRecorded) continue;
 
@@ -9450,7 +9459,6 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         state.settings.bankAccountNo ||
         '8601774789';
       const accumVal = accumIdx !== -1 && String(r[accumIdx] || '').trim() !== '' ? parseSepayRawVnd(r[accumIdx]) : null;
-      const txDateOnly = /^\d{4}-\d{2}-\d{2}/.test(rawDateCell) ? rawDateCell.slice(0, 10) : todayDate;
       const alertTime = rawDateCell || nowStr;
 
       if (amount > 0 && amount < 20000) {
