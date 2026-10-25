@@ -898,2955 +898,1553 @@ function getInitialDemoState() {
     "customQrUrl": "",
     "sepayBalance": "0",
     "autoApproveBankTransfer": "true",
-    "classSchedulesJson": "{\"12 2K9 (Ca 1 - T3,5,7)\": {\"className\": \"12 2K9 (Ca 1 - T3,5,7)\", \"subject\": \"Toán 12\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 5\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-26\", \"endDate\": \"2026-10-22\", \"daysOfWeek\": [2, 4, 6], \"sessionStates\": {\"2026-09-26\": 1, \"2026-09-29\": 1, \"2026-10-01\": 1, \"2026-10-03\": 1, \"2026-10-06\": 1, \"2026-10-08\": 1, \"2026-10-10\": 1, \"2026-10-13\": 1, \"2026-10-15\": 1, \"2026-10-17\": 1, \"2026-10-20\": 1, \"2026-10-22\": 1}}, \"12 2K9 (Ca 2 - T2,4,6)\": {\"className\": \"12 2K9 (Ca 2 - T2,4,6)\", \"subject\": \"Toán 12\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 5\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-23\", \"endDate\": \"2026-10-23\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {\"2026-09-23\": 1, \"2026-09-28\": 1, \"2026-09-30\": 1, \"2026-10-02\": 1, \"2026-10-07\": 1, \"2026-10-09\": 1, \"2026-10-12\": 1, \"2026-10-14\": 1, \"2026-10-16\": 1, \"2026-10-19\": 1, \"2026-10-21\": 1, \"2026-10-23\": 1}}, \"11 2K10 (Ca 1 - T3,5,7)\": {\"className\": \"11 2K10 (Ca 1 - T3,5,7)\", \"subject\": \"Toán 11\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 4\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-10-03\", \"endDate\": \"2026-10-24\", \"daysOfWeek\": [2, 4, 6], \"sessionStates\": {\"2026-10-03\": 1, \"2026-10-06\": 1, \"2026-10-08\": 1, \"2026-10-10\": 1, \"2026-10-13\": 1, \"2026-10-15\": 1, \"2026-10-17\": 1, \"2026-10-20\": 1, \"2026-10-22\": 1, \"2026-10-24\": 1}}, \"11 2K10 (Ca 2 - T2,4,6)\": {\"className\": \"11 2K10 (Ca 2 - T2,4,6)\", \"subject\": \"Toán 11\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 4\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-10-02\", \"endDate\": \"2026-10-23\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {\"2026-10-02\": 1, \"2026-10-05\": 1, \"2026-10-07\": 1, \"2026-10-09\": 1, \"2026-10-12\": 1, \"2026-10-14\": 1, \"2026-10-16\": 1, \"2026-10-19\": 1, \"2026-10-21\": 1, \"2026-10-23\": 1}}, \"10 2K11 (Ca 1 - T2,4,6)\": {\"className\": \"10 2K11 (Ca 1 - T2,4,6)\", \"subject\": \"Toán 10\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 3\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-21\", \"endDate\": \"2026-10-19\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {\"2026-09-21\": 1, \"2026-09-25\": 1, \"2026-09-28\": 1, \"2026-09-30\": 1, \"2026-10-02\": 1, \"2026-10-05\": 1, \"2026-10-07\": 1, \"2026-10-09\": 1, \"2026-10-12\": 1, \"2026-10-14\": 1, \"2026-10-16\": 1, \"2026-10-19\": 1}}, \"10 2K11 (Ca 2 - T3,5,7)\": {\"className\": \"10 2K11 (Ca 2 - T3,5,7)\", \"subject\": \"Toán 10\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 3\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-26\", \"endDate\": \"2026-10-20\", \"daysOfWeek\": [2, 4, 6], \"sessionStates\": {\"2026-09-26\": 1, \"2026-09-29\": 1, \"2026-10-01\": 1, \"2026-10-03\": 1, \"2026-10-06\": 1, \"2026-10-08\": 1, \"2026-10-10\": 1, \"2026-10-13\": 1, \"2026-10-15\": 1, \"2026-10-17\": 1, \"2026-10-20\": 1}}, \"10 2K11 (Ca 3 - Đợt 2)\": {\"className\": \"10 2K11 (Ca 3 - Đợt 2)\", \"subject\": \"Toán 10\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 2\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-29\", \"endDate\": \"2026-10-10\", \"daysOfWeek\": [2, 4, 6], \"sessionStates\": {\"2026-09-29\": 1, \"2026-10-01\": 1, \"2026-10-03\": 1, \"2026-10-06\": 1, \"2026-10-08\": 1, \"2026-10-10\": 1}}, \"9 2K12\": {\"className\": \"9 2K12\", \"subject\": \"Toán 9\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 3\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-17\", \"endDate\": \"2026-10-10\", \"daysOfWeek\": [2, 4, 6], \"sessionStates\": {\"2026-09-17\": 1, \"2026-09-19\": 1, \"2026-09-22\": 1, \"2026-09-26\": 1, \"2026-10-01\": 1, \"2026-10-06\": 1, \"2026-10-08\": 1, \"2026-10-10\": 1}}, \"8 2K13\": {\"className\": \"8 2K13\", \"subject\": \"Toán 8\", \"periodLabel\": \"Tháng 1/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-01-01\", \"endDate\": \"2026-01-31\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {}}, \"7 2K14 (Ca 1 - T9-10)\": {\"className\": \"7 2K14 (Ca 1 - T9-10)\", \"subject\": \"Toán 7\", \"periodLabel\": \"Tháng 9-10/2026\", \"batchLabel\": \"ĐỢT 3\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-09-25\", \"endDate\": \"2026-10-09\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {\"2026-09-25\": 1, \"2026-09-28\": 1, \"2026-09-30\": 1, \"2026-10-02\": 1, \"2026-10-05\": 1, \"2026-10-07\": 1, \"2026-10-09\": 1}}, \"7 2K14 (Ca 2 - T7-8)\": {\"className\": \"7 2K14 (Ca 2 - T7-8)\", \"subject\": \"Toán 7\", \"periodLabel\": \"Tháng 7-8/2026\", \"batchLabel\": \"ĐỢT 2\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-07-06\", \"endDate\": \"2026-07-31\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {\"2026-07-06\": 1, \"2026-07-08\": 1, \"2026-07-10\": 1, \"2026-07-17\": 1, \"2026-07-20\": 1, \"2026-07-22\": 1, \"2026-07-24\": 1, \"2026-07-27\": 1, \"2026-07-29\": 1, \"2026-07-31\": 1}}, \"6 (Ca 1 - T4-5)\": {\"className\": \"6 (Ca 1 - T4-5)\", \"subject\": \"Toán 6\", \"periodLabel\": \"Tháng 4-5/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-04-26\", \"endDate\": \"2026-05-13\", \"daysOfWeek\": [1, 3, 5, 0], \"sessionStates\": {\"2026-04-26\": 1, \"2026-04-27\": 1, \"2026-04-29\": 1, \"2026-05-04\": 1, \"2026-05-06\": 1, \"2026-05-08\": 1, \"2026-05-11\": 1, \"2026-05-13\": 1}}, \"6 (Na và Nin)\": {\"className\": \"6 (Na và Nin)\", \"subject\": \"Toán 6\", \"periodLabel\": \"Tháng 8/2025 - 1/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2025-08-22\", \"endDate\": \"2026-01-18\", \"daysOfWeek\": [1, 5, 6, 0], \"sessionStates\": {\"2025-08-22\": 1, \"2025-08-24\": 1, \"2025-08-25\": 1, \"2025-08-30\": 1, \"2025-08-31\": 1, \"2025-09-06\": 1, \"2025-09-07\": 1, \"2025-09-14\": 1, \"2025-09-21\": 1, \"2025-09-28\": 1, \"2025-10-04\": 1, \"2025-10-05\": 1, \"2025-10-11\": 1, \"2025-10-12\": 1, \"2025-10-25\": 1, \"2025-10-26\": 1, \"2025-11-02\": 1, \"2025-11-15\": 1, \"2025-11-16\": 1, \"2025-11-22\": 1, \"2025-11-23\": 1, \"2025-11-29\": 1, \"2025-11-30\": 1, \"2025-12-06\": 1, \"2025-12-07\": 1, \"2025-12-13\": 1, \"2025-12-14\": 1, \"2025-12-20\": 1, \"2025-12-21\": 1, \"2025-12-27\": 1, \"2025-12-28\": 1, \"2026-01-18\": 1}}, \"12 2K8 (Ca 1 - T2,4,6,CN)\": {\"className\": \"12 2K8 (Ca 1 - T2,4,6,CN)\", \"subject\": \"Toán 12\", \"periodLabel\": \"Tháng 5-6/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-05-03\", \"endDate\": \"2026-06-07\", \"daysOfWeek\": [1, 3, 5, 0], \"sessionStates\": {\"2026-05-03\": 1, \"2026-05-06\": 1, \"2026-05-08\": 1, \"2026-05-10\": 1, \"2026-05-13\": 1, \"2026-05-15\": 1, \"2026-05-17\": 1, \"2026-05-20\": 1, \"2026-05-22\": 1, \"2026-05-24\": 1, \"2026-05-25\": 1, \"2026-05-27\": 1, \"2026-05-29\": 1, \"2026-05-31\": 1, \"2026-06-01\": 1, \"2026-06-03\": 1, \"2026-06-05\": 1, \"2026-06-07\": 1}}, \"12 2K8 (Ca 2 - T3,5,7,CN)\": {\"className\": \"12 2K8 (Ca 2 - T3,5,7,CN)\", \"subject\": \"Toán 12\", \"periodLabel\": \"Tháng 5-6/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-05-05\", \"endDate\": \"2026-06-07\", \"daysOfWeek\": [2, 4, 6, 0], \"sessionStates\": {\"2026-05-05\": 1, \"2026-05-07\": 1, \"2026-05-09\": 1, \"2026-05-12\": 1, \"2026-05-14\": 1, \"2026-05-16\": 1, \"2026-05-19\": 1, \"2026-05-21\": 1, \"2026-05-23\": 1, \"2026-05-24\": 1, \"2026-05-26\": 1, \"2026-05-28\": 1, \"2026-05-30\": 1, \"2026-05-31\": 1, \"2026-06-02\": 1, \"2026-06-04\": 1, \"2026-06-06\": 1, \"2026-06-07\": 1}}, \"9 2K11 (Ca 1 - T3,5,7)\": {\"className\": \"9 2K11 (Ca 1 - T3,5,7)\", \"subject\": \"Toán 9\", \"periodLabel\": \"Tháng 5-6/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-05-12\", \"endDate\": \"2026-06-09\", \"daysOfWeek\": [2, 4, 6], \"sessionStates\": {\"2026-05-12\": 1, \"2026-05-14\": 1, \"2026-05-16\": 1, \"2026-05-19\": 1, \"2026-05-21\": 1, \"2026-05-23\": 1, \"2026-05-26\": 1, \"2026-05-28\": 1, \"2026-05-30\": 1, \"2026-06-02\": 1, \"2026-06-04\": 1, \"2026-06-09\": 1}}, \"9 2K11 (Ca 2 - T2,4,6)\": {\"className\": \"9 2K11 (Ca 2 - T2,4,6)\", \"subject\": \"Toán 9\", \"periodLabel\": \"Tháng 5-6/2026\", \"batchLabel\": \"ĐỢT 1\", \"status\": \"Đang diễn ra\", \"startDate\": \"2026-05-06\", \"endDate\": \"2026-06-03\", \"daysOfWeek\": [1, 3, 5], \"sessionStates\": {\"2026-05-06\": 1, \"2026-05-08\": 1, \"2026-05-11\": 1, \"2026-05-13\": 1, \"2026-05-15\": 1, \"2026-05-18\": 1, \"2026-05-20\": 1, \"2026-05-25\": 1, \"2026-05-27\": 1, \"2026-05-29\": 1, \"2026-06-01\": 1, \"2026-06-03\": 1}}}",
+    "classSchedulesJson": "{\"9 2K12\":{\"className\":\"9 2K12\",\"subject\":\"Toán 9\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-17\",\"endDate\":\"2026-10-10\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-17\":1,\"2026-09-19\":1,\"2026-09-22\":1,\"2026-09-26\":1,\"2026-10-01\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1}},\"12B 2K9\":{\"className\":\"12B 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 5\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-26\",\"endDate\":\"2026-10-22\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-26\":1,\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1,\"2026-10-22\":1}},\"12A 2K9\":{\"className\":\"12A 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 5\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-23\",\"endDate\":\"2026-10-23\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-23\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1,\"2026-10-21\":1,\"2026-10-23\":1}},\"11B 2K10\":{\"className\":\"11B 2K10\",\"subject\":\"Toán 11\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 4\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-03\",\"endDate\":\"2026-10-24\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1,\"2026-10-22\":1,\"2026-10-24\":1}},\"11A 2K10\":{\"className\":\"11A 2K10\",\"subject\":\"Toán 11\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 4\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-02\",\"endDate\":\"2026-10-23\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1,\"2026-10-21\":1,\"2026-10-23\":1}},\"10A 2K11\":{\"className\":\"10A 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-21\",\"endDate\":\"2026-10-19\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-21\":1,\"2026-09-25\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1}},\"7 2K14\":{\"className\":\"7 2K14\",\"subject\":\"Toán 7\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-25\",\"endDate\":\"2026-10-09\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-25\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1}},\"7 Onl\":{\"className\":\"7 Onl\",\"subject\":\"Toán 7\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2025-08-22\",\"endDate\":\"2026-01-18\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2025-08-22\":1,\"2025-08-25\":1,\"2025-08-27\":1,\"2025-08-29\":1,\"2025-09-01\":1,\"2025-09-03\":1,\"2025-09-05\":1,\"2025-09-08\":1,\"2025-09-10\":1,\"2025-09-12\":1,\"2025-09-15\":1,\"2025-09-17\":1,\"2025-09-19\":1,\"2025-09-22\":1}},\"12 nháp\":{\"className\":\"12 nháp\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}},\"10B 2K11\":{\"className\":\"10B 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-26\",\"endDate\":\"2026-10-20\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-26\":1,\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1}},\"10C 2K11\":{\"className\":\"10C 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 2\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-29\",\"endDate\":\"2026-10-10\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1}},\"8A 2K13\":{\"className\":\"8A 2K13\",\"subject\":\"Toán 8\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-02\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}},\"8B 2K13\":{\"className\":\"8B 2K13\",\"subject\":\"Toán 8\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-08-01\",\"endDate\":\"2026-10-31\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{}},\"12D\":{\"className\":\"12D\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}}}",
     "classHistoryJson": "[]",
-    "studentMetaJson": "{\"HS001\": {\"startDate\": \"2026-09-26\"}, \"HS002\": {\"startDate\": \"2026-09-26\"}, \"HS003\": {\"startDate\": \"2026-09-26\"}, \"HS004\": {\"startDate\": \"2026-09-26\"}, \"HS005\": {\"startDate\": \"2026-09-26\"}, \"HS006\": {\"startDate\": \"2026-09-26\"}, \"HS007\": {\"startDate\": \"2026-09-26\"}, \"HS008\": {\"startDate\": \"2026-09-26\"}, \"HS009\": {\"startDate\": \"2026-09-26\"}, \"HS010\": {\"startDate\": \"2026-09-26\"}, \"HS011\": {\"startDate\": \"2026-09-23\"}, \"HS012\": {\"startDate\": \"2026-09-23\"}, \"HS013\": {\"startDate\": \"2026-09-23\"}, \"HS014\": {\"startDate\": \"2026-09-23\"}, \"HS015\": {\"startDate\": \"2026-09-23\"}, \"HS016\": {\"startDate\": \"2026-09-23\"}, \"HS017\": {\"startDate\": \"2026-10-03\"}, \"HS018\": {\"startDate\": \"2026-10-03\"}, \"HS019\": {\"startDate\": \"2026-10-03\"}, \"HS020\": {\"startDate\": \"2026-10-03\"}, \"HS021\": {\"startDate\": \"2026-10-03\"}, \"HS022\": {\"startDate\": \"2026-10-03\"}, \"HS023\": {\"startDate\": \"2026-10-03\"}, \"HS024\": {\"startDate\": \"2026-10-03\"}, \"HS025\": {\"startDate\": \"2026-10-03\"}, \"HS026\": {\"startDate\": \"2026-10-03\"}, \"HS027\": {\"startDate\": \"2026-10-03\"}, \"HS028\": {\"startDate\": \"2026-10-03\"}, \"HS029\": {\"startDate\": \"2026-10-03\"}, \"HS030\": {\"startDate\": \"2026-10-03\"}, \"HS031\": {\"startDate\": \"2026-10-03\"}, \"HS032\": {\"startDate\": \"2026-10-03\"}, \"HS033\": {\"startDate\": \"2026-10-03\"}, \"HS034\": {\"startDate\": \"2026-10-03\"}, \"HS035\": {\"startDate\": \"2026-10-03\"}, \"HS036\": {\"startDate\": \"2026-10-03\"}, \"HS037\": {\"startDate\": \"2026-10-03\"}, \"HS038\": {\"startDate\": \"2026-10-02\"}, \"HS039\": {\"startDate\": \"2026-10-02\"}, \"HS040\": {\"startDate\": \"2026-10-02\"}, \"HS041\": {\"startDate\": \"2026-10-02\"}, \"HS042\": {\"startDate\": \"2026-10-02\"}, \"HS043\": {\"startDate\": \"2026-10-02\"}, \"HS044\": {\"startDate\": \"2026-10-02\"}, \"HS045\": {\"startDate\": \"2026-10-02\"}, \"HS046\": {\"startDate\": \"2026-10-02\"}, \"HS047\": {\"startDate\": \"2026-10-02\"}, \"HS048\": {\"startDate\": \"2026-10-02\"}, \"HS049\": {\"startDate\": \"2026-10-02\"}, \"HS050\": {\"startDate\": \"2026-10-02\"}, \"HS051\": {\"startDate\": \"2026-10-02\"}, \"HS052\": {\"startDate\": \"2026-09-21\"}, \"HS053\": {\"startDate\": \"2026-09-21\"}, \"HS054\": {\"startDate\": \"2026-09-21\"}, \"HS055\": {\"startDate\": \"2026-09-21\"}, \"HS056\": {\"startDate\": \"2026-09-21\"}, \"HS057\": {\"startDate\": \"2026-09-21\"}, \"HS058\": {\"startDate\": \"2026-09-21\"}, \"HS059\": {\"startDate\": \"2026-09-21\"}, \"HS060\": {\"startDate\": \"2026-09-21\"}, \"HS061\": {\"startDate\": \"2026-09-21\"}, \"HS062\": {\"startDate\": \"2026-09-26\"}, \"HS063\": {\"startDate\": \"2026-09-26\"}, \"HS064\": {\"startDate\": \"2026-09-26\"}, \"HS065\": {\"startDate\": \"2026-09-26\"}, \"HS066\": {\"startDate\": \"2026-09-26\"}, \"HS067\": {\"startDate\": \"2026-09-26\"}, \"HS068\": {\"startDate\": \"2026-09-26\"}, \"HS069\": {\"startDate\": \"2026-09-26\"}, \"HS070\": {\"startDate\": \"2026-09-26\"}, \"HS071\": {\"startDate\": \"2026-09-26\"}, \"HS072\": {\"startDate\": \"2026-09-26\"}, \"HS073\": {\"startDate\": \"2026-09-26\"}, \"HS074\": {\"startDate\": \"2026-09-26\"}, \"HS075\": {\"startDate\": \"2026-09-26\"}, \"HS076\": {\"startDate\": \"2026-09-29\"}, \"HS077\": {\"startDate\": \"2026-09-29\"}, \"HS078\": {\"startDate\": \"2026-09-29\"}, \"HS079\": {\"startDate\": \"2026-09-29\"}, \"HS080\": {\"startDate\": \"2026-09-17\"}, \"HS081\": {\"startDate\": \"2026-09-17\"}, \"HS082\": {\"startDate\": \"2026-01-01\"}, \"HS083\": {\"startDate\": \"2026-01-01\"}, \"HS084\": {\"startDate\": \"2026-09-25\"}, \"HS085\": {\"startDate\": \"2026-09-25\"}, \"HS086\": {\"startDate\": \"2026-09-25\"}, \"HS087\": {\"startDate\": \"2026-09-25\"}, \"HS088\": {\"startDate\": \"2026-07-06\"}, \"HS089\": {\"startDate\": \"2026-07-06\"}, \"HS090\": {\"startDate\": \"2026-04-26\"}, \"HS091\": {\"startDate\": \"2026-04-26\"}, \"HS092\": {\"startDate\": \"2026-04-26\"}, \"HS093\": {\"startDate\": \"2026-04-26\"}, \"HS094\": {\"startDate\": \"2025-08-22\"}, \"HS095\": {\"startDate\": \"2026-05-03\"}, \"HS096\": {\"startDate\": \"2026-05-03\"}, \"HS097\": {\"startDate\": \"2026-05-03\"}, \"HS098\": {\"startDate\": \"2026-05-03\"}, \"HS099\": {\"startDate\": \"2026-05-03\"}, \"HS100\": {\"startDate\": \"2026-05-03\"}, \"HS101\": {\"startDate\": \"2026-05-03\"}, \"HS102\": {\"startDate\": \"2026-05-03\"}, \"HS103\": {\"startDate\": \"2026-05-05\"}, \"HS104\": {\"startDate\": \"2026-05-05\"}, \"HS105\": {\"startDate\": \"2026-05-05\"}, \"HS106\": {\"startDate\": \"2026-05-05\"}, \"HS107\": {\"startDate\": \"2026-05-05\"}, \"HS108\": {\"startDate\": \"2026-05-05\"}, \"HS109\": {\"startDate\": \"2026-05-05\"}, \"HS110\": {\"startDate\": \"2026-05-05\"}, \"HS111\": {\"startDate\": \"2026-05-05\"}, \"HS112\": {\"startDate\": \"2026-05-05\"}, \"HS113\": {\"startDate\": \"2026-05-05\"}, \"HS114\": {\"startDate\": \"2026-05-05\"}, \"HS115\": {\"startDate\": \"2026-05-05\"}, \"HS116\": {\"startDate\": \"2026-05-05\"}, \"HS117\": {\"startDate\": \"2026-05-05\"}, \"HS118\": {\"startDate\": \"2026-05-05\"}, \"HS119\": {\"startDate\": \"2026-05-05\"}, \"HS120\": {\"startDate\": \"2026-05-05\"}, \"HS121\": {\"startDate\": \"2026-05-05\"}, \"HS122\": {\"startDate\": \"2026-05-05\"}, \"HS123\": {\"startDate\": \"2026-05-12\"}, \"HS124\": {\"startDate\": \"2026-05-12\"}, \"HS125\": {\"startDate\": \"2026-05-12\"}, \"HS126\": {\"startDate\": \"2026-05-12\"}, \"HS127\": {\"startDate\": \"2026-05-06\"}, \"HS128\": {\"startDate\": \"2026-05-06\"}, \"HS129\": {\"startDate\": \"2026-05-06\"}, \"HS130\": {\"startDate\": \"2026-05-06\"}}"
+    "studentMetaJson": "{\"HS001\":{\"startDate\":\"2026-09-26\"},\"HS002\":{\"startDate\":\"2026-09-26\"},\"HS003\":{\"startDate\":\"2026-09-26\"},\"HS004\":{\"startDate\":\"2026-09-26\"},\"HS005\":{\"startDate\":\"2026-09-26\"},\"HS006\":{\"startDate\":\"2026-09-26\"},\"HS007\":{\"startDate\":\"2026-09-26\"},\"HS008\":{\"startDate\":\"2026-09-26\"},\"HS009\":{\"startDate\":\"2026-09-26\"},\"HS010\":{\"startDate\":\"2026-09-26\"},\"HS011\":{\"startDate\":\"2026-09-23\"},\"HS012\":{\"startDate\":\"2026-09-23\"},\"HS013\":{\"startDate\":\"2026-09-23\"},\"HS014\":{\"startDate\":\"2026-09-23\"},\"HS015\":{\"startDate\":\"2026-09-23\"},\"HS016\":{\"startDate\":\"2026-09-23\"},\"HS017\":{\"startDate\":\"2026-10-03\"},\"HS018\":{\"startDate\":\"2026-10-03\"},\"HS019\":{\"startDate\":\"2026-10-03\"},\"HS020\":{\"startDate\":\"2026-10-03\"},\"HS021\":{\"startDate\":\"2026-10-03\"},\"HS022\":{\"startDate\":\"2026-10-03\"},\"HS023\":{\"startDate\":\"2026-10-03\"},\"HS024\":{\"startDate\":\"2026-10-03\"},\"HS025\":{\"startDate\":\"2026-10-03\"},\"HS026\":{\"startDate\":\"2026-10-03\"},\"HS027\":{\"startDate\":\"2026-10-03\"},\"HS028\":{\"startDate\":\"2026-10-03\"},\"HS029\":{\"startDate\":\"2026-10-03\"},\"HS030\":{\"startDate\":\"2026-10-03\"},\"HS031\":{\"startDate\":\"2026-10-03\"},\"HS032\":{\"startDate\":\"2026-10-03\"},\"HS033\":{\"startDate\":\"2026-10-03\"},\"HS034\":{\"startDate\":\"2026-10-03\"},\"HS035\":{\"startDate\":\"2026-10-03\"},\"HS036\":{\"startDate\":\"2026-10-03\"},\"HS037\":{\"startDate\":\"2026-10-03\"},\"HS038\":{\"startDate\":\"2026-10-02\"},\"HS039\":{\"startDate\":\"2026-10-02\"},\"HS040\":{\"startDate\":\"2026-10-02\"},\"HS041\":{\"startDate\":\"2026-10-02\"},\"HS042\":{\"startDate\":\"2026-10-02\"},\"HS043\":{\"startDate\":\"2026-10-02\"},\"HS044\":{\"startDate\":\"2026-10-02\"},\"HS045\":{\"startDate\":\"2026-10-02\"},\"HS046\":{\"startDate\":\"2026-10-02\"},\"HS047\":{\"startDate\":\"2026-10-02\"},\"HS048\":{\"startDate\":\"2026-10-02\"},\"HS049\":{\"startDate\":\"2026-10-02\"},\"HS050\":{\"startDate\":\"2026-10-02\"},\"HS051\":{\"startDate\":\"2026-10-02\"},\"HS052\":{\"startDate\":\"2026-09-21\"},\"HS053\":{\"startDate\":\"2026-09-21\"},\"HS054\":{\"startDate\":\"2026-09-21\"},\"HS055\":{\"startDate\":\"2026-09-21\"},\"HS056\":{\"startDate\":\"2026-09-21\"},\"HS057\":{\"startDate\":\"2026-09-21\"},\"HS058\":{\"startDate\":\"2026-09-21\"},\"HS059\":{\"startDate\":\"2026-09-21\"},\"HS060\":{\"startDate\":\"2026-09-21\"},\"HS061\":{\"startDate\":\"2026-09-21\"},\"HS062\":{\"startDate\":\"2026-09-26\"},\"HS063\":{\"startDate\":\"2026-09-26\"},\"HS064\":{\"startDate\":\"2026-09-26\"},\"HS065\":{\"startDate\":\"2026-09-26\"},\"HS066\":{\"startDate\":\"2026-09-26\"},\"HS067\":{\"startDate\":\"2026-09-26\"},\"HS068\":{\"startDate\":\"2026-09-26\"},\"HS069\":{\"startDate\":\"2026-09-26\"},\"HS070\":{\"startDate\":\"2026-09-26\"},\"HS071\":{\"startDate\":\"2026-09-26\"},\"HS072\":{\"startDate\":\"2026-09-26\"},\"HS073\":{\"startDate\":\"2026-09-26\"},\"HS074\":{\"startDate\":\"2026-09-26\"},\"HS075\":{\"startDate\":\"2026-09-26\"},\"HS076\":{\"startDate\":\"2026-09-29\"},\"HS077\":{\"startDate\":\"2026-09-29\"},\"HS078\":{\"startDate\":\"2026-09-29\"},\"HS079\":{\"startDate\":\"2026-09-29\"},\"HS080\":{\"startDate\":\"2026-09-17\"},\"HS081\":{\"startDate\":\"2026-09-17\"},\"HS082\":{\"startDate\":\"2026-01-01\"},\"HS083\":{\"startDate\":\"2026-01-01\"},\"HS084\":{\"startDate\":\"2026-09-25\"},\"HS085\":{\"startDate\":\"2026-09-25\"},\"HS086\":{\"startDate\":\"2026-09-25\"},\"HS087\":{\"startDate\":\"2026-09-25\",\"feeMode\":\"FIXED\"},\"HS088\":{\"startDate\":\"2026-10-23\"},\"HS089\":{\"startDate\":\"2026-07-06\"},\"HS090\":{\"startDate\":\"2026-04-26\"},\"HS091\":{\"startDate\":\"2026-04-26\"},\"HS092\":{\"startDate\":\"2026-04-26\"},\"HS093\":{\"startDate\":\"2026-04-26\"},\"HS094\":{\"startDate\":\"2025-08-22\"},\"HS095\":{\"startDate\":\"2026-05-03\",\"manualPaidBatches\":0},\"HS096\":{\"startDate\":\"2026-10-23\"},\"HS097\":{\"startDate\":\"2026-05-03\"},\"HS098\":{\"startDate\":\"2026-05-03\"},\"HS099\":{\"startDate\":\"2026-05-03\"},\"HS100\":{\"startDate\":\"2026-10-23\",\"manualPaidBatches\":0},\"HS101\":{\"startDate\":\"2026-05-03\",\"manualPaidBatches\":0},\"HS102\":{\"startDate\":\"2026-05-03\"},\"HS103\":{\"startDate\":\"2026-05-05\"},\"HS104\":{\"startDate\":\"2026-05-05\"},\"HS105\":{\"startDate\":\"2026-05-05\"},\"HS106\":{\"startDate\":\"2026-05-05\"},\"HS107\":{\"startDate\":\"2026-05-05\"},\"HS108\":{\"startDate\":\"2026-05-05\"},\"HS109\":{\"startDate\":\"2026-05-05\"},\"HS110\":{\"startDate\":\"2026-05-05\"},\"HS111\":{\"startDate\":\"2026-05-05\"},\"HS112\":{\"startDate\":\"2026-05-05\"},\"HS113\":{\"startDate\":\"2026-05-05\"},\"HS114\":{\"startDate\":\"2026-05-05\"},\"HS115\":{\"startDate\":\"2026-05-05\"},\"HS116\":{\"startDate\":\"2026-05-05\"},\"HS117\":{\"startDate\":\"2026-05-05\"},\"HS118\":{\"startDate\":\"2026-05-05\"},\"HS119\":{\"startDate\":\"2026-05-05\"},\"HS120\":{\"startDate\":\"2026-05-05\"},\"HS121\":{\"startDate\":\"2026-05-05\"},\"HS122\":{\"startDate\":\"2026-05-05\"},\"HS123\":{\"startDate\":\"2026-05-12\"},\"HS124\":{\"startDate\":\"2026-05-12\"},\"HS125\":{\"startDate\":\"2026-05-12\"},\"HS126\":{\"startDate\":\"2026-05-12\"},\"HS127\":{\"startDate\":\"2026-05-06\"},\"HS128\":{\"startDate\":\"2026-05-06\"},\"HS129\":{\"startDate\":\"2026-05-06\"},\"HS130\":{\"startDate\":\"2026-05-06\"},\"HS131\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0,\"transferHistory\":[{\"id\":\"TR_1792952496662\",\"transferredAt\":\"2026-10-26 01:21\",\"mode\":\"NEW_BATCH\",\"fromClass\":\"12 nháp\",\"toClass\":\"12D\",\"startDate\":\"2026-10-01\",\"batchLabel\":\"ĐỢT SỐ 1\",\"periodLabel\":\"Tháng 9-10/2026\",\"dateRange\":\"01/10/2026 → 30/11/2026\",\"tuitionFee\":5000,\"status\":\"Chưa đóng\",\"note\":\"\"}]},\"HS132\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS133\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS134\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS135\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS136\":{\"startDate\":\"2026-01-01\",\"manualPaidBatches\":0},\"HS137\":{\"startDate\":\"2026-10-02\",\"manualPaidBatches\":0},\"HS138\":{\"startDate\":\"2026-08-01\",\"manualPaidBatches\":0},\"HS139\":{\"startDate\":\"2025-08-22\",\"manualPaidBatches\":0,\"feeMode\":\"PER_SESSION\",\"perSessionRate\":150000,\"lastSessionCount\":14}}",
+    "deletedClassesJson": "[\"12 2K8 (Ca 2 - T3,5,7,CN)\",\"12 2K8 (Ca 1 - T2,4,6,CN)\",\"6 (Ca 1 - T4-5)\",\"9 2K11 (Ca 2 - T2,4,6)\",\"9 2K11 (Ca 1 - T3,5,7)\",\"12 2K9 (Ca 1 - T3,5,7)\",\"12 2K9 (Ca 2 - T2,4,6)\",\"11 2K10 (Ca 1 - T3,5,7)\",\"11 2K10 (Ca 2 - T2,4,6)\",\"10 2K11 (Ca 1 - T2,4,6)\",\"10 2K11 (Ca 3 - Đợt 2)\",\"10 2K11 (Ca 2 - T3,5,7)\",\"7 2K14 (Ca 2 - T7-8)\",\"7 2K14 (Ca 1 - T9-10)\",\"6 (Na và Nin)\",\"11B1\",\"10A2\",\"10A1\",\"10AB 2K11\",\"8 2K13\",\"8B 2k13\"]",
+    "exactAmountsJson": "{\"ST_1792759143949\":5000,\"HS100\":5000,\"ST_1792759460958\":5000,\"HS101\":5000,\"YC_STK_1792759710531\":5000,\"ST_1792772564014\":5000,\"HS131\":5000,\"ST_1792772572149\":5000,\"HS132\":5000,\"ST_1792830254167\":10000,\"HS133\":10000,\"ST_1792830646018\":5000,\"HS134\":5000,\"ST_1792854291574\":5000,\"HS135\":5000,\"ST_1792938304725\":0,\"HS138\":0,\"GD_f242a99e-082f-4f02-a5c5-a9830efe19c5\":3000,\"GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\":7000,\"GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb\":11000,\"GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20\":3000,\"GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\":2000,\"GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934\":5000,\"GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\":5000,\"GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\":5000,\"GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881\":10000,\"GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\":5000}",
+    "dismissedNotifIdsJson": "[\"GD_1792936777067\",\"GD_1792936402245\",\"GD_1792936393856\",\"GD_1792936290375\",\"GD_5c44b4be-751b-4e28-ae00-0e8b47eaad90\",\"GD_1792934741181\",\"GD_1792934740649\",\"GD_f242a99e-082f-4f02-a5c5-a9830efe19c5\",\"GD_SEPAY_2b73f513-c00b-45d8-980c-a02d496578d0\",\"GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\",\"GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb\",\"GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20\",\"GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\",\"GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934\",\"GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\",\"GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\",\"GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881\",\"GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\"]"
   },
   "students": [
     {
-        "id": "ST_REAL_001",
-        "studentCode": "HS001",
-        "fullName": "Quốc Việt",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_002",
-        "studentCode": "HS002",
-        "fullName": "Đăng Quang",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã chuyển khoản học phí"
-    },
-    {
-        "id": "ST_REAL_003",
-        "studentCode": "HS003",
-        "fullName": "Rum",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã chuyển khoản học phí"
-    },
-    {
-        "id": "ST_REAL_004",
-        "studentCode": "HS004",
-        "fullName": "Châu Hiểu Nhiên",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_005",
-        "studentCode": "HS005",
-        "fullName": "Ngọc Uyên",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_006",
-        "studentCode": "HS006",
-        "fullName": "Đặng Hân",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_007",
-        "studentCode": "HS007",
-        "fullName": "Tuệ Nhi",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_008",
-        "studentCode": "HS008",
-        "fullName": "Nhật Phi",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_009",
-        "studentCode": "HS009",
-        "fullName": "Bảo Thy",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_010",
-        "studentCode": "HS010",
-        "fullName": "Khánh Vy",
-        "className": "12B 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_011",
-        "studentCode": "HS011",
-        "fullName": "Hoàng Như",
-        "className": "12A 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_012",
-        "studentCode": "HS012",
-        "fullName": "Gia Khánh",
-        "className": "12A 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_013",
-        "studentCode": "HS013",
-        "fullName": "Tùng",
-        "className": "12A 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_014",
-        "studentCode": "HS014",
-        "fullName": "Bảo An",
-        "className": "12A 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_015",
-        "studentCode": "HS015",
-        "fullName": "Thủy Tiên",
-        "className": "12A 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Tiên thiếu đợt 4"
-    },
-    {
-        "id": "ST_REAL_016",
-        "studentCode": "HS016",
-        "fullName": "Lâm Anh",
-        "className": "12A 2K9",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_017",
-        "studentCode": "HS017",
-        "fullName": "Bảo Nghi",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_018",
-        "studentCode": "HS018",
-        "fullName": "Linh Đan",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_019",
-        "studentCode": "HS019",
-        "fullName": "Nhân",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_020",
-        "studentCode": "HS020",
-        "fullName": "Nhật Lâm",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_021",
-        "studentCode": "HS021",
-        "fullName": "Hoàng Ngân",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_022",
-        "studentCode": "HS022",
-        "fullName": "Trúc Phương",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_023",
-        "studentCode": "HS023",
-        "fullName": "Bảo Trân",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_024",
-        "studentCode": "HS024",
-        "fullName": "Gia Huy",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_025",
-        "studentCode": "HS025",
-        "fullName": "Anh Thi",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_026",
-        "studentCode": "HS026",
-        "fullName": "Hà My",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_027",
-        "studentCode": "HS027",
-        "fullName": "Khánh Ngân",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_028",
-        "studentCode": "HS028",
-        "fullName": "Gia Minh",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_029",
-        "studentCode": "HS029",
-        "fullName": "Trần Hạnh",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_030",
-        "studentCode": "HS030",
-        "fullName": "Tường Vy",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_031",
-        "studentCode": "HS031",
-        "fullName": "Ngọc Hân",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_032",
-        "studentCode": "HS032",
-        "fullName": "Đức Thắng",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_033",
-        "studentCode": "HS033",
-        "fullName": "Phương Ngọc",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_034",
-        "studentCode": "HS034",
-        "fullName": "Vĩnh Khang",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_035",
-        "studentCode": "HS035",
-        "fullName": "Khánh Vy",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_036",
-        "studentCode": "HS036",
-        "fullName": "Khánh Quỳnh",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_037",
-        "studentCode": "HS037",
-        "fullName": "Phương Thảo",
-        "className": "11B 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_038",
-        "studentCode": "HS038",
-        "fullName": "Gia Phát",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã chuyển khoản học phí"
-    },
-    {
-        "id": "ST_REAL_039",
-        "studentCode": "HS039",
-        "fullName": "Mai Khanh",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_040",
-        "studentCode": "HS040",
-        "fullName": "Ngọc Nhi",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_041",
-        "studentCode": "HS041",
-        "fullName": "Như Quỳnh",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_042",
-        "studentCode": "HS042",
-        "fullName": "Hồng Nhung",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_043",
-        "studentCode": "HS043",
-        "fullName": "Quỳnh Như",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_044",
-        "studentCode": "HS044",
-        "fullName": "Quang Tiến",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_045",
-        "studentCode": "HS045",
-        "fullName": "Thái Sơn",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_046",
-        "studentCode": "HS046",
-        "fullName": "Trường Sơn",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_047",
-        "studentCode": "HS047",
-        "fullName": "Nguyễn Thi",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_048",
-        "studentCode": "HS048",
-        "fullName": "Khánh Ngọc",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_049",
-        "studentCode": "HS049",
-        "fullName": "Quỳnh Nghi",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_050",
-        "studentCode": "HS050",
-        "fullName": "Ngọc Nhi (LQĐ)",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_051",
-        "studentCode": "HS051",
-        "fullName": "Quỳnh Anh",
-        "className": "11A 2K10",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_052",
-        "studentCode": "HS052",
-        "fullName": "Hoài Giang",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_053",
-        "studentCode": "HS053",
-        "fullName": "Nhật Duy",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_054",
-        "studentCode": "HS054",
-        "fullName": "Trương Nhi",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_055",
-        "studentCode": "HS055",
-        "fullName": "Hồ Kiên",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_056",
-        "studentCode": "HS056",
-        "fullName": "Quốc Khánh",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_057",
-        "studentCode": "HS057",
-        "fullName": "Khánh Ny",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_058",
-        "studentCode": "HS058",
-        "fullName": "Hà Giang",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_059",
-        "studentCode": "HS059",
-        "fullName": "Huỳnh Huyền",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_060",
-        "studentCode": "HS060",
-        "fullName": "Nhã Uyên",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_061",
-        "studentCode": "HS061",
-        "fullName": "Khánh Phương",
-        "className": "10A 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_062",
-        "studentCode": "HS062",
-        "fullName": "Phạm Đ Khoa",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_063",
-        "studentCode": "HS063",
-        "fullName": "Nguyễn Đ Khoa",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_064",
-        "studentCode": "HS064",
-        "fullName": "Ngọc Bảo",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_065",
-        "studentCode": "HS065",
-        "fullName": "Hữu Thời",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_066",
-        "studentCode": "HS066",
-        "fullName": "Bảo Trân",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_067",
-        "studentCode": "HS067",
-        "fullName": "Thanh Nhàn",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_068",
-        "studentCode": "HS068",
-        "fullName": "Phước An",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Thiếu 1"
-    },
-    {
-        "id": "ST_REAL_069",
-        "studentCode": "HS069",
-        "fullName": "Khánh An",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_070",
-        "studentCode": "HS070",
-        "fullName": "Diệu Linh",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã chuyển khoản học phí"
-    },
-    {
-        "id": "ST_REAL_071",
-        "studentCode": "HS071",
-        "fullName": "Thành Nam",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_072",
-        "studentCode": "HS072",
-        "fullName": "Minh Nguyệt",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_073",
-        "studentCode": "HS073",
-        "fullName": "Thanh Nhi",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_074",
-        "studentCode": "HS074",
-        "fullName": "Bảo Trân Sinh",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_075",
-        "studentCode": "HS075",
-        "fullName": "Thảo Vy",
-        "className": "10C 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã chuyển khoản học phí"
-    },
-    {
-        "id": "ST_REAL_076",
-        "studentCode": "HS076",
-        "fullName": "Ánh Linh",
-        "className": "10B 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_077",
-        "studentCode": "HS077",
-        "fullName": "Ánh Ngọc",
-        "className": "10B 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_078",
-        "studentCode": "HS078",
-        "fullName": "Minh Bảo",
-        "className": "10B 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_079",
-        "studentCode": "HS079",
-        "fullName": "Phan Quý",
-        "className": "10B 2K11",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_080",
-        "studentCode": "HS080",
-        "fullName": "Thịnh",
-        "className": "9 2K12",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_081",
-        "studentCode": "HS081",
-        "fullName": "Thanh",
-        "className": "9 2K12",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_082",
-        "studentCode": "HS082",
-        "fullName": "Helen",
-        "className": "8 2K13",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 1/2026",
-        "tuitionFee": 200000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_083",
-        "studentCode": "HS083",
-        "fullName": "Phú",
-        "className": "8 2K13",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 1/2026",
-        "tuitionFee": 700000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_084",
-        "studentCode": "HS084",
-        "fullName": "Phú Quý",
-        "className": "7 2K14",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_085",
-        "studentCode": "HS085",
-        "fullName": "Quỳnh Như",
-        "className": "7 2K14",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_086",
-        "studentCode": "HS086",
-        "fullName": "Quốc Hưng",
-        "className": "7 2K14",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_087",
-        "studentCode": "HS087",
-        "fullName": "Khang",
-        "className": "7 2K14",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_088",
-        "studentCode": "HS088",
-        "fullName": "Gia Khang",
-        "className": "7 Onl",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 7-8/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_089",
-        "studentCode": "HS089",
-        "fullName": "Nhật Khoa",
-        "className": "7 Onl",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 7-8/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_090",
-        "studentCode": "HS090",
-        "fullName": "Gia Khang",
-        "className": "6 (Ca 1 - T4-5)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 4-5/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_091",
-        "studentCode": "HS091",
-        "fullName": "Phú Quý",
-        "className": "6 (Ca 1 - T4-5)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 4-5/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_092",
-        "studentCode": "HS092",
-        "fullName": "Thanh Huy",
-        "className": "6 (Ca 1 - T4-5)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 4-5/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_093",
-        "studentCode": "HS093",
-        "fullName": "Như",
-        "className": "6 (Ca 1 - T4-5)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 4-5/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_094",
-        "studentCode": "HS094",
-        "fullName": "Na và Nin",
-        "className": "6 (Na và Nin)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 8/2025 - 1/2026",
-        "tuitionFee": 9600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "300k/buổi (32 buổi) - Đã nhận 10.000.000 ₫"
-    },
-    {
-        "id": "ST_REAL_095",
-        "studentCode": "HS095",
-        "fullName": "Ngọc Ánh",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_096",
-        "studentCode": "HS096",
-        "fullName": "Thanh Phong",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_097",
-        "studentCode": "HS097",
-        "fullName": "Gia Khánh",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_098",
-        "studentCode": "HS098",
-        "fullName": "Ngân",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_099",
-        "studentCode": "HS099",
-        "fullName": "Trà My",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_100",
-        "studentCode": "HS100",
-        "fullName": "Ngọc Khánh",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_101",
-        "studentCode": "HS101",
-        "fullName": "Trường An",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_102",
-        "studentCode": "HS102",
-        "fullName": "Phương Nguyên",
-        "className": "12 2K8 (Ca 1 - T2,4,6,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_103",
-        "studentCode": "HS103",
-        "fullName": "Khánh Giang",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_104",
-        "studentCode": "HS104",
-        "fullName": "Khánh Ngân",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_105",
-        "studentCode": "HS105",
-        "fullName": "Phương Linh",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_106",
-        "studentCode": "HS106",
-        "fullName": "Thảo My",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_107",
-        "studentCode": "HS107",
-        "fullName": "Gia An",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_108",
-        "studentCode": "HS108",
-        "fullName": "Đăng Khoa",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_109",
-        "studentCode": "HS109",
-        "fullName": "Phương Anh",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_110",
-        "studentCode": "HS110",
-        "fullName": "Trung Hiếu",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_111",
-        "studentCode": "HS111",
-        "fullName": "Bảo Quân",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_112",
-        "studentCode": "HS112",
-        "fullName": "Hồng Anh",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_113",
-        "studentCode": "HS113",
-        "fullName": "Bảo Trân",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_114",
-        "studentCode": "HS114",
-        "fullName": "Hoàng Nhân",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_115",
-        "studentCode": "HS115",
-        "fullName": "Quỳnh Như",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_116",
-        "studentCode": "HS116",
-        "fullName": "Phương Duyên",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_117",
-        "studentCode": "HS117",
-        "fullName": "Gia Khánh",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_118",
-        "studentCode": "HS118",
-        "fullName": "Quốc Duy",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_119",
-        "studentCode": "HS119",
-        "fullName": "Bảo Trí",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_120",
-        "studentCode": "HS120",
-        "fullName": "Linh Đan",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_121",
-        "studentCode": "HS121",
-        "fullName": "Gia Hân",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_122",
-        "studentCode": "HS122",
-        "fullName": "Như Ý",
-        "className": "12 2K8 (Ca 2 - T3,5,7,CN)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "b"
-    },
-    {
-        "id": "ST_REAL_123",
-        "studentCode": "HS123",
-        "fullName": "Thanh Nhi",
-        "className": "9 2K11 (Ca 1 - T3,5,7)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_124",
-        "studentCode": "HS124",
-        "fullName": "Phong",
-        "className": "9 2K11 (Ca 1 - T3,5,7)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_125",
-        "studentCode": "HS125",
-        "fullName": "Nam",
-        "className": "9 2K11 (Ca 1 - T3,5,7)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_126",
-        "studentCode": "HS126",
-        "fullName": "Trân",
-        "className": "9 2K11 (Ca 1 - T3,5,7)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_127",
-        "studentCode": "HS127",
-        "fullName": "Khánh",
-        "className": "9 2K11 (Ca 2 - T2,4,6)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_128",
-        "studentCode": "HS128",
-        "fullName": "Giang",
-        "className": "9 2K11 (Ca 2 - T2,4,6)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_REAL_129",
-        "studentCode": "HS129",
-        "fullName": "Ly",
-        "className": "9 2K11 (Ca 2 - T2,4,6)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": ""
-    },
-    {
-        "id": "ST_REAL_130",
-        "studentCode": "HS130",
-        "fullName": "Khoa",
-        "className": "9 2K11 (Ca 2 - T2,4,6)",
-        "parentName": "",
-        "parentPhone": "",
-        "period": "Tháng 5-6/2026",
-        "tuitionFee": 600000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-23 01:20",
-        "note": "Đã thanh toán"
-    },
-    {
-        "id": "ST_1792772564014",
-        "studentCode": "HS131",
-        "fullName": "Đô",
-        "className": "12 nháp",
-        "parentName": "PH em Đô",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 5000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-24 21:42",
-        "note": "Đã CK thành công vào STK: +5.000₫"
-    },
-    {
-        "id": "ST_1792772572149",
-        "studentCode": "HS132",
-        "fullName": "thuần",
-        "className": "12 nháp",
-        "parentName": "PH em thuần",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 5000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-24 21:42",
-        "note": "Đã CK thành công vào STK: +5.000₫"
-    },
-    {
-        "id": "ST_1792830254167",
-        "studentCode": "HS133",
-        "fullName": "Nguyệt",
-        "className": "12 nháp",
-        "parentName": "PH em Nguyệt",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 10000,
-        "status": "Đã hoàn thành",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-24 22:42",
-        "note": "Đã CK thành công vào STK: +10.000₫"
-    },
-    {
-        "id": "ST_1792830646018",
-        "studentCode": "HS134",
-        "fullName": "Minh",
-        "className": "12 nháp",
-        "parentName": "PH em Minh",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 5000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-24 22:50",
-        "note": ""
-    },
-    {
-        "id": "ST_1792854291574",
-        "studentCode": "HS135",
-        "fullName": "Tuấn",
-        "className": "12 nháp",
-        "parentName": "PH em Tuấn",
-        "parentPhone": "",
-        "period": "Tháng 9-10/2026",
-        "tuitionFee": 5000,
-        "status": "Chưa đóng",
-        "receiptUrl": "",
-        "updatedAt": "2026-10-24 23:00",
-        "note": ""
+      "id": "ST_REAL_001",
+      "studentCode": "HS001",
+      "fullName": "Quốc Việt",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:51:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_002",
+      "studentCode": "HS002",
+      "fullName": "Đăng Quang",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản học phí"
+    },
+    {
+      "id": "ST_REAL_003",
+      "studentCode": "HS003",
+      "fullName": "Rum",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:33:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản học phí"
+    },
+    {
+      "id": "ST_REAL_004",
+      "studentCode": "HS004",
+      "fullName": "Châu Hiểu Nhiên",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_005",
+      "studentCode": "HS005",
+      "fullName": "Ngọc Uyên",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_006",
+      "studentCode": "HS006",
+      "fullName": "Đặng Hân",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_007",
+      "studentCode": "HS007",
+      "fullName": "Tuệ Nhi",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_008",
+      "studentCode": "HS008",
+      "fullName": "Nhật Phi",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_009",
+      "studentCode": "HS009",
+      "fullName": "Bảo Thy",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_010",
+      "studentCode": "HS010",
+      "fullName": "Khánh Vy",
+      "className": "12B 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_011",
+      "studentCode": "HS011",
+      "fullName": "Hoàng Như",
+      "className": "12A 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_012",
+      "studentCode": "HS012",
+      "fullName": "Gia Khánh",
+      "className": "12A 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_013",
+      "studentCode": "HS013",
+      "fullName": "Tùng",
+      "className": "12A 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:13:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_014",
+      "studentCode": "HS014",
+      "fullName": "Bảo An",
+      "className": "12A 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:13:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_015",
+      "studentCode": "HS015",
+      "fullName": "Thủy Tiên",
+      "className": "12A 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_016",
+      "studentCode": "HS016",
+      "fullName": "Lâm Anh",
+      "className": "12A 2K9",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:13:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_017",
+      "studentCode": "HS017",
+      "fullName": "Bảo Nghi",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã nhận CK: +600.000 ₫ (2026-10-25 20:40:14)"
+    },
+    {
+      "id": "ST_REAL_018",
+      "studentCode": "HS018",
+      "fullName": "Linh Đan",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_019",
+      "studentCode": "HS019",
+      "fullName": "Nhân",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_020",
+      "studentCode": "HS020",
+      "fullName": "Nhật Lâm",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_021",
+      "studentCode": "HS021",
+      "fullName": "Hoàng Ngân",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_022",
+      "studentCode": "HS022",
+      "fullName": "Trúc Phương",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_023",
+      "studentCode": "HS023",
+      "fullName": "Bảo Trân",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_024",
+      "studentCode": "HS024",
+      "fullName": "Gia Huy",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_025",
+      "studentCode": "HS025",
+      "fullName": "Anh Thi",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_026",
+      "studentCode": "HS026",
+      "fullName": "Hà My",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_027",
+      "studentCode": "HS027",
+      "fullName": "Khánh Ngân",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_028",
+      "studentCode": "HS028",
+      "fullName": "Gia Minh",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_029",
+      "studentCode": "HS029",
+      "fullName": "Trần Hạnh",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_030",
+      "studentCode": "HS030",
+      "fullName": "Tường Vy",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_031",
+      "studentCode": "HS031",
+      "fullName": "Ngọc Hân",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_032",
+      "studentCode": "HS032",
+      "fullName": "Đức Thắng",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_033",
+      "studentCode": "HS033",
+      "fullName": "Phương Ngọc",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_034",
+      "studentCode": "HS034",
+      "fullName": "Vĩnh Khang",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_035",
+      "studentCode": "HS035",
+      "fullName": "Khánh Vy",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_036",
+      "studentCode": "HS036",
+      "fullName": "Khánh Quỳnh",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_037",
+      "studentCode": "HS037",
+      "fullName": "Phương Thảo",
+      "className": "11B 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_038",
+      "studentCode": "HS038",
+      "fullName": "Gia Phát",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản học phí"
+    },
+    {
+      "id": "ST_REAL_039",
+      "studentCode": "HS039",
+      "fullName": "Mai Khanh",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_040",
+      "studentCode": "HS040",
+      "fullName": "Ngọc Nhi",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_041",
+      "studentCode": "HS041",
+      "fullName": "Như Quỳnh",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_042",
+      "studentCode": "HS042",
+      "fullName": "Hồng Nhung",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_043",
+      "studentCode": "HS043",
+      "fullName": "Quỳnh Như",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_044",
+      "studentCode": "HS044",
+      "fullName": "Quang Tiến",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_045",
+      "studentCode": "HS045",
+      "fullName": "Thái Sơn",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_046",
+      "studentCode": "HS046",
+      "fullName": "Trường Sơn",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_047",
+      "studentCode": "HS047",
+      "fullName": "Nguyễn Thi",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_048",
+      "studentCode": "HS048",
+      "fullName": "Khánh Ngọc",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_049",
+      "studentCode": "HS049",
+      "fullName": "Quỳnh Nghi",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_050",
+      "studentCode": "HS050",
+      "fullName": "Ngọc Nhi (LQĐ)",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_051",
+      "studentCode": "HS051",
+      "fullName": "Quỳnh Anh",
+      "className": "11A 2K10",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_052",
+      "studentCode": "HS052",
+      "fullName": "Hoài Giang",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_053",
+      "studentCode": "HS053",
+      "fullName": "Nhật Duy",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_054",
+      "studentCode": "HS054",
+      "fullName": "Trương Nhi",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_055",
+      "studentCode": "HS055",
+      "fullName": "Hồ Kiên",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:51:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản"
+    },
+    {
+      "id": "ST_REAL_056",
+      "studentCode": "HS056",
+      "fullName": "Quốc Khánh",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_057",
+      "studentCode": "HS057",
+      "fullName": "Khánh Ny",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_058",
+      "studentCode": "HS058",
+      "fullName": "Hà Giang",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_059",
+      "studentCode": "HS059",
+      "fullName": "Huỳnh Huyền",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_060",
+      "studentCode": "HS060",
+      "fullName": "Nhã Uyên",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_061",
+      "studentCode": "HS061",
+      "fullName": "Khánh Phương",
+      "className": "10A 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_062",
+      "studentCode": "HS062",
+      "fullName": "Phạm Đ Khoa",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:53:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản"
+    },
+    {
+      "id": "ST_REAL_063",
+      "studentCode": "HS063",
+      "fullName": "Nguyễn Đ Khoa",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_064",
+      "studentCode": "HS064",
+      "fullName": "Ngọc Bảo",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_065",
+      "studentCode": "HS065",
+      "fullName": "Hữu Thời",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_066",
+      "studentCode": "HS066",
+      "fullName": "Bảo Trân",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_067",
+      "studentCode": "HS067",
+      "fullName": "Thanh Nhàn",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_068",
+      "studentCode": "HS068",
+      "fullName": "Phước An",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:53:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_069",
+      "studentCode": "HS069",
+      "fullName": "Khánh An",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_070",
+      "studentCode": "HS070",
+      "fullName": "Diệu Linh",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản học phí"
+    },
+    {
+      "id": "ST_REAL_071",
+      "studentCode": "HS071",
+      "fullName": "Thành Nam",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_072",
+      "studentCode": "HS072",
+      "fullName": "Minh Nguyệt",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_073",
+      "studentCode": "HS073",
+      "fullName": "Thanh Nhi",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_074",
+      "studentCode": "HS074",
+      "fullName": "Bảo Trân Sinh",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:53:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản"
+    },
+    {
+      "id": "ST_REAL_075",
+      "studentCode": "HS075",
+      "fullName": "Thảo Vy",
+      "className": "10B 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản học phí"
+    },
+    {
+      "id": "ST_REAL_076",
+      "studentCode": "HS076",
+      "fullName": "Ánh Linh",
+      "className": "10C 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_077",
+      "studentCode": "HS077",
+      "fullName": "Ánh Ngọc",
+      "className": "10C 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_078",
+      "studentCode": "HS078",
+      "fullName": "Minh Bảo",
+      "className": "10C 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_079",
+      "studentCode": "HS079",
+      "fullName": "Phan Quý",
+      "className": "10C 2K11",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:59:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản"
+    },
+    {
+      "id": "ST_REAL_080",
+      "studentCode": "HS080",
+      "fullName": "Thịnh",
+      "className": "9 2K12",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 21:06:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_081",
+      "studentCode": "HS081",
+      "fullName": "Thanh",
+      "className": "9 2K12",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 21:06:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_REAL_083",
+      "studentCode": "HS083",
+      "fullName": "Phú",
+      "className": "8A 2K13",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:25:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản"
+    },
+    {
+      "id": "ST_REAL_084",
+      "studentCode": "HS084",
+      "fullName": "Phú Quý",
+      "className": "7 2K14",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_085",
+      "studentCode": "HS085",
+      "fullName": "Quỳnh Như",
+      "className": "7 2K14",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
+      "note": "Đã thanh toán"
+    },
+    {
+      "id": "ST_REAL_087",
+      "studentCode": "HS087",
+      "fullName": "Khang",
+      "className": "7 2K14",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Mon Oct 26 2026 00:21:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792772564014",
+      "studentCode": "HS131",
+      "fullName": "Đô",
+      "className": "12D",
+      "parentName": "PH em Đô",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 5000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "2026-10-26 01:21",
+      "note": "Chuyển từ Lớp 12 nháp"
+    },
+    {
+      "id": "ST_1792772572149",
+      "studentCode": "HS132",
+      "fullName": "thuần",
+      "className": "12 nháp",
+      "parentName": "PH em thuần",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 5000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Mon Oct 26 2026 00:49:17 GMT+0700 (Giờ Đông Dương)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792830254167",
+      "studentCode": "HS133",
+      "fullName": "Nguyệt",
+      "className": "12 nháp",
+      "parentName": "PH em Nguyệt",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 10000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Mon Oct 26 2026 00:49:16 GMT+0700 (Giờ Đông Dương)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792830646018",
+      "studentCode": "HS134",
+      "fullName": "Minh",
+      "className": "12 nháp",
+      "parentName": "PH em Minh",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 5000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sat Oct 24 2026 22:50:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792854291574",
+      "studentCode": "HS135",
+      "fullName": "Tuấn",
+      "className": "12 nháp",
+      "parentName": "PH em Tuấn",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 5000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sat Oct 24 2026 23:00:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792934734152",
+      "studentCode": "HS136",
+      "fullName": "Kiệt",
+      "className": "8A 2K13",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Đã hoàn thành",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:25:00 GMT+0700 (Indochina Time)",
+      "note": "Đã chuyển khoản"
+    },
+    {
+      "id": "ST_1792934887374",
+      "studentCode": "HS137",
+      "fullName": "Bảo Ngân",
+      "className": "8A 2K13",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 600000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 20:29:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792938304725",
+      "studentCode": "HS138",
+      "fullName": "Chi",
+      "className": "8B 2K13",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 0,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Sun Oct 25 2026 21:25:00 GMT+0700 (Indochina Time)",
+      "note": ""
+    },
+    {
+      "id": "ST_1792948831121",
+      "studentCode": "HS139",
+      "fullName": "Mai Chi",
+      "className": "7 Onl",
+      "parentName": "",
+      "parentPhone": "",
+      "period": "Tháng 9-10/2026",
+      "tuitionFee": 2100000,
+      "status": "Chưa đóng",
+      "receiptUrl": "",
+      "updatedAt": "Mon Oct 26 2026 00:21:00 GMT+0700 (Indochina Time)",
+      "note": ""
     }
-],
+  ],
   "transactions": [
     {
-      "id": "GD_REAL_001",
-      "date": "2026-10-22",
+      "id": "GD_1792936777067",
+      "date": "2026-10-25 20:59:37",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS005 Ngọc Uyên (12 2K9 (Ca 1 - T3,5,7))",
-      "studentCode": "HS005",
+      "description": "Thu học phí HS079 - Phan Quý (Lớp 10C 2K11 - Tháng 9-10/2026)",
+      "studentCode": "HS079",
       "method": "Chuyển khoản",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Quản lý"
     },
     {
-      "id": "GD_REAL_002",
-      "date": "2026-10-22",
+      "id": "GD_1792936402245",
+      "date": "2026-10-25 20:53:22",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS006 Đặng Hân (12 2K9 (Ca 1 - T3,5,7))",
-      "studentCode": "HS006",
+      "description": "Thu học phí HS074 - Bảo Trân Sinh (Lớp 10B 2K11 - Tháng 9-10/2026)",
+      "studentCode": "HS074",
       "method": "Chuyển khoản",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Quản lý"
     },
     {
-      "id": "GD_REAL_003",
-      "date": "2026-10-22",
+      "id": "GD_1792936393856",
+      "date": "2026-10-25 20:53:13",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS007 Tuệ Nhi (12 2K9 (Ca 1 - T3,5,7))",
-      "studentCode": "HS007",
+      "description": "Thu học phí HS062 - Phạm Đ Khoa (Lớp 10B 2K11 - Tháng 9-10/2026)",
+      "studentCode": "HS062",
       "method": "Chuyển khoản",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Quản lý"
     },
     {
-      "id": "GD_REAL_004",
-      "date": "2026-10-23",
+      "id": "GD_1792936290375",
+      "date": "2026-10-25 20:51:30",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS011 Hoàng Như (12 2K9 (Ca 2 - T2,4,6))",
-      "studentCode": "HS011",
+      "description": "Thu học phí HS055 - Hồ Kiên (Lớp 10A 2K11 - Tháng 9-10/2026)",
+      "studentCode": "HS055",
       "method": "Chuyển khoản",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Quản lý"
     },
     {
-      "id": "GD_REAL_005",
-      "date": "2026-10-23",
+      "id": "GD_5c44b4be-751b-4e28-ae00-0e8b47eaad90",
+      "date": "2026-10-25 20:40:14",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS012 Gia Khánh (12 2K9 (Ca 2 - T2,4,6))",
-      "studentCode": "HS012",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_006",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS013 Tùng (12 2K9 (Ca 2 - T2,4,6))",
-      "studentCode": "HS013",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_007",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS014 Bảo An (12 2K9 (Ca 2 - T2,4,6))",
-      "studentCode": "HS014",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_008",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 5) - HS016 Lâm Anh (12 2K9 (Ca 2 - T2,4,6))",
-      "studentCode": "HS016",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_009",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS018 Linh Đan (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS018",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_010",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS019 Nhân (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS019",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_011",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS020 Nhật Lâm (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS020",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_012",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS021 Hoàng Ngân (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS021",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_013",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS022 Trúc Phương (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS022",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_014",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS024 Gia Huy (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS024",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_015",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS025 Anh Thi (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS025",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_016",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS026 Hà My (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS026",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_017",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS027 Khánh Ngân (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS027",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_018",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS028 Gia Minh (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS028",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_019",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS029 Trần Hạnh (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS029",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_020",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS031 Ngọc Hân (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS031",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_021",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS034 Vĩnh Khang (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS034",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_022",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS035 Khánh Vy (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS035",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_023",
-      "date": "2026-10-22",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS036 Khánh Quỳnh (11 2K10 (Ca 1 - T3,5,7))",
-      "studentCode": "HS036",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_024",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS040 Ngọc Nhi (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS040",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_025",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS041 Như Quỳnh (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS041",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_026",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS042 Hồng Nhung (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS042",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_027",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS043 Quỳnh Như (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS043",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_028",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS046 Trường Sơn (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS046",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_029",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS049 Quỳnh Nghi (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS049",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_030",
-      "date": "2026-10-23",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 4) - HS050 Ngọc Nhi (LQĐ) (11 2K10 (Ca 2 - T2,4,6))",
-      "studentCode": "HS050",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_031",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS052 Hoài Giang (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS052",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_032",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS053 Nhật Duy (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS053",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_033",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS054 Trương Nhi (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS054",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_034",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS056 Quốc Khánh (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS056",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_035",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS058 Hà Giang (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS058",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_036",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS060 Nhã Uyên (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS060",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_037",
-      "date": "2026-10-19",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS061 Khánh Phương (10 2K11 (Ca 1 - T2,4,6))",
-      "studentCode": "HS061",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_038",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS063 Nguyễn Đ Khoa (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS063",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_039",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS064 Ngọc Bảo (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS064",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_040",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS065 Hữu Thời (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS065",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_041",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS066 Bảo Trân (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS066",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_042",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS067 Thanh Nhàn (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS067",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_043",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS069 Khánh An (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS069",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_044",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS071 Thành Nam (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS071",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_045",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS072 Minh Nguyệt (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS072",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_046",
-      "date": "2026-10-20",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS073 Thanh Nhi (10 2K11 (Ca 2 - T3,5,7))",
-      "studentCode": "HS073",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_047",
-      "date": "2026-10-10",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 2) - HS076 Ánh Linh (10 2K11 (Ca 3 - Đợt 2))",
-      "studentCode": "HS076",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_048",
-      "date": "2026-10-10",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 2) - HS077 Ánh Ngọc (10 2K11 (Ca 3 - Đợt 2))",
-      "studentCode": "HS077",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_049",
-      "date": "2026-10-10",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS080 Thịnh (9 2K12)",
-      "studentCode": "HS080",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_050",
-      "date": "2026-10-10",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS081 Thanh (9 2K12)",
-      "studentCode": "HS081",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_051",
-      "date": "2026-10-09",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS084 Phú Quý (7 2K14 (Ca 1 - T9-10))",
-      "studentCode": "HS084",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_052",
-      "date": "2026-10-09",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 9-10/2026 (ĐỢT 3) - HS085 Quỳnh Như (7 2K14 (Ca 1 - T9-10))",
-      "studentCode": "HS085",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_053",
-      "date": "2026-07-31",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 7-8/2026 (ĐỢT 2) - HS089 Nhật Khoa (7 2K14 (Ca 2 - T7-8))",
-      "studentCode": "HS089",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_054",
-      "date": "2026-05-13",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 4-5/2026 (ĐỢT 1) - HS091 Phú Quý (6 (Ca 1 - T4-5))",
-      "studentCode": "HS091",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_055",
-      "date": "2026-05-13",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 4-5/2026 (ĐỢT 1) - HS092 Thanh Huy (6 (Ca 1 - T4-5))",
-      "studentCode": "HS092",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_056",
-      "date": "2026-05-13",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 4-5/2026 (ĐỢT 1) - HS093 Như (6 (Ca 1 - T4-5))",
-      "studentCode": "HS093",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_057",
-      "date": "2026-01-18",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 9600000,
-      "description": "Thu học phí Tháng 8/2025 - 1/2026 (ĐỢT 1) - HS094 Na và Nin (6 (Na và Nin))",
-      "studentCode": "HS094",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_058",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS095 Ngọc Ánh (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS095",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_059",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS096 Thanh Phong (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS096",
-      "method": "Chuyển khoản",
+      "description": "Tự động lưu CK SePay: HS017 - Bảo Nghi (Tháng 9-10/2026) | ND: MBVCB.16716754463.798969.TRAN THI BICH HANH chuyen tien.CT tu 0051000503735 TRAN THI BICH HANH toi 9",
+      "studentCode": "HS017",
+      "method": "Chuyển khoản STK (Tự động)",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_060",
-      "date": "2026-06-07",
+      "id": "GD_1792934741181",
+      "date": "2026-10-25 20:25:41",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS097 Gia Khánh (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS097",
+      "description": "Thu học phí HS136 - Kiệt (Lớp 8A 2K13 - Tháng 9-10/2026)",
+      "studentCode": "HS136",
       "method": "Chuyển khoản",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Quản lý"
     },
     {
-      "id": "GD_REAL_061",
-      "date": "2026-06-07",
+      "id": "GD_1792934740649",
+      "date": "2026-10-25 20:25:40",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS098 Ngân (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS098",
+      "description": "Thu học phí HS083 - Phú (Lớp 8A 2K13 - Tháng 9-10/2026)",
+      "studentCode": "HS083",
       "method": "Chuyển khoản",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Quản lý"
     },
     {
-      "id": "GD_REAL_062",
-      "date": "2026-06-07",
+      "id": "GD_f242a99e-082f-4f02-a5c5-a9830efe19c5",
+      "date": "2026-10-25 19:43:58",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS099 Trà My (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS099",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_063",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS100 Ngọc Khánh (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS100",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_064",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS101 Trường An (12 2K8 (Ca 1 - T2,4,6,CN))",
-      "studentCode": "HS101",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_065",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS103 Khánh Giang (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS103",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_066",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS104 Khánh Ngân (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS104",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_067",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS105 Phương Linh (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS105",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_068",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS106 Thảo My (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS106",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_069",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS107 Gia An (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS107",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_070",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS108 Đăng Khoa (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS108",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_071",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS109 Phương Anh (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS109",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_072",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS110 Trung Hiếu (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS110",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_073",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS111 Bảo Quân (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS111",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_074",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS112 Hồng Anh (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS112",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_075",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS113 Bảo Trân (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS113",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_076",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS114 Hoàng Nhân (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS114",
-      "method": "Chuyển khoản",
-      "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
-    },
-    {
-      "id": "GD_REAL_077",
-      "date": "2026-06-07",
-      "type": "Thu",
-      "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS115 Quỳnh Như (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS115",
-      "method": "Chuyển khoản",
+      "amount": 3000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HUYNH THANH CHI chuyen tien",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_078",
-      "date": "2026-06-07",
+      "id": "GD_SEPAY_2b73f513-c00b-45d8-980c-a02d496578d0",
+      "date": "2026-10-25 19:42:23",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS116 Phương Duyên (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS116",
-      "method": "Chuyển khoản",
+      "amount": 20000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): hoc phi",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_079",
-      "date": "2026-06-07",
+      "id": "GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59",
+      "date": "2026-10-25 19:09:21",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS117 Gia Khánh (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS117",
-      "method": "Chuyển khoản",
+      "amount": 7000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HUYNH THANH CHI chuyen tien",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_080",
-      "date": "2026-06-07",
+      "id": "GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb",
+      "date": "2026-10-25 17:00:42",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS120 Linh Đan (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS120",
-      "method": "Chuyển khoản",
+      "amount": 11000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HOC PHI",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_081",
-      "date": "2026-06-07",
+      "id": "GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20",
+      "date": "2026-10-25 17:00:19",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS121 Gia Hân (12 2K8 (Ca 2 - T3,5,7,CN))",
-      "studentCode": "HS121",
-      "method": "Chuyển khoản",
+      "amount": 3000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HOC PHI",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_082",
-      "date": "2026-06-09",
+      "id": "GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554",
+      "date": "2026-10-25 16:32:11",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS123 Thanh Nhi (9 2K11 (Ca 1 - T3,5,7))",
-      "studentCode": "HS123",
-      "method": "Chuyển khoản",
+      "amount": 2000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HOC PHI",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_083",
-      "date": "2026-06-09",
+      "id": "GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934",
+      "date": "2026-10-25 16:15:30",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS124 Phong (9 2K11 (Ca 1 - T3,5,7))",
-      "studentCode": "HS124",
-      "method": "Chuyển khoản",
+      "amount": 5000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HOC PHI",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_084",
-      "date": "2026-06-09",
+      "id": "GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79",
+      "date": "2026-10-25 15:53:17",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS125 Nam (9 2K11 (Ca 1 - T3,5,7))",
-      "studentCode": "HS125",
-      "method": "Chuyển khoản",
+      "amount": 5000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HOC PHI",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_085",
-      "date": "2026-06-03",
+      "id": "GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b",
+      "date": "2026-10-24 22:15:00",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS127 Khánh (9 2K11 (Ca 2 - T2,4,6))",
-      "studentCode": "HS127",
-      "method": "Chuyển khoản",
+      "amount": 5000,
+      "description": "[STK Nháp 5801434567] Tự động lưu CK SePay: HS132 - thuần (Tháng 9-10/2026) | ND: HP HS132 THUAN",
+      "studentCode": "HS132",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_086",
-      "date": "2026-06-03",
+      "id": "GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881",
+      "date": "2026-10-24 21:45:17",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS128 Giang (9 2K11 (Ca 2 - T2,4,6))",
-      "studentCode": "HS128",
-      "method": "Chuyển khoản",
+      "amount": 10000,
+      "description": "[STK Nháp 5801434567] Tự động lưu CK SePay: HS133 - Nguyệt (Tháng 9-10/2026) | ND: HP HS133 NGUYET",
+      "studentCode": "HS133",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     },
     {
-      "id": "GD_REAL_087",
-      "date": "2026-06-03",
+      "id": "GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf",
+      "date": "2026-10-24 21:42:39",
       "type": "Thu",
       "category": "Thu học phí",
-      "amount": 600000,
-      "description": "Thu học phí Tháng 5-6/2026 (ĐỢT 1) - HS130 Khoa (9 2K11 (Ca 2 - T2,4,6))",
-      "studentCode": "HS130",
-      "method": "Chuyển khoản",
+      "amount": 5000,
+      "description": "[STK Nháp 5801434567] Tự động lưu CK SePay: HS131 - Đô (Tháng 9-10/2026) | ND: HP HS131 DO",
+      "studentCode": "HS131",
+      "method": "Chuyển khoản STK Nháp",
       "receiptUrl": "",
-      "createdBy": "Đồng bộ từ Google Sheet"
+      "createdBy": "Tự động từ STK (SePay)"
     }
   ],
   "paymentRequests": []
 };
 }
 
-// ============================================================================
-// BỘ DỮ LIỆU NHÁP MẪU ĐỘC LẬP 100% ĐỂ GỬI CHO BẠN BÈ DÙNG THỬ (SANDBOX MODE)
-// ============================================================================
 function getInitialSandboxDraftState() {
   const sampleClassesConfig = {
     '12A1 - Luyện Thi ĐH (Ca 1 - T2,4,6)': {
@@ -4529,9 +3127,8 @@ async function exitSandboxDraftMode() {
   }
 
   const gasUrl = getGasUrl();
-  if (gasUrl) {
-    syncFromGoogleSheet(false);
-    startLiveBankPolling();
+  if (gasUrl && isAutoSyncEnabled()) {
+    syncAllToGoogleSheet(false);
   }
 
   showToast('Đã quay về Dữ Liệu Thật của bạn (LỚP TOÁN ANH CHÍ)!', 'success');
@@ -4710,12 +3307,13 @@ function bootstrapApp() {
     switchAppMode('admin');
   }
 
-  // Nếu đã cấu hình link Google Sheet thì tự động tải dữ liệu mới nhất về & bật lắng nghe biến động số dư
+  // Chỉ đẩy dữ liệu từ Web lên Google Sheet (Web -> Sheet), không kéo dữ liệu từ Google Sheet về ghi đè Web
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
-    syncFromGoogleSheet(false);
-    startLiveBankPolling();
+    if (isAutoSyncEnabled()) {
+      syncAllToGoogleSheet(false);
+    }
   }
 }
 
@@ -4786,6 +3384,12 @@ function enableSourceProtection() {
 function loadStateFromLocal() {
   try {
     localStorage.removeItem("edupay_app_state_v1");
+    if (!localStorage.getItem("TC_RESTORE_PRE_SHEET_V45")) {
+      localStorage.setItem("TC_RESTORE_PRE_SHEET_V45", "1");
+      const restored = getInitialDemoState();
+      localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(restored));
+      return restored;
+    }
     const raw = localStorage.getItem(STORAGE_KEYS.STATE);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -6486,29 +5090,8 @@ async function submitParentPaymentConfirm(event) {
   const submitBtn = document.getElementById('btn-submit-parent-pay');
   const originalBtnHtml = submitBtn.innerHTML;
   submitBtn.disabled = true;
-  submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>Đang đối soát SePay & gửi xác nhận...</span>`;
+  submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>Đang gửi xác nhận...</span>`;
   lucide.createIcons();
-
-  // Đồng bộ nhanh dữ liệu mới nhất từ Google Sheet / SePay trước khi đối soát để nhận diện ngay giao dịch vừa chuyển
-  const gasUrl = getGasUrl();
-  if (gasUrl && !isSandboxDraftMode) {
-    try {
-      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timer = ctrl ? setTimeout(() => ctrl.abort(), 5500) : null;
-      const liveRes = await fetch(`${gasUrl}?action=getAll&t=${Date.now()}`, {
-        method: 'GET',
-        redirect: 'follow',
-        signal: ctrl ? ctrl.signal : undefined
-      });
-      if (timer) clearTimeout(timer);
-      const liveJson = await liveRes.json();
-      if (liveJson && liveJson.success && liveJson.data) {
-        const reconciled = mergeServerData(liveJson.data);
-        delete reconciled._sepayAutoReconciled;
-        appState = reconciled;
-      }
-    } catch (e) {}
-  }
 
   const studentRecordId = document.getElementById('pay-student-record-id').value;
   let student = studentRecordId ? appState.students.find(s => s.id === studentRecordId) : null;
@@ -10876,10 +9459,12 @@ async function handleRefreshFinanceTransactions(isAuto = false) {
   const icon = document.getElementById('icon-refresh-finance');
   if (icon) icon.classList.add('animate-spin');
   try {
-    await syncFromGoogleSheet(false, true);
     renderAdminTransactions();
     if (!isAuto) {
-      showToast('Đã làm mới dữ liệu thu chi & đồng bộ SePay mới nhất!', 'success');
+      if (getGasUrl() && isAutoSyncEnabled()) {
+        await syncAllToGoogleSheet(false);
+      }
+      showToast('Đã làm mới sổ Thu - Chi & đẩy dữ liệu lên Google Sheet!', 'success');
     }
   } catch (e) {
     console.warn('Lỗi làm mới Thu Chi:', e);
@@ -12391,8 +10976,8 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0';
     if (text) {
       text.textContent = lastSyncTimeStr
-        ? `Đã đồng bộ Google Sheet (${lastSyncTimeStr})`
-        : 'Đã kết nối Google Sheet (2 chiều)';
+        ? `Đã đẩy lên Google Sheet (${lastSyncTimeStr})`
+        : 'Đã kết nối Google Sheet (Web → Sheet)';
     }
     if (quickBtn) {
       quickBtn.classList.remove('hidden');
@@ -12408,8 +10993,8 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-// Đọc dữ liệu từ Google Sheet về Web App (Pull)
-async function syncFromGoogleSheet(showUserToast = true, forceSepay = false) {
+// Chế độ 1 chiều (Web -> Google Sheet): Không lấy dữ liệu từ Google Sheet về ghi đè Web, chỉ đẩy dữ liệu từ Web lên Google Sheet
+async function syncFromGoogleSheet(showUserToast = true) {
   if (isSandboxDraftMode) {
     if (showUserToast) {
       showToast(
@@ -12421,80 +11006,12 @@ async function syncFromGoogleSheet(showUserToast = true, forceSepay = false) {
     return;
   }
 
-  const gasUrl = getGasUrl();
-  if (!gasUrl) {
-    if (showUserToast) {
-      showToast('Bạn chưa dán link Google Apps Script Web App URL trong mục Cài đặt!', 'warning');
-      if (currentMode === 'admin') switchAdminTab('settings');
-    }
-    return;
-  }
-
-  if (!showUserToast && inFlightSheetPushCount > 0) return;
+  if (!showUserToast) return;
 
   const syncIcon = document.getElementById('icon-quick-sync');
   if (syncIcon) syncIcon.classList.add('animate-spin');
-
   try {
-    const pullStartedAt = Date.now();
-    const res = await fetch(`${gasUrl}?action=getAll${forceSepay ? '&forceSepay=1' : ''}&t=${pullStartedAt}`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    const json = await res.json();
-
-    // Nếu người dùng đã chuyển sang Tab Nháp hoặc vừa thêm/sửa dữ liệu cục bộ trong lúc chờ mạng thì không ghi đè ngược
-    if (isSandboxDraftMode) return;
-    if (
-      !showUserToast &&
-      (inFlightSheetPushCount > 0 ||
-        lastLocalMutationAtMs > pullStartedAt ||
-        (typeof isAnyAdminModalOpen === 'function' && isAnyAdminModalOpen()))
-    ) {
-      return;
-    }
-
-    if (json && json.success && json.data) {
-      // Nếu Google Sheet đang hoàn toàn trống (mới tạo lần đầu), hỏi hoặc tự đẩy dữ liệu hiện tại lên
-      const sheetData = json.data;
-      const isEmptySheet =
-        (!sheetData.students || sheetData.students.length === 0) &&
-        (!sheetData.transactions || sheetData.transactions.length === 0);
-
-      if (isEmptySheet && appState.students.length > 0) {
-        await syncAllToGoogleSheet(false);
-        if (showUserToast) {
-          showToast('Sheet mới: Đã khởi tạo các bảng và đẩy dữ liệu từ App lên Google Sheet!', 'success');
-        }
-      } else {
-        const merged = mergeServerData(sheetData);
-        const didReconcileSepay = Boolean(merged._sepayAutoReconciled);
-        delete merged._sepayAutoReconciled;
-        appState = merged;
-        try {
-          if (!showUserToast) isSilentServerSync = true;
-          saveStateToLocal();
-        } finally {
-          isSilentServerSync = false;
-        }
-        if (didReconcileSepay && currentMode === 'admin' && isAdminAuthenticated()) {
-          syncAllToGoogleSheet(false).catch(() => {});
-        }
-        if (showUserToast) {
-          showToast('Đã tải dữ liệu mới nhất từ Google Sheet về App!', 'success');
-        }
-      }
-
-      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      updateSyncStatusBanner(timeStr);
-    } else {
-      throw new Error(json?.message || 'Phản hồi không hợp lệ từ Google Sheet');
-    }
-  } catch (err) {
-    console.error('Lỗi đồng bộ từ Google Sheet:', err);
-    if (showUserToast) {
-      showToast('Không thể kết nối tới Google Sheet. Hãy kiểm tra URL Web App (/exec) và quyền Anyone!', 'error');
-    }
+    await syncAllToGoogleSheet(true);
   } finally {
     if (syncIcon) syncIcon.classList.remove('animate-spin');
   }
@@ -18206,7 +16723,6 @@ async function autoConnectAndVerifySepay(showSuccessToast = true) {
   const stg = appState.settings || {};
   const bin = stg.bankBin || 'BIDV';
   const acc = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
-  const owner = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
   const nowStr = getCurrentDateTimeString();
 
   if (!appState.settings) appState.settings = {};
@@ -18215,60 +16731,11 @@ async function autoConnectAndVerifySepay(showSuccessToast = true) {
 
   startLiveBankPolling();
 
+  // Chế độ 1 chiều (Web -> Sheet): Không lấy dữ liệu từ Google Sheet về ghi đè Web
   const gasUrl = getGasUrl() || DEFAULT_GAS_WEBAPP_URL;
-  let didReconcile = false;
-  if (gasUrl && !isSandboxDraftMode) {
+  if (showSuccessToast && gasUrl && !isSandboxDraftMode) {
     try {
-      const verifyStartedAt = Date.now();
-      const tokenToSend =
-        appState.settings.sepayApiToken && appState.settings.sepayApiToken !== '***MASKED***'
-          ? appState.settings.sepayApiToken
-          : undefined;
-      if (tokenToSend !== undefined || appState.settings.hasSepayApiToken === 'true' || showSuccessToast) {
-        const postRes = await postToGas(gasUrl, {
-          action: 'verifySepayConnection',
-          bankBin: bin,
-          bankAccountNo: acc,
-          bankAccountName: owner,
-          sepayApiToken: tokenToSend,
-          sepayVaByAccJson: appState.settings.sepayVaByAccJson
-        }).catch(() => null);
-        if (
-          postRes &&
-          postRes.success &&
-          postRes.data &&
-          inFlightSheetPushCount === 0 &&
-          lastLocalMutationAtMs <= verifyStartedAt
-        ) {
-          const mergedPost = mergeServerData(postRes.data);
-          didReconcile = Boolean(mergedPost._sepayAutoReconciled);
-          delete mergedPost._sepayAutoReconciled;
-          appState = mergedPost;
-        }
-      }
-      if (!didReconcile && showSuccessToast && inFlightSheetPushCount === 0) {
-        const pullStartedAt = Date.now();
-        const getRes = await fetch(`${gasUrl}?action=getAll&t=${pullStartedAt}`, {
-          method: 'GET',
-          redirect: 'follow'
-        });
-        const getJson = await getRes.json();
-        if (
-          getJson &&
-          getJson.success &&
-          getJson.data &&
-          inFlightSheetPushCount === 0 &&
-          lastLocalMutationAtMs <= pullStartedAt
-        ) {
-          const mergedGet = mergeServerData(getJson.data);
-          didReconcile = Boolean(mergedGet._sepayAutoReconciled);
-          delete mergedGet._sepayAutoReconciled;
-          appState = mergedGet;
-        }
-      }
-      if (didReconcile && currentMode === 'admin' && isAdminAuthenticated()) {
-        await syncAllToGoogleSheet(false).catch(() => {});
-      }
+      await syncAllToGoogleSheet(false).catch(() => {});
     } catch (e) {}
   }
 
@@ -18282,24 +16749,9 @@ async function autoConnectAndVerifySepay(showSuccessToast = true) {
   }
 
   if (showSuccessToast) {
-    const connectedNow = isSepayActuallyConnected(appState);
     const effectiveVa = getEffectiveQrAccountNo(acc, appState.settings);
-    const missingBidvVa = bin === 'BIDV' && !/^96247[A-Z0-9]+$/i.test(effectiveVa) && !appState.settings?.customQrUrl;
-    if (connectedNow && !missingBidvVa) {
-      playTingSound();
-      showToast(
-        `Đã kết nối SePay thành công (${bin} • ${effectiveVa})${didReconcile ? ' & tự động duyệt giao dịch mới!' : '!'}`,
-        'success'
-      );
-    } else {
-      openSepayGuideModal();
-      showToast(
-        !connectedNow
-          ? 'Google Sheet chưa nhận được bảng dữ liệu từ my.sepay.vn! Vui lòng làm 2 bước trong hộp hướng dẫn vừa mở.'
-          : 'Đã nối Google Sheet nhưng BIDV cần nhập mã TK ảo VA (96247...) để SePay báo giao dịch khi quét QR!',
-        'warning'
-      );
-    }
+    playTingSound();
+    showToast(`Đã lưu cấu hình (${bin} • ${effectiveVa}) & đẩy dữ liệu từ Web lên Google Sheet!`, 'success');
   }
 }
 
@@ -18462,157 +16914,25 @@ function isAnyAdminModalOpen() {
   });
 }
 
+// Chế độ 1 chiều (Web -> Google Sheet): Tắt hoàn toàn việc tự động kéo dữ liệu từ Google Sheet về Web
 function startLiveBankPolling() {
-  if (livePollingTimer) clearInterval(livePollingTimer);
-  const checkbox = document.getElementById('setting-live-polling');
-  const isEnabled = checkbox ? checkbox.checked : true;
-  if (!isEnabled) return;
-
+  if (livePollingTimer) {
+    clearInterval(livePollingTimer);
+    livePollingTimer = null;
+  }
   seedCurrentBankTxAsNotified(appState);
-
   const webhookDisplay = document.getElementById('bank-webhook-url-display');
   if (webhookDisplay && getGasUrl()) {
     webhookDisplay.textContent = getGasUrl();
   }
-
-  livePollingTimer = setInterval(async () => {
-    if (isSandboxDraftMode || inFlightSheetPushCount > 0 || isAnyAdminModalOpen()) return;
-    const gasUrl = getGasUrl();
-    if (!gasUrl) return;
-    try {
-      const pullStartedAt = Date.now();
-      const prevPaidSet = new Set(
-        (appState.students || [])
-          .filter(s => s.status === 'Đã hoàn thành')
-          .map(s => s.studentCode + '_' + s.period)
-      );
-
-      const res = await fetch(`${gasUrl}?action=getAll&t=${pullStartedAt}`, {
-        method: 'GET',
-        redirect: 'follow'
-      });
-      const json = await res.json();
-      if (isSandboxDraftMode || inFlightSheetPushCount > 0 || lastLocalMutationAtMs > pullStartedAt || isAnyAdminModalOpen()) return;
-      if (json && json.success && json.data) {
-        const nextState = mergeServerData(json.data);
-        const didReconcileSepay = Boolean(nextState._sepayAutoReconciled);
-        delete nextState._sepayAutoReconciled;
-
-        const notifiedSet = getNotifiedBankTxIds();
-        const deletedSet = getDeletedTxIdsSet(nextState);
-        const dismissedSet = getDismissedNotifIdsSet(nextState);
-
-        // 1. Kiểm tra alert SePay thực sự mới (chưa từng hiển thị thông báo và chưa bị xóa)
-        let trulyNewAlert = null;
-        if (nextState.settings?.lastBankAlertJson) {
-          try {
-            const alertObj = JSON.parse(nextState.settings.lastBankAlertJson);
-            const alertId = String(alertObj?.id || alertObj?.time || '').trim();
-            if (
-              alertId &&
-              !notifiedSet.has(alertId) &&
-              !deletedSet.has(alertId) &&
-              !deletedSet.has('GD_' + alertId) &&
-              !dismissedSet.has(alertId) &&
-              !dismissedSet.has('ALERT::' + alertId) &&
-              !alertObj?.isTest
-            ) {
-              trulyNewAlert = alertObj;
-              markBankTxAsNotified(alertId);
-            }
-          } catch (e) {}
-        }
-
-        // 2. Kiểm tra giao dịch SePay/ngân hàng mới phát sinh (chưa từng hiển thị thông báo)
-        const prevTxIds = new Set((appState.transactions || []).map(t => String(t.id).trim()));
-        const trulyNewTxs = (nextState.transactions || []).filter(t => {
-          if (!t || !t.id) return false;
-          const tid = String(t.id).trim();
-          return !prevTxIds.has(tid) && !notifiedSet.has(tid) && !isSimulatedBankTestItem(t);
-        });
-        trulyNewTxs.forEach(t => markBankTxAsNotified(t.id));
-
-        // 3. Kiểm tra học sinh vừa được tự động gạch nợ học phí mới
-        const newlyPaid = (nextState.students || []).filter(
-          s => s.status === 'Đã hoàn thành' && !prevPaidSet.has(s.studentCode + '_' + s.period)
-        );
-        const trulyNewPaidStudents = newlyPaid.filter(st => {
-          const payKey = `PAID_${st.id}_${st.period || 'cur'}`;
-          if (notifiedSet.has(payKey)) return false;
-          markBankTxAsNotified(payKey);
-          return true;
-        });
-
-        const prevTxCount = (appState.transactions || []).length;
-        const nextTxCount = (nextState.transactions || []).length;
-        const hasNewTx = nextTxCount !== prevTxCount;
-        const prevReqCount = (appState.paymentRequests || []).length;
-        const nextReqCount = (nextState.paymentRequests || []).length;
-        const hasNewReq = nextReqCount !== prevReqCount;
-
-        // Cập nhật appState nếu có thay đổi
-        if (newlyPaid.length > 0 || trulyNewAlert || didReconcileSepay || hasNewTx || hasNewReq) {
-          appState = nextState;
-          try {
-            isSilentServerSync = true;
-            saveStateToLocal();
-          } finally {
-            isSilentServerSync = false;
-          }
-          if (didReconcileSepay && currentMode === 'admin' && isAdminAuthenticated()) {
-            syncAllToGoogleSheet(false).catch(() => {});
-          }
-
-          // CHỈ PHÁT ÂM BÁO VÀ HIỂN THỊ THÔNG BÁO ĐÚNG 1 LẦN DUY NHẤT KHI CÓ SỰ KIỆN MỚI
-          const hasFreshNotification = Boolean(trulyNewAlert || trulyNewTxs.length > 0 || trulyNewPaidStudents.length > 0);
-          if (hasFreshNotification && currentMode === 'admin' && isAdminAuthenticated()) {
-            playTingSound();
-
-            if (trulyNewAlert) {
-              try {
-                const sign = trulyNewAlert.type === 'out' ? '-' : '+';
-                showToast(
-                  `SEPAY BÁO SỐ DƯ (${trulyNewAlert.gateway || 'BIDV'} ${trulyNewAlert.accountNumber || ''}): ${sign}${formatCurrency(trulyNewAlert.amount)} | Số dư mới: ${formatCurrency(
-                    trulyNewAlert.balance ?? getComputedSepayBalance()
-                  )} | ND: ${trulyNewAlert.content}`,
-                  'success'
-                );
-              } catch (e) {}
-            } else if (trulyNewTxs.length > 0) {
-              const firstTx = trulyNewTxs[0];
-              const sign = firstTx.type === 'Chi' ? '-' : '+';
-              showToast(
-                `CHUYỂN KHOẢN MỚI (${firstTx.method || 'SePay'}): ${sign}${formatCurrency(firstTx.amount)} | ${firstTx.description || firstTx.category || 'Giao dịch ngân hàng'}`,
-                'success'
-              );
-            }
-
-            trulyNewPaidStudents.forEach(st => {
-              showToast(
-                `ĐÃ DUYỆT TỰ ĐỘNG: Học sinh ${st.fullName} (${st.studentCode}) vừa hoàn thành học phí (${formatCurrency(
-                  st.tuitionFee
-                )})!`,
-                'success'
-              );
-            });
-          }
-        }
-      }
-    } catch (e) {
-      // Bỏ qua lỗi mạng tạm thời khi polling ngầm
-    }
-  }, 12000);
 }
 
 function toggleLiveBankPolling(enabled) {
-  if (enabled) {
-    startLiveBankPolling();
-    showToast('Đã bật tự động kiểm tra thông báo số dư SePay (12 giây/lần)!', 'success');
-  } else {
-    if (livePollingTimer) clearInterval(livePollingTimer);
+  if (livePollingTimer) {
+    clearInterval(livePollingTimer);
     livePollingTimer = null;
-    showToast('Đã tạm dừng tự động kiểm tra giao dịch ngầm.', 'info');
   }
+  showToast('Đang bật chế độ 1 chiều (Web → Google Sheet): Không lấy dữ liệu từ Google Sheet về Web.', 'info');
 }
 
 async function quickTestSepayAlert() {
