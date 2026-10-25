@@ -136,8 +136,8 @@ function recordExactSmallAmount(stateObj, idKey, codeKey, vndAmount) {
   if (!target || typeof target !== 'object') return;
   if (!target.settings) target.settings = {};
   const map = getExactAmountsMap(target);
-  const num = Number(vndAmount) || 0;
-  if (num > 0 && num < 20000) {
+  const num = Number(vndAmount);
+  if (!isNaN(num) && num >= 0 && num < 20000) {
     if (idKey) map[String(idKey).trim()] = num;
     if (codeKey) map[String(codeKey).trim().toUpperCase()] = num;
   } else {
@@ -439,15 +439,20 @@ function purgeDraftDataFromState(state) {
       }
       const codeUpper = String(s.studentCode || '').trim().toUpperCase();
       const idStr = String(s.id || '').trim();
-      const exactOverride = exactAmountsMap[idStr] || exactAmountsMap[codeUpper];
-      if (exactOverride && (Number(s.tuitionFee) === exactOverride * 1000 || Number(s.tuitionFee) === exactOverride)) {
+      const hasExact =
+        Object.prototype.hasOwnProperty.call(exactAmountsMap, idStr) ||
+        Object.prototype.hasOwnProperty.call(exactAmountsMap, codeUpper);
+      const exactOverride = Object.prototype.hasOwnProperty.call(exactAmountsMap, idStr)
+        ? exactAmountsMap[idStr]
+        : exactAmountsMap[codeUpper];
+      if (hasExact && exactOverride === 0 && Number(s.tuitionFee) === 0) {
+        s.tuitionFee = 0;
+      } else if (exactOverride && (Number(s.tuitionFee) === exactOverride * 1000 || Number(s.tuitionFee) === exactOverride)) {
         s.tuitionFee = exactOverride;
-      } else if (codeUpper === 'HS087' && (!s.tuitionFee || Number(s.tuitionFee) === 0)) {
-        s.tuitionFee = 600000;
-      } else if (s.tuitionFee !== undefined && s.tuitionFee !== null && Number(s.tuitionFee) > 0) {
+      } else if (s.tuitionFee !== undefined && s.tuitionFee !== null && Number(s.tuitionFee) >= 0) {
         s.tuitionFee = normalizeStoredVnd(s.tuitionFee);
       }
-      if (s.tuitionFee > 0 && s.tuitionFee < 20000) {
+      if (s.tuitionFee >= 0 && s.tuitionFee < 20000) {
         recordExactSmallAmount(state, idStr, codeUpper, s.tuitionFee);
       }
     });
@@ -731,7 +736,10 @@ function purgeDraftDataFromState(state) {
                 )
                 .map(s => ({
                   ...s,
-                  tuitionFee: s.tuitionFee ? fromShortMoney(s.tuitionFee) : 600000
+                  tuitionFee:
+                    s.tuitionFee !== undefined && s.tuitionFee !== null && String(s.tuitionFee).trim() !== ''
+                      ? fromShortMoney(s.tuitionFee)
+                      : 600000
                 }))
             }));
           state.settings.classHistoryJson = JSON.stringify(cleanedHist);
@@ -7641,7 +7649,10 @@ function getStudentStatistics(s, ctx = null) {
   // Hỗ trợ điều chỉnh tăng / giảm số đợt đã đóng bằng nút − / +
   const extraOffset = Number(meta.extraPaidBatches || 0);
   const paidBatchesCount = Math.max(0, autoPaidBatches + extraOffset);
-  const unitFee = normalizeStoredVnd(s.tuitionFee) || 600000;
+  const unitFee =
+    s.tuitionFee !== undefined && s.tuitionFee !== null && String(s.tuitionFee).trim() !== ''
+      ? normalizeStoredVnd(s.tuitionFee)
+      : 600000;
 
   if (paidBatchesCount === 0) {
     totalPaidAmount = 0;
@@ -10468,7 +10479,7 @@ function handleQuickAssignSearchInput(txId, typedVal) {
                 <span class="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700">${escapeHtml(s.fullName)}</span>
                 <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
               </div>
-              <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee || 600000)} • Bấm để gán ngay</div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee ?? 600000)} • Bấm để gán ngay</div>
             </div>
             <div class="shrink-0 flex items-center gap-1.5">
               <button
@@ -10518,7 +10529,7 @@ function handleQuickAssignSearchInput(txId, typedVal) {
             <span class="font-extrabold text-xs text-emerald-950">${escapeHtml(exactCodeMatch.fullName)}</span>
             <span class="text-[11px] text-emerald-700 font-semibold">(Lớp ${escapeHtml(exactCodeMatch.className || '---')})</span>
           </div>
-          <div class="text-[11px] text-emerald-700 mt-0.5 font-medium">Học phí: ${formatCurrency(exactCodeMatch.tuitionFee || 600000)} • Bấm để gán ngay</div>
+          <div class="text-[11px] text-emerald-700 mt-0.5 font-medium">Học phí: ${formatCurrency(exactCodeMatch.tuitionFee ?? 600000)} • Bấm để gán ngay</div>
         </div>
         <div class="shrink-0 flex items-center gap-1.5">
           <button
@@ -10587,7 +10598,7 @@ function handleQuickAssignSearchInput(txId, typedVal) {
             <span class="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700">${escapeHtml(s.fullName)}</span>
             <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
           </div>
-          <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee || 600000)} • Bấm để gán ngay</div>
+          <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee ?? 600000)} • Bấm để gán ngay</div>
         </div>
         <div class="shrink-0 flex items-center gap-1.5">
           <button
@@ -13838,14 +13849,15 @@ function recalcPerSessionTuitionForClass(className, scheduleMap = null) {
 }
 
 function getPresetTuitionOptionsHtml(currentFee, student = null, scheduleMap = null) {
-  const cur = normalizeStoredVnd(currentFee || 600000) || 600000;
-  const presets = [200000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1500000, 2000000];
-  if (cur > 0 && !presets.includes(cur)) {
+  const hasExplicitVal = currentFee !== undefined && currentFee !== null && String(currentFee).trim() !== '';
+  const cur = hasExplicitVal ? normalizeStoredVnd(currentFee) : 600000;
+  const presets = [0, 200000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1500000, 2000000];
+  if (cur >= 0 && !presets.includes(cur)) {
     presets.push(cur);
     presets.sort((a, b) => a - b);
   }
   return presets
-    .map(val => `<option value="${val}" ${val === cur ? 'selected' : ''}>${toShortMoney(val)}</option>`)
+    .map(val => `<option value="${val}" ${val === cur ? 'selected' : ''}>${val === 0 ? '0' : toShortMoney(val)}</option>`)
     .join('');
 }
 
@@ -13860,7 +13872,10 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
   if (selectedVal === 'PER_SESSION') {
     const map = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
     const checkedSessions = getClassTotalSessionsCount(s.className, map);
-    const curRate = normalizeStoredVnd(metaMap[codeKey].perSessionRate) || 75000;
+    const curRate =
+      metaMap[codeKey].perSessionRate !== undefined && metaMap[codeKey].perSessionRate !== null
+        ? normalizeStoredVnd(metaMap[codeKey].perSessionRate)
+        : 75000;
     const defaultSessionNum = checkedSessions > 0 ? checkedSessions : Number(metaMap[codeKey].lastSessionCount || 8);
 
     const res = await showTcAppDialog({
@@ -13909,7 +13924,7 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
 
     const rateVnd = fromShortMoney(res.rateInput);
     const sessions = Math.max(1, parseInt(res.sessionCount, 10) || checkedSessions || 1);
-    if (isNaN(rateVnd) || rateVnd <= 0) {
+    if (isNaN(rateVnd) || rateVnd < 0) {
       showToast('Đơn giá 1 buổi học không hợp lệ!', 'warning');
       renderAdminClassbook();
       renderAdminStudents();
@@ -13949,7 +13964,7 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
   if (selectedVal === 'CUSTOM') {
     const input = await appPrompt(
       `Nhập mức học phí mới cho học sinh ${s.fullName} (Có thể nhập rút gọn 3 số 000 hoặc nhập đầy đủ - VD: nhập 600 hoặc 600000 đều = 600.000 ₫):`,
-      String(toShortMoney(s.tuitionFee || 600000)),
+      String(s.tuitionFee !== undefined && s.tuitionFee !== null ? toShortMoney(s.tuitionFee) : 600),
       {
         title: `Cập nhật học phí - ${s.fullName}`,
         badge: 'THANH CHÍ EDU • HỌC PHÍ',
