@@ -5509,6 +5509,9 @@ function switchAdminTab(tabName, customSideKey = '') {
 
   renderActiveAdminTab();
   lucide.createIcons();
+  if (tabName === 'finance') {
+    handleRefreshFinanceTransactions(true);
+  }
   if (typeof scheduleStickyHeaderSync === 'function') {
     requestAnimationFrame(() => scheduleStickyHeaderSync(true));
   }
@@ -8863,7 +8866,44 @@ function getFilteredPendingRequestsForFinance() {
       if (!hay.includes(q)) return false;
     }
     return true;
-  });
+  }).sort((a, b) => String(b.submittedAt || b.id || '').localeCompare(String(a.submittedAt || a.id || '')));
+}
+
+function sortTransactionsNewestFirst(a, b) {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  // 1. Ngày giao dịch mới nhất lên đầu (YYYY-MM-DD)
+  const dateA = String(a.date || '').slice(0, 10);
+  const dateB = String(b.date || '').slice(0, 10);
+  if (dateA !== dateB) {
+    return dateB.localeCompare(dateA);
+  }
+
+  // 2. Nếu có timestamp trực tiếp trong updatedAtMs
+  const timeA = Number(a.updatedAtMs || 0);
+  const timeB = Number(b.updatedAtMs || 0);
+  if (timeA && timeB && timeA !== timeB) {
+    return timeB - timeA;
+  }
+
+  // 3. Nếu ID chứa millisecond timestamp (ví dụ GD_1792848645947)
+  const tsMatchA = String(a.id || '').match(/_(\d{12,14})/);
+  const tsMatchB = String(b.id || '').match(/_(\d{12,14})/);
+  if (tsMatchA && tsMatchB && tsMatchA[1] !== tsMatchB[1]) {
+    return Number(tsMatchB[1]) - Number(tsMatchA[1]);
+  }
+
+  // 4. Nếu là giao dịch SePay có ID số (ví dụ GD_SEPAY_93060156)
+  const sepayMatchA = String(a.id || '').match(/GD_SEPAY_(\d+)/);
+  const sepayMatchB = String(b.id || '').match(/GD_SEPAY_(\d+)/);
+  if (sepayMatchA && sepayMatchB && sepayMatchA[1] !== sepayMatchB[1]) {
+    return Number(sepayMatchB[1]) - Number(sepayMatchA[1]);
+  }
+
+  // 5. Mặc định so sánh chuỗi ID giảm dần
+  return String(b.id || '').localeCompare(String(a.id || ''));
 }
 
 function getFilteredTransactions() {
@@ -8871,7 +8911,7 @@ function getFilteredTransactions() {
   const typeFilter = document.getElementById('filter-trans-type')?.value || 'ALL';
   const catFilter = document.getElementById('filter-trans-category')?.value || 'ALL';
 
-  return (appState.transactions || []).filter(t => {
+  const filtered = (appState.transactions || []).filter(t => {
     if (typeFilter === 'PENDING') return false;
     if (typeFilter !== 'ALL' && t.type !== typeFilter) return false;
     if (catFilter !== 'ALL' && t.category !== catFilter) return false;
@@ -8881,6 +8921,8 @@ function getFilteredTransactions() {
     }
     return true;
   });
+
+  return filtered.sort(sortTransactionsNewestFirst);
 }
 
 function renderFinancePendingApprovalsCard() {
@@ -9812,18 +9854,14 @@ function openTransactionDetailModal(itemKey) {
                </div>
              </div>`
           : isIncome
-          ? `<div class="sm:col-span-2 p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shadow-sm">
-               <div class="min-w-0">
-                 <div class="flex items-center gap-1.5 font-extrabold text-amber-950 text-xs">
-                   <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                   <span>Chưa gán học sinh</span>
-                 </div>
-                 <p class="text-[11px] font-semibold text-amber-800 truncate mt-0.5">
-                   Gõ mã hoặc tên học sinh bên dưới để tự động ghi nhận học phí
-                 </p>
-               </div>
-               <div class="flex items-center gap-1.5 shrink-0">
-                 <div class="relative w-full sm:w-64">
+           ? `<div class="sm:col-span-2 p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-sm flex flex-col gap-2.5">
+                <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
+                  <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                  <span class="shrink-0 font-bold">Chưa gán học sinh</span>
+                  <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã học sinh bên dưới để tự động ghi nhận học phí</span>
+                </div>
+                <div class="flex items-center gap-2 w-full">
+                  <div class="relative flex-1 min-w-0">
                     <input type="hidden" id="quick-assign-stu-id-${escapeAttr(tx.id)}" value="" />
                     <div class="relative flex items-center">
                       <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"></i>
@@ -9832,9 +9870,10 @@ function openTransactionDetailModal(itemKey) {
                         type="text"
                         placeholder="Điền tên hoặc mã HS..."
                         autocomplete="off"
-                        class="w-full pl-8 pr-7 py-1.5 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
+                        class="w-full pl-8 pr-7 py-2 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
                         oninput="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
                         onfocus="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
+                        onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(tx.id)}');if(b)b.classList.add('hidden');},220)"
                         onkeydown="if(event.key==='Enter'){event.preventDefault();handleQuickAssignStudentToTx('${escapeAttr(tx.id)}');}"
                       />
                       <button
@@ -9852,17 +9891,17 @@ function openTransactionDetailModal(itemKey) {
                       class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-xl z-50 divide-y divide-slate-100"
                     ></div>
                   </div>
-                 <button
-                   type="button"
-                   onclick="handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
-                   class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm"
-                   title="Gán khoản chuyển khoản này cho học sinh & đánh dấu Đã hoàn thành học phí"
-                 >
-                   <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                   <span>Gán &amp; Duyệt</span>
-                 </button>
-               </div>
-             </div>`
+                  <button
+                    type="button"
+                    onclick="handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
+                    class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm whitespace-nowrap h-[36px]"
+                    title="Gán khoản chuyển khoản này cho học sinh & đánh dấu Đã hoàn thành học phí"
+                  >
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Gán &amp; Duyệt</span>
+                  </button>
+                </div>
+              </div>`
           : ''
       }
     </div>
@@ -9926,6 +9965,35 @@ function openTransactionDetailModal(itemKey) {
 
   modal.classList.remove('hidden');
   if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+
+function handleTxModalCardClick(e) {
+  const t = e.target;
+  if (t && typeof t.closest === 'function') {
+    if (!t.closest('[id^="quick-assign-suggest-box"]') && !t.closest('[id^="quick-assign-stu-input"]')) {
+      document.querySelectorAll('[id^="quick-assign-suggest-box"]').forEach(el => el.classList.add('hidden'));
+    }
+  }
+}
+
+async function handleRefreshFinanceTransactions(isAuto = false) {
+  const icon = document.getElementById('icon-refresh-finance');
+  if (icon) icon.classList.add('animate-spin');
+  try {
+    await syncFromGoogleSheet(false);
+    renderAdminTransactions();
+    if (!isAuto) {
+      showToast('Đã làm mới dữ liệu thu chi & chuyển khoản mới nhất!', 'success');
+    }
+  } catch (e) {
+    console.warn('Lỗi làm mới Thu Chi:', e);
+    if (!isAuto) {
+      showToast('Không thể làm mới thu chi. Vui lòng thử lại sau ít giây.', 'error');
+    }
+  } finally {
+    if (icon) icon.classList.remove('animate-spin');
+  }
 }
 
 function closeTransactionDetailModal() {
@@ -16786,7 +16854,14 @@ function startLiveBankPolling() {
         const nextAlertJson = nextState.settings?.lastBankAlertJson || '';
         const hasNewBankAlert = nextAlertJson && nextAlertJson !== prevAlertJson;
 
-        if (newlyPaid.length > 0 || hasNewBankAlert || didReconcileSepay) {
+        const prevTxCount = (appState.transactions || []).length;
+        const nextTxCount = (nextState.transactions || []).length;
+        const hasNewTx = nextTxCount !== prevTxCount;
+        const prevReqCount = (appState.paymentRequests || []).length;
+        const nextReqCount = (nextState.paymentRequests || []).length;
+        const hasNewReq = nextReqCount !== prevReqCount;
+
+        if (newlyPaid.length > 0 || hasNewBankAlert || didReconcileSepay || hasNewTx || hasNewReq) {
           appState = nextState;
           try {
             isSilentServerSync = true;
