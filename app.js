@@ -10357,6 +10357,103 @@ function refreshGroupQrPreview() {
   if (imgEl) imgEl.src = qrUrl;
 }
 
+
+async function copyQrImageToClipboard(imgId = 'group-modal-qr-img') {
+  const imgEl = document.getElementById(imgId);
+  if (!imgEl || !imgEl.src) {
+    showToast('Chưa có mã QR để sao chép!', 'error');
+    return;
+  }
+  const btn = document.getElementById('btn-copy-group-qr-img');
+  const origBtnText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Đang chép...</span>`;
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+  }
+
+  try {
+    showToast('Đang sao chép ảnh QR vào bộ nhớ tạm...', 'info');
+
+    // 1. Tải ảnh từ VietQR (hỗ trợ CORS)
+    const response = await fetch(imgEl.src, { mode: 'cors' });
+    const rawBlob = await response.blob();
+
+    // 2. Chuyển sang canvas để tạo PNG Blob chuẩn mà hệ điều hành và Zalo/Messenger/Word hỗ trợ dán (Ctrl+V)
+    const imgObj = new Image();
+    const blobUrl = URL.createObjectURL(rawBlob);
+
+    await new Promise((resolve, reject) => {
+      imgObj.onload = resolve;
+      imgObj.onerror = reject;
+      imgObj.src = blobUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = imgObj.naturalWidth || 500;
+    canvas.height = imgObj.naturalHeight || 500;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(imgObj, 0, 0);
+    URL.revokeObjectURL(blobUrl);
+
+    await new Promise((resolve, reject) => {
+      canvas.toBlob(async pngBlob => {
+        if (!pngBlob) return reject(new Error('Canvas export failed'));
+        try {
+          if (navigator.clipboard && navigator.clipboard.write) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': pngBlob })
+            ]);
+            showToast('📋 Đã sao chép ẢNH QR vào Clipboard! Bạn có thể nhấn Ctrl+V để dán trực tiếp vào Zalo.', 'success');
+            resolve();
+          } else {
+            reject(new Error('Clipboard image write not supported'));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      }, 'image/png');
+    });
+  } catch (err) {
+    console.warn('Lỗi khi sao chép ảnh QR:', err);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(imgEl.src);
+      showToast('Đã sao chép đường link ảnh QR! (Hoặc bạn có thể bấm nút Tải ảnh về máy)', 'info');
+    } else {
+      showToast('Trình duyệt không hỗ trợ chép ảnh. Vui lòng bấm "Tải ảnh QR về máy"!', 'warning');
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origBtnText;
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+  }
+}
+
+async function downloadQrImageById(imgId, filename = 'Ma_QR_Hoc_Phi.png') {
+  const imgEl = document.getElementById(imgId);
+  if (!imgEl || !imgEl.src) return;
+  try {
+    showToast('Đang tải ảnh mã QR về máy...', 'info');
+    const res = await fetch(imgEl.src);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+    showToast('Đã tải ảnh mã QR thành công!', 'success');
+  } catch (e) {
+    window.open(imgEl.src, '_blank');
+  }
+}
+
 async function downloadGroupQrImage() {
   const imgEl = document.getElementById('group-modal-qr-img');
   if (!imgEl || !imgEl.src) return;
