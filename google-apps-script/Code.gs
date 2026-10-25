@@ -142,8 +142,9 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'getAll';
 
     if (action === 'getAll') {
+      const forceSepay = String(e.parameter.forceSepay || '') === '1';
       try {
-        pullSepayApiTransactions(getTargetSpreadsheet(), '', true);
+        pullSepayApiTransactions(getTargetSpreadsheet(), '', !forceSepay);
       } catch (sepayErr) {}
       const data = getAllSheetData();
       return jsonResponse({ success: true, data: data, timestamp: new Date().toISOString() });
@@ -692,7 +693,11 @@ function saveBase64ImageToDrive(base64Data, fileName) {
 function formatDateValue(val) {
   if (!val) return '';
   if (Object.prototype.toString.call(val) === '[object Date]') {
-    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const hours = val.getHours();
+    const mins = val.getMinutes();
+    const secs = val.getSeconds();
+    const hasTime = (hours !== 0 || mins !== 0 || secs !== 0);
+    return Utilities.formatDate(val, Session.getScriptTimeZone(), hasTime ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd');
   }
   return String(val);
 }
@@ -935,7 +940,7 @@ function processIncomingBankWebhook(ss, payload) {
         // 3. Tự động lưu vào Sổ Thu Chi
         shTrans.appendRow([
           'GD_' + tx.refCode,
-          txDateOnly,
+          String(tx.dateStr || '').trim() || txDateOnly,
           'Thu',
           'Thu học phí',
           paidAmount,
@@ -989,7 +994,7 @@ function processIncomingBankWebhook(ss, payload) {
       if (txAmount > 0) {
         shTrans.appendRow([
           'GD_' + tx.refCode,
-          txDateOnly,
+          String(tx.dateStr || '').trim() || txDateOnly,
           isOut ? 'Chi' : 'Thu',
           isOut ? 'Khác' : 'Thu học phí',
           txAmount,
