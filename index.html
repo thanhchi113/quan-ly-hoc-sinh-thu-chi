@@ -28,7 +28,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261025_v15" />
+  <link rel="stylesheet" href="styles.css?v=20261025_v16" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -2686,6 +2686,15 @@
                 </p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onclick="openGeneralGroupQrModal()"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 transition cursor-pointer shrink-0"
+                  title="Xem &amp; Tải mã QR chuyển khoản chung để gửi vào nhóm Zalo lớp"
+                >
+                  <i data-lucide="qr-code" class="w-4 h-4"></i>
+                  <span>Mã QR Gửi Nhóm Zalo</span>
+                </button>
                 <button
                   onclick="undoLastAction()"
                   title="Hoàn tác thao tác sửa / xóa vừa thực hiện"
@@ -5367,6 +5376,131 @@
     </div>
   </div>
 
+  <!-- MODAL XEM & TẢI MÃ QR CHUYỂN KHOẢN GỬI NHÓM ZALO PHỤ HUYNH -->
+  <div
+    id="group-qr-modal"
+    onclick="closeGroupQrModal()"
+    class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto"
+  >
+    <div
+      onclick="event.stopPropagation()"
+      class="tc-dialog-card max-w-lg w-full overflow-hidden animate-fade-in"
+    >
+      <div class="tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i data-lucide="qr-code" class="w-5 h-5 text-amber-300"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base sm:text-lg text-white">Mã QR Chuyển Khoản Gửi Nhóm Zalo</h3>
+            <p class="text-xs text-blue-100">Dùng gửi vào nhóm Zalo phụ huynh để chuyển khoản</p>
+          </div>
+        </div>
+        <button onclick="closeGroupQrModal()" class="p-1.5 rounded-xl hover:bg-white/15 transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 max-h-[78vh] overflow-y-auto text-xs sm:text-sm">
+        <!-- Khung ảnh QR -->
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center space-y-3">
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+            <img
+              id="group-modal-qr-img"
+              src=""
+              alt="Mã QR Chuyển Khoản Nhóm"
+              class="w-52 h-52 sm:w-60 sm:h-60 object-contain mx-auto"
+            />
+          </div>
+          <p class="text-xs text-slate-500 max-w-sm">
+            Mã VietQR tự động theo STK đã cấu hình. Khi phụ huynh quét mã chuyển khoản, SePay sẽ gửi biến động số dư về Web để bạn bấm gán học sinh và duyệt.
+          </p>
+        </div>
+
+        <!-- Tùy chỉnh số tiền trên mã QR -->
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label class="block text-xs font-bold text-slate-700">Tùy chọn số tiền trên mã QR:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              id="group-qr-amount-free-btn"
+              onclick="updateGroupQrAmountMode(false)"
+              class="p-2 rounded-lg border-2 text-xs font-bold text-center transition cursor-pointer"
+            >
+              Phụ huynh tự nhập
+            </button>
+            <button
+              type="button"
+              id="group-qr-amount-fixed-btn"
+              onclick="updateGroupQrAmountMode(true)"
+              class="p-2 rounded-lg border-2 text-xs font-bold text-center transition cursor-pointer"
+            >
+              Gắn cố định học phí
+            </button>
+          </div>
+          <div id="group-qr-fixed-amount-box" class="hidden pt-1 flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">Mức tiền (VNĐ):</span>
+            <input
+              type="number"
+              id="group-qr-amount-input"
+              value="600000"
+              step="50000"
+              oninput="refreshGroupQrPreview()"
+              class="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-emerald-700"
+            />
+          </div>
+        </div>
+
+        <!-- Thông tin tài khoản -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+          <div class="flex justify-between items-center border-b border-slate-200 pb-1">
+            <span class="text-slate-500">Ngân hàng:</span>
+            <span id="group-qr-bank" class="font-bold text-slate-800">BIDV</span>
+          </div>
+          <div class="flex justify-between items-center border-b border-slate-200 pb-1">
+            <span class="text-slate-500">Chủ tài khoản:</span>
+            <span id="group-qr-owner" class="font-bold text-slate-800">HKD TRUNG TAM HUYNH THANH CHI</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500">Số tài khoản:</span>
+            <span id="group-qr-acc" class="font-extrabold text-blue-700 font-mono text-sm">8601774789</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <button
+          type="button"
+          onclick="closeGroupQrModal()"
+          class="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold cursor-pointer"
+        >
+          Đóng
+        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onclick="copyGroupQrZaloMessage()"
+            class="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 text-xs font-extrabold transition cursor-pointer flex items-center gap-1"
+            title="Sao chép nội dung tin nhắn kèm STK để dán vào Zalo"
+          >
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copy tin nhắn Zalo</span>
+          </button>
+          <button
+            type="button"
+            onclick="downloadGroupQrImage()"
+            class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition cursor-pointer flex items-center gap-1 shadow-sm"
+            title="Tải ảnh QR về máy để gửi vào nhóm Zalo"
+          >
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Tải ảnh QR về máy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- HỘP HỘI THOẠI HỆ THỐNG ĐỒNG BỘ PHONG CÁCH APP (THAY THẾ PROMPT / CONFIRM MẶC ĐỊNH) -->
   <div
     id="tc-app-dialog-modal"
@@ -5444,6 +5578,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261025_v26"></script>
+  <script src="app.js?v=20261025_v27"></script>
 </body>
 </html>
