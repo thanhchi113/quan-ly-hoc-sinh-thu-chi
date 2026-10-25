@@ -10287,6 +10287,14 @@ async function handleUnassignStudentFromTx(txId) {
 
 let _groupQrAmountFixed = false;
 
+const DEFAULT_GROUP_QR_MESSAGE_TEMPLATE = `Kính gửi Quý phụ huynh thông tin đóng học phí:
+- Ngân hàng: {ngan_hang}
+- Số tài khoản: {so_tai_khoan}
+- Chủ tài khoản: {chu_tai_khoan}
+- Mức học phí: {hoc_phi}
+- Cú pháp CK: HOC PHI
+(Quý phụ huynh quét mã QR đính kèm hoặc chuyển khoản theo thông tin trên để trung tâm đối soát và ghi nhận học phí cho học sinh.)`;
+
 function openGeneralGroupQrModal() {
   const modal = document.getElementById('group-qr-modal');
   if (!modal) return;
@@ -10301,6 +10309,14 @@ function openGeneralGroupQrModal() {
   if (bankEl) bankEl.textContent = bank;
   if (ownerEl) ownerEl.textContent = owner;
   if (accEl) accEl.textContent = formatDisplayBankAccWithVa(rawAcc);
+
+  // Load custom message template into textarea
+  const msgEl = document.getElementById('group-qr-custom-msg');
+  if (msgEl) {
+    msgEl.value = (stg.groupQrMessageTemplate && stg.groupQrMessageTemplate.trim())
+      ? stg.groupQrMessageTemplate
+      : DEFAULT_GROUP_QR_MESSAGE_TEMPLATE;
+  }
 
   updateGroupQrAmountMode(false);
   modal.classList.remove('hidden');
@@ -10357,6 +10373,125 @@ function refreshGroupQrPreview() {
   if (imgEl) imgEl.src = qrUrl;
 }
 
+function saveGroupQrMessageTemplate() {
+  const msgEl = document.getElementById('group-qr-custom-msg');
+  if (!msgEl) return;
+  const text = msgEl.value.trim();
+  if (!text) {
+    showToast('Nội dung tin nhắn không được để trống!', 'warning');
+    return;
+  }
+  if (!appState.settings) appState.settings = {};
+  appState.settings.groupQrMessageTemplate = text;
+  saveAppState();
+  triggerAutoSyncIfNeeded();
+  showToast('💾 Đã lưu mẫu nội dung gửi phụ huynh thành công!', 'success');
+}
+
+function resetGroupQrMessageTemplate() {
+  const msgEl = document.getElementById('group-qr-custom-msg');
+  if (msgEl) {
+    msgEl.value = DEFAULT_GROUP_QR_MESSAGE_TEMPLATE;
+  }
+  showToast('Đã khôi phục mẫu tin nhắn mặc định. Nhấn "Lưu mẫu" nếu bạn muốn lưu lại.', 'info');
+}
+
+function formatGroupQrMessage(tpl) {
+  const stg = appState.settings || {};
+  const bank = stg.bankBin || 'BIDV';
+  const rawAcc = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
+  const owner = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
+  const amountInput = document.getElementById('group-qr-amount-input');
+  const isFixed = _groupQrAmountFixed;
+  const amountVal = isFixed && amountInput ? Number(amountInput.value) || 0 : 0;
+  const feeStr = amountVal > 0 ? formatCurrency(amountVal) : 'Phụ huynh tự nhập';
+
+  const template = tpl || (stg.groupQrMessageTemplate && stg.groupQrMessageTemplate.trim()) || DEFAULT_GROUP_QR_MESSAGE_TEMPLATE;
+
+  return template
+    .replace(/\{ngan_hang\}/gi, bank)
+    .replace(/\{so_tai_khoan\}/gi, rawAcc)
+    .replace(/\{chu_tai_khoan\}/gi, owner)
+    .replace(/\{hoc_phi\}/gi, feeStr)
+    .replace(/\{noi_dung_ck\}/gi, 'HOC PHI');
+}
+
+async function copyGroupQrCustomMessage() {
+  const msgEl = document.getElementById('group-qr-custom-msg');
+  const template = msgEl ? msgEl.value : '';
+  const finalMsg = formatGroupQrMessage(template);
+
+  let copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(finalMsg);
+      copied = true;
+    } catch (e) {}
+  }
+
+  if (!copied) {
+    const ta = document.createElement('textarea');
+    ta.value = finalMsg;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      copied = document.execCommand('copy');
+    } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  showToast('📋 Đã sao chép nội dung tin nhắn gửi phụ huynh!', 'success');
+}
+
+function copyGroupQrZaloMessage() {
+  return copyGroupQrCustomMessage();
+}
+
+async function getQrPngBlob(qrUrl) {
+  const response = await fetch(qrUrl, { mode: 'cors' });
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
+
+  if (contentType.includes('image/png')) {
+    return await response.blob();
+  }
+
+  const text = await response.text();
+  const base64Match = text.match(/(?:href|xlink:href)=["'](data:image\/png;base64,[^"']+)["']/i);
+  if (base64Match) {
+    const dataUri = base64Match[1];
+    const dataRes = await fetch(dataUri);
+    return await dataRes.blob();
+  }
+
+  const imgObj = new Image();
+  imgObj.crossOrigin = 'anonymous';
+  const svgBlob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
+  const blobUrl = URL.createObjectURL(svgBlob);
+
+  await new Promise((resolve, reject) => {
+    imgObj.onload = resolve;
+    imgObj.onerror = reject;
+    imgObj.src = blobUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = imgObj.naturalWidth || 540;
+  canvas.height = imgObj.naturalHeight || 640;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(imgObj, 0, 0);
+  URL.revokeObjectURL(blobUrl);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error('Canvas to PNG Blob failed'));
+    }, 'image/png');
+  });
+}
 
 async function copyQrImageToClipboard(imgId = 'group-modal-qr-img') {
   const imgEl = document.getElementById(imgId);
@@ -10368,62 +10503,29 @@ async function copyQrImageToClipboard(imgId = 'group-modal-qr-img') {
   const origBtnText = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Đang chép...</span>`;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Đang xử lý ảnh...</span>`;
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
   }
 
   try {
-    showToast('Đang sao chép ảnh QR vào bộ nhớ tạm...', 'info');
+    showToast('Đang tạo và sao chép ảnh QR chuẩn PNG...', 'info', 2500);
 
-    // 1. Tải ảnh từ VietQR (hỗ trợ CORS)
-    const response = await fetch(imgEl.src, { mode: 'cors' });
-    const rawBlob = await response.blob();
-
-    // 2. Chuyển sang canvas để tạo PNG Blob chuẩn mà hệ điều hành và Zalo/Messenger/Word hỗ trợ dán (Ctrl+V)
-    const imgObj = new Image();
-    const blobUrl = URL.createObjectURL(rawBlob);
-
-    await new Promise((resolve, reject) => {
-      imgObj.onload = resolve;
-      imgObj.onerror = reject;
-      imgObj.src = blobUrl;
-    });
-
-    const canvas = document.createElement('canvas');
-    canvas.width = imgObj.naturalWidth || 500;
-    canvas.height = imgObj.naturalHeight || 500;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(imgObj, 0, 0);
-    URL.revokeObjectURL(blobUrl);
-
-    await new Promise((resolve, reject) => {
-      canvas.toBlob(async pngBlob => {
-        if (!pngBlob) return reject(new Error('Canvas export failed'));
-        try {
-          if (navigator.clipboard && navigator.clipboard.write) {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': pngBlob })
-            ]);
-            showToast('📋 Đã sao chép ẢNH QR vào Clipboard! Bạn có thể nhấn Ctrl+V để dán trực tiếp vào Zalo.', 'success');
-            resolve();
-          } else {
-            reject(new Error('Clipboard image write not supported'));
-          }
-        } catch (err) {
-          reject(err);
-        }
-      }, 'image/png');
-    });
-  } catch (err) {
-    console.warn('Lỗi khi sao chép ảnh QR:', err);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(imgEl.src);
-      showToast('Đã sao chép đường link ảnh QR! (Hoặc bạn có thể bấm nút Tải ảnh về máy)', 'info');
-    } else {
-      showToast('Trình duyệt không hỗ trợ chép ảnh. Vui lòng bấm "Tải ảnh QR về máy"!', 'warning');
+    const pngBlob = await getQrPngBlob(imgEl.src);
+    if (!pngBlob || pngBlob.size === 0) {
+      throw new Error('Dữ liệu ảnh PNG rỗng');
     }
+
+    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+      const item = new ClipboardItem({ 'image/png': pngBlob });
+      await navigator.clipboard.write([item]);
+      showToast('🖼️ ĐÃ SAO CHÉP ẢNH QR VÀO BỘ NHỚ TẠM! Bạn hãy mở Zalo / Messenger và nhấn Ctrl+V để dán trực tiếp ảnh.', 'success', 6000);
+    } else {
+      throw new Error('Trình duyệt không hỗ trợ ClipboardItem');
+    }
+  } catch (err) {
+    console.error('Lỗi sao chép ảnh QR:', err);
+    // Tuyệt đối không sao chép URL dạng chữ khi người dùng bấm chép ảnh
+    showToast('Thiết bị hoặc trình duyệt chưa hỗ trợ dán ảnh trực tiếp từ bộ nhớ tạm. Bạn vui lòng bấm nút "Tải ảnh QR về máy" hoặc nhấn giữ vào ảnh chọn "Lưu hình ảnh" để gửi vào nhóm Zalo!', 'warning', 7000);
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -10438,16 +10540,15 @@ async function downloadQrImageById(imgId, filename = 'Ma_QR_Hoc_Phi.png') {
   if (!imgEl || !imgEl.src) return;
   try {
     showToast('Đang tải ảnh mã QR về máy...', 'info');
-    const res = await fetch(imgEl.src);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    const pngBlob = await getQrPngBlob(imgEl.src);
+    const blobUrl = URL.createObjectURL(pngBlob);
     const a = document.createElement('a');
     a.href = blobUrl;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     showToast('Đã tải ảnh mã QR thành công!', 'success');
   } catch (e) {
     window.open(imgEl.src, '_blank');
@@ -10455,53 +10556,7 @@ async function downloadQrImageById(imgId, filename = 'Ma_QR_Hoc_Phi.png') {
 }
 
 async function downloadGroupQrImage() {
-  const imgEl = document.getElementById('group-modal-qr-img');
-  if (!imgEl || !imgEl.src) return;
-  try {
-    showToast('Đang tải ảnh mã QR về máy...', 'info');
-    const res = await fetch(imgEl.src);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = 'Ma_VietQR_Hoc_Phi_Gui_Nhom.png';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
-    showToast('Đã tải ảnh mã QR thành công!', 'success');
-  } catch (e) {
-    window.open(imgEl.src, '_blank');
-  }
-}
-
-function copyGroupQrZaloMessage() {
-  const stg = appState.settings || {};
-  const bank = stg.bankBin || 'BIDV';
-  const rawAcc = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
-  const owner = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
-  const amountInput = document.getElementById('group-qr-amount-input');
-  const isFixed = _groupQrAmountFixed;
-  const amountVal = isFixed && amountInput ? Number(amountInput.value) || 0 : 0;
-
-  let msg = `Kính gửi Quý phụ huynh thông tin đóng học phí:\n` +
-    `- Ngân hàng: ${bank}\n` +
-    `- Số tài khoản: ${rawAcc}\n` +
-    `- Chủ tài khoản: ${owner}\n`;
-  if (amountVal > 0) {
-    msg += `- Số tiền học phí: ${formatCurrency(amountVal)}\n`;
-  }
-  msg += `(Quý phụ huynh quét mã QR đính kèm hoặc chuyển khoản theo thông tin trên. Trung tâm sẽ kiểm tra và xác nhận hoàn thành học phí.)`;
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(msg).then(() => {
-      showToast('Đã sao chép nội dung tin nhắn gửi nhóm Zalo!', 'success');
-    }).catch(() => {
-      showToast('Đã hiển thị thông tin chuyển khoản!', 'info');
-    });
-  } else {
-    showToast('Đã sao chép nội dung tin nhắn gửi nhóm Zalo!', 'success');
-  }
+  return downloadQrImageById('group-modal-qr-img', 'Ma_VietQR_Hoc_Phi_Gui_Nhom.png');
 }
 
 async function handleBulkApproveTransactions() {
