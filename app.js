@@ -9710,7 +9710,7 @@ function openTransactionDetailModal(itemKey) {
       </div>
       ${
         compact.matchedStu || compact.studentCode
-          ? `<div class="sm:col-span-2 p-2.5 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-between gap-2">
+          ? `<div class="sm:col-span-2 p-2.5 rounded-xl bg-slate-100 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                <div>
                  <span class="tc-detail-label">Học sinh liên kết</span>
                  <span class="font-extrabold text-slate-900 text-xs sm:text-sm">
@@ -9719,17 +9719,68 @@ function openTransactionDetailModal(itemKey) {
                    ${compact.matchedStu?.period ? ` • ${escapeHtml(compact.matchedStu.period)}` : ''}
                  </span>
                </div>
-               ${
-                 compact.matchedStu
-                   ? `<button
-                        type="button"
-                        onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(compact.matchedStu.id)}')"
-                        class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
-                      >
-                        Hồ sơ HS ↗
-                      </button>`
-                   : ''
-               }
+               <div class="flex items-center gap-1.5 shrink-0">
+                 ${
+                   compact.matchedStu
+                     ? `<button
+                          type="button"
+                          onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(compact.matchedStu.id)}')"
+                          class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                        >
+                          Hồ sơ HS ↗
+                        </button>`
+                     : ''
+                 }
+                 <button
+                   type="button"
+                   onclick="handleUnassignStudentFromTx('${escapeAttr(tx.id)}')"
+                   title="Bỏ gán hoặc đổi học sinh khác cho giao dịch này"
+                   class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold transition cursor-pointer shrink-0"
+                 >
+                   Đổi HS
+                 </button>
+               </div>
+             </div>`
+          : isIncome
+          ? `<div class="sm:col-span-2 p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shadow-sm">
+               <div class="min-w-0">
+                 <div class="flex items-center gap-1.5 font-extrabold text-amber-950 text-xs">
+                   <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                   <span>Chưa gán học sinh</span>
+                 </div>
+                 <p class="text-[11px] font-semibold text-amber-800 truncate mt-0.5">
+                   Chọn học sinh bên dưới để tự động ghi nhận &amp; đánh dấu <strong>Đã hoàn thành</strong> học phí
+                 </p>
+               </div>
+               <div class="flex items-center gap-1.5 shrink-0">
+                 <select id="quick-assign-stu-select-${escapeAttr(tx.id)}" class="px-2.5 py-1.5 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 max-w-[220px] focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
+                   <option value="">-- Chọn học sinh --</option>
+                   ${(appState.students || [])
+                     .slice()
+                     .sort((a, b) => {
+                       const aPaid = a.status === 'Đã hoàn thành' ? 1 : 0;
+                       const bPaid = b.status === 'Đã hoàn thành' ? 1 : 0;
+                       if (aPaid !== bPaid) return aPaid - bPaid;
+                       return String(a.fullName || '').localeCompare(String(b.fullName || ''), 'vi');
+                     })
+                     .map(
+                       s =>
+                         `<option value="${escapeAttr(s.id)}">${escapeHtml(s.studentCode || 'HS')} - ${escapeHtml(
+                           s.fullName
+                         )} (Lớp ${escapeHtml(s.className || '---')}${s.status === 'Đã hoàn thành' ? ' - Đã đóng' : ' - Chưa đóng'})</option>`
+                     )
+                     .join('')}
+                 </select>
+                 <button
+                   type="button"
+                   onclick="handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
+                   class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm"
+                   title="Gán khoản chuyển khoản này cho học sinh & đánh dấu Đã hoàn thành học phí"
+                 >
+                   <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                   <span>Gán &amp; Duyệt</span>
+                 </button>
+               </div>
              </div>`
           : ''
       }
@@ -9800,6 +9851,195 @@ function closeTransactionDetailModal() {
   _activeDetailTxKey = '';
   const modal = document.getElementById('transaction-detail-modal');
   if (modal) modal.classList.add('hidden');
+}
+
+async function handleQuickAssignStudentToTx(txId) {
+  const tx = (appState.transactions || []).find(t => t.id === txId);
+  if (!tx) {
+    showToast('Không tìm thấy giao dịch!', 'error');
+    return;
+  }
+  const selectEl = document.getElementById(`quick-assign-stu-select-${txId}`);
+  const stuId = selectEl ? selectEl.value : '';
+  if (!stuId) {
+    showToast('Vui lòng chọn một học sinh trong danh sách để gán!', 'warning');
+    return;
+  }
+  const student = (appState.students || []).find(s => s.id === stuId);
+  if (!student) {
+    showToast('Không tìm thấy thông tin học sinh được chọn!', 'error');
+    return;
+  }
+
+  // 1. Cập nhật mã học sinh vào giao dịch
+  tx.studentCode = student.studentCode || '';
+  if (!tx.category || tx.category === 'Khác') {
+    tx.category = 'Thu học phí';
+  }
+
+  // 2. Cập nhật học sinh thành "Đã hoàn thành"
+  student.status = 'Đã hoàn thành';
+  const txDateStr = tx.date || new Date().toISOString().slice(0, 10);
+  student.completedAt = txDateStr;
+  student.paidAt = txDateStr;
+  const payTag = `Đã nhận CK: +${formatCurrency(tx.amount || student.tuitionFee || 600000)} (${txDateStr})`;
+  student.note = student.note ? `${student.note} • ${payTag}` : payTag;
+
+  // 3. Nếu có yêu cầu chờ duyệt cũ của học sinh này trong paymentRequests -> đánh dấu Đã duyệt
+  const matchedReq = (appState.paymentRequests || []).find(
+    r => (r.studentRecordId === student.id || r.studentCode === student.studentCode) && r.status === 'Chờ duyệt'
+  );
+  if (matchedReq) {
+    matchedReq.status = 'Đã duyệt';
+    matchedReq.reviewedAt = txDateStr;
+  }
+
+  saveStateToLocal();
+  renderAdminTransactions();
+  if (typeof renderClassbookTable === 'function') renderClassbookTable();
+  if (typeof renderStudentsTable === 'function') renderStudentsTable();
+  if (typeof updateGlobalHeaderBadges === 'function') updateGlobalHeaderBadges();
+
+  // Mở lại modal chi tiết để cập nhật giao diện
+  openTransactionDetailModal(tx.id);
+
+  showToast(`✅ Đã gán thành công cho ${student.fullName} (${student.studentCode}) & cập nhật Đã hoàn thành!`, 'success');
+  triggerAutoSyncIfNeeded(`Gán giao dịch cho học sinh ${student.fullName} và duyệt Đã hoàn thành học phí`);
+}
+
+async function handleUnassignStudentFromTx(txId) {
+  const tx = (appState.transactions || []).find(t => t.id === txId);
+  if (!tx) return;
+  tx.studentCode = '';
+  saveStateToLocal();
+  renderAdminTransactions();
+  if (typeof renderClassbookTable === 'function') renderClassbookTable();
+  if (typeof renderStudentsTable === 'function') renderStudentsTable();
+  openTransactionDetailModal(tx.id);
+  showToast('Đã bỏ liên kết học sinh khỏi giao dịch này.', 'info');
+  triggerAutoSyncIfNeeded('Bỏ gán học sinh khỏi giao dịch');
+}
+
+let _groupQrAmountFixed = false;
+
+function openGeneralGroupQrModal() {
+  const modal = document.getElementById('group-qr-modal');
+  if (!modal) return;
+  const stg = appState.settings || {};
+  const bank = stg.bankBin || 'BIDV';
+  const rawAcc = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
+  const owner = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
+
+  const bankEl = document.getElementById('group-qr-bank');
+  const ownerEl = document.getElementById('group-qr-owner');
+  const accEl = document.getElementById('group-qr-acc');
+  if (bankEl) bankEl.textContent = bank;
+  if (ownerEl) ownerEl.textContent = owner;
+  if (accEl) accEl.textContent = formatDisplayBankAccWithVa(rawAcc);
+
+  updateGroupQrAmountMode(false);
+  modal.classList.remove('hidden');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function closeGroupQrModal() {
+  const modal = document.getElementById('group-qr-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function updateGroupQrAmountMode(isFixed) {
+  _groupQrAmountFixed = isFixed;
+  const freeBtn = document.getElementById('group-qr-amount-free-btn');
+  const fixedBtn = document.getElementById('group-qr-amount-fixed-btn');
+  const fixedBox = document.getElementById('group-qr-fixed-amount-box');
+
+  if (freeBtn && fixedBtn) {
+    if (!isFixed) {
+      freeBtn.className = 'p-2 rounded-lg border-2 border-blue-600 bg-blue-50 text-blue-700 font-extrabold text-xs text-center cursor-pointer';
+      fixedBtn.className = 'p-2 rounded-lg border-2 border-slate-200 bg-white text-slate-600 hover:border-slate-300 font-bold text-xs text-center cursor-pointer';
+      if (fixedBox) fixedBox.classList.add('hidden');
+    } else {
+      fixedBtn.className = 'p-2 rounded-lg border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-extrabold text-xs text-center cursor-pointer';
+      freeBtn.className = 'p-2 rounded-lg border-2 border-slate-200 bg-white text-slate-600 hover:border-slate-300 font-bold text-xs text-center cursor-pointer';
+      if (fixedBox) fixedBox.classList.remove('hidden');
+    }
+  }
+  refreshGroupQrPreview();
+}
+
+function refreshGroupQrPreview() {
+  const stg = appState.settings || {};
+  const bank = stg.bankBin || 'BIDV';
+  const rawAcc = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
+  const owner = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
+
+  const amountInput = document.getElementById('group-qr-amount-input');
+  const amt = _groupQrAmountFixed && amountInput ? Number(amountInput.value) || 0 : 0;
+  const memo = 'HOC PHI';
+
+  let qrUrl = '';
+  if (amt > 0) {
+    const bin = encodeURIComponent(bank.trim());
+    const acc = encodeURIComponent(getEffectiveQrAccountNo(rawAcc));
+    const name = encodeURIComponent(owner.trim());
+    const info = encodeURIComponent(memo);
+    qrUrl = `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?amount=${amt}&addInfo=${info}&accountName=${name}`;
+  } else {
+    qrUrl = buildVietQrUrl(bank, rawAcc, owner, 0, memo);
+  }
+
+  const imgEl = document.getElementById('group-modal-qr-img');
+  if (imgEl) imgEl.src = qrUrl;
+}
+
+async function downloadGroupQrImage() {
+  const imgEl = document.getElementById('group-modal-qr-img');
+  if (!imgEl || !imgEl.src) return;
+  try {
+    showToast('Đang tải ảnh mã QR về máy...', 'info');
+    const res = await fetch(imgEl.src);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'Ma_VietQR_Hoc_Phi_Gui_Nhom.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+    showToast('Đã tải ảnh mã QR thành công!', 'success');
+  } catch (e) {
+    window.open(imgEl.src, '_blank');
+  }
+}
+
+function copyGroupQrZaloMessage() {
+  const stg = appState.settings || {};
+  const bank = stg.bankBin || 'BIDV';
+  const rawAcc = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
+  const owner = stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
+  const amountInput = document.getElementById('group-qr-amount-input');
+  const isFixed = _groupQrAmountFixed;
+  const amountVal = isFixed && amountInput ? Number(amountInput.value) || 0 : 0;
+
+  let msg = `Kính gửi Quý phụ huynh thông tin đóng học phí:\n` +
+    `- Ngân hàng: ${bank}\n` +
+    `- Số tài khoản: ${rawAcc}\n` +
+    `- Chủ tài khoản: ${owner}\n`;
+  if (amountVal > 0) {
+    msg += `- Số tiền học phí: ${formatCurrency(amountVal)}\n`;
+  }
+  msg += `(Quý phụ huynh quét mã QR đính kèm hoặc chuyển khoản theo thông tin trên. Trung tâm sẽ kiểm tra và xác nhận hoàn thành học phí.)`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).then(() => {
+      showToast('Đã sao chép nội dung tin nhắn gửi nhóm Zalo!', 'success');
+    }).catch(() => {
+      showToast('Đã hiển thị thông tin chuyển khoản!', 'info');
+    });
+  } else {
+    showToast('Đã sao chép nội dung tin nhắn gửi nhóm Zalo!', 'success');
+  }
 }
 
 async function handleBulkApproveTransactions() {
