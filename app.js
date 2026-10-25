@@ -5964,9 +5964,13 @@ function buildVietQrUrl(bankBin, accountNo, accountName, amount, addInfo) {
   const bin = encodeURIComponent((bankBin || 'BIDV').trim());
   const acc = encodeURIComponent(getEffectiveQrAccountNo(accountNo));
   const name = encodeURIComponent((accountName || 'HKD TRUNG TAM HUYNH THANH CHI').trim());
-  const info = encodeURIComponent((addInfo || 'HOC PHI').trim());
-  // Không gắn cố định amount trên mã QR để người chuyển tự nhập số tiền
-  return `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?addInfo=${info}&accountName=${name}`;
+  const cleanInfo = String(addInfo || '').trim();
+  const amtVal = Number(amount) || 0;
+  const params = [];
+  if (amtVal > 0) params.push(`amount=${amtVal}`);
+  if (cleanInfo) params.push(`addInfo=${encodeURIComponent(cleanInfo)}`);
+  if (name) params.push(`accountName=${name}`);
+  return `https://img.vietqr.io/image/${bin}-${acc}-compact2.png${params.length ? '?' + params.join('&') : ''}`;
 }
 
 // Xử lý kéo thả & chọn ảnh biên lai bên Phụ huynh
@@ -10416,13 +10420,14 @@ async function handleUnassignStudentFromTx(txId) {
 }
 
 let _groupQrAmountFixed = false;
+let _groupQrMemoCustom = false;
 
 const DEFAULT_GROUP_QR_MESSAGE_TEMPLATE = `Kính gửi Quý phụ huynh thông tin đóng học phí:
 - Ngân hàng: {ngan_hang}
 - Số tài khoản: {so_tai_khoan}
 - Chủ tài khoản: {chu_tai_khoan}
 - Mức học phí: {hoc_phi}
-- Cú pháp CK: HOC PHI
+- Gợi ý nội dung CK: {noi_dung_ck}
 (Quý phụ huynh quét mã QR đính kèm hoặc chuyển khoản theo thông tin trên để trung tâm đối soát và ghi nhận học phí cho học sinh.)`;
 
 function openGeneralGroupQrModal() {
@@ -10443,12 +10448,17 @@ function openGeneralGroupQrModal() {
   // Load custom message template into textarea
   const msgEl = document.getElementById('group-qr-custom-msg');
   if (msgEl) {
-    msgEl.value = (stg.groupQrMessageTemplate && stg.groupQrMessageTemplate.trim())
+    let tpl = (stg.groupQrMessageTemplate && stg.groupQrMessageTemplate.trim())
       ? stg.groupQrMessageTemplate
       : DEFAULT_GROUP_QR_MESSAGE_TEMPLATE;
+    if (tpl.includes('- Cú pháp CK: HOC PHI')) {
+      tpl = tpl.replace('- Cú pháp CK: HOC PHI', '- Gợi ý nội dung CK: {noi_dung_ck}');
+    }
+    msgEl.value = tpl;
   }
 
   updateGroupQrAmountMode(false);
+  updateGroupQrMemoMode(false);
   modal.classList.remove('hidden');
   if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
@@ -10478,6 +10488,26 @@ function updateGroupQrAmountMode(isFixed) {
   refreshGroupQrPreview();
 }
 
+function updateGroupQrMemoMode(isCustom) {
+  _groupQrMemoCustom = isCustom;
+  const emptyBtn = document.getElementById('group-qr-memo-empty-btn');
+  const customBtn = document.getElementById('group-qr-memo-custom-btn');
+  const customBox = document.getElementById('group-qr-custom-memo-box');
+
+  if (emptyBtn && customBtn) {
+    if (!isCustom) {
+      emptyBtn.className = 'p-2 rounded-lg border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-extrabold text-xs text-center cursor-pointer';
+      customBtn.className = 'p-2 rounded-lg border-2 border-slate-200 bg-white text-slate-600 hover:border-slate-300 font-bold text-xs text-center cursor-pointer';
+      if (customBox) customBox.classList.add('hidden');
+    } else {
+      customBtn.className = 'p-2 rounded-lg border-2 border-indigo-600 bg-indigo-50 text-indigo-800 font-extrabold text-xs text-center cursor-pointer';
+      emptyBtn.className = 'p-2 rounded-lg border-2 border-slate-200 bg-white text-slate-600 hover:border-slate-300 font-bold text-xs text-center cursor-pointer';
+      if (customBox) customBox.classList.remove('hidden');
+    }
+  }
+  refreshGroupQrPreview();
+}
+
 function refreshGroupQrPreview() {
   const stg = appState.settings || {};
   const bank = stg.bankBin || 'BIDV';
@@ -10486,18 +10516,11 @@ function refreshGroupQrPreview() {
 
   const amountInput = document.getElementById('group-qr-amount-input');
   const amt = _groupQrAmountFixed && amountInput ? Number(amountInput.value) || 0 : 0;
-  const memo = 'HOC PHI';
 
-  let qrUrl = '';
-  if (amt > 0) {
-    const bin = encodeURIComponent(bank.trim());
-    const acc = encodeURIComponent(getEffectiveQrAccountNo(rawAcc));
-    const name = encodeURIComponent(owner.trim());
-    const info = encodeURIComponent(memo);
-    qrUrl = `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?amount=${amt}&addInfo=${info}&accountName=${name}`;
-  } else {
-    qrUrl = buildVietQrUrl(bank, rawAcc, owner, 0, memo);
-  }
+  const memoInput = document.getElementById('group-qr-memo-input');
+  const memo = (_groupQrMemoCustom && memoInput) ? memoInput.value.trim() : '';
+
+  const qrUrl = buildVietQrUrl(bank, rawAcc, owner, amt, memo);
 
   const imgEl = document.getElementById('group-modal-qr-img');
   if (imgEl) imgEl.src = qrUrl;
@@ -10536,14 +10559,21 @@ function formatGroupQrMessage(tpl) {
   const amountVal = isFixed && amountInput ? Number(amountInput.value) || 0 : 0;
   const feeStr = amountVal > 0 ? formatCurrency(amountVal) : 'Phụ huynh tự nhập';
 
-  const template = tpl || (stg.groupQrMessageTemplate && stg.groupQrMessageTemplate.trim()) || DEFAULT_GROUP_QR_MESSAGE_TEMPLATE;
+  const memoInput = document.getElementById('group-qr-memo-input');
+  const customMemo = (_groupQrMemoCustom && memoInput) ? memoInput.value.trim() : '';
+  const memoStr = customMemo || 'Để mặc định hoặc ghi [Tên HS] [Lớp] (hoặc PH tự điền)';
+
+  let template = tpl || (stg.groupQrMessageTemplate && stg.groupQrMessageTemplate.trim()) || DEFAULT_GROUP_QR_MESSAGE_TEMPLATE;
+  if (template.includes('- Cú pháp CK: HOC PHI')) {
+    template = template.replace('- Cú pháp CK: HOC PHI', '- Gợi ý nội dung CK: {noi_dung_ck}');
+  }
 
   return template
     .replace(/\{ngan_hang\}/gi, bank)
     .replace(/\{so_tai_khoan\}/gi, rawAcc)
     .replace(/\{chu_tai_khoan\}/gi, owner)
     .replace(/\{hoc_phi\}/gi, feeStr)
-    .replace(/\{noi_dung_ck\}/gi, 'HOC PHI');
+    .replace(/\{noi_dung_ck\}/gi, memoStr);
 }
 
 async function copyGroupQrCustomMessage() {
