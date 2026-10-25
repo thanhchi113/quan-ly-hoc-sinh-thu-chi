@@ -9749,28 +9749,39 @@ function openTransactionDetailModal(itemKey) {
                    <span>Chưa gán học sinh</span>
                  </div>
                  <p class="text-[11px] font-semibold text-amber-800 truncate mt-0.5">
-                   Chọn học sinh bên dưới để tự động ghi nhận &amp; đánh dấu <strong>Đã hoàn thành</strong> học phí
+                   Gõ mã hoặc tên học sinh bên dưới để tự động ghi nhận học phí
                  </p>
                </div>
                <div class="flex items-center gap-1.5 shrink-0">
-                 <select id="quick-assign-stu-select-${escapeAttr(tx.id)}" class="px-2.5 py-1.5 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 max-w-[220px] focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
-                   <option value="">-- Chọn học sinh --</option>
-                   ${(appState.students || [])
-                     .slice()
-                     .sort((a, b) => {
-                       const aPaid = a.status === 'Đã hoàn thành' ? 1 : 0;
-                       const bPaid = b.status === 'Đã hoàn thành' ? 1 : 0;
-                       if (aPaid !== bPaid) return aPaid - bPaid;
-                       return String(a.fullName || '').localeCompare(String(b.fullName || ''), 'vi');
-                     })
-                     .map(
-                       s =>
-                         `<option value="${escapeAttr(s.id)}">${escapeHtml(s.studentCode || 'HS')} - ${escapeHtml(
-                           s.fullName
-                         )} (Lớp ${escapeHtml(s.className || '---')}${s.status === 'Đã hoàn thành' ? ' - Đã đóng' : ' - Chưa đóng'})</option>`
-                     )
-                     .join('')}
-                 </select>
+                 <div class="relative w-full sm:w-64">
+                    <input type="hidden" id="quick-assign-stu-id-${escapeAttr(tx.id)}" value="" />
+                    <div class="relative flex items-center">
+                      <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"></i>
+                      <input
+                        id="quick-assign-stu-input-${escapeAttr(tx.id)}"
+                        type="text"
+                        placeholder="Điền tên hoặc mã HS..."
+                        autocomplete="off"
+                        class="w-full pl-8 pr-7 py-1.5 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
+                        oninput="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
+                        onfocus="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();handleQuickAssignStudentToTx('${escapeAttr(tx.id)}');}"
+                      />
+                      <button
+                        id="quick-assign-clear-btn-${escapeAttr(tx.id)}"
+                        type="button"
+                        onclick="clearQuickAssignSelection('${escapeAttr(tx.id)}')"
+                        title="Xóa lựa chọn"
+                        class="hidden absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
+                      >
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                    <div
+                      id="quick-assign-suggest-box-${escapeAttr(tx.id)}"
+                      class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-xl z-50 divide-y divide-slate-100"
+                    ></div>
+                  </div>
                  <button
                    type="button"
                    onclick="handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
@@ -9853,16 +9864,232 @@ function closeTransactionDetailModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+function handleQuickAssignSearchInput(txId, typedVal) {
+  const raw = String(typedVal || '').trim();
+  const hiddenInput = document.getElementById(`quick-assign-stu-id-${txId}`);
+  const textInput = document.getElementById(`quick-assign-stu-input-${txId}`);
+  const clearBtn = document.getElementById(`quick-assign-clear-btn-${txId}`);
+  const suggestBox = document.getElementById(`quick-assign-suggest-box-${txId}`);
+  if (!suggestBox || !textInput) return;
+
+  const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+  if (!raw) {
+    if (hiddenInput) hiddenInput.value = '';
+    if (clearBtn) clearBtn.classList.add('hidden');
+    textInput.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'ring-2', 'ring-emerald-300');
+    textInput.classList.add('border-amber-400');
+
+    const unpaidList = (appState.students || [])
+      .filter(s => s.status !== 'Đã hoàn thành')
+      .slice(0, 8);
+    if (unpaidList.length > 0) {
+      suggestBox.innerHTML = `
+        <div class="px-2.5 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Học sinh chưa đóng học phí</div>
+        ${unpaidList.map(s => `
+          <div
+            onmousedown="selectQuickAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}')"
+            class="p-2 hover:bg-amber-50 cursor-pointer flex items-center justify-between gap-2 transition select-none"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase">${escapeHtml(s.studentCode || 'HS')}</span>
+                <span class="font-bold text-xs text-slate-900">${escapeHtml(s.fullName)}</span>
+                <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
+              </div>
+            </div>
+            <div class="shrink-0 text-right">
+              <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">⏳ Chưa đóng</span>
+            </div>
+          </div>
+        `).join('')}
+      `;
+      suggestBox.classList.remove('hidden');
+    } else {
+      suggestBox.innerHTML = '';
+      suggestBox.classList.add('hidden');
+    }
+    return;
+  }
+
+  if (clearBtn) clearBtn.classList.remove('hidden');
+
+  // 1. Nếu người dùng điền MÃ HỌC SINH -> Tự động nhận đúng học sinh có mã số
+  const rawNorm = norm(raw);
+  const exactCodeMatch = (appState.students || []).find(s => norm(s.studentCode) === rawNorm && rawNorm.length >= 2);
+
+  if (exactCodeMatch) {
+    if (hiddenInput) hiddenInput.value = exactCodeMatch.id;
+    textInput.classList.remove('border-amber-400');
+    textInput.classList.add('border-emerald-500', 'bg-emerald-50/50', 'ring-2', 'ring-emerald-300');
+
+    suggestBox.innerHTML = `
+      <div
+        onmousedown="selectQuickAssignStudent('${escapeAttr(txId)}', '${escapeAttr(exactCodeMatch.id)}')"
+        class="p-2.5 bg-emerald-50/90 hover:bg-emerald-100 cursor-pointer flex items-center justify-between gap-2 transition select-none"
+      >
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[10px] uppercase">✓ Khớp mã: ${escapeHtml(exactCodeMatch.studentCode || 'HS')}</span>
+            <span class="font-extrabold text-xs text-emerald-950">${escapeHtml(exactCodeMatch.fullName)}</span>
+            <span class="text-[11px] text-emerald-700 font-semibold">(Lớp ${escapeHtml(exactCodeMatch.className || '---')})</span>
+          </div>
+          <div class="text-[11px] text-emerald-700 mt-0.5 font-medium">Học phí: ${formatCurrency(exactCodeMatch.tuitionFee || 600000)} • Nhấn Enter hoặc 'Gán & Duyệt'</div>
+        </div>
+        <div class="shrink-0 text-right">
+          <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded ${exactCodeMatch.status === 'Đã hoàn thành' ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'}">
+            ${exactCodeMatch.status === 'Đã hoàn thành' ? '✓ Đã đóng' : '⏳ Chưa đóng'}
+          </span>
+        </div>
+      </div>
+    `;
+    suggestBox.classList.remove('hidden');
+    return;
+  }
+
+  // 2. Nếu người dùng điền TÊN hoặc tiền tố -> Đề xuất học sinh kèm mã tương ứng
+  if (hiddenInput) hiddenInput.value = '';
+  textInput.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'ring-2', 'ring-emerald-300');
+  textInput.classList.add('border-amber-400');
+
+  const q = removeVietnameseTones(raw.toLowerCase()).replace(/\s+/g, ' ').trim();
+  const candidates = (appState.students || []).filter(s => {
+    const sCode = norm(s.studentCode);
+    const sName = removeVietnameseTones(String(s.fullName || '').toLowerCase()).trim();
+    const sClass = removeVietnameseTones(String(s.className || '').toLowerCase()).trim();
+    return (rawNorm.length >= 2 && sCode.includes(rawNorm)) || sName.includes(q) || sClass.includes(q);
+  });
+
+  candidates.sort((a, b) => {
+    const aNameClean = removeVietnameseTones(String(a.fullName || '').toLowerCase()).trim();
+    const bNameClean = removeVietnameseTones(String(b.fullName || '').toLowerCase()).trim();
+    if (aNameClean === q && bNameClean !== q) return -1;
+    if (bNameClean === q && aNameClean !== q) return 1;
+
+    const aPaid = a.status === 'Đã hoàn thành' ? 1 : 0;
+    const bPaid = b.status === 'Đã hoàn thành' ? 1 : 0;
+    if (aPaid !== bPaid) return aPaid - bPaid;
+    return String(a.fullName || '').localeCompare(String(b.fullName || ''), 'vi');
+  });
+
+  const sliced = candidates.slice(0, 8);
+  if (sliced.length === 0) {
+    suggestBox.innerHTML = `
+      <div class="p-3 text-center text-xs text-slate-500 font-semibold">
+        Không tìm thấy học sinh phù hợp với "${escapeHtml(raw)}"
+      </div>
+    `;
+    suggestBox.classList.remove('hidden');
+    return;
+  }
+
+  suggestBox.innerHTML = `
+    <div class="px-2.5 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Đề xuất (${candidates.length} học sinh)</div>
+    ${sliced.map(s => `
+      <div
+        onmousedown="selectQuickAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}')"
+        class="p-2 hover:bg-amber-50 cursor-pointer flex items-center justify-between gap-2 transition select-none"
+      >
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wide">${escapeHtml(s.studentCode || 'HS')}</span>
+            <span class="font-bold text-xs text-slate-900">${escapeHtml(s.fullName)}</span>
+            <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
+          </div>
+        </div>
+        <div class="shrink-0 text-right">
+          <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded ${s.status === 'Đã hoàn thành' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+            ${s.status === 'Đã hoàn thành' ? '✓ Đã đóng' : '⏳ Chưa đóng'}
+          </span>
+        </div>
+      </div>
+    `).join('')}
+  `;
+  suggestBox.classList.remove('hidden');
+}
+
+function selectQuickAssignStudent(txId, studentId) {
+  const student = (appState.students || []).find(s => s.id === studentId);
+  if (!student) return;
+
+  const hiddenInput = document.getElementById(`quick-assign-stu-id-${txId}`);
+  const textInput = document.getElementById(`quick-assign-stu-input-${txId}`);
+  const clearBtn = document.getElementById(`quick-assign-clear-btn-${txId}`);
+  const suggestBox = document.getElementById(`quick-assign-suggest-box-${txId}`);
+
+  if (hiddenInput) hiddenInput.value = student.id;
+  if (textInput) {
+    textInput.value = `[${student.studentCode || 'HS'}] ${student.fullName} (Lớp ${student.className || '---'})`;
+    textInput.classList.remove('border-amber-400');
+    textInput.classList.add('border-emerald-500', 'bg-emerald-50/50', 'ring-2', 'ring-emerald-300');
+  }
+  if (clearBtn) clearBtn.classList.remove('hidden');
+  if (suggestBox) {
+    suggestBox.innerHTML = '';
+    suggestBox.classList.add('hidden');
+  }
+}
+
+function clearQuickAssignSelection(txId) {
+  const hiddenInput = document.getElementById(`quick-assign-stu-id-${txId}`);
+  const textInput = document.getElementById(`quick-assign-stu-input-${txId}`);
+  const clearBtn = document.getElementById(`quick-assign-clear-btn-${txId}`);
+  const suggestBox = document.getElementById(`quick-assign-suggest-box-${txId}`);
+
+  if (hiddenInput) hiddenInput.value = '';
+  if (textInput) {
+    textInput.value = '';
+    textInput.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'ring-2', 'ring-emerald-300');
+    textInput.classList.add('border-amber-400');
+    textInput.focus();
+  }
+  if (clearBtn) clearBtn.classList.add('hidden');
+  if (suggestBox) {
+    suggestBox.innerHTML = '';
+    suggestBox.classList.add('hidden');
+  }
+}
+
 async function handleQuickAssignStudentToTx(txId) {
   const tx = (appState.transactions || []).find(t => t.id === txId);
   if (!tx) {
     showToast('Không tìm thấy giao dịch!', 'error');
     return;
   }
-  const selectEl = document.getElementById(`quick-assign-stu-select-${txId}`);
-  const stuId = selectEl ? selectEl.value : '';
+  const hiddenInput = document.getElementById(`quick-assign-stu-id-${txId}`);
+  const textInput = document.getElementById(`quick-assign-stu-input-${txId}`);
+  let stuId = hiddenInput ? hiddenInput.value : '';
+
+  // Nếu chưa có stuId trong hiddenInput, tự động đối chiếu dựa trên nội dung đã gõ trong textInput
+  if (!stuId && textInput && textInput.value.trim()) {
+    const raw = textInput.value.trim();
+    const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const rawNorm = norm(raw);
+
+    // 1. Đối chiếu theo mã học sinh
+    let found = (appState.students || []).find(s => norm(s.studentCode) === rawNorm && rawNorm.length >= 2);
+    // 2. Đối chiếu theo tên đầy đủ
+    if (!found) {
+      const q = removeVietnameseTones(raw.toLowerCase()).trim();
+      found = (appState.students || []).find(s => removeVietnameseTones(String(s.fullName || '').toLowerCase()).trim() === q);
+    }
+    // 3. Nếu danh sách tìm kiếm chỉ có đúng 1 học sinh thỏa mãn
+    if (!found) {
+      const q = removeVietnameseTones(raw.toLowerCase()).trim();
+      const matches = (appState.students || []).filter(s => {
+        const sName = removeVietnameseTones(String(s.fullName || '').toLowerCase()).trim();
+        return sName.includes(q);
+      });
+      if (matches.length === 1) found = matches[0];
+    }
+    if (found) {
+      stuId = found.id;
+    }
+  }
+
   if (!stuId) {
-    showToast('Vui lòng chọn một học sinh trong danh sách để gán!', 'warning');
+    showToast('Vui lòng gõ mã hoặc chọn một học sinh trong danh sách đề xuất!', 'warning');
+    if (textInput) textInput.focus();
     return;
   }
   const student = (appState.students || []).find(s => s.id === stuId);
@@ -18150,6 +18377,12 @@ function initTcCustomDatePickerEngine() {
   });
 
   document.addEventListener('click', e => {
+    const t = e.target;
+    if (t && typeof t.closest === 'function') {
+      if (!t.closest('[id^="quick-assign-suggest-box"]') && !t.closest('[id^="quick-assign-stu-input"]')) {
+        document.querySelectorAll('[id^="quick-assign-suggest-box"]').forEach(el => el.classList.add('hidden'));
+      }
+    }
     if (handleDateInputTrigger(e)) return;
     const target = e.target;
     if (!target || typeof target.closest !== 'function') return;
