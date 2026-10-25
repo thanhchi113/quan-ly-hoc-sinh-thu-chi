@@ -9941,9 +9941,9 @@ function openTransactionDetailModal(itemKey) {
                 <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
                   <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
                   <span class="shrink-0 font-bold">Chưa gán học sinh</span>
-                  <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã học sinh bên dưới để tự động ghi nhận học phí</span>
+                  <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã HS bên dưới để gán và tự động ghi nhận học phí</span>
                 </div>
-                <div class="flex items-center gap-2 w-full">
+                <div class="flex items-center gap-2 w-full" onclick="event.stopPropagation()">
                   <div class="relative flex-1 min-w-0">
                     <input type="hidden" id="quick-assign-stu-id-${escapeAttr(tx.id)}" value="" />
                     <div class="relative flex items-center">
@@ -9956,13 +9956,13 @@ function openTransactionDetailModal(itemKey) {
                         class="w-full pl-8 pr-7 py-2 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
                         oninput="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
                         onfocus="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
-                        onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(tx.id)}');if(b)b.classList.add('hidden');},220)"
-                        onkeydown="if(event.key==='Enter'){event.preventDefault();handleQuickAssignStudentToTx('${escapeAttr(tx.id)}');}"
+                        onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(tx.id)}');if(b)b.classList.add('hidden');},260)"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();handleQuickAssignStudentToTx('${escapeAttr(tx.id)}');}"
                       />
                       <button
                         id="quick-assign-clear-btn-${escapeAttr(tx.id)}"
                         type="button"
-                        onclick="clearQuickAssignSelection('${escapeAttr(tx.id)}')"
+                        onclick="event.stopPropagation(); clearQuickAssignSelection('${escapeAttr(tx.id)}')"
                         title="Xóa lựa chọn"
                         class="hidden absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
                       >
@@ -9971,12 +9971,13 @@ function openTransactionDetailModal(itemKey) {
                     </div>
                     <div
                       id="quick-assign-suggest-box-${escapeAttr(tx.id)}"
-                      class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-xl z-50 divide-y divide-slate-100"
+                      onclick="event.stopPropagation()"
+                      class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[100] divide-y divide-slate-100"
                     ></div>
                   </div>
                   <button
                     type="button"
-                    onclick="handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
+                    onclick="event.stopPropagation(); handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
                     class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm whitespace-nowrap h-[36px]"
                     title="Gán khoản chuyển khoản này cho học sinh & đánh dấu Đã hoàn thành học phí"
                   >
@@ -10052,7 +10053,10 @@ function openTransactionDetailModal(itemKey) {
 
 
 function handleTxModalCardClick(e) {
-  const t = e.target;
+  if (e && typeof e.stopPropagation === 'function') {
+    e.stopPropagation();
+  }
+  const t = e ? e.target : null;
   if (t && typeof t.closest === 'function') {
     if (!t.closest('[id^="quick-assign-suggest-box"]') && !t.closest('[id^="quick-assign-stu-input"]')) {
       document.querySelectorAll('[id^="quick-assign-suggest-box"]').forEach(el => el.classList.add('hidden'));
@@ -10106,26 +10110,36 @@ function handleQuickAssignSearchInput(txId, typedVal) {
       .slice(0, 8);
     if (unpaidList.length > 0) {
       suggestBox.innerHTML = `
-        <div class="px-2.5 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Học sinh chưa đóng học phí</div>
+        <div class="px-2.5 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Học sinh chưa đóng học phí (Bấm để gán ngay)</div>
         ${unpaidList.map(s => `
           <div
-            onmousedown="selectQuickAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}')"
-            class="p-2 hover:bg-amber-50 cursor-pointer flex items-center justify-between gap-2 transition select-none"
+            onmousedown="event.preventDefault(); event.stopPropagation(); selectAndAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}');"
+            class="p-2.5 hover:bg-emerald-50/80 cursor-pointer flex items-center justify-between gap-2 transition select-none group"
+            title="Bấm để gán học sinh ${escapeAttr(s.fullName)} (${escapeAttr(s.studentCode || 'HS')}) và duyệt hoàn thành học phí"
           >
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase">${escapeHtml(s.studentCode || 'HS')}</span>
-                <span class="font-bold text-xs text-slate-900">${escapeHtml(s.fullName)}</span>
+                <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wide">${escapeHtml(s.studentCode || 'HS')}</span>
+                <span class="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700">${escapeHtml(s.fullName)}</span>
                 <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
               </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee || 600000)} • Bấm để gán ngay</div>
             </div>
-            <div class="shrink-0 text-right">
-              <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">⏳ Chưa đóng</span>
+            <div class="shrink-0 flex items-center gap-1.5">
+              <button
+                type="button"
+                onmousedown="event.preventDefault(); event.stopPropagation(); selectAndAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}');"
+                class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition inline-flex items-center gap-1 cursor-pointer"
+              >
+                <i data-lucide="check" class="w-3 h-3"></i>
+                <span>Gán ngay</span>
+              </button>
             </div>
           </div>
         `).join('')}
       `;
       suggestBox.classList.remove('hidden');
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     } else {
       suggestBox.innerHTML = '';
       suggestBox.classList.add('hidden');
@@ -10137,7 +10151,10 @@ function handleQuickAssignSearchInput(txId, typedVal) {
 
   // 1. Nếu người dùng điền MÃ HỌC SINH -> Tự động nhận đúng học sinh có mã số
   const rawNorm = norm(raw);
-  const exactCodeMatch = (appState.students || []).find(s => norm(s.studentCode) === rawNorm && rawNorm.length >= 2);
+  const exactCodeMatch = (appState.students || []).find(s => {
+    const codeNorm = norm(s.studentCode);
+    return (codeNorm === rawNorm || (rawNorm.length >= 2 && codeNorm.endsWith(rawNorm))) && rawNorm.length >= 2;
+  });
 
   if (exactCodeMatch) {
     if (hiddenInput) hiddenInput.value = exactCodeMatch.id;
@@ -10146,8 +10163,9 @@ function handleQuickAssignSearchInput(txId, typedVal) {
 
     suggestBox.innerHTML = `
       <div
-        onmousedown="selectQuickAssignStudent('${escapeAttr(txId)}', '${escapeAttr(exactCodeMatch.id)}')"
-        class="p-2.5 bg-emerald-50/90 hover:bg-emerald-100 cursor-pointer flex items-center justify-between gap-2 transition select-none"
+        onmousedown="event.preventDefault(); event.stopPropagation(); selectAndAssignStudent('${escapeAttr(txId)}', '${escapeAttr(exactCodeMatch.id)}');"
+        class="p-2.5 bg-emerald-50/90 hover:bg-emerald-100 cursor-pointer flex items-center justify-between gap-2 transition select-none group"
+        title="Bấm để gán ngay cho ${escapeAttr(exactCodeMatch.fullName)}"
       >
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5 flex-wrap">
@@ -10155,16 +10173,22 @@ function handleQuickAssignSearchInput(txId, typedVal) {
             <span class="font-extrabold text-xs text-emerald-950">${escapeHtml(exactCodeMatch.fullName)}</span>
             <span class="text-[11px] text-emerald-700 font-semibold">(Lớp ${escapeHtml(exactCodeMatch.className || '---')})</span>
           </div>
-          <div class="text-[11px] text-emerald-700 mt-0.5 font-medium">Học phí: ${formatCurrency(exactCodeMatch.tuitionFee || 600000)} • Nhấn Enter hoặc 'Gán & Duyệt'</div>
+          <div class="text-[11px] text-emerald-700 mt-0.5 font-medium">Học phí: ${formatCurrency(exactCodeMatch.tuitionFee || 600000)} • Bấm để gán ngay</div>
         </div>
-        <div class="shrink-0 text-right">
-          <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded ${exactCodeMatch.status === 'Đã hoàn thành' ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'}">
-            ${exactCodeMatch.status === 'Đã hoàn thành' ? '✓ Đã đóng' : '⏳ Chưa đóng'}
-          </span>
+        <div class="shrink-0 flex items-center gap-1.5">
+          <button
+            type="button"
+            onmousedown="event.preventDefault(); event.stopPropagation(); selectAndAssignStudent('${escapeAttr(txId)}', '${escapeAttr(exactCodeMatch.id)}');"
+            class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition inline-flex items-center gap-1 cursor-pointer"
+          >
+            <i data-lucide="check" class="w-3 h-3"></i>
+            <span>Gán ngay</span>
+          </button>
         </div>
       </div>
     `;
     suggestBox.classList.remove('hidden');
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     return;
   }
 
@@ -10205,28 +10229,36 @@ function handleQuickAssignSearchInput(txId, typedVal) {
   }
 
   suggestBox.innerHTML = `
-    <div class="px-2.5 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Đề xuất (${candidates.length} học sinh)</div>
+    <div class="px-2.5 py-1.5 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Đề xuất (${candidates.length} học sinh) • Bấm để gán ngay</div>
     ${sliced.map(s => `
       <div
-        onmousedown="selectQuickAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}')"
-        class="p-2 hover:bg-amber-50 cursor-pointer flex items-center justify-between gap-2 transition select-none"
+        onmousedown="event.preventDefault(); event.stopPropagation(); selectAndAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}');"
+        class="p-2.5 hover:bg-emerald-50/80 cursor-pointer flex items-center justify-between gap-2 transition select-none group"
+        title="Bấm để gán học sinh ${escapeAttr(s.fullName)} (${escapeAttr(s.studentCode || 'HS')}) và duyệt hoàn thành học phí"
       >
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wide">${escapeHtml(s.studentCode || 'HS')}</span>
-            <span class="font-bold text-xs text-slate-900">${escapeHtml(s.fullName)}</span>
+            <span class="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700">${escapeHtml(s.fullName)}</span>
             <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
           </div>
+          <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee || 600000)} • Bấm để gán ngay</div>
         </div>
-        <div class="shrink-0 text-right">
-          <span class="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded ${s.status === 'Đã hoàn thành' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-            ${s.status === 'Đã hoàn thành' ? '✓ Đã đóng' : '⏳ Chưa đóng'}
-          </span>
+        <div class="shrink-0 flex items-center gap-1.5">
+          <button
+            type="button"
+            onmousedown="event.preventDefault(); event.stopPropagation(); selectAndAssignStudent('${escapeAttr(txId)}', '${escapeAttr(s.id)}');"
+            class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-sm transition inline-flex items-center gap-1 cursor-pointer"
+          >
+            <i data-lucide="check" class="w-3 h-3"></i>
+            <span>Gán ngay</span>
+          </button>
         </div>
       </div>
     `).join('')}
   `;
   suggestBox.classList.remove('hidden');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
 function selectQuickAssignStudent(txId, studentId) {
@@ -10251,6 +10283,11 @@ function selectQuickAssignStudent(txId, studentId) {
   }
 }
 
+async function selectAndAssignStudent(txId, studentId) {
+  selectQuickAssignStudent(txId, studentId);
+  await handleQuickAssignStudentToTx(txId, studentId);
+}
+
 function clearQuickAssignSelection(txId) {
   const hiddenInput = document.getElementById(`quick-assign-stu-id-${txId}`);
   const textInput = document.getElementById(`quick-assign-stu-input-${txId}`);
@@ -10271,7 +10308,7 @@ function clearQuickAssignSelection(txId) {
   }
 }
 
-async function handleQuickAssignStudentToTx(txId) {
+async function handleQuickAssignStudentToTx(txId, explicitStuId = '') {
   const tx = (appState.transactions || []).find(t => t.id === txId);
   if (!tx) {
     showToast('Không tìm thấy giao dịch!', 'error');
@@ -10279,7 +10316,7 @@ async function handleQuickAssignStudentToTx(txId) {
   }
   const hiddenInput = document.getElementById(`quick-assign-stu-id-${txId}`);
   const textInput = document.getElementById(`quick-assign-stu-input-${txId}`);
-  let stuId = hiddenInput ? hiddenInput.value : '';
+  let stuId = explicitStuId || (hiddenInput ? hiddenInput.value : '');
 
   // Nếu chưa có stuId trong hiddenInput, tự động đối chiếu dựa trên nội dung đã gõ trong textInput
   if (!stuId && textInput && textInput.value.trim()) {
@@ -10287,8 +10324,11 @@ async function handleQuickAssignStudentToTx(txId) {
     const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     const rawNorm = norm(raw);
 
-    // 1. Đối chiếu theo mã học sinh
-    let found = (appState.students || []).find(s => norm(s.studentCode) === rawNorm && rawNorm.length >= 2);
+    // 1. Đối chiếu theo mã học sinh (ví dụ HS001 hoặc 001)
+    let found = (appState.students || []).find(s => {
+      const codeNorm = norm(s.studentCode);
+      return (codeNorm === rawNorm || (rawNorm.length >= 2 && codeNorm.endsWith(rawNorm))) && rawNorm.length >= 2;
+    });
     // 2. Đối chiếu theo tên đầy đủ
     if (!found) {
       const q = removeVietnameseTones(raw.toLowerCase()).trim();
@@ -10319,6 +10359,8 @@ async function handleQuickAssignStudentToTx(txId) {
     return;
   }
 
+  const oldTxCopy = { ...tx };
+
   // 1. Cập nhật mã học sinh vào giao dịch
   tx.studentCode = student.studentCode || '';
   if (!tx.category || tx.category === 'Khác') {
@@ -10342,6 +10384,9 @@ async function handleQuickAssignStudentToTx(txId) {
     matchedReq.reviewedAt = txDateStr;
   }
 
+  // Ghi nhận override để đồng bộ an toàn không mất mã học sinh đã gán
+  recordEditedTransactionOverride(appState, oldTxCopy, tx);
+
   saveStateToLocal();
   renderAdminTransactions();
   if (typeof renderClassbookTable === 'function') renderClassbookTable();
@@ -10358,7 +10403,9 @@ async function handleQuickAssignStudentToTx(txId) {
 async function handleUnassignStudentFromTx(txId) {
   const tx = (appState.transactions || []).find(t => t.id === txId);
   if (!tx) return;
+  const oldTxCopy = { ...tx };
   tx.studentCode = '';
+  recordEditedTransactionOverride(appState, oldTxCopy, tx);
   saveStateToLocal();
   renderAdminTransactions();
   if (typeof renderClassbookTable === 'function') renderClassbookTable();
