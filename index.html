@@ -5368,10 +5368,10 @@
   <div
     id="transaction-detail-modal"
     onclick="closeTransactionDetailModal()"
-    class="fixed inset-0 z-[90] hidden bg-[#0a0a0a]/60  flex items-center justify-center p-4"
+    class="fixed inset-0 z-[90] hidden bg-[#0a0a0a]/60 flex items-center justify-center p-4"
   >
     <div
-      onclick="handleTxModalCardClick(event)"
+      onclick="event.stopPropagation(); handleTxModalCardClick(event);"
       class="tc-dialog-card max-w-lg w-full overflow-hidden animate-fade-in"
     >
       <div id="tx-detail-header" class="tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3">
@@ -5670,6 +5670,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261025_v33"></script>
+  <script src="app.js?v=20261025_v34"></script>
 </body>
 </html>
