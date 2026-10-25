@@ -4532,6 +4532,7 @@ function bootstrapApp() {
   // Nếu đã cấu hình link Google Sheet thì tự động tải dữ liệu mới nhất về & bật lắng nghe biến động số dư
   const gasUrl = getGasUrl();
   if (gasUrl) {
+    if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
     syncFromGoogleSheet(false);
     startLiveBankPolling();
   }
@@ -17168,11 +17169,56 @@ function playTingSound() {
   }
 }
 
+function getNotifiedBankTxIds() {
+  try {
+    const raw = localStorage.getItem('TC_NOTIFIED_BANK_TX_IDS');
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function markBankTxAsNotified(id) {
+  if (!id) return;
+  try {
+    const set = getNotifiedBankTxIds();
+    set.add(String(id).trim());
+    const arr = Array.from(set).slice(-400);
+    localStorage.setItem('TC_NOTIFIED_BANK_TX_IDS', JSON.stringify(arr));
+  } catch (e) {}
+}
+
+function seedCurrentBankTxAsNotified(stateObj = appState) {
+  try {
+    const set = getNotifiedBankTxIds();
+    (stateObj?.transactions || []).forEach(t => {
+      if (t && t.id) set.add(String(t.id).trim());
+    });
+    if (stateObj?.settings?.lastBankAlertJson) {
+      try {
+        const a = JSON.parse(stateObj.settings.lastBankAlertJson);
+        const aid = String(a?.id || a?.time || '').trim();
+        if (aid) set.add(aid);
+      } catch (e) {}
+    }
+    (stateObj?.students || []).forEach(s => {
+      if (s && s.status === 'Đã hoàn thành') {
+        set.add(`PAID_${s.id}_${s.period || 'cur'}`);
+      }
+    });
+    const arr = Array.from(set).slice(-400);
+    localStorage.setItem('TC_NOTIFIED_BANK_TX_IDS', JSON.stringify(arr));
+  } catch (e) {}
+}
+
 function startLiveBankPolling() {
   if (livePollingTimer) clearInterval(livePollingTimer);
   const checkbox = document.getElementById('setting-live-polling');
   const isEnabled = checkbox ? checkbox.checked : true;
   if (!isEnabled) return;
+
+  seedCurrentBankTxAsNotified(appState);
 
   const webhookDisplay = document.getElementById('bank-webhook-url-display');
   if (webhookDisplay && getGasUrl()) {
@@ -17190,7 +17236,6 @@ function startLiveBankPolling() {
           .filter(s => s.status === 'Đã hoàn thành')
           .map(s => s.studentCode + '_' + s.period)
       );
-      const prevAlertJson = appState.settings?.lastBankAlertJson || '';
 
       const res = await fetch(`${gasUrl}?action=getAll&t=${pullStartedAt}`, {
         method: 'GET',
@@ -17202,11 +17247,41 @@ function startLiveBankPolling() {
         const nextState = mergeServerData(json.data);
         const didReconcileSepay = Boolean(nextState._sepayAutoReconciled);
         delete nextState._sepayAutoReconciled;
+
+        const notifiedSet = getNotifiedBankTxIds();
+
+        // 1. Kiểm tra alert SePay thực sự mới (chưa từng hiển thị thông báo)
+        let trulyNewAlert = null;
+        if (nextState.settings?.lastBankAlertJson) {
+          try {
+            const alertObj = JSON.parse(nextState.settings.lastBankAlertJson);
+            const alertId = String(alertObj?.id || alertObj?.time || '').trim();
+            if (alertId && !notifiedSet.has(alertId) && !alertObj?.isTest) {
+              trulyNewAlert = alertObj;
+              markBankTxAsNotified(alertId);
+            }
+          } catch (e) {}
+        }
+
+        // 2. Kiểm tra giao dịch SePay/ngân hàng mới phát sinh (chưa từng hiển thị thông báo)
+        const prevTxIds = new Set((appState.transactions || []).map(t => String(t.id).trim()));
+        const trulyNewTxs = (nextState.transactions || []).filter(t => {
+          if (!t || !t.id) return false;
+          const tid = String(t.id).trim();
+          return !prevTxIds.has(tid) && !notifiedSet.has(tid) && !isSimulatedBankTestItem(t);
+        });
+        trulyNewTxs.forEach(t => markBankTxAsNotified(t.id));
+
+        // 3. Kiểm tra học sinh vừa được tự động gạch nợ học phí mới
         const newlyPaid = (nextState.students || []).filter(
           s => s.status === 'Đã hoàn thành' && !prevPaidSet.has(s.studentCode + '_' + s.period)
         );
-        const nextAlertJson = nextState.settings?.lastBankAlertJson || '';
-        const hasNewBankAlert = nextAlertJson && nextAlertJson !== prevAlertJson;
+        const trulyNewPaidStudents = newlyPaid.filter(st => {
+          const payKey = `PAID_${st.id}_${st.period || 'cur'}`;
+          if (notifiedSet.has(payKey)) return false;
+          markBankTxAsNotified(payKey);
+          return true;
+        });
 
         const prevTxCount = (appState.transactions || []).length;
         const nextTxCount = (nextState.transactions || []).length;
@@ -17215,7 +17290,8 @@ function startLiveBankPolling() {
         const nextReqCount = (nextState.paymentRequests || []).length;
         const hasNewReq = nextReqCount !== prevReqCount;
 
-        if (newlyPaid.length > 0 || hasNewBankAlert || didReconcileSepay || hasNewTx || hasNewReq) {
+        // Cập nhật appState nếu có thay đổi
+        if (newlyPaid.length > 0 || trulyNewAlert || didReconcileSepay || hasNewTx || hasNewReq) {
           appState = nextState;
           try {
             isSilentServerSync = true;
@@ -17227,24 +17303,31 @@ function startLiveBankPolling() {
             syncAllToGoogleSheet(false).catch(() => {});
           }
 
-          // Chỉ phát âm báo & hiển thị thông báo số dư / duyệt tự động khi đang ở Cổng Quản lý đã đăng nhập
-          if (currentMode === 'admin' && isAdminAuthenticated()) {
+          // CHỈ PHÁT ÂM BÁO VÀ HIỂN THỊ THÔNG BÁO ĐÚNG 1 LẦN DUY NHẤT KHI CÓ SỰ KIỆN MỚI
+          const hasFreshNotification = Boolean(trulyNewAlert || trulyNewTxs.length > 0 || trulyNewPaidStudents.length > 0);
+          if (hasFreshNotification && currentMode === 'admin' && isAdminAuthenticated()) {
             playTingSound();
 
-            if (hasNewBankAlert) {
+            if (trulyNewAlert) {
               try {
-                const alertObj = JSON.parse(nextAlertJson);
-                const sign = alertObj.type === 'out' ? '-' : '+';
+                const sign = trulyNewAlert.type === 'out' ? '-' : '+';
                 showToast(
-                  `SEPAY BÁO SỐ DƯ (${alertObj.gateway || 'BIDV'} ${alertObj.accountNumber || ''}): ${sign}${formatCurrency(alertObj.amount)} | Số dư mới: ${formatCurrency(
-                    alertObj.balance ?? getComputedSepayBalance()
-                  )} | ND: ${alertObj.content}`,
+                  `SEPAY BÁO SỐ DƯ (${trulyNewAlert.gateway || 'BIDV'} ${trulyNewAlert.accountNumber || ''}): ${sign}${formatCurrency(trulyNewAlert.amount)} | Số dư mới: ${formatCurrency(
+                    trulyNewAlert.balance ?? getComputedSepayBalance()
+                  )} | ND: ${trulyNewAlert.content}`,
                   'success'
                 );
               } catch (e) {}
+            } else if (trulyNewTxs.length > 0) {
+              const firstTx = trulyNewTxs[0];
+              const sign = firstTx.type === 'Chi' ? '-' : '+';
+              showToast(
+                `CHUYỂN KHOẢN MỚI (${firstTx.method || 'SePay'}): ${sign}${formatCurrency(firstTx.amount)} | ${firstTx.description || firstTx.category || 'Giao dịch ngân hàng'}`,
+                'success'
+              );
             }
 
-            newlyPaid.forEach(st => {
+            trulyNewPaidStudents.forEach(st => {
               showToast(
                 `ĐÃ DUYỆT TỰ ĐỘNG: Học sinh ${st.fullName} (${st.studentCode}) vừa hoàn thành học phí (${formatCurrency(
                   st.tuitionFee
