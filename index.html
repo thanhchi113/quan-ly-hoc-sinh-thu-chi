@@ -28,7 +28,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261025_v17" />
+  <link rel="stylesheet" href="styles.css?v=20261025_v18" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -2705,6 +2705,16 @@
                   <span id="undo-count-badge-finance" class="hidden px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-xs font-extrabold">0</span>
                 </button>
                 <button
+                  id="btn-refresh-finance"
+                  type="button"
+                  onclick="handleRefreshFinanceTransactions()"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 transition cursor-pointer shrink-0"
+                  title="Tải lại danh sách giao dịch & đồng bộ mới nhất từ SePay / Google Sheet"
+                >
+                  <i id="icon-refresh-finance" data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  <span>Làm mới Thu Chi</span>
+                </button>
+                <button
                   onclick="openTransactionModal('Thu')"
                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white  transition cursor-pointer"
                 >
@@ -5340,7 +5350,7 @@
     class="fixed inset-0 z-[90] hidden bg-[#0a0a0a]/60  flex items-center justify-center p-4"
   >
     <div
-      onclick="event.stopPropagation()"
+      onclick="handleTxModalCardClick(event)"
       class="tc-dialog-card max-w-lg w-full overflow-hidden animate-fade-in"
     >
       <div id="tx-detail-header" class="tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3">
@@ -5578,6 +5588,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261025_v29"></script>
+  <script src="app.js?v=20261025_v30"></script>
 </body>
 </html>
