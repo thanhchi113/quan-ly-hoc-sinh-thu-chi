@@ -600,18 +600,22 @@ function writeTransactionsToSheet(sheet, transactions) {
     sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).clearContent();
   }
   if (!transactions || transactions.length === 0) return;
-  const rows = transactions.map(t => [
-    t.id || '',
-    t.date || '',
-    t.type || 'Thu',
-    t.category || '',
-    normalizeMoneyVnd(t.amount),
-    t.description || '',
-    t.studentCode || '',
-    t.method || 'Chuyển khoản',
-    t.receiptUrl || '',
-    t.createdBy || 'Quản lý'
-  ]);
+  const rows = transactions.map(t => {
+    const dStr = String(t.date || '').trim();
+    const safeDateCell = /\d{2}:\d{2}/.test(dStr) && !dStr.startsWith("'") ? "'" + dStr : dStr;
+    return [
+      t.id || '',
+      safeDateCell,
+      t.type || 'Thu',
+      t.category || '',
+      normalizeMoneyVnd(t.amount),
+      t.description || '',
+      t.studentCode || '',
+      t.method || 'Chuyển khoản',
+      t.receiptUrl || '',
+      t.createdBy || 'Quản lý'
+    ];
+  });
   sheet.getRange(2, 1, rows.length, 10).setValues(rows);
 }
 
@@ -776,20 +780,25 @@ function processIncomingBankWebhook(ss, payload) {
       }
     } catch (e) {}
   }
-  const buildGasSig = function (dStr, amtVal, txt) {
+  const buildGasSig = function (dStr, amtVal, txt, isDraftFlag) {
     const amt = Number(amtVal) || 0;
     if (!amt) return '';
-    const m = String(txt || '').match(/\|\s*ND:\s*(.+)$/i) || String(txt || '').match(/Tự động lưu GD[^:]*:\s*(.+)$/i);
-    const core = removeAccentsGas(String(m ? m[1] : txt || '').toLowerCase())
+    const rawTxt = String(txt || '');
+    const m = rawTxt.match(/\|\s*ND:\s*(.+)$/i) || rawTxt.match(/Tự động lưu (?:CK|GD)[^:]*:\s*(.+)$/i);
+    const core = removeAccentsGas(String(m ? m[1] : rawTxt).toLowerCase())
       .replace(/\[stk\s*nhap[^\]]*\]/g, '')
       .replace(/[^a-z0-9]/g, '');
-    return core ? 'SIG_' + String(dStr || '').slice(0, 10) + '_' + amt + '_' + core.slice(0, 48) : '';
+    const accTag = isDraftFlag ? 'DRAFT_' : 'MAIN_';
+    return core ? 'SIG_' + accTag + String(dStr || '').slice(0, 10) + '_' + amt + '_' + core.slice(0, 48) : '';
   };
   const existingTxIds = {};
   for (let tIdx = 1; tIdx < trValues.length; tIdx++) {
     const tid = String(trValues[tIdx][0] || '').trim();
     if (tid) existingTxIds[tid] = true;
-    const tSig = buildGasSig(formatCell(trValues[tIdx][1]), trValues[tIdx][4], trValues[tIdx][5]);
+    const rowDesc = String(trValues[tIdx][5] || '');
+    const rowMethod = String(trValues[tIdx][7] || '');
+    const rowIsDraft = /5801434567|962478SJJ2|STK\s*Nh[aá]p/i.test(rowDesc + ' ' + rowMethod);
+    const tSig = buildGasSig(formatDateValue(trValues[tIdx][1]), trValues[tIdx][4], rowDesc, rowIsDraft);
     if (tSig) existingTxIds[tSig] = true;
   }
   const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
@@ -831,7 +840,10 @@ function processIncomingBankWebhook(ss, payload) {
   incomingList.forEach(tx => {
     const txIdKey = 'GD_' + tx.refCode;
     const txDateOnly = /^\d{4}-\d{2}-\d{2}/.test(String(tx.dateStr || '')) ? String(tx.dateStr).slice(0, 10) : todayDate;
-    const incomingSig = buildGasSig(txDateOnly, tx.amount, '| ND: ' + tx.content);
+    const isDraftAcc =
+      /^(5801434567|962478SJJ2)$/i.test(String(tx.accountNumber || '').trim()) ||
+      /^(5801434567|962478SJJ2)$/i.test(String(tx.subAccount || '').trim());
+    const incomingSig = buildGasSig(txDateOnly, tx.amount, '| ND: ' + tx.content, isDraftAcc);
     if (
       deletedKeys[txIdKey] ||
       deletedKeys['GD_SEPAY_' + tx.refCode] ||
@@ -845,9 +857,6 @@ function processIncomingBankWebhook(ss, payload) {
     existingTxIds[txIdKey] = true;
     if (incomingSig) existingTxIds[incomingSig] = true;
 
-    const isDraftAcc =
-      /^(5801434567|962478SJJ2)$/i.test(String(tx.accountNumber || '').trim()) ||
-      /^(5801434567|962478SJJ2)$/i.test(String(tx.subAccount || '').trim());
     const draftPrefix = isDraftAcc ? '[STK Nháp 5801434567] ' : '';
     const txMethodLabel = isDraftAcc ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (Tự động)';
 
