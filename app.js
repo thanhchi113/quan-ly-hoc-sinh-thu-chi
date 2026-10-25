@@ -7507,7 +7507,7 @@ function buildStudentStatsContext(scheduleMap = null) {
 function getStudentStatistics(s, ctx = null) {
   const metaMap = ctx ? ctx.metaMap : getStudentMetaMap();
   const codeKey = s.studentCode || s.id;
-  const meta = metaMap[codeKey] || {};
+  const meta = metaMap[codeKey] || metaMap[String(codeKey).toUpperCase()] || {};
   const chronologicalHist = ctx
     ? ctx.chronologicalHist
     : [...(typeof getClassHistoryList === 'function' ? getClassHistoryList() : [])].reverse();
@@ -7521,10 +7521,11 @@ function getStudentStatistics(s, ctx = null) {
   let totalPaidAmount = 0;
   const paidBatchLabels = [];
   const countedBatchKeys = new Set();
+  const previousClassesSet = new Set();
   const cleanName = removeVietnameseTones((s.fullName || '').toLowerCase()).trim();
 
   // Nguồn A: Duyệt tự động tất cả các đợt đã lưu trong Lịch sử (từ cũ nhất đến mới nhất)
-  // Bắt buộc kiểm tra khớp tên học sinh để tránh trường hợp mã HS cũ (của lớp đã xóa) bị tái sử dụng cho học sinh mới
+  // Hỗ trợ đồng bộ lịch sử khi học sinh chuyển từ lớp cũ sang lớp mới
   chronologicalHist.forEach(hist => {
     const matchedInHist = (hist.studentsSnapshot || []).find(hs => {
       const hsNameClean = removeVietnameseTones((hs.fullName || '').toLowerCase()).trim();
@@ -7532,20 +7533,50 @@ function getStudentStatistics(s, ctx = null) {
       if (sameCode) {
         return !cleanName || !hsNameClean || hsNameClean === cleanName;
       }
-      return cleanName && hsNameClean === cleanName && hs.className === s.className;
+      return cleanName && hsNameClean === cleanName;
     });
     if (matchedInHist) {
+      const histCls = (hist.className || matchedInHist.className || s.className || '').trim();
+      if (histCls && histCls !== s.className) {
+        previousClassesSet.add(histCls);
+      }
       if (!startDateIso && hist.startDate) {
         startDateIso = hist.startDate;
       }
       if (matchedInHist.status === 'Đã hoàn thành') {
-        const bKey = `${hist.className || s.className}__${hist.periodLabel || ''}__${hist.batchLabel || hist.id}`;
+        const bKey = `${histCls}__${hist.periodLabel || ''}__${hist.batchLabel || hist.id}`;
         if (!countedBatchKeys.has(bKey)) {
           countedBatchKeys.add(bKey);
           historyPaidCount++;
           totalPaidAmount += normalizeStoredVnd(matchedInHist.tuitionFee) || 0;
-          paidBatchLabels.push(hist.batchLabel || hist.periodLabel || 'Đợt cũ');
+          paidBatchLabels.push(
+            histCls && histCls !== s.className
+              ? `${hist.batchLabel || hist.periodLabel || 'Đợt cũ'} (Lớp ${histCls})`
+              : hist.batchLabel || hist.periodLabel || 'Đợt cũ'
+          );
         }
+      }
+    }
+  });
+
+  // Nguồn A2: Duyệt lịch sử chuyển lớp của học sinh (lưu trong meta.transferHistory)
+  const transferHistory = Array.isArray(meta.transferHistory) ? meta.transferHistory : [];
+  transferHistory.forEach(tr => {
+    if (!tr) return;
+    const fromCls = String(tr.fromClass || '').trim();
+    if (fromCls && fromCls !== s.className) {
+      previousClassesSet.add(fromCls);
+    }
+    if (!startDateIso && tr.startDate) {
+      startDateIso = tr.startDate;
+    }
+    if (tr.mode === 'NEW_BATCH' && tr.status === 'Đã hoàn thành') {
+      const bKey = `${fromCls || s.className}__${tr.periodLabel || ''}__${tr.batchLabel || tr.id}`;
+      if (!countedBatchKeys.has(bKey)) {
+        countedBatchKeys.add(bKey);
+        historyPaidCount++;
+        totalPaidAmount += normalizeStoredVnd(tr.tuitionFee) || 0;
+        paidBatchLabels.push(`${tr.batchLabel || tr.periodLabel || 'Đợt trước'} (Lớp ${fromCls || s.className})`);
       }
     }
   });
@@ -7618,13 +7649,23 @@ function getStudentStatistics(s, ctx = null) {
     totalPaidAmount = Math.max(0, totalPaidAmount + (paidBatchesCount - autoPaidBatches) * unitFee);
   }
 
+  const previousClasses = Array.from(previousClassesSet);
+  const feeMode = meta.feeMode || 'FIXED';
+  const perSessionRate = normalizeStoredVnd(meta.perSessionRate) || 0;
+  const lastSessionCount = Number(meta.lastSessionCount || 0);
+
   return {
     startDateIso,
     startDateVN: formatShortDateVN(startDateIso),
     autoPaidBatches,
     paidBatchesCount,
     paidBatchLabels,
-    totalPaidAmount
+    totalPaidAmount,
+    previousClasses,
+    transferHistory,
+    feeMode,
+    perSessionRate,
+    lastSessionCount
   };
 }
 
@@ -7657,7 +7698,10 @@ function openStudentDetailModal(studentId) {
   // 1. Điền Header & 3 Ô Thống Kê Chính
   document.getElementById('stu-detail-code').textContent = s.studentCode || 'HS';
   document.getElementById('stu-detail-name').textContent = s.fullName || '';
-  const subParts = [`Lớp ${s.className || '---'}`];
+  const subParts = [`Lớp hiện tại: ${s.className || '---'}`];
+  if (stats.previousClasses && stats.previousClasses.length > 0) {
+    subParts.push(`Đã học: Lớp ${stats.previousClasses.join(', ')}`);
+  }
   if (s.parentName && s.parentName.trim()) {
     subParts.push(`Phụ huynh: ${s.parentName.trim()}`);
   }
@@ -7673,44 +7717,74 @@ function openStudentDetailModal(studentId) {
   document.getElementById('stu-detail-start-text').textContent = `Từ ngày: ${stats.startDateVN || '---'}`;
   document.getElementById('stu-detail-paid-batches').textContent = `${stats.paidBatchesCount} đợt`;
   document.getElementById('stu-detail-total-paid').textContent = formatCurrency(stats.totalPaidAmount);
-  document.getElementById('stu-detail-current-fee').textContent = `Mức học phí: ${formatCurrency(s.tuitionFee)}/đợt`;
+  const curSessionsCnt = typeof getClassTotalSessionsCount === 'function' ? getClassTotalSessionsCount(s.className, scheduleMap) : 0;
+  document.getElementById('stu-detail-current-fee').textContent =
+    stats.feeMode === 'PER_SESSION' && stats.perSessionRate > 0
+      ? `Học phí: ${formatCurrency(s.tuitionFee)} (${formatCurrency(stats.perSessionRate)}/buổi × ${stats.lastSessionCount || curSessionsCnt} buổi)`
+      : `Mức học phí: ${formatCurrency(s.tuitionFee)}/đợt`;
 
-  // 2. Tạo danh sách tất cả các đợt học của học sinh này (Lịch sử + Đợt hiện tại)
+  // 2. Tạo danh sách tất cả các đợt học của học sinh này (Lịch sử lớp + Lịch sử chuyển lớp + Đợt hiện tại)
   const batchRecords = [];
+  const seenBatchKeys = new Set();
   const chronologicalHist = [...historyList].reverse();
   chronologicalHist.forEach(hist => {
     const matchedInHist = (hist.studentsSnapshot || []).find(
       hs =>
         (hs.studentCode && hs.studentCode === s.studentCode) ||
-        (cleanName &&
-          removeVietnameseTones((hs.fullName || '').toLowerCase()).trim() === cleanName &&
-          hs.className === s.className)
+        (cleanName && removeVietnameseTones((hs.fullName || '').toLowerCase()).trim() === cleanName)
     );
     if (matchedInHist) {
+      const clsName = hist.className || matchedInHist.className || s.className;
+      const bKey = `${clsName}__${hist.periodLabel || ''}__${hist.batchLabel || hist.id}`;
+      seenBatchKeys.add(bKey);
       batchRecords.push({
+        className: clsName,
         batchLabel: hist.batchLabel || 'ĐỢT CŨ',
         periodLabel: hist.periodLabel || '',
         dateRange:
           hist.startDate && hist.endDate
             ? `${formatShortDateVN(hist.startDate)} → ${formatShortDateVN(hist.endDate)}`
             : hist.archivedAt || '---',
-        fee: Number(matchedInHist.tuitionFee) || 0,
+        fee: normalizeStoredVnd(matchedInHist.tuitionFee) || 0,
         status: matchedInHist.status || 'Chưa đóng',
+        note: matchedInHist.note || '',
         isCurrent: false
       });
     }
   });
 
+  (stats.transferHistory || []).forEach(tr => {
+    if (!tr) return;
+    const fromCls = tr.fromClass || s.className;
+    const bKey = `${fromCls}__${tr.periodLabel || ''}__${tr.batchLabel || tr.id}`;
+    if (seenBatchKeys.has(bKey)) return;
+    seenBatchKeys.add(bKey);
+    batchRecords.push({
+      className: fromCls,
+      batchLabel: tr.batchLabel || 'ĐỢT TRƯỚC',
+      periodLabel: tr.periodLabel || '',
+      dateRange: tr.dateRange || (tr.transferredAt ? `Chuyển lớp ngày ${tr.transferredAt}` : '---'),
+      fee: normalizeStoredVnd(tr.tuitionFee) || 0,
+      status: tr.status || 'Chưa đóng',
+      note: tr.toClass
+        ? `Chuyển từ Lớp ${fromCls} sang Lớp ${tr.toClass}${tr.note ? ` (${tr.note})` : ''}`
+        : tr.note || '',
+      isCurrent: false
+    });
+  });
+
   const curClsCfg = scheduleMap[s.className] || {};
   batchRecords.push({
+    className: s.className,
     batchLabel: curClsCfg.batchLabel || 'ĐỢT HIỆN TẠI',
     periodLabel: s.period || curClsCfg.periodLabel || '',
     dateRange:
       curClsCfg.startDate && curClsCfg.endDate
         ? `${formatShortDateVN(curClsCfg.startDate)} → ${formatShortDateVN(curClsCfg.endDate)}`
         : 'Đang diễn ra',
-    fee: Number(s.tuitionFee) || 0,
+    fee: normalizeStoredVnd(s.tuitionFee) || 0,
     status: s.status || 'Chưa đóng',
+    note: s.note || '',
     isCurrent: true
   });
 
@@ -7728,9 +7802,12 @@ function openStudentDetailModal(studentId) {
           <tr class="${b.isCurrent ? 'bg-blue-50/40' : 'hover:bg-slate-50'}">
             <td class="py-3 px-4 text-center font-bold text-slate-500 whitespace-nowrap">${idx + 1}</td>
             <td class="py-3 px-4 whitespace-nowrap">
-              <div class="flex items-center gap-2 whitespace-nowrap">
+              <div class="flex flex-wrap items-center gap-1.5">
                 <span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-900 font-extrabold text-xs uppercase whitespace-nowrap">${escapeHtml(
                   b.batchLabel
+                )}</span>
+                <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 font-extrabold text-xs whitespace-nowrap">Lớp ${escapeHtml(
+                  b.className || s.className
                 )}</span>
                 <span class="font-bold text-slate-800 whitespace-nowrap">${escapeHtml(b.periodLabel)}</span>
                 ${
@@ -7739,12 +7816,17 @@ function openStudentDetailModal(studentId) {
                     : ''
                 }
               </div>
+              ${
+                b.note
+                  ? `<div class="text-[11px] text-slate-500 italic mt-0.5">${escapeHtml(b.note)}</div>`
+                  : ''
+              }
             </td>
             <td class="py-3 px-4 text-center text-xs sm:text-sm text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(b.dateRange)}</td>
             <td class="py-3 px-4 text-right font-extrabold text-slate-900 whitespace-nowrap">${formatCurrency(b.fee)}</td>
             <td class="py-3 px-4 text-center whitespace-nowrap">
               <span class="inline-flex items-center justify-center px-3 py-1 rounded-full border text-xs font-extrabold whitespace-nowrap ${badgeCls}">
-                ${isPaid ? '' : ''}${escapeHtml(b.status)}
+                ${escapeHtml(b.status)}
               </span>
             </td>
           </tr>
@@ -7816,6 +7898,13 @@ function openStudentDetailModal(studentId) {
       openPaymentModal(s.id);
     };
   }
+  const transferBtn = document.getElementById('stu-detail-btn-transfer');
+  if (transferBtn) {
+    transferBtn.onclick = () => {
+      closeStudentDetailModal();
+      openTransferStudentModal(s.id);
+    };
+  }
   const editBtn = document.getElementById('stu-detail-btn-edit');
   if (editBtn) {
     editBtn.onclick = () => {
@@ -7831,6 +7920,155 @@ function openStudentDetailModal(studentId) {
 function closeStudentDetailModal() {
   const modal = document.getElementById('student-detail-modal');
   if (modal) modal.classList.add('hidden');
+}
+
+async function openTransferStudentModal(studentId) {
+  const s = (appState.students || []).find(item => item.id === studentId);
+  if (!s) return;
+
+  const map = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+  const activeClasses = (typeof getAvailableActiveClassNames === 'function' ? getAvailableActiveClassNames() : Object.keys(map)).filter(
+    c => c && c !== s.className
+  );
+  if (activeClasses.length === 0) {
+    showToast('Hiện chưa có lớp học nào khác để chuyển đến! Hãy tạo thêm lớp mới trước.', 'warning');
+    return;
+  }
+
+  const oldClass = s.className || '---';
+  const oldCfg = map[oldClass] || getDefaultClassScheduleConfig(oldClass);
+  const classOptions = activeClasses.map(cls => {
+    const cCfg = map[cls] || {};
+    const subInfo = [cCfg.batchLabel, cCfg.periodLabel].filter(Boolean).join(' • ');
+    return {
+      value: cls,
+      label: `Lớp ${cls}${subInfo ? ` (${subInfo})` : ''}`
+    };
+  });
+
+  const res = await showTcAppDialog({
+    mode: 'fields',
+    tone: 'indigo',
+    badge: 'THANH CHÍ EDU • CHUYỂN LỚP & ĐỒNG BỘ LỊCH SỬ',
+    title: `Chuyển lớp: ${s.fullName} (${s.studentCode})`,
+    message: `Đang học tại Lớp ${oldClass} • ${oldCfg.batchLabel || 'Đợt hiện tại'} (${s.period || oldCfg.periodLabel || ''}) • Học phí: ${formatCurrency(s.tuitionFee)} (${s.status}). Hệ thống sẽ giữ nguyên toàn bộ lịch sử lớp cũ và các đợt đã đóng:`,
+    okText: 'Xác nhận chuyển lớp',
+    fields: [
+      {
+        key: 'targetClass',
+        label: '1. Chọn Lớp học chuyển đến',
+        type: 'select',
+        defaultValue: classOptions[0].value,
+        options: classOptions
+      },
+      {
+        key: 'transferMode',
+        label: '2. Cách đồng bộ Đợt học & Trạng thái học phí ở lớp mới',
+        type: 'select',
+        defaultValue: 'NEW_BATCH',
+        options: [
+          {
+            value: 'NEW_BATCH',
+            label: `Chuyển sang đợt mới ở lớp đích (Lưu đợt cũ Lớp ${oldClass} vào lịch sử & đặt lại Chưa đóng)`
+          },
+          {
+            value: 'SAME_BATCH',
+            label: `Chuyển ngang trong cùng đợt (Giữ nguyên trạng thái "${s.status}" & chuyển điểm danh sang lớp mới)`
+          }
+        ]
+      },
+      {
+        key: 'note',
+        label: '3. Ghi chú chuyển lớp (Không bắt buộc)',
+        type: 'text',
+        defaultValue: `Chuyển từ Lớp ${oldClass}`,
+        placeholder: 'VD: Chuyển từ Lớp 12A1 sang từ Đợt 2...'
+      }
+    ]
+  });
+
+  if (!res || !res.targetClass) return;
+  const targetClass = String(res.targetClass).trim();
+  if (!targetClass || targetClass === oldClass) return;
+
+  const mode = res.transferMode === 'SAME_BATCH' ? 'SAME_BATCH' : 'NEW_BATCH';
+  const targetCfg = map[targetClass] || getDefaultClassScheduleConfig(targetClass);
+  const nowStr = getCurrentDateTimeString();
+
+  if (typeof pushUndoSnapshot === 'function') {
+    pushUndoSnapshot(`Chuyển lớp học sinh ${s.fullName}`);
+  }
+
+  const metaMap = getStudentMetaMap();
+  const codeKey = s.studentCode || s.id;
+  if (!metaMap[codeKey]) metaMap[codeKey] = {};
+  if (!Array.isArray(metaMap[codeKey].transferHistory)) {
+    metaMap[codeKey].transferHistory = [];
+  }
+
+  // Ghi nhận lịch sử học ở lớp cũ để hiển thị đầy đủ trên Hồ sơ chi tiết & Thống kê đợt đóng
+  metaMap[codeKey].transferHistory.push({
+    id: 'TR_' + Date.now(),
+    transferredAt: nowStr,
+    mode,
+    fromClass: oldClass,
+    toClass: targetClass,
+    startDate: oldCfg.startDate || metaMap[codeKey].startDate || '',
+    batchLabel: oldCfg.batchLabel || 'ĐỢT TRƯỚC',
+    periodLabel: s.period || oldCfg.periodLabel || '',
+    dateRange:
+      oldCfg.startDate && oldCfg.endDate
+        ? `${formatShortDateVN(oldCfg.startDate)} → ${formatShortDateVN(oldCfg.endDate)}`
+        : nowStr,
+    tuitionFee: normalizeStoredVnd(s.tuitionFee) || 0,
+    status: s.status || 'Chưa đóng',
+    note: s.note || ''
+  });
+
+  // Nếu chuyển ngang trong cùng đợt, đồng bộ dữ liệu điểm danh của học sinh từ lớp cũ sang lớp mới
+  if (mode === 'SAME_BATCH' && typeof getStudentAttendanceMap === 'function') {
+    const attMap = getStudentAttendanceMap();
+    if (attMap[oldClass] && attMap[oldClass][s.id]) {
+      if (!attMap[targetClass]) attMap[targetClass] = {};
+      attMap[targetClass][s.id] = {
+        ...(attMap[oldClass][s.id] || {}),
+        ...(attMap[targetClass][s.id] || {})
+      };
+      if (!appState.settings) appState.settings = {};
+      appState.settings.studentAttendanceJson = JSON.stringify(attMap);
+    }
+  }
+
+  s.className = targetClass;
+  if (targetCfg.periodLabel) {
+    s.period = targetCfg.periodLabel;
+  }
+  if (mode === 'NEW_BATCH') {
+    s.status = 'Chưa đóng';
+    s.receiptUrl = '';
+  }
+  const customNote = String(res.note || '').trim();
+  s.note = customNote || `Chuyển từ Lớp ${oldClass}`;
+
+  // Nếu học sinh đang bật chế độ tính học phí theo số buổi, tự động cập nhật theo tổng số buổi dạy của lớp mới
+  if (metaMap[codeKey].feeMode === 'PER_SESSION' && normalizeStoredVnd(metaMap[codeKey].perSessionRate) > 0) {
+    const targetSessions = getClassTotalSessionsCount(targetClass, map);
+    if (targetSessions > 0) {
+      const newFee = normalizeStoredVnd(metaMap[codeKey].perSessionRate) * targetSessions;
+      s.tuitionFee = newFee;
+      metaMap[codeKey].lastSessionCount = targetSessions;
+      recordExactSmallAmount(appState, s.id, s.studentCode, newFee);
+    }
+  }
+
+  s.updatedAt = nowStr;
+  if (!appState.settings) appState.settings = {};
+  appState.settings.studentMetaJson = JSON.stringify(metaMap);
+
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(
+    `Đã chuyển học sinh "${s.fullName}" từ Lớp ${oldClass} sang Lớp ${targetClass} & đồng bộ đầy đủ lịch sử!`
+  );
 }
 
 async function handleDetailStartDateChange(newDateIso) {
@@ -8359,6 +8597,13 @@ function renderAdminStudents() {
                 ? `<div class="text-[11px] text-slate-500 tabular-nums mt-0.5">SĐT: ${escapeHtml(s.parentPhone)}</div>`
                 : ''
             }
+            ${
+              stats.previousClasses && stats.previousClasses.length > 0
+                ? `<div class="mt-0.5"><span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]" title="Lịch sử lớp học trước đây"><i data-lucide="arrow-right-left" class="w-2.5 h-2.5"></i><span>Đã học: Lớp ${escapeHtml(
+                    stats.previousClasses.join(', ')
+                  )}</span></span></div>`
+                : ''
+            }
             ${s.note ? `<div class="text-[11px] text-slate-500 italic mt-0.5 line-clamp-2">${escapeHtml(s.note)}</div>` : ''}
           </td>
           <td class="py-2 px-2 text-center whitespace-nowrap">
@@ -8414,12 +8659,20 @@ function renderAdminStudents() {
           <td class="py-2 px-2 text-right font-extrabold text-slate-900 whitespace-nowrap">
             <select
               onchange="handleClassbookFeeSelect('${s.id}', this.value)"
-              title="Bấm để tùy chọn mức học phí cho học sinh"
+              title="Bấm để tùy chọn mức học phí hoặc tính theo số buổi cho học sinh"
               class="tc-fee-select"
             >
-              ${getPresetTuitionOptionsHtml(s.tuitionFee)}
+              ${getPresetTuitionOptionsHtml(s.tuitionFee, s)}
+              <option value="PER_SESSION">⚡ Tính theo số buổi...</option>
               <option value="CUSTOM">+ Số khác...</option>
             </select>
+            ${
+              stats.feeMode === 'PER_SESSION' && stats.perSessionRate > 0
+                ? `<button type="button" onclick="handleClassbookFeeSelect('${s.id}', 'PER_SESSION')" title="Đang tính học phí theo số buổi dạy (Bấm để đổi đơn giá/buổi)" class="block ml-auto mt-0.5 px-1.5 py-0.2 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold cursor-pointer whitespace-nowrap">${toShortMoney(
+                    stats.perSessionRate
+                  )}k/b × ${stats.lastSessionCount || getClassTotalSessionsCount(s.className)}b</button>`
+                : ''
+            }
           </td>
           <td class="py-2 px-2 text-center whitespace-nowrap min-w-[132px] ${statusCellClass}">
             <select
@@ -8431,7 +8684,7 @@ function renderAdminStudents() {
               <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
             </select>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap min-w-[124px]">
+          <td class="py-2 px-2 text-center whitespace-nowrap min-w-[148px]">
             <div class="inline-flex items-center justify-center gap-1">
               <button
                 type="button"
@@ -8440,6 +8693,14 @@ function renderAdminStudents() {
                 class="tc-row-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border-blue-200"
               >
                 <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              </button>
+              <button
+                type="button"
+                onclick="openTransferStudentModal('${s.id}')"
+                title="Chuyển học sinh sang lớp khác (đồng bộ lịch sử)"
+                class="tc-row-action-btn bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border-indigo-200"
+              >
+                <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i>
               </button>
               <button
                 type="button"
@@ -8741,9 +9002,11 @@ function saveStudentForm(event) {
 
   if (!Array.isArray(appState.students)) appState.students = [];
   let targetRecordId = id;
+  let oldStuSnapshot = null;
   if (id) {
     const idx = appState.students.findIndex(s => s.id === id);
     if (idx !== -1) {
+      oldStuSnapshot = { ...appState.students[idx] };
       appState.students[idx] = {
         ...appState.students[idx],
         studentCode,
@@ -8778,13 +9041,34 @@ function saveStudentForm(event) {
 
   recordExactSmallAmount(appState, targetRecordId, studentCode, tuitionFee);
 
+  const metaMap = getStudentMetaMap();
+  const key = String(studentCode || targetRecordId).trim().toUpperCase();
+  if (!metaMap[key]) metaMap[key] = {};
   if (startDateIso) {
-    const metaMap = getStudentMetaMap();
-    const key = String(studentCode || targetRecordId).trim().toUpperCase();
-    if (!metaMap[key]) metaMap[key] = {};
     metaMap[key].startDate = startDateIso;
-    appState.settings.studentMetaJson = JSON.stringify(metaMap);
   }
+  if (oldStuSnapshot && oldStuSnapshot.className && oldStuSnapshot.className !== className) {
+    const oldCfg = map[oldStuSnapshot.className] || {};
+    if (!Array.isArray(metaMap[key].transferHistory)) metaMap[key].transferHistory = [];
+    metaMap[key].transferHistory.push({
+      id: 'TR_' + Date.now(),
+      transferredAt: nowStr,
+      mode: oldStuSnapshot.period !== period || status === 'Chưa đóng' ? 'NEW_BATCH' : 'SAME_BATCH',
+      fromClass: oldStuSnapshot.className,
+      toClass: className,
+      startDate: oldCfg.startDate || metaMap[key].startDate || '',
+      batchLabel: oldCfg.batchLabel || 'ĐỢT TRƯỚC',
+      periodLabel: oldStuSnapshot.period || oldCfg.periodLabel || '',
+      dateRange:
+        oldCfg.startDate && oldCfg.endDate
+          ? `${formatShortDateVN(oldCfg.startDate)} → ${formatShortDateVN(oldCfg.endDate)}`
+          : nowStr,
+      tuitionFee: normalizeStoredVnd(oldStuSnapshot.tuitionFee) || 0,
+      status: oldStuSnapshot.status || 'Chưa đóng',
+      note: oldStuSnapshot.note || ''
+    });
+  }
+  appState.settings.studentMetaJson = JSON.stringify(metaMap);
 
   selectedClassbookClass = className;
   if (
@@ -13398,17 +13682,32 @@ function renderAdminClassbook() {
                     class="w-4 h-4 flex items-center justify-center font-black text-slate-600 hover:bg-emerald-100 hover:text-emerald-700 transition cursor-pointer select-none leading-none"
                   >+</button>
                 </div>
+                ${
+                  stats.previousClasses && stats.previousClasses.length > 0
+                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]" title="Lịch sử lớp học trước đây"><i data-lucide="arrow-right-left" class="w-2.5 h-2.5"></i><span>Đã học: Lớp ${escapeHtml(
+                        stats.previousClasses.join(', ')
+                      )}</span></span>`
+                    : ''
+                }
               </div>
             </td>
             <td class="py-1.5 px-2 text-right font-semibold text-slate-800">
               <select
                 onchange="handleClassbookFeeSelect('${s.id}', this.value)"
-                title="Bấm để tùy chọn mức học phí tương ứng cho học sinh này"
+                title="Bấm để tùy chọn mức học phí hoặc tính theo số buổi cho học sinh này"
                 class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
               >
-                ${getPresetTuitionOptionsHtml(s.tuitionFee)}
+                ${getPresetTuitionOptionsHtml(s.tuitionFee, s, map)}
+                <option value="PER_SESSION">⚡ Tính theo số buổi...</option>
                 <option value="CUSTOM">+ Nhập số khác...</option>
               </select>
+              ${
+                stats.feeMode === 'PER_SESSION' && stats.perSessionRate > 0
+                  ? `<button type="button" onclick="handleClassbookFeeSelect('${s.id}', 'PER_SESSION')" title="Đang tính học phí theo số buổi dạy của lớp (Bấm để đổi đơn giá/buổi)" class="block ml-auto mt-0.5 px-1.5 py-0.2 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold cursor-pointer whitespace-nowrap">${toShortMoney(
+                      stats.perSessionRate
+                    )}k/b × ${stats.lastSessionCount || getClassTotalSessionsCount(s.className, map)}b</button>`
+                  : ''
+              }
             </td>
             <td class="py-2 px-2 text-center">
               <input
@@ -13449,6 +13748,9 @@ function renderAdminClassbook() {
               <div class="inline-flex items-center gap-1">
                 <button onclick="openStudentDetailModal('${s.id}')" title="Xem thông tin chi tiết học sinh" class="p-1 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="openTransferStudentModal('${s.id}')" title="Chuyển học sinh sang lớp khác (đồng bộ lịch sử)" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer">
+                  <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i>
                 </button>
                 <button onclick="openStudentModal('${s.id}')" title="Sửa" class="p-1 text-slate-500 hover:text-blue-600 cursor-pointer">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
@@ -13491,7 +13793,51 @@ function updateClassbookStudentNote(studentId, newNote) {
   triggerAutoSyncIfNeeded('Đã lưu ghi chú học sinh!');
 }
 
-function getPresetTuitionOptionsHtml(currentFee) {
+function getClassTotalSessionsCount(className, scheduleMap = null) {
+  if (!className) return 0;
+  const map = scheduleMap || (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {});
+  const cfg = map[className];
+  if (!cfg) return 0;
+  return typeof countCheckedSessionsInConfig === 'function' ? countCheckedSessionsInConfig(cfg) : 0;
+}
+
+function recalcPerSessionTuitionForClass(className, scheduleMap = null) {
+  if (!className) return 0;
+  const map = scheduleMap || (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {});
+  const sessionsCnt = getClassTotalSessionsCount(className, map);
+  if (sessionsCnt <= 0) return 0;
+
+  const metaMap = getStudentMetaMap();
+  let updatedCount = 0;
+  const nowStr = getCurrentDateTimeString();
+
+  (appState.students || []).forEach(s => {
+    if (s.className !== className) return;
+    const codeKey = s.studentCode || s.id;
+    const meta = metaMap[codeKey] || metaMap[String(codeKey).toUpperCase()];
+    if (meta && meta.feeMode === 'PER_SESSION') {
+      const rate = normalizeStoredVnd(meta.perSessionRate) || 0;
+      if (rate > 0) {
+        const nextFee = rate * sessionsCnt;
+        meta.lastSessionCount = sessionsCnt;
+        if (normalizeStoredVnd(s.tuitionFee) !== nextFee) {
+          s.tuitionFee = nextFee;
+          recordExactSmallAmount(appState, s.id, s.studentCode, nextFee);
+          s.updatedAt = nowStr;
+          updatedCount++;
+        }
+      }
+    }
+  });
+
+  if (updatedCount > 0) {
+    if (!appState.settings) appState.settings = {};
+    appState.settings.studentMetaJson = JSON.stringify(metaMap);
+  }
+  return updatedCount;
+}
+
+function getPresetTuitionOptionsHtml(currentFee, student = null, scheduleMap = null) {
   const cur = normalizeStoredVnd(currentFee || 600000) || 600000;
   const presets = [200000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1500000, 2000000];
   if (cur > 0 && !presets.includes(cur)) {
@@ -13506,6 +13852,98 @@ function getPresetTuitionOptionsHtml(currentFee) {
 async function handleClassbookFeeSelect(studentId, selectedVal) {
   const s = appState.students.find(item => item.id === studentId);
   if (!s) return;
+
+  const metaMap = getStudentMetaMap();
+  const codeKey = s.studentCode || s.id;
+  if (!metaMap[codeKey]) metaMap[codeKey] = {};
+
+  if (selectedVal === 'PER_SESSION') {
+    const map = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
+    const checkedSessions = getClassTotalSessionsCount(s.className, map);
+    const curRate = normalizeStoredVnd(metaMap[codeKey].perSessionRate) || 75000;
+    const defaultSessionNum = checkedSessions > 0 ? checkedSessions : Number(metaMap[codeKey].lastSessionCount || 8);
+
+    const res = await showTcAppDialog({
+      mode: 'fields',
+      tone: 'emerald',
+      badge: 'THANH CHÍ EDU • TÍNH HỌC PHÍ THEO SỐ BUỔI',
+      title: `Tính học phí theo số buổi - ${s.fullName}`,
+      message: `Lớp ${s.className} hiện có Tổng cộng số buổi dạy: ${checkedSessions} buổi. Nhập đơn giá 1 buổi học, hệ thống sẽ nhân với số buổi dạy của lớp (và tự động cập nhật khi bạn tích thêm/bớt buổi dạy trên lịch):`,
+      okText: 'Tính & Lưu học phí',
+      moneyPreview: true,
+      fields: [
+        {
+          key: 'rateInput',
+          label: '1. Đơn giá 1 buổi học (Rút gọn 000 hoặc đầy đủ - VD: 50, 60, 75, 100 = 50.000₫..100.000₫/buổi)',
+          type: 'text',
+          defaultValue: String(toShortMoney(curRate)),
+          placeholder: 'VD: 75 (= 75.000 ₫/buổi)',
+          moneyPreview: true
+        },
+        {
+          key: 'sessionCount',
+          label: `2. Số buổi học để nhân (Mặc định lấy Tổng cộng số buổi dạy của lớp = ${checkedSessions} buổi)`,
+          type: 'number',
+          defaultValue: String(defaultSessionNum),
+          placeholder: 'Nhập số buổi học...',
+          moneyPreview: true
+        },
+        {
+          key: 'applyScope',
+          label: '3. Phạm vi áp dụng',
+          type: 'select',
+          defaultValue: 'SINGLE',
+          options: [
+            { value: 'SINGLE', label: `Chỉ áp dụng cho học sinh ${s.fullName}` },
+            { value: 'WHOLE_CLASS', label: `Áp dụng đơn giá/buổi này cho toàn bộ học sinh Lớp ${s.className}` }
+          ]
+        }
+      ]
+    });
+
+    if (!res) {
+      renderAdminClassbook();
+      renderAdminStudents();
+      return;
+    }
+
+    const rateVnd = fromShortMoney(res.rateInput);
+    const sessions = Math.max(1, parseInt(res.sessionCount, 10) || checkedSessions || 1);
+    if (isNaN(rateVnd) || rateVnd <= 0) {
+      showToast('Đơn giá 1 buổi học không hợp lệ!', 'warning');
+      renderAdminClassbook();
+      renderAdminStudents();
+      return;
+    }
+
+    const totalFee = rateVnd * sessions;
+    const nowStr = getCurrentDateTimeString();
+    const targetStudents =
+      res.applyScope === 'WHOLE_CLASS'
+        ? (appState.students || []).filter(item => item.className === s.className)
+        : [s];
+
+    targetStudents.forEach(stu => {
+      const k = stu.studentCode || stu.id;
+      if (!metaMap[k]) metaMap[k] = {};
+      metaMap[k].feeMode = 'PER_SESSION';
+      metaMap[k].perSessionRate = rateVnd;
+      metaMap[k].lastSessionCount = sessions;
+      stu.tuitionFee = totalFee;
+      recordExactSmallAmount(appState, stu.id, stu.studentCode, totalFee);
+      stu.updatedAt = nowStr;
+    });
+
+    if (!appState.settings) appState.settings = {};
+    appState.settings.studentMetaJson = JSON.stringify(metaMap);
+    saveStateToLocal();
+    await triggerAutoSyncIfNeeded(
+      res.applyScope === 'WHOLE_CLASS'
+        ? `Đã áp dụng học phí theo buổi (${formatCurrency(rateVnd)}/buổi × ${sessions} buổi = ${formatCurrency(totalFee)}) cho cả Lớp ${s.className}!`
+        : `Đã cập nhật học phí theo buổi của ${s.fullName}: ${formatCurrency(rateVnd)}/buổi × ${sessions} buổi = ${formatCurrency(totalFee)}!`
+    );
+    return;
+  }
 
   let newFee = fromShortMoney(selectedVal);
   if (selectedVal === 'CUSTOM') {
@@ -13533,6 +13971,11 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
     renderAdminStudents();
     return;
   }
+
+  // Khi chọn mức học phí cố định, tắt chế độ nhân tự động theo buổi
+  metaMap[codeKey].feeMode = 'FIXED';
+  if (!appState.settings) appState.settings = {};
+  appState.settings.studentMetaJson = JSON.stringify(metaMap);
 
   s.tuitionFee = newFee;
   recordExactSmallAmount(appState, s.id, s.studentCode, newFee);
@@ -13858,6 +14301,7 @@ function toggleSessionDateState(className, dateKey) {
   }
 
   map[className] = cfg;
+  recalcPerSessionTuitionForClass(className, map);
   saveClassSchedulesMap(map);
 }
 
@@ -15674,6 +16118,7 @@ function saveClassScheduleForm(event) {
   if (gradeKey && gradeKey !== 'AUTO') {
     selectedClassbookGradeFilter = gradeKey;
   }
+  recalcPerSessionTuitionForClass(className, map);
   closeClassScheduleModal();
   saveClassSchedulesMap(map, `Đã cập nhật lịch học lớp "${className}"!`);
 }
@@ -18675,6 +19120,18 @@ function updateTcDialogMoneyPreview(rawVal) {
     return;
   }
   wrap.classList.remove('hidden');
+  if (_activeTcDialogConfig.mode === 'fields') {
+    const rateEl = document.querySelector('#tc-dialog-fields-wrap [data-field-key="rateInput"]');
+    const sessEl = document.querySelector('#tc-dialog-fields-wrap [data-field-key="sessionCount"]');
+    if (rateEl && sessEl) {
+      const rateVnd = fromShortMoney(rateEl.value);
+      const sess = Math.max(1, parseInt(sessEl.value, 10) || 1);
+      valEl.textContent = isNaN(rateVnd)
+        ? '0 ₫'
+        : `${formatCurrency(rateVnd)}/b × ${sess}b = ${formatCurrency(rateVnd * sess)}`;
+      return;
+    }
+  }
   const str = String(rawVal ?? '').trim();
   const vnd = str === '0' ? 0 : fromShortMoney(str);
   valEl.textContent = isNaN(vnd) ? '0 ₫' : formatCurrency(vnd);
@@ -18797,8 +19254,28 @@ function showTcAppDialog(options = {}) {
       fieldsWrap.classList.remove('hidden');
       const fields = Array.isArray(options.fields) ? options.fields : [];
       fieldsWrap.innerHTML = fields
-        .map(
-          (f, idx) => `
+        .map((f, idx) => {
+          if (f.type === 'select' && Array.isArray(f.options)) {
+            const optsHtml = f.options
+              .map(
+                o =>
+                  `<option value="${escapeAttr(o.value)}" ${
+                    String(o.value) === String(f.defaultValue ?? '') ? 'selected' : ''
+                  }>${escapeHtml(o.label)}</option>`
+              )
+              .join('');
+            return `
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">${escapeHtml(f.label || '')}</label>
+                <select
+                  id="tc-dialog-input-${idx}"
+                  data-field-key="${escapeAttr(f.key || String(idx))}"
+                  class="tc-dialog-input cursor-pointer"
+                >${optsHtml}</select>
+              </div>
+            `;
+          }
+          return `
           <div>
             <label class="block text-[11px] font-bold text-slate-600 mb-1">${escapeHtml(f.label || '')}</label>
             <input
@@ -18807,14 +19284,16 @@ function showTcAppDialog(options = {}) {
               type="${escapeAttr(f.type || 'text')}"
               value="${escapeAttr(f.defaultValue || '')}"
               placeholder="${escapeAttr(f.placeholder || '')}"
+              oninput="${f.moneyPreview ? 'updateTcDialogMoneyPreview(this.value)' : ''}"
               class="tc-dialog-input"
               autocomplete="off"
             />
           </div>
-        `
-        )
+        `;
+        })
         .join('');
-      updateTcDialogMoneyPreview('');
+      const moneyField = fields.find(f => f.moneyPreview);
+      updateTcDialogMoneyPreview(moneyField ? moneyField.defaultValue || '' : '');
     } else {
       fieldsWrap.classList.remove('hidden');
       const inputType = options.inputType || 'text';
