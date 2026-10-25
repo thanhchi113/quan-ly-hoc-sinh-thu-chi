@@ -10645,7 +10645,12 @@ async function renderQrUrlToPngBlob(qrUrl) {
   }
 
   // Tải nội dung từ server VietQR với CORS mode
-  const response = await fetch(qrUrl, { mode: 'cors' });
+  let fetchTarget = qrUrl;
+  if (fetchTarget.includes('img.vietqr.io')) {
+    // Chuyển trực tiếp sang .svg để nhận HTTP 200 cùng header Access-Control-Allow-Origin: *
+    fetchTarget = fetchTarget.replace(/\.(png|jpg)(\?|$)/i, '.svg$2');
+  }
+  const response = await fetch(fetchTarget, { mode: 'cors' });
   if (!response.ok) {
     throw new Error(`Tải mã VietQR thất bại: HTTP ${response.status}`);
   }
@@ -10684,7 +10689,6 @@ function convertSvgStringToPngBlob(svgText) {
       const blob = new Blob([cleanedSvg], { type: 'image/svg+xml;charset=utf-8' });
       const blobUrl = URL.createObjectURL(blob);
       const img = new Image();
-      img.crossOrigin = 'anonymous';
 
       const timer = setTimeout(() => {
         try { URL.revokeObjectURL(blobUrl); } catch (e) {}
