@@ -675,6 +675,9 @@ function purgeDraftDataFromState(state) {
     if (!state.settings) state.settings = {};
     state.settings.deletedTxIdsJson = JSON.stringify(Array.from(deletedTxSet).slice(-500));
   }
+  if (state.settings && state.settings.sepayApiToken) {
+    state.settings.sepayApiToken = '';
+  }
 
   // Nếu học sinh đang ở trạng thái "Chờ duyệt" nhưng không còn bất kỳ phiếu "Chờ duyệt" nào thì trả về "Chưa đóng"
   if (Array.isArray(state.students)) {
