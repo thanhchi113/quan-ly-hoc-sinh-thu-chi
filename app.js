@@ -4543,8 +4543,8 @@ function enableSourceProtection() {
   document.addEventListener('contextmenu', e => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
     const isAuth = isAdminAuthenticated();
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || isAuth) {
-      return true; // Cho phép chuột phải bình thường trong ô nhập liệu và khi Quản lý đăng nhập
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'IMG' || isAuth) {
+      return true; // Cho phép chuột phải bình thường trong ô nhập liệu, trên ảnh và khi Quản lý đăng nhập
     }
     e.preventDefault();
   });
@@ -5798,6 +5798,7 @@ function openPaymentModal(studentRecordId = '') {
   const rawAccNo = stg.bankAccountNo || (isSandboxDraftMode ? '5801434567' : '8601774789');
   document.getElementById('pay-student-record-id').value = student ? student.id : '';
   document.getElementById('pay-modal-qr-img').src = qrUrl;
+  if (typeof prepareQrPngBlobCache === 'function') prepareQrPngBlobCache(qrUrl);
   document.getElementById('pay-modal-bank').textContent = stg.bankBin || 'BIDV';
   document.getElementById('pay-modal-owner').textContent =
     stg.bankAccountName || 'HKD TRUNG TAM HUYNH THANH CHI';
@@ -10525,6 +10526,7 @@ function refreshGroupQrPreview() {
 
   const imgEl = document.getElementById('group-modal-qr-img');
   if (imgEl) imgEl.src = qrUrl;
+  if (typeof prepareQrPngBlobCache === 'function') prepareQrPngBlobCache(qrUrl);
 }
 
 function saveGroupQrMessageTemplate() {
@@ -10610,89 +10612,278 @@ function copyGroupQrZaloMessage() {
   return copyGroupQrCustomMessage();
 }
 
-async function getQrPngBlob(qrUrl) {
+// Bộ nhớ đệm lưu trữ PNG Blob để sao chép vào OS Clipboard ngay lập tức khi click (giữ vững User Activation Gesture)
+const _qrPngBlobCache = new Map();
+
+function prepareQrPngBlobCache(qrUrl) {
+  if (!qrUrl) return Promise.resolve(null);
+  if (_qrPngBlobCache.has(qrUrl)) {
+    return _qrPngBlobCache.get(qrUrl);
+  }
+  const promise = renderQrUrlToPngBlob(qrUrl)
+    .then(blob => {
+      _qrPngBlobCache.set(qrUrl, blob);
+      return blob;
+    })
+    .catch(err => {
+      console.warn('Lỗi tiền render ảnh QR PNG:', err);
+      _qrPngBlobCache.delete(qrUrl);
+      return null;
+    });
+  _qrPngBlobCache.set(qrUrl, promise);
+  return promise;
+}
+
+// Tải và chuyển đổi mã QR thành PNG Blob chất lượng cao (1080x1080, 300 DPI, nền trắng sạch)
+async function renderQrUrlToPngBlob(qrUrl) {
+  if (!qrUrl) throw new Error('URL mã QR rỗng');
+
+  // Trường hợp là data URL ảnh PNG hoặc JPEG
+  if (qrUrl.startsWith('data:image/png') || qrUrl.startsWith('data:image/jpeg')) {
+    const res = await fetch(qrUrl);
+    return await res.blob();
+  }
+
+  // Tải nội dung từ server VietQR với CORS mode
   const response = await fetch(qrUrl, { mode: 'cors' });
+  if (!response.ok) {
+    throw new Error(`Tải mã VietQR thất bại: HTTP ${response.status}`);
+  }
+
   const contentType = (response.headers.get('content-type') || '').toLowerCase();
-
-  if (contentType.includes('image/png')) {
-    return await response.blob();
+  // Nếu server trả về trực tiếp định dạng PNG nhị phân chuẩn (không phải SVG)
+  if (contentType.includes('image/png') && !contentType.includes('svg')) {
+    const rawBlob = await response.blob();
+    if (rawBlob && rawBlob.size > 1000) return rawBlob;
   }
 
-  const text = await response.text();
-  const base64Match = text.match(/(?:href|xlink:href)=["'](data:image\/png;base64,[^"']+)["']/i);
-  if (base64Match) {
-    const dataUri = base64Match[1];
-    const dataRes = await fetch(dataUri);
-    return await dataRes.blob();
-  }
+  // VietQR trả về mã nguồn SVG (ngay cả khi gọi URL đuôi .png)
+  const svgText = await response.text();
+  return await convertSvgStringToPngBlob(svgText);
+}
 
-  const imgObj = new Image();
-  imgObj.crossOrigin = 'anonymous';
-  const svgBlob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
-  const blobUrl = URL.createObjectURL(svgBlob);
-
-  await new Promise((resolve, reject) => {
-    imgObj.onload = resolve;
-    imgObj.onerror = reject;
-    imgObj.src = blobUrl;
-  });
-
-  const canvas = document.createElement('canvas');
-  canvas.width = imgObj.naturalWidth || 540;
-  canvas.height = imgObj.naturalHeight || 640;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(imgObj, 0, 0);
-  URL.revokeObjectURL(blobUrl);
-
+// Chuyển đổi mã nguồn SVG thành PNG Blob độ phân giải cao trên Canvas
+function convertSvgStringToPngBlob(svgText) {
   return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (blob) resolve(blob);
-      else reject(new Error('Canvas to PNG Blob failed'));
-    }, 'image/png');
+    try {
+      if (!svgText || !svgText.includes('<svg')) {
+        return reject(new Error('Dữ liệu không phải mã nguồn SVG hợp lệ'));
+      }
+
+      let cleanedSvg = svgText;
+      if (!cleanedSvg.includes('xmlns="http://www.w3.org/2000/svg"')) {
+        cleanedSvg = cleanedSvg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+
+      const widthMatch = cleanedSvg.match(/width=["'](\d+)["']/i);
+      const heightMatch = cleanedSvg.match(/height=["'](\d+)["']/i);
+      const viewBoxMatch = cleanedSvg.match(/viewBox=["']\s*0\s+0\s+(\d+)\s+(\d+)\s*["']/i);
+      const baseWidth = widthMatch ? parseInt(widthMatch[1], 10) : (viewBoxMatch ? parseInt(viewBoxMatch[1], 10) : 540);
+      const baseHeight = heightMatch ? parseInt(heightMatch[1], 10) : (viewBoxMatch ? parseInt(viewBoxMatch[2], 10) : 540);
+
+      const blob = new Blob([cleanedSvg], { type: 'image/svg+xml;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      const timer = setTimeout(() => {
+        try { URL.revokeObjectURL(blobUrl); } catch (e) {}
+        reject(new Error('Quá thời gian render ảnh QR (timeout 8s)'));
+      }, 8000);
+
+      img.onload = () => {
+        clearTimeout(timer);
+        try {
+          const w = img.naturalWidth || baseWidth || 540;
+          const h = img.naturalHeight || baseHeight || 540;
+          // Render ở độ phân giải 2x (1080x1080) để dán vào Zalo cực kỳ sắc nét và quét nhạy 100%
+          const scale = 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(blobUrl);
+            return reject(new Error('Không khởi tạo được Canvas 2D'));
+          }
+
+          // Đổ nền trắng tinh khôi tránh việc ảnh bị viền đen khi dán vào Zalo / Messenger
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          URL.revokeObjectURL(blobUrl);
+
+          canvas.toBlob(pngBlob => {
+            if (pngBlob && pngBlob.size > 0) {
+              resolve(pngBlob);
+            } else {
+              reject(new Error('Tạo file ảnh PNG từ Canvas thất bại'));
+            }
+          }, 'image/png', 1.0);
+        } catch (err) {
+          URL.revokeObjectURL(blobUrl);
+          reject(err);
+        }
+      };
+
+      img.onerror = () => {
+        clearTimeout(timer);
+        URL.revokeObjectURL(blobUrl);
+        // Fallback: Vẽ trực tiếp background base64 và đường path QR nếu SVG Image load bị chặn
+        fallbackDrawSvgToPngBlob(cleanedSvg, baseWidth, baseHeight)
+          .then(resolve)
+          .catch(reject);
+      };
+
+      img.src = blobUrl;
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
+// Phương án dự phòng: Tách lớp background và ma trận QR để vẽ trực tiếp bằng Canvas 2D Path
+function fallbackDrawSvgToPngBlob(svgText, baseWidth = 540, baseHeight = 540) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const scale = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(baseWidth * scale);
+      canvas.height = Math.round(baseHeight * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Không có Canvas 2D Context'));
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Trích xuất ảnh nền VietQR
+      const bgMatch = svgText.match(/(?:href|xlink:href)=["'](data:image\/png;base64,[^"']+)["']/i);
+      if (bgMatch) {
+        const bgImg = new Image();
+        await new Promise((res, rej) => {
+          bgImg.onload = res;
+          bgImg.onerror = rej;
+          bgImg.src = bgMatch[1];
+        });
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+      }
+
+      // Trích xuất ma trận QR (thẻ g và path)
+      const gMatch = svgText.match(/<g transform="translate\((\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\)\s+scale\((\d+(?:\.\d+)?)\)">/);
+      const pathMatch = svgText.match(/<path fill="([^"]+)" d="([^"]+)"/);
+
+      if (gMatch && pathMatch && typeof Path2D !== 'undefined') {
+        const tx = parseFloat(gMatch[1]) * scale;
+        const ty = parseFloat(gMatch[2]) * scale;
+        const s = parseFloat(gMatch[3]) * scale;
+        const color = pathMatch[1] || '#111111';
+        const d = pathMatch[2];
+
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.scale(s, s);
+        ctx.fillStyle = color;
+        const p2d = new Path2D(d);
+        ctx.fill(p2d);
+        ctx.restore();
+      }
+
+      canvas.toBlob(blob => {
+        if (blob && blob.size > 0) resolve(blob);
+        else reject(new Error('Fallback Canvas toBlob thất bại'));
+      }, 'image/png', 1.0);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+async function getQrPngBlob(qrUrl) {
+  const cached = _qrPngBlobCache.get(qrUrl);
+  if (cached && cached instanceof Blob) return cached;
+  if (cached && typeof cached.then === 'function') return await cached;
+  return await prepareQrPngBlobCache(qrUrl);
+}
+
+// Sao chép ảnh QR trực tiếp vào Clipboard hệ điều hành (cho phép nhấn Ctrl + V dán ảnh ngay)
 async function copyQrImageToClipboard(imgId = 'group-modal-qr-img') {
   const imgEl = document.getElementById(imgId);
   if (!imgEl || !imgEl.src) {
     showToast('Chưa có mã QR để sao chép!', 'error');
     return;
   }
-  const btn = document.getElementById('btn-copy-group-qr-img');
-  const origBtnText = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Đang xử lý ảnh...</span>`;
+  const qrUrl = imgEl.src;
+
+  // Tìm tất cả các nút sao chép tương ứng trên giao diện để cập nhật phản hồi trực quan
+  const btnGroupMain = document.getElementById('btn-copy-group-qr-img');
+  const btnGroupFooter = document.getElementById('btn-copy-group-qr-img-footer');
+  const btnPayModal = document.getElementById('btn-copy-pay-qr-img');
+  const activeBtns = [btnGroupMain, btnGroupFooter, btnPayModal].filter(Boolean);
+
+  const origTexts = new Map();
+  activeBtns.forEach(b => {
+    origTexts.set(b, b.innerHTML);
+    b.disabled = true;
+    b.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Đang chuẩn bị ảnh...</span>`;
+  });
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+
+  const restoreButtons = () => {
+    activeBtns.forEach(b => {
+      b.disabled = false;
+      if (origTexts.has(b)) b.innerHTML = origTexts.get(b);
+    });
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+  };
+
+  const markButtonsSuccess = () => {
+    activeBtns.forEach(b => {
+      b.disabled = false;
+      b.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-300"></i><span>✓ Đã chép ảnh QR!</span>`;
+    });
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    setTimeout(restoreButtons, 3000);
+  };
+
+  if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') {
+    restoreButtons();
+    showToast('Trình duyệt hiện tại chưa hỗ trợ copy ảnh vào bộ nhớ tạm. Bạn vui lòng bấm nút "Tải ảnh về máy" hoặc nhấn giữ vào ảnh để chia sẻ!', 'warning', 6000);
+    return;
   }
 
   try {
-    showToast('Đang tạo và sao chép ảnh QR chuẩn PNG...', 'info', 2500);
+    let writePromise;
+    const cached = _qrPngBlobCache.get(qrUrl);
 
-    const pngBlob = await getQrPngBlob(imgEl.src);
-    if (!pngBlob || pngBlob.size === 0) {
-      throw new Error('Dữ liệu ảnh PNG rỗng');
-    }
-
-    if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-      const item = new ClipboardItem({ 'image/png': pngBlob });
-      await navigator.clipboard.write([item]);
-      showToast('🖼️ ĐÃ SAO CHÉP ẢNH QR VÀO BỘ NHỚ TẠM! Bạn hãy mở Zalo / Messenger và nhấn Ctrl+V để dán trực tiếp ảnh.', 'success', 6000);
+    // TH 1: Đã có sẵn PNG Blob trong bộ nhớ đệm (99% trường hợp vì đã render ngầm khi mở modal)
+    if (cached && cached instanceof Blob) {
+      const item = new ClipboardItem({ 'image/png': cached });
+      writePromise = navigator.clipboard.write([item]);
     } else {
-      throw new Error('Trình duyệt không hỗ trợ ClipboardItem');
+      // TH 2: Bấm quá nhanh trong vài ms đầu, truyền Promise trực tiếp vào ClipboardItem để giữ User Activation Gesture
+      const blobPromise = (cached && typeof cached.then === 'function') ? cached : prepareQrPngBlobCache(qrUrl);
+      try {
+        const item = new ClipboardItem({ 'image/png': blobPromise });
+        writePromise = navigator.clipboard.write([item]);
+      } catch (e) {
+        // Trình duyệt cũ chưa hỗ trợ Promise trong ClipboardItem: đợi blob rồi ghi
+        const resolvedBlob = await blobPromise;
+        if (!resolvedBlob || resolvedBlob.size === 0) throw new Error('Không tạo được file ảnh PNG');
+        const item = new ClipboardItem({ 'image/png': resolvedBlob });
+        writePromise = navigator.clipboard.write([item]);
+      }
     }
+
+    await writePromise;
+    markButtonsSuccess();
+    showToast('🖼️ ĐÃ SAO CHÉP ẢNH QR VÀO BỘ NHỚ TẠM! Hãy mở Zalo / Messenger và nhấn Ctrl+V để dán trực tiếp ảnh.', 'success', 6000);
   } catch (err) {
-    console.error('Lỗi sao chép ảnh QR:', err);
-    // Tuyệt đối không sao chép URL dạng chữ khi người dùng bấm chép ảnh
-    showToast('Thiết bị hoặc trình duyệt chưa hỗ trợ dán ảnh trực tiếp từ bộ nhớ tạm. Bạn vui lòng bấm nút "Tải ảnh QR về máy" hoặc nhấn giữ vào ảnh chọn "Lưu hình ảnh" để gửi vào nhóm Zalo!', 'warning', 7000);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = origBtnText;
-      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-    }
+    console.error('Lỗi sao chép ảnh QR vào clipboard:', err);
+    restoreButtons();
+    showToast('Không thể dán trực tiếp do hạn chế quyền của trình duyệt. Bạn hãy bấm chuột phải vào ảnh chọn "Sao chép hình ảnh" hoặc bấm "Tải ảnh về máy" để gửi phụ huynh!', 'warning', 7000);
   }
 }
 
@@ -10700,7 +10891,7 @@ async function downloadQrImageById(imgId, filename = 'Ma_QR_Hoc_Phi.png') {
   const imgEl = document.getElementById(imgId);
   if (!imgEl || !imgEl.src) return;
   try {
-    showToast('Đang tải ảnh mã QR về máy...', 'info');
+    showToast('Đang tải ảnh mã QR chất lượng cao về máy...', 'info', 2000);
     const pngBlob = await getQrPngBlob(imgEl.src);
     const blobUrl = URL.createObjectURL(pngBlob);
     const a = document.createElement('a');
