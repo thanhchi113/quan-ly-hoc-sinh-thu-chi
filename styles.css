@@ -2172,3 +2172,18 @@ html.dark-mode [id^="quick-assign-stu-input"]::placeholder {
 html.dark-mode [id^="quick-assign-stu-input"]:focus {
   border-color: #f59e0b !important;
 }
+
+
+/* Dark Mode Fixes for Unassigned Student Card in Detail Modal */
+html.dark-mode #transaction-detail-modal .bg-amber-50\/90 {
+  background-color: rgba(69, 26, 3, 0.45) !important;
+  border-color: #b45309 !important;
+}
+
+html.dark-mode #transaction-detail-modal .text-amber-950 {
+  color: #fef3c7 !important;
+}
+
+html.dark-mode #transaction-detail-modal .text-amber-800 {
+  color: #fde68a !important;
+}
