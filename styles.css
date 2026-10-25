@@ -2117,3 +2117,58 @@ html.dark-mode .tc-dialog-input:focus {
     display: none !important;
   }
 }
+
+
+/* Quick Assign Autocomplete & Dropdown */
+[id^="quick-assign-suggest-box"] {
+  border-radius: 14px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1.5px solid #f59e0b;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] {
+  background-color: #0f172a !important;
+  border-color: #d97706 !important;
+  color: #f8fafc !important;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] > div {
+  border-color: #334155 !important;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] > div:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] .text-slate-900,
+html.dark-mode [id^="quick-assign-suggest-box"] .text-emerald-950 {
+  color: #f8fafc !important;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] .text-slate-500,
+html.dark-mode [id^="quick-assign-suggest-box"] .text-emerald-700 {
+  color: #94a3b8 !important;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] .bg-slate-50 {
+  background-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark-mode [id^="quick-assign-suggest-box"] .bg-emerald-50\/90 {
+  background-color: rgba(6, 78, 59, 0.4) !important;
+}
+
+html.dark-mode [id^="quick-assign-stu-input"] {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+html.dark-mode [id^="quick-assign-stu-input"]::placeholder {
+  color: #64748b !important;
+}
+
+html.dark-mode [id^="quick-assign-stu-input"]:focus {
+  border-color: #f59e0b !important;
+}
