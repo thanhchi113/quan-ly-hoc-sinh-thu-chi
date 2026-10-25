@@ -801,6 +801,17 @@ function processIncomingBankWebhook(ss, payload) {
     const tSig = buildGasSig(formatDateValue(trValues[tIdx][1]), trValues[tIdx][4], rowDesc, rowIsDraft);
     if (tSig) existingTxIds[tSig] = true;
   }
+  for (let rIdx = 1; rIdx < reqValues.length; rIdx++) {
+    const rid = String(reqValues[rIdx][0] || '').trim();
+    if (rid) {
+      existingTxIds[rid] = true;
+      const rSuffix = rid.replace(/^(?:YC_STK_SEPAY_|YC_SEPAY_|YC_STK_|YC_)+/i, '').trim();
+      if (rSuffix) {
+        existingTxIds['GD_' + rSuffix] = true;
+        existingTxIds['GD_SEPAY_' + rSuffix] = true;
+      }
+    }
+  }
   const nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   const todayDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
 
@@ -971,7 +982,10 @@ function processIncomingBankWebhook(ss, payload) {
         let updatedPending = false;
         for (let j = 1; j < reqValues.length; j++) {
           if (String(reqValues[j][3]).toUpperCase() === stCode.toUpperCase() && String(reqValues[j][12]) === 'Chờ duyệt') {
-            shReq.getRange(j + 1, 11).setValue(String(reqValues[j][10] || '') + ' • ' + draftPrefix + '✅ Đã ghi nhận chuyển tiền thành công vào STK');
+            const curNote = String(reqValues[j][10] || '');
+            if (curNote.indexOf('Đã ghi nhận chuyển tiền thành công vào STK') === -1) {
+              shReq.getRange(j + 1, 11).setValue(curNote + ' • ' + draftPrefix + '✅ Đã ghi nhận chuyển tiền thành công vào STK');
+            }
             updatedPending = true;
           }
         }
@@ -1116,10 +1130,23 @@ function pullSepayApiTransactions(ss, tokenOverride, useThrottle) {
 
   const shTrans = ss.getSheetByName(SHEET_NAMES.TRANSACTIONS);
   const trValues = shTrans ? shTrans.getDataRange().getValues() : [];
+  const shReq = ss.getSheetByName(SHEET_NAMES.PAYMENT_REQUESTS);
+  const reqValues = shReq ? shReq.getDataRange().getValues() : [];
   const seenIds = {};
   for (let i = 1; i < trValues.length; i++) {
     const tid = String(trValues[i][0] || '').trim();
     if (tid) seenIds[tid] = true;
+  }
+  for (let j = 1; j < reqValues.length; j++) {
+    const rid = String(reqValues[j][0] || '').trim();
+    if (rid) {
+      seenIds[rid] = true;
+      const rSuffix = rid.replace(/^(?:YC_STK_SEPAY_|YC_SEPAY_|YC_STK_|YC_)+/i, '').trim();
+      if (rSuffix) {
+        seenIds['GD_' + rSuffix] = true;
+        seenIds['GD_SEPAY_' + rSuffix] = true;
+      }
+    }
   }
   try {
     const rawDel = getSettingValueByKey(shSettings, 'deletedTxIdsJson');
