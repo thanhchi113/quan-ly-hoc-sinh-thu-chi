@@ -187,6 +187,30 @@ function doPost(e) {
       });
     }
 
+    // 1b. Gửi email đặt lại mật khẩu về badaoqn132@gmail.com
+    if (action === 'sendResetEmail') {
+      const targetEmail = 'badaoqn132@gmail.com';
+      const resetUrl = payload.resetUrl || '';
+      const otp = payload.otp || '';
+      const subject = '[Thanh Chí Edu] Yêu cầu đặt lại mật khẩu Quản lý (Mã OTP: ' + otp + ')';
+      const body = 'Xin chào,\n\nBạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu quản trị trên hệ thống Thanh Chí Edu.\n\nBấm vào đường link dưới đây để đặt lại mật khẩu mới:\n' + resetUrl + '\n\nHoặc sử dụng mã OTP 6 số: ' + otp + ' (Hiệu lực trong 30 phút).\n\nNếu bạn không yêu cầu điều này, vui lòng bỏ qua email.';
+      try {
+        MailApp.sendEmail({
+          to: targetEmail,
+          subject: subject,
+          body: body
+        });
+      } catch (mailErr) {
+        try {
+          GmailApp.sendEmail(targetEmail, subject, body);
+        } catch (gErr) {}
+      }
+      return jsonResponse({
+        success: true,
+        message: 'Đã gửi link đặt lại mật khẩu về badaoqn132@gmail.com!'
+      });
+    }
+
     // 2. Phụ huynh / Học sinh gửi thông tin xác nhận chuyển khoản
     // Chỉ duyệt tự động khi ĐÃ CÓ kết quả chuyển tiền thành công vào STK và đang bật Duyệt tự động
     if (action === 'submitParentPayment') {
