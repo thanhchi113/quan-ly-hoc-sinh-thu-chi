@@ -3156,7 +3156,7 @@ async function exitSandboxDraftMode() {
       }
     );
     if (entered === null) return;
-    if (entered.trim() !== ownerPass && entered.trim() !== '336699') {
+    if (entered.trim() !== ownerPass) {
       showToast('Mật khẩu Quản lý chính không đúng! Bạn vẫn đang ở Tab Nháp Dùng Thử.', 'warning');
       return;
     }
@@ -3903,25 +3903,11 @@ function handleAdminLogin(e) {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
   const rawInput = document.getElementById('admin-password-input')?.value || '';
   const inputPass = rawInput.trim();
-  const savedPass = String(appState?.settings?.adminPassword || '').trim();
-  const sandboxSaved = String(appState?.settings?.sandboxAdminPassword || '').trim();
+  const actualPass = isSandboxDraftMode
+    ? String(appState?.settings?.sandboxAdminPassword || 'DEMO-NHAP-2026').trim()
+    : String(appState?.settings?.adminPassword || '336699').trim();
 
-  // Chấp nhận đồng thời: mật khẩu lưu trong settings, mật khẩu riêng 336699, hoặc mật khẩu 123456
-  const isMatched =
-    inputPass === savedPass ||
-    inputPass === '336699' ||
-    inputPass === '123456' ||
-    (isSandboxDraftMode && (inputPass === sandboxSaved || inputPass === 'DEMO-NHAP-2026'));
-
-  if (isMatched) {
-    if (!isSandboxDraftMode) {
-      if (!appState.settings) appState.settings = {};
-      // Cập nhật lại mật khẩu chuẩn 336699 nếu đang là 123456
-      if (inputPass === '336699' || !appState.settings.adminPassword || appState.settings.adminPassword === '123456') {
-        appState.settings.adminPassword = inputPass === '123456' ? '123456' : '336699';
-        saveStateToLocal();
-      }
-    }
+  if (inputPass === actualPass) {
     const authKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_AUTH : STORAGE_KEYS.ADMIN_AUTH;
     sessionStorage.setItem(authKey, 'true');
     const inputEl = document.getElementById('admin-password-input');
@@ -3932,7 +3918,7 @@ function handleAdminLogin(e) {
     );
     checkAdminAuthStatus();
   } else {
-    showToast('Mật khẩu quản trị không đúng! Bạn có thể dùng 336699 hoặc 123456.', 'error');
+    showToast('Mật khẩu quản trị không đúng!', 'error');
   }
 }
 
@@ -11625,7 +11611,7 @@ function saveGeneralSettings(event) {
     sepayVaByAccJson: JSON.stringify(nextVaMap),
     bankAccountName: document.getElementById('setting-bank-owner').value.trim().toUpperCase(),
     teacherPhone: document.getElementById('setting-teacher-phone').value.trim(),
-    adminPassword: passValue || '336699'
+    adminPassword: passValue || appState.settings.adminPassword || '336699'
   };
 
   saveStateToLocal();
