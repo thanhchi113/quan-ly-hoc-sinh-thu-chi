@@ -2822,6 +2822,8 @@
                 <option value="PENDING">Đang chờ duyệt chuyển khoản</option>
                 <option value="Thu">Khoản Thu (+)</option>
                 <option value="Chi">Khoản Chi (-)</option>
+                <option value="INCLUDED">Đang ghi nhận vào hệ thống</option>
+                <option value="EXCLUDED">Đã gắn tag: Không ghi nhận hệ thống</option>
               </select>
 
               <select
@@ -2871,6 +2873,24 @@
                 >
                   <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
                   <span>Duyệt đã chọn</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="handleBulkToggleExcludeTransactions(true)"
+                  title="Gắn tag Không ghi nhận vào hệ thống cho các giao dịch đã chọn"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-950 text-white text-xs font-extrabold cursor-pointer"
+                >
+                  <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+                  <span>Gắn tag: Không ghi nhận</span>
+                </button>
+                <button
+                  type="button"
+                  onclick="handleBulkToggleExcludeTransactions(false)"
+                  title="Gỡ tag Không ghi nhận và tính lại các giao dịch đã chọn vào hệ thống"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 text-xs font-extrabold cursor-pointer transition"
+                >
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                  <span>Ghi nhận lại</span>
                 </button>
                 <button
                   type="button"
@@ -4257,6 +4277,32 @@
           </div>
         </div>
 
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label class="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              id="trans-form-excluded"
+              type="checkbox"
+              onchange="if(this.checked && !document.getElementById('trans-form-custom-tag').value.trim()){document.getElementById('trans-form-custom-tag').value='Không ghi nhận hệ thống';}"
+              class="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-800 cursor-pointer"
+            />
+            <div class="text-xs">
+              <div class="font-extrabold text-slate-900">Gắn tag: Không ghi nhận vào hệ thống</div>
+              <div class="text-[11px] text-slate-500">Bỏ qua khoản này khỏi Tổng Thu/Chi, Tồn quỹ, Số dư thống kê Web và Học phí học sinh (vẫn hiển thị trong bảng để đối soát).</div>
+            </div>
+          </label>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <input
+              id="trans-form-custom-tag"
+              type="text"
+              placeholder="Tên tag (VD: Không ghi nhận hệ thống, Chuyển nhầm, Nội bộ...)"
+              class="flex-1 min-w-[200px] px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800"
+            />
+            <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Không ghi nhận hệ thống';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Không ghi nhận HT</button>
+            <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Chuyển nhầm';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Chuyển nhầm</button>
+            <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Giao dịch nội bộ';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Nội bộ</button>
+          </div>
+        </div>
+
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
           <button type="button" onclick="closeTransactionModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
           <button id="trans-modal-submit-btn" type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">Lưu Giao Dịch</button>
@@ -4341,6 +4387,25 @@
             placeholder="Để trống nếu giữ nguyên nội dung cũ..."
             class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
           />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <div>
+            <label class="block text-xs font-extrabold text-slate-800 mb-1">Trạng thái ghi nhận hệ thống</label>
+            <select id="bulk-trans-excluded" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+              <option value="__KEEP__">-- Giữ nguyên --</option>
+              <option value="EXCLUDE">Gắn tag: Không ghi nhận vào hệ thống</option>
+              <option value="INCLUDE">Gỡ tag: Ghi nhận lại vào hệ thống</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-slate-800 mb-1">Nhãn Tag (Tuỳ chọn)</label>
+            <input
+              id="bulk-trans-custom-tag"
+              type="text"
+              placeholder="VD: Không ghi nhận hệ thống, Chuyển nhầm..."
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+            />
+          </div>
         </div>
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
           <button type="button" onclick="closeBulkEditTransactionsModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
@@ -5827,6 +5892,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261025_v45"></script>
+  <script src="app.js?v=20261025_v46"></script>
 </body>
 </html>
