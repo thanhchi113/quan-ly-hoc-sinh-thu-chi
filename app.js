@@ -278,8 +278,85 @@ function isDraftTxIncludedInMain(tx, stateObj = appState) {
   return getDraftTxIncludeMap(stateObj)[String(tx.id || '').trim()] === true;
 }
 
+function getExcludedTxIdsSet(stateObj = appState) {
+  const set = new Set();
+  try {
+    const raw = (stateObj || appState)?.settings?.excludedTxIdsJson;
+    const arr = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(arr)) arr.forEach(id => id && set.add(String(id).trim()));
+  } catch (e) {}
+  return set;
+}
+
+function getTxCustomTagsMap(stateObj = appState) {
+  try {
+    const raw = (stateObj || appState)?.settings?.txCustomTagsJson;
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (e) {}
+  return {};
+}
+
+function isTransactionExcludedFromSystem(tx, stateObj = appState) {
+  if (!tx) return false;
+  if (tx.isExcluded === true || tx.isExcluded === 'true') return true;
+  const txId = String(tx.id || '').trim();
+  return Boolean(txId && getExcludedTxIdsSet(stateObj).has(txId));
+}
+
+function getTransactionTagLabel(tx, stateObj = appState) {
+  if (!tx) return '';
+  const txId = String(tx.id || '').trim();
+  const map = getTxCustomTagsMap(stateObj);
+  const custom = String(tx.customTag || (txId ? map[txId] : '') || '').trim();
+  if (custom) return custom;
+  if (isTransactionExcludedFromSystem(tx, stateObj)) return 'Không ghi nhận hệ thống';
+  return '';
+}
+
+function setTransactionExcludedInState(tx, isExcluded, customTag = undefined, stateObj = appState) {
+  const target = stateObj || appState;
+  if (!target || !tx || !tx.id) return;
+  if (!target.settings) target.settings = {};
+  const txId = String(tx.id).trim();
+  const excludedSet = getExcludedTxIdsSet(target);
+  const tagsMap = { ...getTxCustomTagsMap(target) };
+
+  if (isExcluded) {
+    excludedSet.add(txId);
+    tx.isExcluded = true;
+    const finalTag = String(
+      customTag !== undefined && customTag !== ''
+        ? customTag
+        : tagsMap[txId] || tx.customTag || 'Không ghi nhận hệ thống'
+    ).trim();
+    tagsMap[txId] = finalTag;
+    tx.customTag = finalTag;
+  } else {
+    excludedSet.delete(txId);
+    delete tx.isExcluded;
+    if (customTag !== undefined) {
+      const cleanTag = String(customTag || '').trim();
+      if (cleanTag && cleanTag !== 'Không ghi nhận hệ thống') {
+        tagsMap[txId] = cleanTag;
+        tx.customTag = cleanTag;
+      } else {
+        delete tagsMap[txId];
+        delete tx.customTag;
+      }
+    } else if (tagsMap[txId] === 'Không ghi nhận hệ thống') {
+      delete tagsMap[txId];
+      delete tx.customTag;
+    }
+  }
+
+  target.settings.excludedTxIdsJson = JSON.stringify(Array.from(excludedSet));
+  target.settings.txCustomTagsJson = JSON.stringify(tagsMap);
+}
+
 function isCountedInMainFinance(tx, stateObj = appState) {
   if (!tx || isSimulatedBankTestItem(tx)) return false;
+  if (isTransactionExcludedFromSystem(tx, stateObj)) return false;
   if (isDraftBankTransaction(tx, stateObj)) return isDraftTxIncludedInMain(tx, stateObj);
   return true;
 }
@@ -3458,6 +3535,12 @@ function detectActionDescription(prevJson, nextJsonOrObj) {
     if (prev.settings?.studentMetaJson !== next.settings?.studentMetaJson) {
       return 'Cập nhật ngày bắt đầu học / số đợt đóng';
     }
+    if (
+      prev.settings?.excludedTxIdsJson !== next.settings?.excludedTxIdsJson ||
+      prev.settings?.txCustomTagsJson !== next.settings?.txCustomTagsJson
+    ) {
+      return 'Gắn / Gỡ tag Không ghi nhận giao dịch vào hệ thống';
+    }
     if ((prev.transactions || []).length !== (next.transactions || []).length) {
       return 'Cập nhật Sổ Thu - Chi';
     }
@@ -5034,7 +5117,7 @@ function checkHasVerifiedBankTransfer(student, typedStudentName = '') {
   // 2. Kiểm tra trong Sổ Thu - Chi xem đã có giao dịch SePay / Auto-Bank THẬT xác thực cho đúng kỳ học phí này chưa
   const transactions = appState.transactions || [];
   const hasVerifiedTx = transactions.some(t => {
-    if (!t || t.type !== 'Thu' || isSimulatedBankTestItem(t)) return false;
+    if (!t || t.type !== 'Thu' || isSimulatedBankTestItem(t) || isTransactionExcludedFromSystem(t)) return false;
     const txId = String(t.id || '');
     const isBankWebhookTx =
       txId.startsWith('GD_SEPAY_') ||
@@ -5467,6 +5550,8 @@ function renderAdminDashboard() {
 
     transactions.slice(0, 6).forEach(tx => {
       const isTestTx = isSimulatedBankTestItem(tx);
+      const isExcludedTx = !isTestTx && isTransactionExcludedFromSystem(tx);
+      const txTag = getTransactionTagLabel(tx);
       const isDraftTx = !isTestTx && isDraftBankTransaction(tx);
       const isDraftIncluded = isDraftTx && isDraftTxIncludedInMain(tx);
       const isInc = tx.type === 'Thu';
@@ -5476,19 +5561,30 @@ function renderAdminDashboard() {
       recentTxRows.push({
         detailKey: tx.id,
         title: compact.headline,
-        subtitle: `${tx.date || ''} • ${isTestTx ? 'Test STK (0 ₫)' : isDraftTx ? 'STK Nháp' : compact.shortMethod || tx.method || 'Chuyển khoản'}`,
+        subtitle: `${tx.date || ''} • ${
+          isTestTx
+            ? 'Test STK (0 ₫)'
+            : isExcludedTx
+            ? txTag || 'Không ghi nhận hệ thống'
+            : isDraftTx
+            ? 'STK Nháp'
+            : compact.shortMethod || tx.method || 'Chuyển khoản'
+        }`,
         amount: isTestTx ? 0 : Number(tx.amount) || 0,
         testDisplayAmount: tx.testDisplayAmount || Number(tx.amount) || 600000,
         isIncome: isInc,
         statusLabel: isTestTx
           ? 'Test không cộng tiền'
+          : isExcludedTx
+          ? txTag || 'Không ghi nhận HT'
           : isDraftTx
           ? isDraftIncluded
             ? 'Nháp • Đã cộng'
             : 'Nháp • Tắt cộng'
-          : 'Đã đối soát',
+          : txTag || 'Đã đối soát',
         isPending: false,
-        isTest: isTestTx
+        isTest: isTestTx,
+        isExcluded: isExcludedTx
       });
     });
 
@@ -6218,7 +6314,7 @@ function getStudentPaymentDatesIso(s) {
   const dates = new Set();
   const code = String(s.studentCode || '').trim().toUpperCase();
   (appState.transactions || []).forEach(tx => {
-    if (tx.type !== 'Thu' || isSimulatedBankTestItem(tx)) return;
+    if (tx.type !== 'Thu' || isSimulatedBankTestItem(tx) || isTransactionExcludedFromSystem(tx)) return;
     const matchCode =
       (tx.studentCode && code && String(tx.studentCode).trim().toUpperCase() === code) ||
       (code && String(tx.description || '').toUpperCase().includes(code));
@@ -6836,16 +6932,29 @@ function openStudentDetailModal(studentId) {
       txContainer.innerHTML = studentTxs
         .map(tx => {
           const isTestTx = isSimulatedBankTestItem(tx);
+          const isExcludedTx = !isTestTx && isTransactionExcludedFromSystem(tx);
+          const txTag = getTransactionTagLabel(tx);
           const cleanDesc = isTestTx ? stripRedundantTestPrefix(tx.description) : tx.description;
           return `
           <div class="p-3 rounded-xl ${
-            isTestTx ? 'bg-amber-50/70 border border-amber-300' : 'bg-emerald-50/50 border border-emerald-200'
+            isTestTx
+              ? 'bg-amber-50/70 border border-amber-300'
+              : isExcludedTx
+              ? 'bg-slate-100 border border-slate-300 opacity-85'
+              : 'bg-emerald-50/50 border border-emerald-200'
           } flex flex-wrap items-center justify-between gap-2 text-xs">
             <div class="space-y-0.5">
               <div class="font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
                 <span class="px-2 py-0.2 rounded ${
-                  isTestTx ? 'bg-amber-600' : 'bg-emerald-600'
+                  isTestTx ? 'bg-amber-600' : isExcludedTx ? 'bg-slate-600' : 'bg-emerald-600'
                 } text-white tabular-nums text-xs">${escapeHtml(tx.id)}</span>
+                ${
+                  isExcludedTx
+                    ? `<span class="px-2 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-300 font-extrabold text-[11px]">${escapeHtml(
+                        txTag || 'Không ghi nhận hệ thống'
+                      )}</span>`
+                    : ''
+                }
                 <span>${escapeHtml(cleanDesc || 'Thu học phí')}</span>
               </div>
               <div class="text-[11px] text-slate-500">
@@ -6861,6 +6970,9 @@ function openStudentDetailModal(studentId) {
                      <div class="font-black text-xs sm:text-sm text-amber-700 mt-0.5">${formatCurrency(
                        tx.testDisplayAmount || 600000
                      )}</div>`
+                  : isExcludedTx
+                  ? `<div class="text-[11px] font-extrabold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300">Không ghi nhận hệ thống</div>
+                     <div class="font-black text-xs sm:text-sm line-through text-slate-400 mt-0.5">+${formatCurrency(tx.amount)}</div>`
                   : `<div class="font-extrabold text-sm text-emerald-700">+${formatCurrency(tx.amount)}</div>`
               }
             </div>
@@ -8333,10 +8445,17 @@ function getFilteredTransactions() {
 
   const filtered = (appState.transactions || []).filter(t => {
     if (typeFilter === 'PENDING') return false;
-    if (typeFilter !== 'ALL' && t.type !== typeFilter) return false;
+    if (typeFilter === 'EXCLUDED') {
+      if (!isTransactionExcludedFromSystem(t)) return false;
+    } else if (typeFilter === 'INCLUDED') {
+      if (!isCountedInMainFinance(t)) return false;
+    } else if (typeFilter !== 'ALL' && t.type !== typeFilter) {
+      return false;
+    }
     if (catFilter !== 'ALL' && t.category !== catFilter) return false;
     if (q) {
-      const hay = removeVietnameseTones(`${t.id} ${t.description} ${t.category} ${t.studentCode}`.toLowerCase());
+      const txTag = getTransactionTagLabel(t);
+      const hay = removeVietnameseTones(`${t.id} ${t.description} ${t.category} ${t.studentCode} ${txTag}`.toLowerCase());
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -8536,7 +8655,9 @@ function renderAdminTransactions() {
   if (sumCountEl) {
     const testCount = list.filter(t => isSimulatedBankTestItem(t)).length;
     const draftOffCount = list.filter(t => !isSimulatedBankTestItem(t) && isDraftBankTransaction(t) && !isDraftTxIncludedInMain(t)).length;
+    const excludedCount = list.filter(t => !isSimulatedBankTestItem(t) && isTransactionExcludedFromSystem(t)).length;
     const extraTags = [
+      excludedCount > 0 ? `+${excludedCount} Không ghi nhận` : '',
       testCount > 0 ? `+${testCount} Test` : '',
       draftOffCount > 0 ? `+${draftOffCount} Nháp đang tắt` : ''
     ].filter(Boolean);
@@ -8725,13 +8846,23 @@ function renderAdminTransactions() {
       const isTestTx = isSimulatedBankTestItem(t);
       const isDraftTx = !isTestTx && isDraftBankTransaction(t);
       const isDraftIncluded = isDraftTx && isDraftTxIncludedInMain(t);
+      const isExcludedTx = !isTestTx && isTransactionExcludedFromSystem(t);
+      const txTagLabel = getTransactionTagLabel(t);
       const compact = buildCompactTransactionInfo(t, appState);
       return `
         <tr
           onclick="openTransactionDetailModal('${escapeAttr(t.id)}')"
           title="Bấm vào dòng để xem chi tiết giao dịch & chỉnh sửa"
           class="hover:bg-slate-50/90 transition align-middle cursor-pointer ${
-            isTestTx ? 'bg-amber-50/45' : isDraftTx ? (isDraftIncluded ? 'bg-emerald-50/35' : 'bg-amber-50/35') : ''
+            isTestTx
+              ? 'bg-amber-50/45'
+              : isExcludedTx
+              ? 'bg-slate-100/75 opacity-80'
+              : isDraftTx
+              ? isDraftIncluded
+                ? 'bg-emerald-50/35'
+                : 'bg-amber-50/35'
+              : ''
           } ${isSelected ? 'bg-blue-50/60' : ''}"
         >
           <td class="py-2.5 px-2 text-center align-middle" onclick="event.stopPropagation()">
@@ -8767,12 +8898,22 @@ function renderAdminTransactions() {
                   </span>`
                 : `<div class="inline-flex flex-col items-center gap-1">
                     <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-extrabold whitespace-nowrap border ${
-                      isIncome
+                      isExcludedTx
+                        ? 'bg-slate-200 text-slate-700 border-slate-400'
+                        : isIncome
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                         : 'bg-rose-100 text-rose-800 border-rose-300'
                     }">
                       ${isIncome ? '+ Thu' : '- Chi'}
                     </span>
+                    ${
+                      isExcludedTx
+                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-slate-200 text-slate-800 border-slate-400" title="Giao dịch này không được ghi nhận vào thống kê hệ thống">
+                            <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
+                            <span>Không ghi nhận</span>
+                          </span>`
+                        : ''
+                    }
                     ${
                       isDraftTx
                         ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-extrabold whitespace-nowrap border bg-amber-100 text-amber-900 border-amber-400">
@@ -8802,6 +8943,17 @@ function renderAdminTransactions() {
                     : ''
                 }
                 ${
+                  isExcludedTx
+                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-400 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>${escapeHtml(
+                        txTagLabel || 'Không ghi nhận hệ thống'
+                      )}</span></span>`
+                    : txTagLabel
+                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>${escapeHtml(
+                        txTagLabel
+                      )}</span></span>`
+                    : ''
+                }
+                ${
                   isDraftTx
                     ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200/90 text-amber-950 border border-amber-400 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>STK Nháp</span></span>`
                     : ''
@@ -8813,7 +8965,9 @@ function renderAdminTransactions() {
                       )}</span>`
                     : ''
                 }
-                <span class="text-slate-900 font-extrabold text-xs sm:text-sm leading-snug truncate" title="${escapeAttr(compact.headline)}">
+                <span class="text-slate-900 font-extrabold text-xs sm:text-sm leading-snug truncate ${
+                  isExcludedTx ? 'line-through text-slate-500' : ''
+                }" title="${escapeAttr(compact.headline)}">
                   ${escapeHtml(compact.headline)}
                 </span>
               </div>
@@ -8826,6 +8980,8 @@ function renderAdminTransactions() {
           <td class="py-2.5 px-3 text-right tabular-nums font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
             isTestTx
               ? 'text-amber-700'
+              : isExcludedTx
+              ? 'text-slate-400'
               : isDraftTx && !isDraftIncluded
               ? 'text-slate-500'
               : isIncome
@@ -8840,6 +8996,16 @@ function renderAdminTransactions() {
                      </span>
                      <span class="text-xs sm:text-sm font-black text-amber-700 mt-0.5">
                        ${formatCurrency(t.testDisplayAmount || 600000)}
+                     </span>
+                   </div>`
+                : isExcludedTx
+                ? `<div class="inline-flex flex-col items-end leading-tight">
+                     <span class="inline-flex items-center gap-1 text-[11px] font-sans font-extrabold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded border border-slate-400">
+                       <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
+                       <span>Không ghi nhận HT</span>
+                     </span>
+                     <span class="text-xs sm:text-sm font-black mt-0.5 line-through text-slate-400">
+                       ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
                      </span>
                    </div>`
                 : isDraftTx
@@ -8886,6 +9052,27 @@ function renderAdminTransactions() {
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             <div class="tc-tx-action-col">
+              ${
+                !isTestTx
+                  ? `<button
+                      type="button"
+                      onclick="toggleTransactionExcludedFromSystem('${escapeAttr(t.id)}')"
+                      title="${
+                        isExcludedTx
+                          ? 'Bấm để gỡ tag Không ghi nhận và tính lại giao dịch này vào hệ thống'
+                          : 'Bấm để gắn tag Không ghi nhận vào hệ thống (bỏ qua khỏi Tổng Thu/Chi, Tồn quỹ, Học phí)'
+                      }"
+                      class="tc-tx-action-btn border ${
+                        isExcludedTx
+                          ? 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-300'
+                          : 'bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white border-slate-300'
+                      }"
+                    >
+                      <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3.5 h-3.5"></i>
+                      <span>${isExcludedTx ? 'Ghi nhận lại' : 'Không ghi nhận'}</span>
+                    </button>`
+                  : ''
+              }
               ${
                 isDraftTx
                   ? `<button
@@ -9036,6 +9223,8 @@ function recordEditedTransactionOverride(stateObj, oldTx, updatedTx) {
     description: updatedTx.description,
     studentCode: updatedTx.studentCode || '',
     method: updatedTx.method || 'Chuyển khoản',
+    isExcluded: Boolean(updatedTx.isExcluded),
+    customTag: String(updatedTx.customTag || ''),
     origDesc,
     origAmount,
     origDate,
@@ -9243,15 +9432,19 @@ function openTransactionDetailModal(itemKey) {
   const isTestTx = isSimulatedBankTestItem(tx);
   const isDraftTx = !isTestTx && isDraftBankTransaction(tx);
   const isDraftIncluded = isDraftTx && isDraftTxIncludedInMain(tx);
+  const isExcludedTx = !isTestTx && isTransactionExcludedFromSystem(tx);
+  const txTagLabel = getTransactionTagLabel(tx);
   const compact = buildCompactTransactionInfo(tx, appState);
 
   if (headerEl) {
     headerEl.className = `${
-      isIncome ? 'tc-dialog-header-emerald' : 'tc-dialog-header-danger'
+      isExcludedTx ? 'tc-dialog-header-indigo' : isIncome ? 'tc-dialog-header-emerald' : 'tc-dialog-header-danger'
     } px-5 py-4 text-white flex items-center justify-between gap-3`;
   }
   if (badgeEl) {
-    badgeEl.textContent = `THANH CHÍ EDU • CHI TIẾT PHIẾU ${isIncome ? 'THU (+)' : 'CHI (-)'}`;
+    badgeEl.textContent = `THANH CHÍ EDU • CHI TIẾT PHIẾU ${isIncome ? 'THU (+)' : 'CHI (-)'}${
+      isExcludedTx ? ' • KHÔNG GHI NHẬN HỆ THỐNG' : ''
+    }`;
   }
   if (titleEl) {
     titleEl.textContent = compact.headline;
@@ -9261,9 +9454,11 @@ function openTransactionDetailModal(itemKey) {
     <div class="tc-detail-amount-card ${isIncome ? 'is-income' : 'is-expense'}">
       <div>
         <span class="tc-detail-label">
-          Số tiền giao dịch
+          Số tiền giao dịch ${isExcludedTx ? '(Đã gắn tag không ghi nhận)' : ''}
         </span>
-        <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value">
+        <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value ${
+          isExcludedTx ? 'line-through opacity-75' : ''
+        }">
           ${isIncome ? '+' : '-'}${formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount)}
         </span>
       </div>
@@ -9271,6 +9466,19 @@ function openTransactionDetailModal(itemKey) {
         <span class="tc-detail-badge-type">
           ${isIncome ? '+ Phiếu Thu' : '- Phiếu Chi'} • ${escapeHtml(tx.category || 'Sổ quỹ')}
         </span>
+        ${
+          isExcludedTx
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-white text-xs font-extrabold">
+                <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
+                <span>${escapeHtml(txTagLabel || 'Không ghi nhận hệ thống')}</span>
+              </span>`
+            : txTagLabel
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold">
+                <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
+                <span>${escapeHtml(txTagLabel)}</span>
+              </span>`
+            : ''
+        }
         ${
           isDraftTx
             ? `<span class="tc-detail-badge-draft">
@@ -9284,6 +9492,77 @@ function openTransactionDetailModal(itemKey) {
         }
       </div>
     </div>
+
+    ${
+      !isTestTx
+        ? `<div class="p-3 rounded-2xl border-2 ${
+            isExcludedTx
+              ? 'bg-slate-100 border-slate-400'
+              : 'bg-slate-50/90 border-slate-200'
+          } space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="${isExcludedTx ? 'eye-off' : 'tag'}" class="w-4 h-4 ${
+                  isExcludedTx ? 'text-slate-800' : 'text-indigo-600'
+                } shrink-0"></i>
+                <div>
+                  <div class="text-xs font-extrabold text-slate-900">
+                    ${
+                      isExcludedTx
+                        ? 'Đang gắn tag: KHÔNG GHI NHẬN VÀO HỆ THỐNG'
+                        : 'Gắn Tag & Trạng Thái Ghi Nhận Hệ Thống'
+                    }
+                  </div>
+                  <div class="text-[11px] text-slate-500">
+                    ${
+                      isExcludedTx
+                        ? 'Giao dịch này đang được bỏ qua khỏi Tổng Thu/Chi, Tồn quỹ, Số dư Web và Học phí học sinh.'
+                        : 'Bấm gắn tag nếu đây là khoản chuyển nhầm, giao dịch nội bộ hoặc bạn không muốn tính vào sổ quỹ hệ thống.'
+                    }
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onclick="toggleTransactionExcludedFromSystem('${escapeAttr(tx.id)}', document.getElementById('tx-detail-tag-input-${escapeAttr(tx.id)}')?.value)"
+                class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                  isExcludedTx
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-slate-800 hover:bg-slate-950 text-white'
+                }"
+              >
+                <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3.5 h-3.5"></i>
+                <span>${isExcludedTx ? 'Ghi nhận lại vào hệ thống' : 'Không ghi nhận vào hệ thống'}</span>
+              </button>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 pt-1">
+              <input
+                id="tx-detail-tag-input-${escapeAttr(tx.id)}"
+                type="text"
+                value="${escapeAttr(txTagLabel || (isExcludedTx ? 'Không ghi nhận hệ thống' : ''))}"
+                placeholder="Nhãn tag (VD: Không ghi nhận hệ thống, Chuyển nhầm, Nội bộ...)"
+                class="flex-1 min-w-[180px] px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true)"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-800 text-slate-800 hover:text-white text-xs font-extrabold transition cursor-pointer"
+                title="Lưu tên tag và đánh dấu Không ghi nhận vào hệ thống"
+              >
+                Lưu Tag &amp; Không ghi nhận
+              </button>
+            </div>
+            <div class="flex flex-wrap items-center gap-1 text-[11px]">
+              <span class="text-slate-400 font-semibold mr-1">Tag nhanh:</span>
+              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Không ghi nhận hệ thống')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Không ghi nhận hệ thống</button>
+              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Chuyển nhầm')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Chuyển nhầm</button>
+              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Giao dịch nội bộ')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Giao dịch nội bộ</button>
+              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Thu/Chi hộ')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Thu/Chi hộ</button>
+              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Test / Nháp')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Test / Nháp</button>
+            </div>
+          </div>`
+        : ''
+    }
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
       <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
@@ -10330,22 +10609,28 @@ function openBulkEditTransactionsModal() {
     return;
   }
 
-  const countLabel = document.getElementById('bulk-edit-tx-count-label');
+  const countLabel = document.getElementById('bulk-edit-tx-count-label') || document.getElementById('bulk-edit-trans-count');
   if (countLabel) countLabel.textContent = txIds.length;
+  const subLabel = document.getElementById('bulk-edit-trans-subtitle');
+  if (subLabel) subLabel.textContent = `Đang chọn ${txIds.length} giao dịch (Chỉ cập nhật những trường bạn thay đổi)`;
 
-  const typeEl = document.getElementById('bulk-tx-form-type');
-  const dateEl = document.getElementById('bulk-tx-form-date');
-  const catEl = document.getElementById('bulk-tx-form-category');
-  const amtEl = document.getElementById('bulk-tx-form-amount');
-  const methodEl = document.getElementById('bulk-tx-form-method');
-  const descEl = document.getElementById('bulk-tx-form-desc');
+  const typeEl = document.getElementById('bulk-tx-form-type') || document.getElementById('bulk-trans-type');
+  const dateEl = document.getElementById('bulk-tx-form-date') || document.getElementById('bulk-trans-date');
+  const catEl = document.getElementById('bulk-tx-form-category') || document.getElementById('bulk-trans-category');
+  const amtEl = document.getElementById('bulk-tx-form-amount') || document.getElementById('bulk-trans-amount');
+  const methodEl = document.getElementById('bulk-tx-form-method') || document.getElementById('bulk-trans-method');
+  const descEl = document.getElementById('bulk-tx-form-desc') || document.getElementById('bulk-trans-desc');
+  const exclEl = document.getElementById('bulk-trans-excluded');
+  const tagEl = document.getElementById('bulk-trans-custom-tag');
 
-  if (typeEl) typeEl.value = '';
+  if (typeEl) typeEl.value = Array.from(typeEl.options || []).some(o => o.value === '__KEEP__') ? '__KEEP__' : '';
   if (dateEl) dateEl.value = '';
-  if (catEl) catEl.value = '';
+  if (catEl) catEl.value = Array.from(catEl.options || []).some(o => o.value === '__KEEP__') ? '__KEEP__' : '';
   if (amtEl) amtEl.value = '';
-  if (methodEl) methodEl.value = '';
+  if (methodEl) methodEl.value = Array.from(methodEl.options || []).some(o => o.value === '__KEEP__') ? '__KEEP__' : '';
   if (descEl) descEl.value = '';
+  if (exclEl) exclEl.value = '__KEEP__';
+  if (tagEl) tagEl.value = '';
 
   const modal = document.getElementById('bulk-edit-transaction-modal');
   if (modal) modal.classList.remove('hidden');
@@ -10365,12 +10650,30 @@ async function saveBulkEditTransactionsForm(event) {
     return;
   }
 
-  const newType = (document.getElementById('bulk-tx-form-type')?.value || '').trim();
-  const newDate = (document.getElementById('bulk-tx-form-date')?.value || '').trim();
-  const newCategory = (document.getElementById('bulk-tx-form-category')?.value || '').trim();
-  const rawAmt = (document.getElementById('bulk-tx-form-amount')?.value || '').trim();
-  const newMethod = (document.getElementById('bulk-tx-form-method')?.value || '').trim();
-  const newDesc = (document.getElementById('bulk-tx-form-desc')?.value || '').trim();
+  const rawType = (
+    (document.getElementById('bulk-tx-form-type') || document.getElementById('bulk-trans-type'))?.value || ''
+  ).trim();
+  const newType = rawType === '__KEEP__' ? '' : rawType;
+  const newDate = (
+    (document.getElementById('bulk-tx-form-date') || document.getElementById('bulk-trans-date'))?.value || ''
+  ).trim();
+  const rawCategory = (
+    (document.getElementById('bulk-tx-form-category') || document.getElementById('bulk-trans-category'))?.value || ''
+  ).trim();
+  const newCategory = rawCategory === '__KEEP__' ? '' : rawCategory;
+  const rawAmt = (
+    (document.getElementById('bulk-tx-form-amount') || document.getElementById('bulk-trans-amount'))?.value || ''
+  ).trim();
+  const rawMethod = (
+    (document.getElementById('bulk-tx-form-method') || document.getElementById('bulk-trans-method'))?.value || ''
+  ).trim();
+  const newMethod = rawMethod === '__KEEP__' ? '' : rawMethod;
+  const newDesc = (
+    (document.getElementById('bulk-tx-form-desc') || document.getElementById('bulk-trans-desc'))?.value || ''
+  ).trim();
+  const rawExcludedMode = (document.getElementById('bulk-trans-excluded')?.value || '').trim();
+  const newExcludedMode = rawExcludedMode === '__KEEP__' ? '' : rawExcludedMode;
+  const newCustomTag = (document.getElementById('bulk-trans-custom-tag')?.value || '').trim();
 
   const hasNewAmt = rawAmt !== '';
   const parsedAmt = hasNewAmt ? fromShortMoney(rawAmt) : 0;
@@ -10388,6 +10691,13 @@ async function saveBulkEditTransactionsForm(event) {
     }
     if (newMethod) tx.method = newMethod;
     if (newDesc) tx.description = newDesc;
+    if (newExcludedMode === 'EXCLUDE') {
+      setTransactionExcludedInState(tx, true, newCustomTag || 'Không ghi nhận hệ thống', appState);
+    } else if (newExcludedMode === 'INCLUDE') {
+      setTransactionExcludedInState(tx, false, newCustomTag, appState);
+    } else if (newCustomTag) {
+      setTransactionExcludedInState(tx, isTransactionExcludedFromSystem(tx, appState), newCustomTag, appState);
+    }
     recordEditedTransactionOverride(appState, oldCopy, tx);
     updatedCount++;
   });
@@ -10426,7 +10736,11 @@ async function handleBulkDeleteTransactions() {
     ) {
       let manualDelta = 0;
       removedTxs.forEach(tx => {
-        if (isDraftBankTransaction(tx, appState) && isDraftTxIncludedInMain(tx, appState)) {
+        if (
+          !isTransactionExcludedFromSystem(tx, appState) &&
+          isDraftBankTransaction(tx, appState) &&
+          isDraftTxIncludedInMain(tx, appState)
+        ) {
           manualDelta -= (tx.type === 'Chi' ? -1 : 1) * (normalizeStoredVnd(tx.amount) || 0);
         }
       });
@@ -10483,6 +10797,8 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
   const descInput = document.getElementById('trans-form-desc');
   const studentCodeInput = document.getElementById('trans-form-student-code');
   const methodSelect = document.getElementById('trans-form-method');
+  const excludedCb = document.getElementById('trans-form-excluded');
+  const customTagInput = document.getElementById('trans-form-custom-tag');
   const submitBtn = document.getElementById('trans-modal-submit-btn');
 
   if (existingTx) {
@@ -10501,6 +10817,8 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
       ensureSelectHasOption(methodSelect, mVal);
       methodSelect.value = mVal;
     }
+    if (excludedCb) excludedCb.checked = isTransactionExcludedFromSystem(existingTx);
+    if (customTagInput) customTagInput.value = getTransactionTagLabel(existingTx);
     if (submitBtn) submitBtn.textContent = 'Lưu Thay Đổi';
   } else {
     if (idInput) idInput.value = '';
@@ -10513,6 +10831,8 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
     if (descInput) descInput.value = '';
     if (studentCodeInput) studentCodeInput.value = '';
     if (methodSelect) methodSelect.value = 'Chuyển khoản';
+    if (excludedCb) excludedCb.checked = false;
+    if (customTagInput) customTagInput.value = '';
     if (submitBtn) submitBtn.textContent = 'Lưu Giao Dịch';
   }
 
@@ -10537,7 +10857,7 @@ function updateTransactionModalTheme(type, isEditing = false, txId = '') {
   }
   if (subtitle) {
     subtitle.textContent = editingMode
-      ? 'Quản lý có toàn quyền sửa đổi ngày, loại, danh mục, số tiền, nội dung và phương thức'
+      ? 'Quản lý có toàn quyền sửa đổi ngày, loại, danh mục, số tiền, nội dung, phương thức và gắn tag Không ghi nhận'
       : 'Nhập thông tin khoản thu/chi để cập nhật vào Sổ Quỹ & Google Sheets';
   }
 }
@@ -10556,6 +10876,8 @@ function saveTransactionForm(event) {
   const description = document.getElementById('trans-form-desc').value.trim() || category;
   const studentCode = document.getElementById('trans-form-student-code').value.trim().toUpperCase();
   const method = document.getElementById('trans-form-method').value || 'Chuyển khoản';
+  const isExcluded = Boolean(document.getElementById('trans-form-excluded')?.checked);
+  const customTag = (document.getElementById('trans-form-custom-tag')?.value || '').trim();
 
   if (editId) {
     const existingIdx = (appState.transactions || []).findIndex(t => t.id === editId);
@@ -10570,20 +10892,27 @@ function saveTransactionForm(event) {
         amount,
         description,
         studentCode,
-        method
+        method,
+        isExcluded,
+        customTag: isExcluded ? (customTag || 'Không ghi nhận hệ thống') : customTag
       };
       appState.transactions[existingIdx] = updatedTx;
+      setTransactionExcludedInState(updatedTx, isExcluded, customTag, appState);
       recordEditedTransactionOverride(appState, oldTx, updatedTx);
       closeTransactionModal();
       saveStateToLocal();
-      triggerAutoSyncIfNeeded(`Đã cập nhật thông tin phiếu ${type} (${formatCompactTxId(editId)}: ${formatCurrency(amount)}) thành công!`);
+      triggerAutoSyncIfNeeded(
+        `Đã cập nhật thông tin phiếu ${type} (${formatCompactTxId(editId)}: ${formatCurrency(amount)}${
+          isExcluded ? ' • Không ghi nhận hệ thống' : ''
+        }) thành công!`
+      );
       return;
     }
   }
 
   const newTxId = 'GD_' + Date.now();
   recordExactSmallAmount(appState, newTxId, '', amount);
-  appState.transactions.unshift({
+  const newTx = {
     id: newTxId,
     date,
     type,
@@ -10593,12 +10922,91 @@ function saveTransactionForm(event) {
     studentCode,
     method,
     receiptUrl: '',
-    createdBy: 'Quản lý'
-  });
+    createdBy: 'Quản lý',
+    isExcluded,
+    customTag: isExcluded ? (customTag || 'Không ghi nhận hệ thống') : customTag
+  };
+  appState.transactions.unshift(newTx);
+  setTransactionExcludedInState(newTx, isExcluded, customTag, appState);
 
   closeTransactionModal();
   saveStateToLocal();
-  triggerAutoSyncIfNeeded(`Đã ghi phiếu ${type} (${formatCurrency(amount)}) thành công!`);
+  triggerAutoSyncIfNeeded(
+    `Đã ghi phiếu ${type} (${formatCurrency(amount)}${isExcluded ? ' • Đã gắn tag Không ghi nhận hệ thống' : ''}) thành công!`
+  );
+}
+
+async function toggleTransactionExcludedFromSystem(transId, customTagLabel = '') {
+  const tx = (appState.transactions || []).find(t => t && t.id === transId);
+  if (!tx) return;
+  const oldTx = { ...tx };
+  const currentlyExcluded = isTransactionExcludedFromSystem(tx, appState);
+  const nextExcluded = !currentlyExcluded;
+  const existingTag = getTransactionTagLabel(tx, appState);
+  const finalTag = nextExcluded
+    ? String(customTagLabel || existingTag || 'Không ghi nhận hệ thống').trim()
+    : '';
+
+  setTransactionExcludedInState(tx, nextExcluded, finalTag, appState);
+  recordEditedTransactionOverride(appState, oldTx, tx);
+
+  saveStateToLocal();
+  if (_activeDetailTxKey === transId) {
+    openTransactionDetailModal(transId);
+  }
+  await triggerAutoSyncIfNeeded(
+    nextExcluded
+      ? `Đã gắn tag [${finalTag}] — Giao dịch ${formatCurrency(tx.amount)} sẽ KHÔNG ghi nhận vào hệ thống!`
+      : `Đã gỡ tag Không ghi nhận — Giao dịch ${formatCurrency(tx.amount)} đã được tính lại vào hệ thống!`
+  );
+}
+
+async function saveTransactionTagFromDetailModal(transId, forceExcluded = true, presetTag = '') {
+  const tx = (appState.transactions || []).find(t => t && t.id === transId);
+  if (!tx) return;
+  const oldTx = { ...tx };
+  const inputEl = document.getElementById(`tx-detail-tag-input-${transId}`);
+  const rawTag = String(presetTag || (inputEl ? inputEl.value : '') || 'Không ghi nhận hệ thống').trim();
+  if (inputEl && presetTag) inputEl.value = presetTag;
+
+  setTransactionExcludedInState(tx, Boolean(forceExcluded), rawTag, appState);
+  recordEditedTransactionOverride(appState, oldTx, tx);
+
+  saveStateToLocal();
+  if (_activeDetailTxKey === transId) {
+    openTransactionDetailModal(transId);
+  }
+  await triggerAutoSyncIfNeeded(
+    `Đã gắn tag [${rawTag}] và đánh dấu KHÔNG ghi nhận vào hệ thống cho giao dịch ${formatCurrency(tx.amount)}!`
+  );
+}
+
+async function handleBulkToggleExcludeTransactions(shouldExclude = true) {
+  const txIds = Array.from(selectedFinanceItemIds).filter(k => !k.startsWith('REQ::'));
+  if (txIds.length === 0) {
+    showToast('Vui lòng tích chọn ít nhất 1 giao dịch Thu/Chi!', 'warning');
+    return;
+  }
+  let count = 0;
+  (appState.transactions || []).forEach(tx => {
+    if (!tx || !txIds.includes(tx.id)) return;
+    const oldCopy = { ...tx };
+    const curTag = getTransactionTagLabel(tx, appState);
+    setTransactionExcludedInState(
+      tx,
+      Boolean(shouldExclude),
+      shouldExclude ? (curTag || 'Không ghi nhận hệ thống') : '',
+      appState
+    );
+    recordEditedTransactionOverride(appState, oldCopy, tx);
+    count++;
+  });
+  saveStateToLocal();
+  await triggerAutoSyncIfNeeded(
+    shouldExclude
+      ? `Đã gắn tag "Không ghi nhận vào hệ thống" cho ${count} giao dịch đã chọn!`
+      : `Đã gỡ tag và ghi nhận lại ${count} giao dịch vào hệ thống!`
+  );
 }
 
 async function toggleDraftTransactionMainAccount(transId) {
@@ -10648,6 +11056,7 @@ async function deleteTransactionRecord(transId) {
   const targetTx = (appState.transactions || []).find(t => t && t.id === transId);
   if (
     targetTx &&
+    !isTransactionExcludedFromSystem(targetTx, appState) &&
     isDraftBankTransaction(targetTx, appState) &&
     isDraftTxIncludedInMain(targetTx, appState) &&
     !isSepayBalanceAutoByWebStats() &&
