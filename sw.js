@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thanhchi-edu-shell-v38';
+const CACHE_NAME = 'thanhchi-edu-shell-v39';
 const SHELL_ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
