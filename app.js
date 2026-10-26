@@ -3379,6 +3379,7 @@ function bootstrapApp() {
   }
 
   initAppUI();
+  checkPasswordResetUrlRequest();
 
   if (openDirectAdminApp) {
     switchAppMode('admin');
@@ -3940,6 +3941,234 @@ function handleAdminLogout() {
   sessionStorage.removeItem(authKey);
   showToast('Đã đăng xuất khỏi phiên Quản lý.', 'info');
   checkAdminAuthStatus();
+}
+
+// ============================================================================
+// KHÔI PHỤC MẬT KHẨU / GỬI LINK ĐẶT LẠI VỀ MAIL BADAOQN132@GMAIL.COM
+// ============================================================================
+let _activeResetToken = '';
+let _activeResetOtp = '';
+
+function checkPasswordResetUrlRequest() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const resetToken = params.get('reset_token') || params.get('token');
+    const otp = params.get('otp') || '';
+    if (resetToken) {
+      openResetPasswordModal(resetToken, otp);
+    }
+  } catch (e) {}
+}
+
+function openForgotPasswordModal() {
+  const modal = document.getElementById('forgot-password-modal');
+  if (!modal) return;
+  const sentBox = document.getElementById('forgot-pwd-sent-status');
+  const otpSec = document.getElementById('forgot-pwd-otp-section');
+  const sendBtn = document.getElementById('btn-send-reset-link');
+  const btnText = document.getElementById('btn-send-reset-link-text');
+  if (sentBox) sentBox.classList.add('hidden');
+  if (otpSec) otpSec.classList.add('hidden');
+  if (sendBtn) {
+    sendBtn.disabled = false;
+    sendBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+  }
+  if (btnText) btnText.textContent = 'Gửi link về mail badaoqn132@gmail.com';
+  modal.classList.remove('hidden');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function closeForgotPasswordModal() {
+  const modal = document.getElementById('forgot-password-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function openResetPasswordModal(token = '', otp = '') {
+  _activeResetToken = token || 'RST_DIRECT';
+  _activeResetOtp = otp || '';
+  const modal = document.getElementById('reset-password-modal');
+  if (!modal) return;
+  const newPassInput = document.getElementById('modal-new-password');
+  const confirmPassInput = document.getElementById('modal-confirm-password');
+  if (newPassInput) newPassInput.value = '';
+  if (confirmPassInput) confirmPassInput.value = '';
+  modal.classList.remove('hidden');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+function closeResetPasswordModal() {
+  const modal = document.getElementById('reset-password-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function handleSendResetPasswordLink() {
+  const sendBtn = document.getElementById('btn-send-reset-link');
+  const btnText = document.getElementById('btn-send-reset-link-text');
+  const sentBox = document.getElementById('forgot-pwd-sent-status');
+  const otpSec = document.getElementById('forgot-pwd-otp-section');
+  const otpInput = document.getElementById('reset-otp-input');
+  const directBtn = document.getElementById('btn-direct-reset-here');
+
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.classList.add('opacity-60', 'cursor-not-allowed');
+  }
+  if (btnText) btnText.textContent = 'Đang gửi link về badaoqn132@gmail.com...';
+
+  const token = 'RST_' + Date.now() + '_' + Math.floor(Math.random() * 899999 + 100000);
+  const otp = String(Math.floor(Math.random() * 899999 + 100000));
+  _activeResetToken = token;
+  _activeResetOtp = otp;
+
+  try {
+    localStorage.setItem(
+      'TC_PWD_RESET_SESSION',
+      JSON.stringify({ token, otp, expiresAt: Date.now() + 30 * 60 * 1000 })
+    );
+  } catch (e) {}
+
+  let resetUrl = 'https://thanhchi113.github.io/quan-ly-hoc-sinh-thu-chi/?reset_token=' + token + '&otp=' + otp;
+  try {
+    if (window.location && window.location.origin) {
+      const u = new URL(window.location.origin + window.location.pathname);
+      u.searchParams.set('reset_token', token);
+      u.searchParams.set('otp', otp);
+      resetUrl = u.toString();
+    }
+  } catch (e) {}
+
+  // 1. Gửi qua Google Apps Script Web App nếu có
+  const gasUrl = getGasUrl();
+  if (gasUrl) {
+    try {
+      await postToGas(gasUrl, {
+        action: 'sendResetEmail',
+        email: 'badaoqn132@gmail.com',
+        resetUrl,
+        otp
+      });
+    } catch (e) {}
+  }
+
+  // 2. Gửi qua FormSubmit trực tiếp đến badaoqn132@gmail.com
+  try {
+    await fetch('https://formsubmit.co/ajax/badaoqn132@gmail.com', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        _subject: `[Thanh Chí Edu] Link đặt lại mật khẩu Quản lý (Mã OTP: ${otp})`,
+        email: 'badaoqn132@gmail.com',
+        _template: 'table',
+        _captcha: 'false',
+        'Link đặt lại mật khẩu': resetUrl,
+        'Mã OTP 6 số': otp,
+        'Thời gian': new Date().toLocaleString('vi-VN'),
+        'Hướng dẫn': 'Bấm vào đường link trên để mở trang đặt lại mật khẩu mới cho trang Quản lý Thanh Chí Edu.'
+      })
+    });
+  } catch (e) {}
+
+  if (sentBox) sentBox.classList.remove('hidden');
+  if (otpSec) otpSec.classList.remove('hidden');
+  if (otpInput) otpInput.value = otp;
+  if (directBtn) {
+    directBtn.onclick = () => {
+      closeForgotPasswordModal();
+      openResetPasswordModal(token, otp);
+    };
+  }
+
+  if (sendBtn) {
+    sendBtn.disabled = false;
+    sendBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+  }
+  if (btnText) btnText.textContent = 'Gửi lại link về badaoqn132@gmail.com';
+
+  showToast('Đã gửi link đặt lại mật khẩu về email badaoqn132@gmail.com!', 'success');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
+
+async function handleVerifyOtpAndResetPassword(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  const enteredOtp = (document.getElementById('reset-otp-input')?.value || '').trim();
+  const newPass = (document.getElementById('reset-new-password-input')?.value || '').trim();
+
+  if (!newPass) {
+    showToast('Vui lòng nhập mật khẩu mới!', 'warning');
+    return;
+  }
+
+  let sessionInfo = null;
+  try {
+    const raw = localStorage.getItem('TC_PWD_RESET_SESSION');
+    if (raw) sessionInfo = JSON.parse(raw);
+  } catch (err) {}
+
+  const validOtp = sessionInfo?.otp || _activeResetOtp;
+  if (validOtp && enteredOtp !== validOtp) {
+    showToast('Mã OTP không đúng! Vui lòng kiểm tra lại email badaoqn132@gmail.com.', 'error');
+    return;
+  }
+
+  if (sessionInfo && sessionInfo.expiresAt && Date.now() > sessionInfo.expiresAt) {
+    showToast('Mã OTP đã hết hạn (quá 30 phút). Vui lòng bấm gửi lại link!', 'error');
+    return;
+  }
+
+  await applyNewAdminPassword(newPass);
+  closeForgotPasswordModal();
+}
+
+async function handleDirectResetPasswordSubmit(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  const newPass = (document.getElementById('modal-new-password')?.value || '').trim();
+  const confirmPass = (document.getElementById('modal-confirm-password')?.value || '').trim();
+
+  if (!newPass) {
+    showToast('Vui lòng nhập mật khẩu mới!', 'warning');
+    return;
+  }
+  if (newPass !== confirmPass) {
+    showToast('Xác nhận mật khẩu không khớp! Vui lòng nhập lại.', 'error');
+    return;
+  }
+
+  await applyNewAdminPassword(newPass);
+  closeResetPasswordModal();
+
+  try {
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.searchParams.delete('reset_token');
+    cleanUrl.searchParams.delete('token');
+    cleanUrl.searchParams.delete('otp');
+    window.history.replaceState({}, '', cleanUrl.toString());
+  } catch (err) {}
+}
+
+async function applyNewAdminPassword(newPassword) {
+  if (!appState.settings) appState.settings = {};
+  appState.settings.adminPassword = newPassword;
+  saveStateToLocal();
+
+  try {
+    localStorage.removeItem('TC_PWD_RESET_SESSION');
+  } catch (e) {}
+
+  // Tự động đăng nhập
+  sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+  switchAppMode('admin');
+  checkAdminAuthStatus();
+
+  showToast('Đã đặt lại mật khẩu mới thành công! Chào mừng bạn vào trang Quản lý.', 'success');
+
+  // Đẩy mật khẩu mới lên Google Sheet nếu có kết nối
+  const gasUrl = getGasUrl();
+  if (gasUrl && isAutoSyncEnabled()) {
+    await syncAllToGoogleSheet(false);
+  }
 }
 
 let activeSidebarKey = 'classbook';
