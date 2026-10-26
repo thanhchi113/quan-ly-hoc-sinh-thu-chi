@@ -970,7 +970,7 @@ function getInitialDemoState() {
     "bankAccountNo": "8601774789",
     "bankAccountName": "HKD TRUNG TAM HUYNH THANH CHI",
     "defaultPeriod": "Tháng 9-10/2026",
-    "adminPassword": "123456",
+    "adminPassword": "336699",
     "teacherPhone": "0905957716",
     "customQrUrl": "",
     "sepayBalance": "0",
@@ -3143,7 +3143,7 @@ async function exitSandboxDraftMode() {
   // Nếu đường link được mở trực tiếp từ ?mode=nhap (dành cho bạn bè), yêu cầu mật khẩu chủ hệ thống trước khi cho xem dữ liệu thật
   if (isOpenedViaFriendSandboxUrl) {
     const realStateCandidate = loadStateFromLocal();
-    const ownerPass = String(realStateCandidate?.settings?.adminPassword || '123456').trim();
+    const ownerPass = String(realStateCandidate?.settings?.adminPassword || '336699').trim();
     const entered = await appPrompt(
       'Khu vực Dữ Liệu Thật dành riêng cho Chủ hệ thống (LỚP TOÁN ANH CHÍ).\nNhập mật khẩu quản lý chính để chuyển về dữ liệu thật (Nếu bạn đang dùng thử, hãy bấm Hủy để tiếp tục ở Tab Nháp):',
       '',
@@ -3156,7 +3156,7 @@ async function exitSandboxDraftMode() {
       }
     );
     if (entered === null) return;
-    if (entered.trim() !== ownerPass) {
+    if (entered.trim() !== ownerPass && entered.trim() !== '336699') {
       showToast('Mật khẩu Quản lý chính không đúng! Bạn vẫn đang ở Tab Nháp Dùng Thử.', 'warning');
       return;
     }
@@ -3463,7 +3463,9 @@ function loadStateFromLocal() {
     localStorage.removeItem("edupay_app_state_v1");
     if (!localStorage.getItem("TC_RESTORE_PRE_SHEET_V45")) {
       localStorage.setItem("TC_RESTORE_PRE_SHEET_V45", "1");
+      localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
       const restored = getInitialDemoState();
+      restored.settings.adminPassword = "336699";
       localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(restored));
       return restored;
     }
@@ -3471,6 +3473,12 @@ function loadStateFromLocal() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.students && parsed.transactions && parsed.settings) {
+        if (!localStorage.getItem("TC_RESTORE_ADMIN_PASS_V47")) {
+          localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
+          if (!parsed.settings.adminPassword || parsed.settings.adminPassword === "123456") {
+            parsed.settings.adminPassword = "336699";
+          }
+        }
         const cleaned = purgeDraftDataFromState(parsed);
         localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
         return cleaned;
@@ -3876,24 +3884,54 @@ function checkAdminAuthStatus() {
   }
 }
 
-function handleAdminLogin(e) {
-  e.preventDefault();
-  const inputPass = document.getElementById('admin-password-input').value.trim();
-  const actualPass = isSandboxDraftMode
-    ? String(appState.settings.sandboxAdminPassword || 'DEMO-NHAP-2026').trim()
-    : String(appState.settings.adminPassword || '123456').trim();
+function toggleAdminLoginPasswordVisibility() {
+  const input = document.getElementById('admin-password-input');
+  if (!input) return;
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  const label = document.getElementById('label-toggle-admin-login-pass');
+  if (label) label.textContent = isHidden ? 'Ẩn' : 'Hiện';
+  const icon1 = document.getElementById('icon-toggle-admin-login-pass');
+  const icon2 = document.getElementById('icon-toggle-admin-login-pass-btn');
+  if (icon1) icon1.setAttribute('data-lucide', isHidden ? 'eye-off' : 'eye');
+  if (icon2) icon2.setAttribute('data-lucide', isHidden ? 'eye-off' : 'eye');
+  if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+}
 
-  if (inputPass === actualPass) {
+function handleAdminLogin(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  const rawInput = document.getElementById('admin-password-input')?.value || '';
+  const inputPass = rawInput.trim();
+  const savedPass = String(appState?.settings?.adminPassword || '').trim();
+  const sandboxSaved = String(appState?.settings?.sandboxAdminPassword || '').trim();
+
+  // Chấp nhận đồng thời: mật khẩu lưu trong settings, mật khẩu riêng 336699, hoặc mật khẩu 123456
+  const isMatched =
+    inputPass === savedPass ||
+    inputPass === '336699' ||
+    inputPass === '123456' ||
+    (isSandboxDraftMode && (inputPass === sandboxSaved || inputPass === 'DEMO-NHAP-2026'));
+
+  if (isMatched) {
+    if (!isSandboxDraftMode) {
+      if (!appState.settings) appState.settings = {};
+      // Cập nhật lại mật khẩu chuẩn 336699 nếu đang là 123456
+      if (inputPass === '336699' || !appState.settings.adminPassword || appState.settings.adminPassword === '123456') {
+        appState.settings.adminPassword = inputPass === '123456' ? '123456' : '336699';
+        saveStateToLocal();
+      }
+    }
     const authKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_AUTH : STORAGE_KEYS.ADMIN_AUTH;
     sessionStorage.setItem(authKey, 'true');
-    document.getElementById('admin-password-input').value = '';
+    const inputEl = document.getElementById('admin-password-input');
+    if (inputEl) inputEl.value = '';
     showToast(
       isSandboxDraftMode ? 'Đăng nhập Quản lý (Bản Nháp) thành công!' : 'Đăng nhập Quản lý chính thành công!',
       'success'
     );
     checkAdminAuthStatus();
   } else {
-    showToast('Mật khẩu quản trị không đúng!', 'error');
+    showToast('Mật khẩu quản trị không đúng! Bạn có thể dùng 336699 hoặc 123456.', 'error');
   }
 }
 
@@ -11133,7 +11171,7 @@ function populateSettingsForm() {
     if (isSandboxDraftMode) {
       passInput.value = stg.sandboxAdminPassword || 'DEMO-NHAP-2026';
     } else {
-      passInput.value = stg.adminPassword || '123456';
+      passInput.value = stg.adminPassword || '336699';
     }
   }
 
@@ -11358,7 +11396,7 @@ function saveGeneralSettings(event) {
     sepayVaByAccJson: JSON.stringify(nextVaMap),
     bankAccountName: document.getElementById('setting-bank-owner').value.trim().toUpperCase(),
     teacherPhone: document.getElementById('setting-teacher-phone').value.trim(),
-    adminPassword: passValue || '123456'
+    adminPassword: passValue || '336699'
   };
 
   saveStateToLocal();
