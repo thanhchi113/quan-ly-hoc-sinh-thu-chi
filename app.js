@@ -3385,14 +3385,19 @@ function bootstrapApp() {
     switchAppMode('admin');
   }
 
-  // Chỉ đẩy dữ liệu từ Web lên Google Sheet (Web -> Sheet), không kéo dữ liệu từ Google Sheet về ghi đè Web
+  // Đồng bộ 2 chiều: Tự động kiểm tra giao dịch SePay/Ngân hàng mới nhất trên Google Sheet khi mở Web
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
-    if (isAutoSyncEnabled()) {
-      syncAllToGoogleSheet(false);
-    }
+    pullAndSyncBankData(false).catch(() => {});
+    startLiveBankPolling();
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && getGasUrl()) {
+      pullAndSyncBankData(false).catch(() => {});
+    }
+  });
 }
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
@@ -11638,8 +11643,8 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0';
     if (text) {
       text.textContent = lastSyncTimeStr
-        ? `Đã đẩy lên Google Sheet (${lastSyncTimeStr})`
-        : 'Đã kết nối Google Sheet (Web → Sheet)';
+        ? `Đã đồng bộ Google Sheet (${lastSyncTimeStr})`
+        : 'Đã kết nối Google Sheet (Tự động 2 chiều)';
     }
     if (quickBtn) {
       quickBtn.classList.remove('hidden');
@@ -11655,7 +11660,93 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-// Chế độ 1 chiều (Web -> Google Sheet): Không lấy dữ liệu từ Google Sheet về ghi đè Web, chỉ đẩy dữ liệu từ Web lên Google Sheet
+let inFlightPullCount = 0;
+
+// Đồng bộ & đối soát giao dịch ngân hàng / SePay từ Google Sheet (An toàn, không ghi đè học sinh/lớp của Web)
+async function pullAndSyncBankData(showToast = false) {
+  if (isSandboxDraftMode || inFlightSheetPushCount > 0 || inFlightPullCount > 0) return;
+  const gasUrl = getGasUrl();
+  if (!gasUrl) {
+    if (showToast) showToast('Vui lòng nhập URL Google Apps Script trong mục Cài đặt trước!', 'warning');
+    return;
+  }
+
+  inFlightPullCount++;
+  const syncIcons = [
+    document.getElementById('icon-quick-sync'),
+    document.getElementById('icon-refresh-finance')
+  ].filter(Boolean);
+  syncIcons.forEach(ic => ic.classList.add('animate-spin'));
+
+  try {
+    const pullStartedAt = Date.now();
+    const res = await fetch(`${gasUrl}?action=getAll&t=${pullStartedAt}`, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    const json = await res.json();
+    if (isSandboxDraftMode || inFlightSheetPushCount > 0 || lastLocalMutationAtMs > pullStartedAt) return;
+
+    if (json && json.success && json.data) {
+      const resMerge = safeMergeServerData(json.data);
+      if (resMerge.changed) {
+        isSilentServerSync = true;
+        try {
+          saveStateToLocal();
+        } finally {
+          isSilentServerSync = false;
+        }
+
+        // Báo âm thanh & Toast khi có giao dịch mới hoặc học sinh thanh toán thành công
+        if (resMerge.newlyPaid.length > 0 || resMerge.newTxs.length > 0) {
+          playTingSound();
+          if (resMerge.newlyPaid.length > 0) {
+            const studentNames = resMerge.newlyPaid.map(s => `${s.studentCode} (${s.fullName})`).join(', ');
+            showToast(`Đã nhận chuyển khoản SePay thành công: ${studentNames}`, 'success');
+
+            // Nếu modal thanh toán đang mở cho học sinh vừa thanh toán, đóng modal và báo thành công
+            const payModal = document.getElementById('payment-modal');
+            const openStudentRecId = document.getElementById('pay-student-record-id')?.value;
+            if (payModal && !payModal.classList.contains('hidden') && openStudentRecId) {
+              const wasMatched = resMerge.newlyPaid.some(s => s.id === openStudentRecId);
+              if (wasMatched) {
+                closePaymentModal();
+                showToast('Học sinh đã thanh toán học phí thành công!', 'success');
+              }
+            }
+          } else if (resMerge.newTxs.length > 0) {
+            const firstTx = resMerge.newTxs[0];
+            showToast(`Ghi nhận giao dịch SePay: +${formatCurrency(firstTx.amount)} (${firstTx.description || ''})`, 'info');
+          }
+        }
+
+        // Đẩy trạng thái đồng bộ lên lại Sheet
+        syncAllToGoogleSheet(false).catch(() => {});
+      }
+
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      updateSyncStatusBanner(timeStr);
+
+      if (showToast) {
+        if (resMerge.changed) {
+          showToast(`Đã đồng bộ thành công! Nhận ${resMerge.newTxs.length + resMerge.newlyPaid.length} cập nhật mới từ SePay.`, 'success');
+        } else {
+          showToast('Dữ liệu đã được đồng bộ và cập nhật mới nhất từ Google Sheet!', 'success');
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Lỗi kéo dữ liệu từ Google Sheet:', err);
+    if (showToast) {
+      showToast('Không thể kết nối đến Google Apps Script. Vui lòng kiểm tra lại mạng!', 'error');
+    }
+  } finally {
+    inFlightPullCount = Math.max(0, inFlightPullCount - 1);
+    syncIcons.forEach(ic => ic.classList.remove('animate-spin'));
+  }
+}
+
+// Đồng bộ từ Google Sheet (Kéo giao dịch SePay mới & đẩy dữ liệu đầy đủ lên Sheet)
 async function syncFromGoogleSheet(showUserToast = true) {
   if (isSandboxDraftMode) {
     if (showUserToast) {
@@ -11668,15 +11759,7 @@ async function syncFromGoogleSheet(showUserToast = true) {
     return;
   }
 
-  if (!showUserToast) return;
-
-  const syncIcon = document.getElementById('icon-quick-sync');
-  if (syncIcon) syncIcon.classList.add('animate-spin');
-  try {
-    await syncAllToGoogleSheet(true);
-  } finally {
-    if (syncIcon) syncIcon.classList.remove('animate-spin');
-  }
+  await pullAndSyncBankData(showUserToast);
 }
 
 // Đẩy toàn bộ dữ liệu từ Web App lên Google Sheet (Push)
@@ -12156,121 +12239,127 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
   return state;
 }
 
-function mergeServerData(serverData) {
-  let students = Array.isArray(serverData.students)
-    ? serverData.students.map(st => ({ ...st, period: normalizePeriodValue(st.period) }))
-    : appState.students;
-  // Giữ lại học sinh vừa được tạo cục bộ trong 60s gần nhất nếu gói đồng bộ lên Google Sheet chưa kịp ghi xong
-  if (Array.isArray(serverData.students) && Array.isArray(appState.students)) {
-    const serverIds = new Set(students.map(s => String(s?.id || '')));
-    const nowMs = Date.now();
-    appState.students.forEach(localStu => {
-      const lid = String(localStu?.id || '');
-      const createdMs = lid.startsWith('ST_') ? Number(lid.slice(3)) : 0;
-      if (createdMs && nowMs - createdMs < 60000 && !serverIds.has(lid)) {
-        students.push({ ...localStu });
-      }
-    });
-  }
-  const paymentRequests = Array.isArray(serverData.paymentRequests)
-    ? serverData.paymentRequests.map(rq => ({ ...rq, period: normalizePeriodValue(rq.period) }))
-    : appState.paymentRequests;
-  const serverSettings = serverData.settings || {};
-  const mergedSettings = {
-    ...appState.settings,
-    ...serverSettings
-  };
-  // Bảo toàn danh sách Khối và Lớp đã xóa/tùy chỉnh nếu trên Server chưa kịp cập nhật
-  if (!serverSettings.deletedClassesJson && appState.settings?.deletedClassesJson) {
-    mergedSettings.deletedClassesJson = appState.settings.deletedClassesJson;
-  }
-  if (!serverSettings.deletedGradesJson && appState.settings?.deletedGradesJson) {
-    mergedSettings.deletedGradesJson = appState.settings.deletedGradesJson;
-  }
-  if (!serverSettings.customGradesJson && appState.settings?.customGradesJson) {
-    mergedSettings.customGradesJson = appState.settings.customGradesJson;
-  }
-  if (!serverSettings.receivingAccountsJson && appState.settings?.receivingAccountsJson) {
-    mergedSettings.receivingAccountsJson = appState.settings.receivingAccountsJson;
-  }
-  if (!serverSettings.sepayVaByAccJson && appState.settings?.sepayVaByAccJson) {
-    mergedSettings.sepayVaByAccJson = appState.settings.sepayVaByAccJson;
-  }
-  if (!serverSettings.activeBankProfileId && appState.settings?.activeBankProfileId) {
-    mergedSettings.activeBankProfileId = appState.settings.activeBankProfileId;
-  }
-  if (!serverSettings.sepayLinkedStatus && appState.settings?.sepayLinkedStatus) {
-    mergedSettings.sepayLinkedStatus = appState.settings.sepayLinkedStatus;
-  }
-  const unionDeletedTx = new Set([
-    ...getDeletedTxIdsSet({ settings: appState.settings }),
-    ...getDeletedTxIdsSet({ settings: serverSettings })
-  ]);
-  if (unionDeletedTx.size > 0) {
-    mergedSettings.deletedTxIdsJson = JSON.stringify(Array.from(unionDeletedTx).slice(-500));
-  }
-  const unionDraftTx = new Set([
-    ...getDraftBankTxIdsSet({ settings: appState.settings }),
-    ...getDraftBankTxIdsSet({ settings: serverSettings })
-  ]);
-  if (unionDraftTx.size > 0) {
-    mergedSettings.draftBankTxIdsJson = JSON.stringify(Array.from(unionDraftTx));
-  }
-  // Ưu tiên trạng thái Bật/Tắt Cộng TK chính và nội dung chỉnh sửa giao dịch vừa thao tác trên máy người dùng
-  const mergedIncludeMap = {
-    ...getDraftTxIncludeMap({ settings: serverSettings }),
-    ...getDraftTxIncludeMap({ settings: appState.settings })
-  };
-  if (Object.keys(mergedIncludeMap).length > 0) {
-    mergedSettings.draftTxIncludeJson = JSON.stringify(mergedIncludeMap);
-  }
-  const mergedEditedTxMap = {
-    ...getEditedTxOverridesMap({ settings: serverSettings }),
-    ...getEditedTxOverridesMap({ settings: appState.settings })
-  };
-  if (Object.keys(mergedEditedTxMap).length > 0) {
-    mergedSettings.editedTxOverridesJson = JSON.stringify(mergedEditedTxMap);
-  }
-  mergedSettings.defaultPeriod = normalizePeriodValue(mergedSettings.defaultPeriod);
+function safeMergeServerData(serverData) {
+  if (!serverData) return { changed: false, newlyPaid: [], newTxs: [] };
+  let changed = false;
+  const newlyPaid = [];
+  const newTxs = [];
 
-  let mergedTransactions = Array.isArray(serverData.transactions)
-    ? serverData.transactions.map(tx => {
-        const ov = tx && tx.id ? mergedEditedTxMap[tx.id] : null;
-        if (!ov) return tx;
-        return {
-          ...tx,
-          date: ov.date || tx.date,
-          type: ov.type || tx.type,
-          category: ov.category || tx.category,
-          amount: ov.amount !== undefined ? ov.amount : tx.amount,
-          description: ov.description || tx.description,
-          studentCode: ov.studentCode !== undefined ? ov.studentCode : tx.studentCode,
-          method: ov.method || tx.method
-        };
-      })
-    : appState.transactions;
+  const prevUnpaidCodes = new Set(
+    (appState.students || []).filter(s => s.status !== 'Đã hoàn thành').map(s => s.studentCode)
+  );
 
-  // Giữ lại phiếu Thu/Chi vừa được tạo cục bộ trong 60s gần nhất nếu gói đồng bộ lên Google Sheet chưa kịp ghi xong
-  if (Array.isArray(serverData.transactions) && Array.isArray(appState.transactions)) {
-    const serverTxIds = new Set(mergedTransactions.map(t => String(t?.id || '')));
-    const nowMs = Date.now();
-    appState.transactions.forEach(localTx => {
-      const tid = String(localTx?.id || '');
-      const createdMs = /^GD_\d{12,}$/.test(tid) ? Number(tid.slice(3)) : 0;
-      if (createdMs && nowMs - createdMs < 60000 && !serverTxIds.has(tid) && !unionDeletedTx.has(tid)) {
-        mergedTransactions.unshift({ ...localTx });
-      }
-    });
-  }
-
-  const purged = purgeDraftDataFromState({
-    students,
-    transactions: mergedTransactions,
-    paymentRequests,
-    settings: mergedSettings
+  // 1. Transactions merge: Bảo toàn 100% giao dịch trên Web, chỉ thêm giao dịch mới từ Google Sheet
+  if (!Array.isArray(appState.transactions)) appState.transactions = [];
+  const existingTxIds = new Set(appState.transactions.map(t => String(t && t.id || '')));
+  const existingSigs = new Set();
+  appState.transactions.forEach(t => {
+    const sig = buildSepayTxSignature(
+      String(t.date || '').slice(0, 10),
+      t.amount,
+      t.description,
+      isDraftBankTransaction(t, appState)
+    );
+    if (sig) existingSigs.add(sig);
   });
 
-  return reconcileSepaySheetTransactions(purged, serverData.rawClassSheets);
+  const deletedSet = getDeletedTxIdsSet(appState);
+  const editedMap = getEditedTxOverridesMap(appState);
+
+  if (Array.isArray(serverData.transactions)) {
+    serverData.transactions.forEach(sTx => {
+      if (!sTx || !sTx.id) return;
+      const tid = String(sTx.id);
+      if (existingTxIds.has(tid) || deletedSet.has(tid)) return;
+      const sig = buildSepayTxSignature(
+        String(sTx.date || '').slice(0, 10),
+        sTx.amount,
+        sTx.description,
+        isDraftBankTransaction(sTx, appState)
+      );
+      if (sig && existingSigs.has(sig)) return;
+
+      const ov = editedMap[tid];
+      const finalTx = ov ? {
+        ...sTx,
+        date: ov.date || sTx.date,
+        type: ov.type || sTx.type,
+        category: ov.category || sTx.category,
+        amount: ov.amount !== undefined ? ov.amount : sTx.amount,
+        description: ov.description || sTx.description,
+        studentCode: ov.studentCode !== undefined ? ov.studentCode : sTx.studentCode,
+        method: ov.method || sTx.method
+      } : { ...sTx };
+
+      appState.transactions.unshift(finalTx);
+      existingTxIds.add(tid);
+      if (sig) existingSigs.add(sig);
+      newTxs.push(finalTx);
+      changed = true;
+    });
+  }
+
+  // 2. Tự động đối soát từ tab SePay_GiaoDich (rawClassSheets)
+  if (Array.isArray(serverData.rawClassSheets)) {
+    const beforeTxLen = appState.transactions.length;
+    reconcileSepaySheetTransactions(appState, serverData.rawClassSheets);
+    if (appState.transactions.length !== beforeTxLen || appState._sepayAutoReconciled) {
+      changed = true;
+      delete appState._sepayAutoReconciled;
+    }
+  }
+
+  // 3. Khớp trạng thái học phí nếu Google Sheet đã xác nhận chuyển khoản ngân hàng thành công
+  if (Array.isArray(serverData.students)) {
+    const serverPaidMap = new Map();
+    serverData.students.forEach(st => {
+      if (st && st.studentCode && st.status === 'Đã hoàn thành') {
+        serverPaidMap.set(st.studentCode, st);
+      }
+    });
+
+    (appState.students || []).forEach(localSt => {
+      if (localSt && localSt.studentCode && localSt.status !== 'Đã hoàn thành') {
+        const srvSt = serverPaidMap.get(localSt.studentCode);
+        if (srvSt) {
+          localSt.status = 'Đã hoàn thành';
+          if (srvSt.updatedAt) localSt.updatedAt = srvSt.updatedAt;
+          if (srvSt.note && /CK|SePay|STK/i.test(srvSt.note)) {
+            localSt.note = srvSt.note;
+          }
+          changed = true;
+        }
+      }
+    });
+  }
+
+  // Thu thập học sinh vừa chuyển sang "Đã hoàn thành" để hiển thị thông báo
+  (appState.students || []).forEach(s => {
+    if (prevUnpaidCodes.has(s.studentCode) && s.status === 'Đã hoàn thành') {
+      if (!newlyPaid.some(p => p.studentCode === s.studentCode)) {
+        newlyPaid.push(s);
+      }
+    }
+  });
+
+  // 4. Cập nhật thông báo biến động số dư và số dư SePay từ Server
+  if (serverData.settings) {
+    if (serverData.settings.lastBankAlertJson) {
+      appState.settings.lastBankAlertJson = serverData.settings.lastBankAlertJson;
+    }
+    if (serverData.settings.sepayBalance) {
+      appState.settings.sepayBalance = serverData.settings.sepayBalance;
+    }
+    if (serverData.settings.sepayLinkedStatus) {
+      appState.settings.sepayLinkedStatus = serverData.settings.sepayLinkedStatus;
+    }
+  }
+
+  if (Array.isArray(appState.transactions)) {
+    appState.transactions.sort(sortTransactionsNewestFirst);
+  }
+
+  return { changed, newlyPaid, newTxs };
 }
 
 // ============================================================================
@@ -17582,11 +17671,23 @@ function startLiveBankPolling() {
     clearInterval(livePollingTimer);
     livePollingTimer = null;
   }
+
+  const checkbox = document.getElementById('setting-live-polling');
+  const isEnabled = checkbox ? checkbox.checked : true;
+  if (!isEnabled) return;
+
   seedCurrentBankTxAsNotified(appState);
   const webhookDisplay = document.getElementById('bank-webhook-url-display');
   if (webhookDisplay && getGasUrl()) {
     webhookDisplay.textContent = getGasUrl();
   }
+
+  livePollingTimer = setInterval(async () => {
+    if (isSandboxDraftMode || inFlightSheetPushCount > 0 || inFlightPullCount > 0) return;
+    if (document.hidden) return;
+    if (isAnyAdminModalOpen()) return;
+    await pullAndSyncBankData(false);
+  }, 12000);
 }
 
 function toggleLiveBankPolling(enabled) {
@@ -17594,7 +17695,12 @@ function toggleLiveBankPolling(enabled) {
     clearInterval(livePollingTimer);
     livePollingTimer = null;
   }
-  showToast('Đang bật chế độ 1 chiều (Web → Google Sheet): Không lấy dữ liệu từ Google Sheet về Web.', 'info');
+  if (enabled) {
+    startLiveBankPolling();
+    showToast('Đã bật tự động làm mới giao dịch ngân hàng (12 giây/lần)', 'success');
+  } else {
+    showToast('Đã tạm dừng tự động làm mới giao dịch.', 'info');
+  }
 }
 
 async function quickTestSepayAlert() {
