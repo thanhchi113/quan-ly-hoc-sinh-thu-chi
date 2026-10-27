@@ -69,7 +69,7 @@
             <span class="hidden 2xl:inline font-medium text-[#595c5f] shrink-0">Quản lý HS &amp; Tài chính</span>
             <span class="hidden 2xl:inline text-slate-300 shrink-0">•</span>
             <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-[#15803d] inline-block shrink-0"></span>
-            <span id="sync-status-text" class="truncate">Đã kết nối Google Sheet (2 chiều)</span>
+            <span id="sync-status-text" class="truncate">Đã kết nối Google Sheet (Web → Sheet)</span>
           </div>
         </div>
       </div>
@@ -1097,7 +1097,7 @@
                 </span>
               </div>
               <span class="px-3 py-1 rounded-full bg-white/15 text-blue-100 text-[11px] font-bold tracking-normal">
-                Đồng bộ 2 chiều Google Sheet
+                Đồng bộ 1 chiều: Web → Google Sheet
               </span>
             </div>
 
@@ -2986,9 +2986,9 @@
                   <i data-lucide="sheet" class="w-5 h-5"></i>
                 </div>
                 <div>
-                  <h3 class="font-bold text-slate-900 text-base">Kết nối Đồng bộ 2 chiều Google Sheets</h3>
+                  <h3 class="font-bold text-slate-900 text-base">Kết nối Google Sheet (Chế độ 1 chiều: Web → Sheet)</h3>
                   <p class="text-xs text-slate-500 mt-0.5">
-                    Dữ liệu thêm/sửa trên App sẽ tự động cập nhật vào Google Sheet, và khi bạn chỉnh sửa trên Google Sheet cũng đồng bộ ngược về App.
+                    Dữ liệu trên Web sẽ được tự động lưu và đẩy lên Google Sheet của bạn. Web không lấy dữ liệu từ Google Sheet về để đảm bảo dữ liệu trên Web luôn chuẩn xác.
                   </p>
                 </div>
               </div>
@@ -3103,15 +3103,15 @@
                       />
                       <span>Duyệt tự động khi tiền vào STK</span>
                     </label>
-                    <label class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-900 bg-white px-2.5 py-1 rounded-lg border border-emerald-300 cursor-pointer">
+                    <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-300 cursor-not-allowed opacity-80" title="Chế độ 1 chiều: Chỉ đẩy kết quả từ Web về Google Sheet">
                       <input
                         id="setting-live-polling"
                         type="checkbox"
-                        checked
+                        disabled
                         onchange="toggleLiveBankPolling(this.checked)"
-                        class="w-3.5 h-3.5 rounded text-emerald-600"
+                        class="w-3.5 h-3.5 rounded text-slate-400"
                       />
-                      <span>Tự động làm mới (15s)</span>
+                      <span>Tự động làm mới (Đã tắt - 1 chiều Web → Sheet)</span>
                     </label>
                   </div>
                 </div>
@@ -5362,7 +5362,7 @@
           <img src="apple-touch-icon.png" alt="Thanh Chí Edu Icon" class="w-10 h-10 rounded-xl  border border-white/25 shrink-0" />
           <div>
             <h3 class="font-extrabold text-sm sm:text-base text-white">Cài App lên iPhone cá nhân (iOS)</h3>
-            <p class="text-[11px] text-slate-100">Mở thẳng Cổng Quản Lý • Bảo mật mật khẩu • Đồng bộ 2 chiều</p>
+            <p class="text-[11px] text-slate-100">Mở thẳng Cổng Quản Lý • Bảo mật mật khẩu • Đồng bộ 1 chiều (Web → Sheet)</p>
           </div>
         </div>
         <button type="button" onclick="closeIosInstallModal()" class="p-1.5 rounded-xl hover:bg-white/15 text-white transition cursor-pointer">
@@ -6089,6 +6089,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261027_v50"></script>
+  <script src="app.js?v=20261027_v51"></script>
 </body>
 </html>
