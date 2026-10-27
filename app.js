@@ -3385,19 +3385,14 @@ function bootstrapApp() {
     switchAppMode('admin');
   }
 
-  // Đồng bộ 2 chiều: Tự động kiểm tra giao dịch SePay/Ngân hàng mới nhất trên Google Sheet khi mở Web
+  // Chế độ 1 chiều (Web -> Google Sheet): Chỉ đẩy dữ liệu từ Web lên Google Sheet, tuyệt đối không lấy dữ liệu từ Google Sheet về Web
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
-    pullAndSyncBankData(false).catch(() => {});
-    startLiveBankPolling();
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && getGasUrl()) {
-      pullAndSyncBankData(false).catch(() => {});
+    if (isAutoSyncEnabled()) {
+      syncAllToGoogleSheet(false);
     }
-  });
+  }
 }
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
@@ -11643,8 +11638,8 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0';
     if (text) {
       text.textContent = lastSyncTimeStr
-        ? `Đã đồng bộ Google Sheet (${lastSyncTimeStr})`
-        : 'Đã kết nối Google Sheet (Tự động 2 chiều)';
+        ? `Đã đẩy lên Google Sheet (${lastSyncTimeStr})`
+        : 'Đã kết nối Google Sheet (Web → Sheet)';
     }
     if (quickBtn) {
       quickBtn.classList.remove('hidden');
@@ -11660,93 +11655,7 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-let inFlightPullCount = 0;
-
-// Đồng bộ & đối soát giao dịch ngân hàng / SePay từ Google Sheet (An toàn, không ghi đè học sinh/lớp của Web)
-async function pullAndSyncBankData(showToast = false) {
-  if (isSandboxDraftMode || inFlightSheetPushCount > 0 || inFlightPullCount > 0) return;
-  const gasUrl = getGasUrl();
-  if (!gasUrl) {
-    if (showToast) showToast('Vui lòng nhập URL Google Apps Script trong mục Cài đặt trước!', 'warning');
-    return;
-  }
-
-  inFlightPullCount++;
-  const syncIcons = [
-    document.getElementById('icon-quick-sync'),
-    document.getElementById('icon-refresh-finance')
-  ].filter(Boolean);
-  syncIcons.forEach(ic => ic.classList.add('animate-spin'));
-
-  try {
-    const pullStartedAt = Date.now();
-    const res = await fetch(`${gasUrl}?action=getAll&t=${pullStartedAt}`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    const json = await res.json();
-    if (isSandboxDraftMode || inFlightSheetPushCount > 0 || lastLocalMutationAtMs > pullStartedAt) return;
-
-    if (json && json.success && json.data) {
-      const resMerge = safeMergeServerData(json.data);
-      if (resMerge.changed) {
-        isSilentServerSync = true;
-        try {
-          saveStateToLocal();
-        } finally {
-          isSilentServerSync = false;
-        }
-
-        // Báo âm thanh & Toast khi có giao dịch mới hoặc học sinh thanh toán thành công
-        if (resMerge.newlyPaid.length > 0 || resMerge.newTxs.length > 0) {
-          playTingSound();
-          if (resMerge.newlyPaid.length > 0) {
-            const studentNames = resMerge.newlyPaid.map(s => `${s.studentCode} (${s.fullName})`).join(', ');
-            showToast(`Đã nhận chuyển khoản SePay thành công: ${studentNames}`, 'success');
-
-            // Nếu modal thanh toán đang mở cho học sinh vừa thanh toán, đóng modal và báo thành công
-            const payModal = document.getElementById('payment-modal');
-            const openStudentRecId = document.getElementById('pay-student-record-id')?.value;
-            if (payModal && !payModal.classList.contains('hidden') && openStudentRecId) {
-              const wasMatched = resMerge.newlyPaid.some(s => s.id === openStudentRecId);
-              if (wasMatched) {
-                closePaymentModal();
-                showToast('Học sinh đã thanh toán học phí thành công!', 'success');
-              }
-            }
-          } else if (resMerge.newTxs.length > 0) {
-            const firstTx = resMerge.newTxs[0];
-            showToast(`Ghi nhận giao dịch SePay: +${formatCurrency(firstTx.amount)} (${firstTx.description || ''})`, 'info');
-          }
-        }
-
-        // Đẩy trạng thái đồng bộ lên lại Sheet
-        syncAllToGoogleSheet(false).catch(() => {});
-      }
-
-      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      updateSyncStatusBanner(timeStr);
-
-      if (showToast) {
-        if (resMerge.changed) {
-          showToast(`Đã đồng bộ thành công! Nhận ${resMerge.newTxs.length + resMerge.newlyPaid.length} cập nhật mới từ SePay.`, 'success');
-        } else {
-          showToast('Dữ liệu đã được đồng bộ và cập nhật mới nhất từ Google Sheet!', 'success');
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Lỗi kéo dữ liệu từ Google Sheet:', err);
-    if (showToast) {
-      showToast('Không thể kết nối đến Google Apps Script. Vui lòng kiểm tra lại mạng!', 'error');
-    }
-  } finally {
-    inFlightPullCount = Math.max(0, inFlightPullCount - 1);
-    syncIcons.forEach(ic => ic.classList.remove('animate-spin'));
-  }
-}
-
-// Đồng bộ từ Google Sheet (Kéo giao dịch SePay mới & đẩy dữ liệu đầy đủ lên Sheet)
+// Chế độ 1 chiều (Web -> Google Sheet): Chỉ đẩy kết quả từ Web lên Google Sheet, tuyệt đối không lấy dữ liệu từ Google Sheet về Web
 async function syncFromGoogleSheet(showUserToast = true) {
   if (isSandboxDraftMode) {
     if (showUserToast) {
@@ -11759,7 +11668,15 @@ async function syncFromGoogleSheet(showUserToast = true) {
     return;
   }
 
-  await pullAndSyncBankData(showUserToast);
+  if (!showUserToast) return;
+
+  const syncIcon = document.getElementById('icon-quick-sync');
+  if (syncIcon) syncIcon.classList.add('animate-spin');
+  try {
+    await syncAllToGoogleSheet(true);
+  } finally {
+    if (syncIcon) syncIcon.classList.remove('animate-spin');
+  }
 }
 
 // Đẩy toàn bộ dữ liệu từ Web App lên Google Sheet (Push)
@@ -17666,28 +17583,17 @@ function isAnyAdminModalOpen() {
 }
 
 // Chế độ 1 chiều (Web -> Google Sheet): Tắt hoàn toàn việc tự động kéo dữ liệu từ Google Sheet về Web
+// Chế độ 1 chiều (Web -> Google Sheet): Tắt hoàn toàn việc tự động kéo dữ liệu từ Google Sheet về Web
 function startLiveBankPolling() {
   if (livePollingTimer) {
     clearInterval(livePollingTimer);
     livePollingTimer = null;
   }
-
-  const checkbox = document.getElementById('setting-live-polling');
-  const isEnabled = checkbox ? checkbox.checked : true;
-  if (!isEnabled) return;
-
   seedCurrentBankTxAsNotified(appState);
   const webhookDisplay = document.getElementById('bank-webhook-url-display');
   if (webhookDisplay && getGasUrl()) {
     webhookDisplay.textContent = getGasUrl();
   }
-
-  livePollingTimer = setInterval(async () => {
-    if (isSandboxDraftMode || inFlightSheetPushCount > 0 || inFlightPullCount > 0) return;
-    if (document.hidden) return;
-    if (isAnyAdminModalOpen()) return;
-    await pullAndSyncBankData(false);
-  }, 12000);
 }
 
 function toggleLiveBankPolling(enabled) {
@@ -17695,12 +17601,7 @@ function toggleLiveBankPolling(enabled) {
     clearInterval(livePollingTimer);
     livePollingTimer = null;
   }
-  if (enabled) {
-    startLiveBankPolling();
-    showToast('Đã bật tự động làm mới giao dịch ngân hàng (12 giây/lần)', 'success');
-  } else {
-    showToast('Đã tạm dừng tự động làm mới giao dịch.', 'info');
-  }
+  showToast('Đang bật chế độ 1 chiều (Web → Google Sheet): Không lấy dữ liệu từ Google Sheet về Web.', 'info');
 }
 
 async function quickTestSepayAlert() {
