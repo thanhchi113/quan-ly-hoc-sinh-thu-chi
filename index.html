@@ -129,12 +129,12 @@
 
         <button
           id="btn-quick-sync"
-          onclick="syncAllToGoogleSheet(true)"
-          title="Đẩy toàn bộ dữ liệu từ Web lên Google Sheet (1 chiều Web → Sheet)"
+          onclick="syncFromGoogleSheet(true)"
+          title="Đồng bộ giao dịch SePay về Web và cập nhật Google Sheet"
           class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium bg-[#ffffff] text-[#0a0a0a] border border-[#d5d7da] hover:bg-[#eeeeee] transition cursor-pointer whitespace-nowrap"
         >
-          <i data-lucide="cloud-upload" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
-          <span>Đẩy lên Sheet</span>
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
+          <span>Đồng bộ SePay &amp; Sheet</span>
         </button>
 
         <!-- Notification Bell Icon -->
@@ -6077,6 +6077,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261028_v53"></script>
+  <script src="app.js?v=20261028_v54"></script>
 </body>
 </html>

@@ -3385,15 +3385,20 @@ function bootstrapApp() {
     switchAppMode('admin');
   }
 
-  // Chế độ 1 chiều (Web -> Google Sheet): Chỉ đẩy dữ liệu từ Web lên Google Sheet, tuyệt đối không lấy dữ liệu từ Google Sheet về Web
+  // Tự động kiểm tra và đồng bộ giao dịch SePay từ Google Sheet về Web khi khởi động
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
-    if (isAutoSyncEnabled()) {
-      syncAllToGoogleSheet(false);
-    }
+    syncSepayTransactionsToWeb(false).catch(() => {});
   }
 }
+
+// Khi người dùng quay lại tab sau một thời gian, tự động kiểm tra giao dịch SePay mới
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && getGasUrl()) {
+    syncSepayTransactionsToWeb(false).catch(() => {});
+  }
+});
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
 function enableSourceProtection() {
@@ -11655,8 +11660,9 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-// Chế độ 1 chiều (Web -> Google Sheet): Chỉ đẩy kết quả từ Web lên Google Sheet, tuyệt đối không lấy dữ liệu từ Google Sheet về Web
-async function syncFromGoogleSheet(showUserToast = true) {
+// Đồng bộ an toàn: Kéo và nhận diện giao dịch SePay về Web, tự động gạch nợ học phí, sau đó cập nhật dữ liệu đầy đủ lên Google Sheet
+let lastSepaySyncMs = 0;
+async function syncSepayTransactionsToWeb(showUserToast = true, force = false) {
   if (isSandboxDraftMode) {
     if (showUserToast) {
       showToast(
@@ -11667,13 +11673,61 @@ async function syncFromGoogleSheet(showUserToast = true) {
     return;
   }
 
+  const gasUrl = getGasUrl();
+  if (!gasUrl || inFlightSheetPushCount > 0) {
+    if (showUserToast) await syncAllToGoogleSheet(true);
+    return;
+  }
+
+  const now = Date.now();
+  if (!force && !showUserToast && now - lastSepaySyncMs < 20000) {
+    return; // throttle 20s cho việc kiểm tra ngầm
+  }
+  lastSepaySyncMs = now;
+
   const syncIcon = document.getElementById('icon-quick-sync');
   if (syncIcon) syncIcon.classList.add('animate-spin');
+
   try {
-    await syncAllToGoogleSheet(showUserToast);
+    if (showUserToast) showToast('Đang kiểm tra và đồng bộ giao dịch SePay về Web...', 'info');
+    const res = await fetch(`${gasUrl}?action=getAll&forceSepay=1&t=${Date.now()}`, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    const json = await res.json();
+    if (json && json.data) {
+      const resMerge = safeMergeServerData(json.data);
+      if (resMerge.changed) {
+        isSilentServerSync = true;
+        try {
+          saveStateToLocal();
+        } finally {
+          isSilentServerSync = false;
+        }
+        refreshAllViews();
+        if (showUserToast) {
+          if (resMerge.newlyPaid && resMerge.newlyPaid.length > 0) {
+            const names = resMerge.newlyPaid.map(s => `${s.studentCode} (${s.fullName})`).join(', ');
+            showToast(`Đã đồng bộ SePay thành công! Gạch nợ cho: ${names}`, 'success');
+          } else if (resMerge.newTxs && resMerge.newTxs.length > 0) {
+            showToast(`Đã đồng bộ thành công! Thêm ${resMerge.newTxs.length} giao dịch SePay vào Sổ Thu Chi.`, 'success');
+          }
+        }
+      } else if (showUserToast) {
+        showToast('Dữ liệu SePay đã ở trạng thái mới nhất!', 'info');
+      }
+    }
+    await syncAllToGoogleSheet(false);
+  } catch (err) {
+    console.warn('Lỗi đồng bộ SePay về Web:', err);
+    if (showUserToast) await syncAllToGoogleSheet(true);
   } finally {
     if (syncIcon) syncIcon.classList.remove('animate-spin');
   }
+}
+
+async function syncFromGoogleSheet(showUserToast = true) {
+  await syncSepayTransactionsToWeb(showUserToast, true);
 }
 
 // Đẩy toàn bộ dữ liệu từ Web App lên Google Sheet (Push)
@@ -11995,6 +12049,18 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
           }
         } else if (!isDraftSepayAcc && existingMatchedTx.method !== 'Chuyển khoản STK (Tự động)') {
           existingMatchedTx.method = 'Chuyển khoản STK (Tự động)';
+        }
+
+        // Đảm bảo học sinh được gạch nợ thành công nếu giao dịch đã có trong sổ
+        const stuCodeToConfirm = existingMatchedTx.studentCode || (findStudentFromTransferContent(combinedContent, amount, state.students, state.paymentRequests)?.studentCode);
+        if (stuCodeToConfirm && autoApproveOn) {
+          const stObj = (state.students || []).find(s => s && s.studentCode === stuCodeToConfirm);
+          if (stObj && stObj.status !== 'Đã hoàn thành') {
+            stObj.status = 'Đã hoàn thành';
+            stObj.updatedAt = alertTime;
+            stObj.note = `${draftDescPrefix}Đã CK thành công vào STK (SePay): +${formatCurrency(amount)} (${alertTime})`;
+            state._sepayAutoReconciled = true;
+          }
         }
         continue;
       }
