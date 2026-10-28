@@ -40,7 +40,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261028_v58" />
+  <link rel="stylesheet" href="styles.css?v=20261029_v59" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -129,12 +129,12 @@
 
         <button
           id="btn-quick-sync"
-          onclick="syncFromGoogleSheet(true)"
-          title="Đồng bộ giao dịch SePay về Web và cập nhật Google Sheet"
+          onclick="syncAllToGoogleSheet(true)"
+          title="Đẩy toàn bộ dữ liệu từ Web lên Google Sheet (1 chiều Web → Sheet)"
           class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium bg-[#ffffff] text-[#0a0a0a] border border-[#d5d7da] hover:bg-[#eeeeee] transition cursor-pointer whitespace-nowrap"
         >
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
-          <span>Đồng bộ SePay &amp; Sheet</span>
+          <i data-lucide="cloud-upload" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
+          <span>Đẩy lên Sheet</span>
         </button>
 
         <!-- Notification Bell Icon -->
@@ -2761,7 +2761,7 @@
                   type="button"
                   onclick="handleRefreshFinanceTransactions()"
                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 transition cursor-pointer shrink-0"
-                  title="Tải lại danh sách giao dịch & đồng bộ mới nhất từ SePay / Google Sheet"
+                  title="Làm mới danh sách giao dịch & đẩy dữ liệu từ Web lên Google Sheet"
                 >
                   <i id="icon-refresh-finance" data-lucide="refresh-cw" class="w-4 h-4"></i>
                   <span>Làm mới Thu Chi</span>
@@ -6078,6 +6078,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261028_v58"></script>
+  <script src="app.js?v=20261029_v59"></script>
 </body>
 </html>

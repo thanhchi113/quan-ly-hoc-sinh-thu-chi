@@ -3528,7 +3528,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261028_v58', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v59', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -3611,20 +3611,23 @@ function bootstrapApp() {
     }
   }
 
-  // Tự động kiểm tra và đồng bộ giao dịch SePay từ Google Sheet về Web khi khởi động
+  // Chế độ 1 chiều tuyệt đối (Web -> Google Sheet): Tuyệt đối không lấy dữ liệu từ Google Sheet về Web.
+  // Chỉ đẩy bù dữ liệu từ Web lên Google Sheet nếu lần lưu trước đó chưa kịp đẩy xong trước khi tải lại trang.
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
-    syncSepayTransactionsToWeb(false).catch(() => {});
+    const hasDirtySync = (() => {
+      try {
+        return localStorage.getItem(STORAGE_KEYS.DIRTY_SYNC) === '1';
+      } catch (e) {
+        return false;
+      }
+    })();
+    if (hasDirtySync && isAutoSyncEnabled()) {
+      syncAllToGoogleSheet(false).catch(() => {});
+    }
   }
 }
-
-// Khi người dùng quay lại tab sau một thời gian, tự động kiểm tra giao dịch SePay mới
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && getGasUrl()) {
-    syncSepayTransactionsToWeb(false).catch(() => {});
-  }
-});
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
 function enableSourceProtection() {
@@ -3834,90 +3837,6 @@ function repairCorruptedStatusAndPeriodV58(state) {
   return state;
 }
 
-function migrateAndRestoreUserBatchEditsV57(state) {
-  if (!state || !state.settings) return state;
-  try {
-    if (localStorage.getItem('TC_MIGRATE_V57_RESTORE_DOT6')) return state;
-    const baseline = getInitialDemoState();
-    const curHist = (() => {
-      try {
-        return JSON.parse(state.settings.classHistoryJson || '[]') || [];
-      } catch (e) {
-        return [];
-      }
-    })();
-    const baseHist = (() => {
-      try {
-        return JSON.parse(baseline.settings.classHistoryJson || '[]') || [];
-      } catch (e) {
-        return [];
-      }
-    })();
-
-    // Khôi phục lịch sử các đợt cũ (ĐỢT 5 của 12B 2K9 & 12A 2K9) nếu bị mất do lỗi TDZ trước v57
-    const existingIds = new Set(curHist.map(h => h && h.id));
-    let histChanged = false;
-    baseHist.forEach(bh => {
-      if (bh && bh.id && !existingIds.has(bh.id)) {
-        const alreadySameBatch = curHist.some(
-          ch => ch && ch.className === bh.className && ch.batchLabel === bh.batchLabel && ch.periodLabel === bh.periodLabel
-        );
-        if (!alreadySameBatch) {
-          curHist.push(bh);
-          histChanged = true;
-        }
-      }
-    });
-    if (histChanged) {
-      state.settings.classHistoryJson = JSON.stringify(curHist);
-    }
-
-    // Khôi phục lịch ĐỢT 6 cho 12B 2K9 và 12A 2K9 nếu đang bị kẹt ở ĐỢT 5 cũ
-    const curMap = JSON.parse(state.settings.classSchedulesJson || '{}') || {};
-    const baseMap = JSON.parse(baseline.settings.classSchedulesJson || '{}') || {};
-    let mapChanged = false;
-    ['12B 2K9', '12A 2K9'].forEach(cls => {
-      if (baseMap[cls] && (!curMap[cls] || curMap[cls].batchLabel === 'ĐỢT 5')) {
-        curMap[cls] = { ...baseMap[cls] };
-        mapChanged = true;
-      }
-    });
-    if (mapChanged) {
-      state.settings.classSchedulesJson = JSON.stringify(curMap);
-    }
-
-    // Khôi phục kỳ học và trạng thái học sinh đã chỉnh sửa nhưng bị TDZ reset
-    const baseStuByCode = new Map((baseline.students || []).map(s => [s.studentCode, s]));
-    if (Array.isArray(state.students)) {
-      state.students.forEach(s => {
-        if (!s) return;
-        if ((s.className === '12B 2K9' || s.className === '12A 2K9') && s.period === 'Tháng 9-10/2026') {
-          s.period = 'Tháng 10/2026';
-          if (s.studentCode !== 'HS007' && s.studentCode !== 'HS010') {
-            s.note = '';
-          }
-        }
-        const bs = baseStuByCode.get(s.studentCode);
-        if (bs && bs.status === 'Đã hoàn thành' && s.status !== 'Đã hoàn thành') {
-          if (['HS007', 'HS010', 'HS044', 'HS081'].includes(s.studentCode)) {
-            s.status = 'Đã hoàn thành';
-            s.updatedAt = bs.updatedAt || s.updatedAt;
-            s.manualStatusUpdatedAt = bs.manualStatusUpdatedAt || bs.updatedAt || s.updatedAt;
-            if (!s.note && bs.note) s.note = bs.note;
-          }
-        }
-      });
-    }
-
-    try {
-      localStorage.setItem('TC_MIGRATE_V57_RESTORE_DOT6', '1');
-    } catch (e) {}
-  } catch (e) {
-    console.warn('Migration V57 warning:', e);
-  }
-  return state;
-}
-
 function loadStateFromLocal() {
   let parsed = null;
   try {
@@ -3964,7 +3883,6 @@ function loadStateFromLocal() {
         console.warn('Cảnh báo làm sạch dữ liệu khi tải (giữ nguyên dữ liệu gốc):', cleanErr);
         cleaned = parsed;
       }
-      cleaned = migrateAndRestoreUserBatchEditsV57(cleaned);
       cleaned = repairCorruptedStatusAndPeriodV58(cleaned);
       safeWriteLocalStorage(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
       return cleaned;
@@ -3978,9 +3896,6 @@ function loadStateFromLocal() {
   }
   _bootedFromEmptyStorage = true;
   const initial = repairCorruptedStatusAndPeriodV58(getInitialDemoState());
-  try {
-    localStorage.setItem('TC_MIGRATE_V57_RESTORE_DOT6', '1');
-  } catch (e) {}
   safeWriteLocalStorage(STORAGE_KEYS.STATE, JSON.stringify(initial));
   return initial;
 }
@@ -12072,8 +11987,8 @@ function saveGasUrlConfig() {
   updateSyncStatusBanner();
 
   if (url) {
-    showToast('Đã lưu link Google Sheet! Đang kiểm tra đồng bộ...', 'info');
-    syncFromGoogleSheet(true);
+    showToast('Đã lưu link Google Sheet! Đang đẩy dữ liệu từ Web lên Sheet...', 'info');
+    syncAllToGoogleSheet(true);
   } else {
     showToast('Đã chuyển về chế độ lưu trữ Local trên trình duyệt.', 'info');
   }
@@ -12160,94 +12075,13 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-// Đồng bộ an toàn: Kéo và nhận diện giao dịch SePay về Web, tự động gạch nợ học phí, sau đó cập nhật dữ liệu đầy đủ lên Google Sheet
-let lastSepaySyncMs = 0;
-async function syncSepayTransactionsToWeb(showUserToast = true, force = false) {
-  if (isSandboxDraftMode) {
-    if (showUserToast) {
-      showToast(
-        'Đang ở Tab Nháp (Dùng Thử): Đã lưu dữ liệu nháp trên trình duyệt! (Không kết nối Google Sheet)',
-        'info'
-      );
-    }
-    return;
-  }
-
-  const gasUrl = getGasUrl();
-  if (!gasUrl || inFlightSheetPushCount > 0) {
-    if (showUserToast) await syncAllToGoogleSheet(true);
-    return;
-  }
-
-  const now = Date.now();
-  if (!force && !showUserToast && now - lastSepaySyncMs < 20000) {
-    return; // throttle 20s cho việc kiểm tra ngầm
-  }
-  lastSepaySyncMs = now;
-
-  const syncIcon = document.getElementById('icon-quick-sync');
-  if (syncIcon) syncIcon.classList.add('animate-spin');
-
-  try {
-    if (showUserToast) showToast('Đang kiểm tra và đồng bộ giao dịch SePay về Web...', 'info');
-    const res = await fetch(`${gasUrl}?action=getAll&forceSepay=1&t=${Date.now()}`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    const json = await res.json();
-    if (json && json.data) {
-      const resMerge = safeMergeServerData(json.data);
-      if (resMerge.changed) {
-        isSilentServerSync = true;
-        try {
-          saveStateToLocal();
-        } finally {
-          isSilentServerSync = false;
-        }
-        refreshAllViews();
-        if (showUserToast) {
-          if (resMerge.newlyPaid && resMerge.newlyPaid.length > 0) {
-            const names = resMerge.newlyPaid.map(s => `${s.studentCode} (${s.fullName})`).join(', ');
-            showToast(`Đã đồng bộ SePay thành công! Gạch nợ cho: ${names}`, 'success');
-          } else if (resMerge.newTxs && resMerge.newTxs.length > 0) {
-            showToast(`Đã đồng bộ thành công! Thêm ${resMerge.newTxs.length} giao dịch SePay vào Sổ Thu Chi.`, 'success');
-          }
-        }
-      } else if (showUserToast) {
-        showToast('Dữ liệu SePay đã ở trạng thái mới nhất!', 'info');
-      }
-      const hasDirtySync = (() => {
-        try {
-          return localStorage.getItem(STORAGE_KEYS.DIRTY_SYNC) === '1';
-        } catch (e) {
-          return false;
-        }
-      })();
-      if (resMerge.changed || showUserToast || lastLocalMutationAtMs > 0 || hasDirtySync) {
-        await syncAllToGoogleSheet(false);
-      }
-    } else {
-      const hasDirtySync = (() => {
-        try {
-          return localStorage.getItem(STORAGE_KEYS.DIRTY_SYNC) === '1';
-        } catch (e) {
-          return false;
-        }
-      })();
-      if (showUserToast || lastLocalMutationAtMs > 0 || hasDirtySync) {
-        await syncAllToGoogleSheet(false);
-      }
-    }
-  } catch (err) {
-    console.warn('Lỗi đồng bộ SePay về Web:', err);
-    if (showUserToast) await syncAllToGoogleSheet(true);
-  } finally {
-    if (syncIcon) syncIcon.classList.remove('animate-spin');
-  }
+// Chế độ 1 chiều tuyệt đối (Web -> Google Sheet): Chỉ đẩy dữ liệu từ Web lên Google Sheet, tuyệt đối không kéo dữ liệu từ Google Sheet về Web
+async function syncSepayTransactionsToWeb(showUserToast = true) {
+  await syncAllToGoogleSheet(showUserToast);
 }
 
 async function syncFromGoogleSheet(showUserToast = true) {
-  await syncSepayTransactionsToWeb(showUserToast, true);
+  await syncAllToGoogleSheet(showUserToast);
 }
 
 // Đẩy toàn bộ dữ liệu từ Web App lên Google Sheet (Push)
@@ -12830,161 +12664,9 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
   return state;
 }
 
-function safeMergeServerData(serverData) {
-  if (!serverData) return { changed: false, newlyPaid: [], newTxs: [] };
-  let changed = false;
-  const newlyPaid = [];
-  const newTxs = [];
-
-  const prevUnpaidCodes = new Set(
-    (appState.students || []).filter(s => s.status !== 'Đã hoàn thành').map(s => s.studentCode)
-  );
-
-  // 1. Transactions merge: Bảo toàn 100% giao dịch trên Web, chỉ thêm giao dịch mới từ Google Sheet
-  if (!Array.isArray(appState.transactions)) appState.transactions = [];
-  const existingTxIds = new Set(appState.transactions.map(t => String(t && t.id || '')));
-  const existingSigs = new Set();
-  appState.transactions.forEach(t => {
-    const sig = buildSepayTxSignature(
-      String(t.date || '').slice(0, 10),
-      t.amount,
-      t.description,
-      isDraftBankTransaction(t, appState)
-    );
-    if (sig) existingSigs.add(sig);
-  });
-
-  const deletedSet = getDeletedTxIdsSet(appState);
-  const editedMap = getEditedTxOverridesMap(appState);
-
-  if (Array.isArray(serverData.transactions)) {
-    serverData.transactions.forEach(sTx => {
-      if (!sTx || !sTx.id) return;
-      const tid = String(sTx.id);
-      if (existingTxIds.has(tid) || deletedSet.has(tid)) return;
-      const sig = buildSepayTxSignature(
-        String(sTx.date || '').slice(0, 10),
-        sTx.amount,
-        sTx.description,
-        isDraftBankTransaction(sTx, appState)
-      );
-      if (sig && existingSigs.has(sig)) return;
-
-      const ov = editedMap[tid];
-      const finalTx = ov ? {
-        ...sTx,
-        date: ov.date || sTx.date,
-        type: ov.type || sTx.type,
-        category: ov.category || sTx.category,
-        amount: ov.amount !== undefined ? ov.amount : sTx.amount,
-        description: ov.description || sTx.description,
-        studentCode: ov.studentCode !== undefined ? ov.studentCode : sTx.studentCode,
-        method: ov.method || sTx.method
-      } : { ...sTx };
-
-      appState.transactions.unshift(finalTx);
-      existingTxIds.add(tid);
-      if (sig) existingSigs.add(sig);
-      newTxs.push(finalTx);
-      changed = true;
-    });
-  }
-
-  // 2. Tự động đối soát từ tab SePay_GiaoDich (rawClassSheets)
-  if (Array.isArray(serverData.rawClassSheets)) {
-    const beforeTxLen = appState.transactions.length;
-    reconcileSepaySheetTransactions(appState, serverData.rawClassSheets);
-    if (appState.transactions.length !== beforeTxLen || appState._sepayAutoReconciled) {
-      changed = true;
-      delete appState._sepayAutoReconciled;
-    }
-  }
-
-  // 3. Bảo toàn 100% thao tác đã chỉnh sửa trên trình duyệt hiện tại.
-  // Chỉ nạp dữ liệu học sinh / lịch học từ Google Sheet khi trình duyệt hoàn toàn mới (_bootedFromEmptyStorage === true), không ghi đè dữ liệu cục bộ khi F5 tải lại trang.
-  const hasDirtySync = (() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.DIRTY_SYNC) === '1';
-    } catch (e) {
-      return false;
-    }
-  })();
-  if (_bootedFromEmptyStorage && lastLocalMutationAtMs === 0 && !hasDirtySync && serverData.settings) {
-    const syncKeys = [
-      'classSchedulesJson',
-      'classHistoryJson',
-      'studentMetaJson',
-      'studentAttendanceJson',
-      'customGradesJson',
-      'deletedGradesJson',
-      'deletedClassesJson',
-      'defaultPeriod',
-      '_lastSavedAtMs'
-    ];
-    syncKeys.forEach(k => {
-      if (serverData.settings[k] !== undefined && serverData.settings[k] !== '') {
-        appState.settings[k] = serverData.settings[k];
-      }
-    });
-    if (Array.isArray(serverData.students) && serverData.students.length > 0) {
-      appState.students = serverData.students.map(s => ({ ...s }));
-    }
-    repairCorruptedStatusAndPeriodV58(appState);
-    _bootedFromEmptyStorage = false;
-    changed = true;
-  } else if (serverData.settings?.classHistoryJson && lastLocalMutationAtMs === 0 && !hasDirtySync) {
-    try {
-      const sHist = JSON.parse(serverData.settings.classHistoryJson || '[]');
-      const lHist = getClassHistoryList();
-      if (Array.isArray(sHist) && sHist.length > lHist.length) {
-        const lIds = new Set(lHist.map(h => h && h.id));
-        let histAdded = false;
-        sHist.forEach(sh => {
-          if (sh && sh.id && !lIds.has(sh.id)) {
-            lHist.push(sh);
-            histAdded = true;
-          }
-        });
-        if (histAdded) {
-          appState.settings.classHistoryJson = JSON.stringify(lHist);
-          repairCorruptedStatusAndPeriodV58(appState);
-          changed = true;
-        }
-      }
-    } catch (e) {}
-  }
-
-  // Thu thập học sinh vừa chuyển sang "Đã hoàn thành" (do giao dịch SePay mới thực sự phát sinh) để hiển thị thông báo
-  (appState.students || []).forEach(s => {
-    if (prevUnpaidCodes.has(s.studentCode) && s.status === 'Đã hoàn thành') {
-      if (!newlyPaid.some(p => p.studentCode === s.studentCode)) {
-        newlyPaid.push(s);
-      }
-    }
-  });
-
-  // 4. Cập nhật thông báo biến động số dư và số dư SePay từ Server (nếu người dùng không khóa số dư thủ công)
-  if (serverData.settings) {
-    if (serverData.settings.lastBankAlertJson && !appState.settings.lastBankAlertJson) {
-      appState.settings.lastBankAlertJson = serverData.settings.lastBankAlertJson;
-    }
-    if (
-      serverData.settings.sepayBalance &&
-      !appState.settings.sepayBalanceManualAt &&
-      appState.settings.sepayBalanceMode !== 'auto'
-    ) {
-      appState.settings.sepayBalance = serverData.settings.sepayBalance;
-    }
-    if (serverData.settings.sepayLinkedStatus) {
-      appState.settings.sepayLinkedStatus = serverData.settings.sepayLinkedStatus;
-    }
-  }
-
-  if (Array.isArray(appState.transactions)) {
-    appState.transactions.sort(sortTransactionsNewestFirst);
-  }
-
-  return { changed, newlyPaid, newTxs };
+// Chế độ 1 chiều tuyệt đối (Web -> Google Sheet): Không gộp hay ghi đè bất kỳ dữ liệu nào từ Google Sheet vào Web
+function safeMergeServerData() {
+  return { changed: false, newlyPaid: [], newTxs: [] };
 }
 
 // ============================================================================
