@@ -598,33 +598,80 @@ function getAllSheetData() {
 }
 
 function writeStudentsToSheet(sheet, students) {
+  if (!sheet) return;
+  const existingRows = sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues() : [];
+  const sepayPaidMap = {};
+  existingRows.forEach(row => {
+    const code = String(row[1] || '').trim();
+    const status = String(row[8] || '').trim();
+    const note = String(row[11] || '');
+    if (code && status === 'Đã hoàn thành' && /ck|sepay|stk/i.test(note)) {
+      sepayPaidMap[code] = { status, updatedAt: row[10], note };
+    }
+  });
+
+  const rows = (students || []).map(s => {
+    const code = String(s.studentCode || '').trim();
+    let status = s.status || 'Chưa đóng';
+    let updatedAt = s.updatedAt || '';
+    let note = s.note || '';
+
+    // Nếu SePay đã gạch nợ thành công trên Sheet thì giữ nguyên trạng thái Đã hoàn thành
+    if (status !== 'Đã hoàn thành' && sepayPaidMap[code]) {
+      status = 'Đã hoàn thành';
+      updatedAt = sepayPaidMap[code].updatedAt || updatedAt;
+      note = sepayPaidMap[code].note || note;
+    }
+
+    return [
+      s.id || '',
+      s.studentCode || '',
+      s.fullName || '',
+      s.className || '',
+      s.parentName || '',
+      "'" + (s.parentPhone || ''),
+      s.period || '',
+      normalizeMoneyVnd(s.tuitionFee),
+      status,
+      s.receiptUrl || '',
+      updatedAt,
+      note
+    ];
+  });
+
   if (sheet.getLastRow() > 1) {
     sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).clearContent();
   }
-  if (!students || students.length === 0) return;
-  const rows = students.map(s => [
-    s.id || '',
-    s.studentCode || '',
-    s.fullName || '',
-    s.className || '',
-    s.parentName || '',
-    "'" + (s.parentPhone || ''),
-    s.period || '',
-    normalizeMoneyVnd(s.tuitionFee),
-    s.status || 'Chưa đóng',
-    s.receiptUrl || '',
-    s.updatedAt || '',
-    s.note || ''
-  ]);
-  sheet.getRange(2, 1, rows.length, 12).setValues(rows);
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, 12).setValues(rows);
+  }
 }
 
 function writeTransactionsToSheet(sheet, transactions) {
+  if (!sheet) return;
+  const existingRows = sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues() : [];
+
+  // Bảo toàn các giao dịch tự động từ SePay/Ngân hàng đã có trên Sheet nếu gói từ Web chưa kịp có
+  const incomingIds = new Set((transactions || []).map(t => String(t.id || '').trim()));
+  const preservedSepayRows = [];
+  existingRows.forEach(row => {
+    const id = String(row[0] || '').trim();
+    const desc = String(row[5] || '');
+    const method = String(row[7] || '');
+    const createdBy = String(row[9] || '');
+    const isSepay = /sepay|stk/i.test(id + ' ' + desc + ' ' + method + ' ' + createdBy) || 
+                    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(id);
+    if (isSepay && id && !incomingIds.has(id)) {
+      preservedSepayRows.push(row);
+    }
+  });
+
   if (sheet.getLastRow() > 1) {
     sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).clearContent();
   }
-  if (!transactions || transactions.length === 0) return;
-  const rows = transactions.map(t => {
+  if ((!transactions || transactions.length === 0) && preservedSepayRows.length === 0) return;
+
+  const rows = (transactions || []).map(t => {
     const dStr = String(t.date || '').trim();
     const safeDateCell = /\d{2}:\d{2}/.test(dStr) && !dStr.startsWith("'") ? "'" + dStr : dStr;
     return [
@@ -640,7 +687,12 @@ function writeTransactionsToSheet(sheet, transactions) {
       t.createdBy || 'Quản lý'
     ];
   });
-  sheet.getRange(2, 1, rows.length, 10).setValues(rows);
+
+  preservedSepayRows.forEach(r => rows.push(r));
+
+  if (rows.length > 0) {
+    sheet.getRange(2, 1, rows.length, 10).setValues(rows);
+  }
 }
 
 function writeRequestsToSheet(sheet, requests) {
