@@ -654,11 +654,18 @@ function writeTransactionsToSheet(sheet, transactions) {
   // Bảo toàn các giao dịch tự động từ SePay/Ngân hàng đã có trên Sheet nếu gói từ Web chưa kịp có
   const incomingIds = new Set((transactions || []).map(t => String(t.id || '').trim()));
   const preservedSepayRows = [];
+  const existingKeys = new Set();
+
   existingRows.forEach(row => {
     const id = String(row[0] || '').trim();
+    const dStr = String(row[1] || '').trim().slice(0, 10);
+    const amt = normalizeMoneyVnd(row[4]);
     const desc = String(row[5] || '');
     const method = String(row[7] || '');
     const createdBy = String(row[9] || '');
+    if (id) existingKeys.add(id);
+    if (amt > 0) existingKeys.add(dStr + '_' + amt + '_' + desc);
+
     const isSepay = /sepay|stk/i.test(id + ' ' + desc + ' ' + method + ' ' + createdBy) || 
                     /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(id);
     if (isSepay && id && !incomingIds.has(id)) {
@@ -666,20 +673,19 @@ function writeTransactionsToSheet(sheet, transactions) {
     }
   });
 
-  if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).clearContent();
-  }
-  if ((!transactions || transactions.length === 0) && preservedSepayRows.length === 0) return;
-
   const rows = (transactions || []).map(t => {
     const dStr = String(t.date || '').trim();
     const safeDateCell = /\d{2}:\d{2}/.test(dStr) && !dStr.startsWith("'") ? "'" + dStr : dStr;
+    const tid = String(t.id || '').trim();
+    if (tid) existingKeys.add(tid);
+    const amt = normalizeMoneyVnd(t.amount);
+    if (amt > 0) existingKeys.add(dStr.slice(0, 10) + '_' + amt + '_' + String(t.description || ''));
     return [
       t.id || '',
       safeDateCell,
       t.type || 'Thu',
       t.category || '',
-      normalizeMoneyVnd(t.amount),
+      amt,
       t.description || '',
       t.studentCode || '',
       t.method || 'Chuyển khoản',
@@ -690,6 +696,53 @@ function writeTransactionsToSheet(sheet, transactions) {
 
   preservedSepayRows.forEach(r => rows.push(r));
 
+  // Tự động nạp bổ sung các giao dịch từ tab SePay_GiaoDich nếu chưa có trong SoThuChi
+  try {
+    const ss = sheet.getParent();
+    const shSepayRaw = ss ? ss.getSheetByName('SePay_GiaoDich') : null;
+    if (shSepayRaw && shSepayRaw.getLastRow() > 1) {
+      const rawRows = shSepayRaw.getRange(2, 1, shSepayRaw.getLastRow() - 1, 10).getValues();
+      rawRows.forEach(r => {
+        const dTime = String(r[1] || '').trim();
+        const rawContent = String(r[5] || '').trim();
+        const amt = normalizeMoneyVnd(r[7]);
+        const ref = String(r[8] || '').trim();
+        const type = String(r[6] || '').toLowerCase();
+        if (amt <= 0 || /^(out|chi|debit)/.test(type)) return;
+
+        const dOnly = dTime.slice(0, 10);
+        const refKey = 'GD_SEPAY_' + (ref || dOnly + '_' + amt);
+        const sigDesc = 'Tự động lưu CK SePay | ND: ' + rawContent;
+        const sigKey = dOnly + '_' + amt + '_' + sigDesc;
+
+        if (!existingKeys.has(refKey) && !existingKeys.has('GD_' + ref) && !existingKeys.has(sigKey)) {
+          let matchedStuCode = '';
+          const mCode = rawContent.match(/\b(HS\d{3})\b/i);
+          if (mCode) matchedStuCode = mCode[1].toUpperCase();
+
+          const safeDateCell = /\d{2}:\d{2}/.test(dTime) && !dTime.startsWith("'") ? "'" + dTime : (dTime || dOnly);
+          rows.push([
+            refKey,
+            safeDateCell,
+            'Thu',
+            'Học phí',
+            amt,
+            sigDesc,
+            matchedStuCode,
+            'Chuyển khoản STK (Tự động)',
+            '',
+            'Tự động từ STK (SePay)'
+          ]);
+          existingKeys.add(refKey);
+          existingKeys.add(sigKey);
+        }
+      });
+    }
+  } catch (rawErr) {}
+
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).clearContent();
+  }
   if (rows.length > 0) {
     sheet.getRange(2, 1, rows.length, 10).setValues(rows);
   }

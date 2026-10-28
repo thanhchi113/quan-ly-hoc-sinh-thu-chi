@@ -3385,20 +3385,15 @@ function bootstrapApp() {
     switchAppMode('admin');
   }
 
-  // Khởi động ứng dụng: Kiểm tra và nạp giao dịch SePay mới từ Google Sheet (1 lần duy nhất khi mở web, không dùng hẹn giờ ngầm)
+  // Chế độ 1 chiều (Web -> Google Sheet): Chỉ đẩy dữ liệu từ Web lên Google Sheet, tuyệt đối không lấy dữ liệu từ Google Sheet về Web
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
-    reconcileSepayOnBoot().catch(() => {});
+    if (isAutoSyncEnabled()) {
+      syncAllToGoogleSheet(false);
+    }
   }
 }
-
-// Lắng nghe khi người dùng quay lại tab sau một thời gian để đối soát SePay tự động
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && getGasUrl()) {
-    reconcileSepayOnBoot().catch(() => {});
-  }
-});
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
 function enableSourceProtection() {
@@ -11660,100 +11655,21 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-// Tự động kiểm tra và bảo toàn giao dịch SePay khi mở lại web (1 lần duy nhất khi boot, không hẹn giờ ngầm)
-let lastSepayReconcileMs = 0;
-async function reconcileSepayOnBoot(force = false) {
-  const gasUrl = getGasUrl();
-  if (!gasUrl || isSandboxDraftMode || inFlightSheetPushCount > 0) return;
-  const now = Date.now();
-  if (!force && now - lastSepayReconcileMs < 30000) return;
-  lastSepayReconcileMs = now;
-
-  try {
-    const res = await fetch(`${gasUrl}?action=getAll&forceSepay=1&t=${now}`, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    const json = await res.json();
-    if (!json || !json.data) {
-      if (isAutoSyncEnabled()) {
-        syncAllToGoogleSheet(false).catch(() => {});
-      }
-      return;
-    }
-    const resMerge = safeMergeServerData(json.data);
-    if (resMerge.changed) {
-      isSilentServerSync = true;
-      try {
-        saveStateToLocal();
-      } finally {
-        isSilentServerSync = false;
-      }
-      refreshAllViews();
-      if (isAutoSyncEnabled()) {
-        syncAllToGoogleSheet(false).catch(() => {});
-      }
-      if (resMerge.newlyPaid && resMerge.newlyPaid.length > 0) {
-        const names = resMerge.newlyPaid.map(s => `${s.studentCode} (${s.fullName})`).join(', ');
-        showToast(`Đã nhận giao dịch SePay cho học sinh: ${names}`, 'success');
-      } else if (resMerge.newTxs && resMerge.newTxs.length > 0) {
-        showToast(`Đã nạp ${resMerge.newTxs.length} giao dịch SePay vào Sổ Thu Chi.`, 'info');
-      }
-    } else {
-      if (isAutoSyncEnabled()) {
-        syncAllToGoogleSheet(false).catch(() => {});
-      }
-    }
-  } catch (e) {
-    console.warn('Lỗi kiểm tra giao dịch SePay khi khởi động:', e);
-    if (isAutoSyncEnabled()) {
-      syncAllToGoogleSheet(false).catch(() => {});
-    }
-  }
-}
-
-// Đồng bộ an toàn: Kéo giao dịch SePay mới về và đẩy dữ liệu Web lên Google Sheet (không dùng timer ngầm)
+// Chế độ 1 chiều (Web -> Google Sheet): Chỉ đẩy kết quả từ Web lên Google Sheet, tuyệt đối không lấy dữ liệu từ Google Sheet về Web
 async function syncFromGoogleSheet(showUserToast = true) {
   if (isSandboxDraftMode) {
     if (showUserToast) {
       showToast(
-        'Đang ở Tab Nháp (Dùng Thử): Đã làm mới dữ liệu nháp! (Tách biệt 100%, không kết nối Google Sheet thật của bạn)',
+        'Đang ở Tab Nháp (Dùng Thử): Đã lưu dữ liệu nháp trên trình duyệt! (Không kết nối Google Sheet)',
         'info'
       );
-      refreshAllViews();
     }
     return;
   }
 
   const syncIcon = document.getElementById('icon-quick-sync');
   if (syncIcon) syncIcon.classList.add('animate-spin');
-
   try {
-    const gasUrl = getGasUrl();
-    if (gasUrl) {
-      if (showUserToast) showToast('Đang kiểm tra giao dịch SePay và đồng bộ dữ liệu...', 'info');
-      try {
-        const res = await fetch(`${gasUrl}?action=getAll&forceSepay=1&t=${Date.now()}`, {
-          method: 'GET',
-          redirect: 'follow'
-        });
-        const json = await res.json();
-        if (json && json.data) {
-          const resMerge = safeMergeServerData(json.data);
-          if (resMerge.changed) {
-            isSilentServerSync = true;
-            try {
-              saveStateToLocal();
-            } finally {
-              isSilentServerSync = false;
-            }
-            refreshAllViews();
-          }
-        }
-      } catch (e) {
-        console.warn('Lỗi kiểm tra giao dịch SePay từ Google Sheet:', e);
-      }
-    }
     await syncAllToGoogleSheet(showUserToast);
   } finally {
     if (syncIcon) syncIcon.classList.remove('animate-spin');

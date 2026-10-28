@@ -129,12 +129,12 @@
 
         <button
           id="btn-quick-sync"
-          onclick="syncFromGoogleSheet(true)"
-          title="Lấy dữ liệu mới nhất từ Google Sheet về ứng dụng"
+          onclick="syncAllToGoogleSheet(true)"
+          title="Đẩy toàn bộ dữ liệu từ Web lên Google Sheet (1 chiều Web → Sheet)"
           class="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium bg-[#ffffff] text-[#0a0a0a] border border-[#d5d7da] hover:bg-[#eeeeee] transition cursor-pointer whitespace-nowrap"
         >
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
-          <span>Đồng bộ Sheet</span>
+          <i data-lucide="cloud-upload" class="w-3.5 h-3.5 shrink-0" id="icon-quick-sync"></i>
+          <span>Đẩy lên Sheet</span>
         </button>
 
         <!-- Notification Bell Icon -->
@@ -549,11 +549,12 @@
               </p>
               <button
                 type="button"
-                onclick="syncFromGoogleSheet(true)"
-                class="w-full py-1.5 px-2.5 rounded-full bg-white hover:bg-[#141414] text-[#0a0a0a] hover:text-white border border-[#eeeeee] text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer "
+                onclick="syncAllToGoogleSheet(true)"
+                title="Đẩy dữ liệu từ Web lên Google Sheet"
+                class="w-full py-1.5 px-2.5 rounded-full bg-white hover:bg-[#141414] text-[#0a0a0a] hover:text-white border border-[#eeeeee] text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                <span>Làm mới dữ liệu</span>
+                <i data-lucide="cloud-upload" class="w-3 h-3"></i>
+                <span>Đẩy lên Google Sheet</span>
               </button>
             </div>
           </aside>
@@ -624,18 +625,12 @@
                     <span id="btn-open-google-sheet-top-label">Mở Google Sheet</span>
                   </a>
                   <button
-                    onclick="syncFromGoogleSheet(true)"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer whitespace-nowrap"
-                  >
-                    <i data-lucide="cloud-download" class="w-3.5 h-3.5"></i>
-                    <span>Tải từ Sheet</span>
-                  </button>
-                  <button
                     onclick="syncAllToGoogleSheet(true)"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#eeeeee] text-[#141414] border border-[#eeeeee] hover:bg-[#eeeeee] transition cursor-pointer whitespace-nowrap"
+                    title="Đẩy dữ liệu từ Web lên Google Sheet (1 chiều)"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer whitespace-nowrap"
                   >
                     <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
-                    <span>Cập nhật lên Sheet</span>
+                    <span>Đẩy lên Sheet</span>
                   </button>
                   <button
                     onclick="handleAdminLogout()"
@@ -3023,14 +3018,6 @@
                   >
                     <i data-lucide="save" class="w-4 h-4"></i>
                     <span>Lưu kết nối Sheet</span>
-                  </button>
-
-                  <button
-                    onclick="syncFromGoogleSheet(true)"
-                    class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <i data-lucide="cloud-download" class="w-4 h-4"></i>
-                    <span>Đọc từ Sheet về App</span>
                   </button>
 
                   <button
@@ -5489,11 +5476,12 @@
       <div class="flex items-center gap-1.5">
         <button
           type="button"
-          onclick="syncFromGoogleSheet(true)"
+          onclick="syncAllToGoogleSheet(true)"
+          title="Đẩy dữ liệu từ Web lên Google Sheet"
           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-bold transition cursor-pointer"
         >
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-blue-600"></i>
-          <span>Đồng bộ Sheet</span>
+          <i data-lucide="cloud-upload" class="w-3.5 h-3.5 text-blue-600"></i>
+          <span>Đẩy lên Sheet</span>
         </button>
         <button
           type="button"
@@ -6089,6 +6077,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261028_v52"></script>
+  <script src="app.js?v=20261028_v53"></script>
 </body>
 </html>
