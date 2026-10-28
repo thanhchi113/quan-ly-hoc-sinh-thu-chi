@@ -282,7 +282,7 @@
               Tra cứu học phí &amp; xác nhận chuyển khoản
             </h1>
             <p class="text-sm text-[#595c5f]">
-              Nhập <strong>Mã học sinh</strong> (VD: HS001) hoặc <strong>Họ tên học sinh</strong> để kiểm tra công nợ kỳ học, tạo mã VietQR tự động và gửi biên lai xác nhận.
+              Nhập chính xác <strong>Mã học sinh</strong> (VD: HS001) để kiểm tra công nợ kỳ học, tạo mã VietQR tự động và gửi biên lai xác nhận.
             </p>
           </div>
           <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -305,7 +305,7 @@
               <input
                 id="parent-search-input"
                 type="text"
-                placeholder="Nhập đúng Mã HS (VD: HS001) hoặc Họ tên học sinh..."
+                placeholder="Nhập chính xác Mã học sinh (VD: HS001)..."
                 oninput="debouncedParentSearch()"
                 onkeyup="if(event.key==='Enter') handleParentSearch(true)"
                 class="w-full pl-10 pr-4 py-2.5 text-[#0a0a0a] placeholder-[#676a6e] text-sm font-normal bg-[#ffffff] border border-[#d5d7da] rounded-md focus:outline-none focus:border-[#141414]"
@@ -3698,7 +3698,7 @@
 
           <div class="relative">
             <label class="block text-xs font-bold text-slate-800 mb-1">
-              Họ và tên học sinh <span class="text-rose-600">* (Gõ tên để tự động tìm đúng học sinh)</span>
+              Mã học sinh / Họ và tên học sinh <span class="text-rose-600">* (Nhập đúng Mã HS để tự động tìm học sinh)</span>
             </label>
             <input
               id="pay-form-student-fullname"
@@ -3707,7 +3707,7 @@
               autocomplete="off"
               oninput="handleParentTypedStudentName(this.value)"
               onfocus="handleParentTypedStudentName(this.value)"
-              placeholder="Gõ tên học sinh (VD: Minh Anh, Kiệt...) để chọn nhanh..."
+              placeholder="Nhập chính xác Mã học sinh (VD: HS001) để chọn..."
               class="w-full px-3.5 py-2 rounded-xl border-2 border-blue-400 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <div id="pay-student-suggest-box" class="hidden mt-1 max-h-44 overflow-y-auto rounded-xl border border-blue-300 bg-white  divide-y divide-slate-100 z-30"></div>
@@ -6077,6 +6077,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261028_v54"></script>
+  <script src="app.js?v=20261028_v55"></script>
 </body>
 </html>

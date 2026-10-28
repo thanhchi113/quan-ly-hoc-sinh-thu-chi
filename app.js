@@ -4849,43 +4849,25 @@ function handleParentSearch(showNotification = true) {
   if (!rawQuery) {
     container.innerHTML = '';
     if (showNotification) {
-      showToast('Vui lòng nhập đúng Mã HS (VD: HS001) hoặc Họ tên học sinh để tra cứu!', 'warning');
+      showToast('Vui lòng nhập chính xác Mã học sinh (VD: HS001) để tra cứu!', 'warning');
     }
     return;
   }
 
   const q = removeVietnameseTones(rawQuery.toLowerCase()).replace(/\s+/g, ' ').trim();
-  const cleanPhoneQuery = rawQuery.replace(/[^0-9]/g, '').replace(/^0+/, '');
-  const isAdminUser = canUseBroadAdminStudentSearch();
 
-  // Chặn từ khóa liệt kê toàn bộ; Phụ huynh chỉ được xem khi điền đúng Mã HS hoặc đúng Tên học sinh (trừ Admin)
-  if (!isAdminUser && (q === 'tat ca' || q === 'all' || q === 'hs' || q.length < 2)) {
+  // Quy tắc bảo mật: Mục Phụ huynh & Học sinh chỉ hiển thị khi gõ chính xác Mã học sinh
+  if (q === 'tat ca' || q === 'all' || q === 'hs' || q.length < 2) {
     container.innerHTML = '';
     if (showNotification) {
-      showToast('Phụ huynh vui lòng nhập chính xác Mã HS (VD: HS001) hoặc Họ tên học sinh để tra cứu!', 'warning');
-    }
-    return;
-  }
-  if (isAdminUser && (q === 'tat ca' || q === 'all' || q.length < 2)) {
-    if (showNotification) {
-      showToast('Vui lòng nhập ít nhất 2 ký tự để tra cứu!', 'warning');
+      showToast('Vui lòng nhập chính xác Mã học sinh (VD: HS001) để tra cứu!', 'warning');
     }
     return;
   }
 
   const matched = (appState.students || []).filter(s => {
     const code = removeVietnameseTones((s.studentCode || '').toLowerCase()).trim();
-    const name = removeVietnameseTones((s.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim();
-    if (!isAdminUser) {
-      return (code && code === q) || (name && name === q);
-    }
-    const parent = removeVietnameseTones((s.parentName || '').toLowerCase()).replace(/\s+/g, ' ').trim();
-    const phone = String(s.parentPhone || '').replace(/[^0-9]/g, '').replace(/^0+/, '');
-    const matchCode = code && code.includes(q);
-    const matchName = name && name.includes(q);
-    const matchParent = parent && parent.includes(q);
-    const matchPhone = cleanPhoneQuery.length >= 3 && phone && phone.includes(cleanPhoneQuery);
-    return matchCode || matchName || matchParent || matchPhone;
+    return Boolean(code && code === q);
   });
 
   if (matched.length === 0) {
@@ -4894,8 +4876,8 @@ function handleParentSearch(showNotification = true) {
         <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
           <i data-lucide="search-x" class="w-6 h-6"></i>
         </div>
-        <h3 class="font-bold text-slate-800">Không tìm thấy học sinh phù hợp với "${escapeHtml(rawQuery)}"</h3>
-        <p class="text-xs text-slate-500">Vui lòng nhập chính xác <strong>Mã học sinh</strong> (VD: HS001) hoặc <strong>Họ tên học sinh</strong>.</p>
+        <h3 class="font-bold text-slate-800">Không tìm thấy học sinh có mã "${escapeHtml(rawQuery)}"</h3>
+        <p class="text-xs text-slate-500">Vui lòng nhập chính xác <strong>Mã học sinh</strong> (VD: HS001) để hiển thị thông tin.</p>
       </div>
     `;
     lucide.createIcons();
@@ -5139,18 +5121,13 @@ function handleParentTypedStudentName(typedName) {
   const cleanTyped = removeVietnameseTones(rawTrimmed.toLowerCase()).replace(/\s+/g, ' ').trim();
   const stg = appState.settings;
   const suggestBox = document.getElementById('pay-student-suggest-box');
-  const isAdminUser = canUseBroadAdminStudentSearch();
 
-  // Phụ huynh chỉ thấy học sinh khi gõ đúng Mã HS hoặc đúng Tên học sinh; Admin được gợi ý mở rộng
+  // Chỉ hiển thị gợi ý & tự động khớp thông tin học sinh khi gõ đúng Mã học sinh
   const candidates =
-    cleanTyped.length >= 2 && (isAdminUser || cleanTyped !== 'hs')
+    cleanTyped.length >= 2 && cleanTyped !== 'hs'
       ? (appState.students || []).filter(s => {
-          const sName = removeVietnameseTones((s.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim();
           const sCode = removeVietnameseTones((s.studentCode || '').toLowerCase()).trim();
-          if (!isAdminUser) {
-            return (sCode && sCode === cleanTyped) || (sName && sName === cleanTyped);
-          }
-          return sName.includes(cleanTyped) || sCode.includes(cleanTyped);
+          return Boolean(sCode && sCode === cleanTyped);
         })
       : [];
 
@@ -5187,14 +5164,12 @@ function handleParentTypedStudentName(typedName) {
     }
   }
 
-  // Khớp chính xác tên học sinh hoặc mã học sinh để điền sẵn thông tin QR (chưa gửi xác nhận)
+  // Khớp chính xác mã học sinh để điền sẵn thông tin QR (chưa gửi xác nhận)
   let matched = null;
   if (cleanTyped.length >= 2) {
     matched =
       candidates.find(
-        s =>
-          removeVietnameseTones((s.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim() === cleanTyped ||
-          removeVietnameseTones((s.studentCode || '').toLowerCase()).trim() === cleanTyped
+        s => removeVietnameseTones((s.studentCode || '').toLowerCase()).trim() === cleanTyped
       ) || null;
   }
 
