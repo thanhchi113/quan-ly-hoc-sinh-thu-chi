@@ -599,29 +599,10 @@ function getAllSheetData() {
 
 function writeStudentsToSheet(sheet, students) {
   if (!sheet) return;
-  const existingRows = sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues() : [];
-  const sepayPaidMap = {};
-  existingRows.forEach(row => {
-    const code = String(row[1] || '').trim();
-    const status = String(row[8] || '').trim();
-    const note = String(row[11] || '');
-    if (code && status === 'Đã hoàn thành' && /ck|sepay|stk/i.test(note)) {
-      sepayPaidMap[code] = { status, updatedAt: row[10], note };
-    }
-  });
-
   const rows = (students || []).map(s => {
-    const code = String(s.studentCode || '').trim();
-    let status = s.status || 'Chưa đóng';
-    let updatedAt = s.updatedAt || '';
-    let note = s.note || '';
-
-    // Nếu SePay đã gạch nợ thành công trên Sheet thì giữ nguyên trạng thái Đã hoàn thành
-    if (status !== 'Đã hoàn thành' && sepayPaidMap[code]) {
-      status = 'Đã hoàn thành';
-      updatedAt = sepayPaidMap[code].updatedAt || updatedAt;
-      note = sepayPaidMap[code].note || note;
-    }
+    const status = s.status || 'Chưa đóng';
+    const updatedAt = s.updatedAt || '';
+    const note = s.note || '';
 
     return [
       s.id || '',

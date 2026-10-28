@@ -3981,7 +3981,7 @@
   <!-- ===================================================================== -->
   <div
     id="student-detail-modal"
-    onclick="closeStudentDetailModal()"
+    onclick="if (event.target === this) closeStudentDetailModal()"
     class="fixed inset-0 z-50 hidden bg-slate-900/65  flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
   >
     <div
@@ -6069,6 +6069,7 @@
   <!-- HỘP LỊCH CHỌN NGÀY ĐỒNG BỘ PHONG CÁCH APP (THAY THẾ DATE PICKER MẶC ĐỊNH TRÌNH DUYỆT) -->
   <div
     id="tc-datepicker-popover"
+    onmousedown="event.stopPropagation()"
     onclick="event.stopPropagation()"
     class="fixed z-[110] hidden tc-datepicker-card animate-fade-in"
   ></div>
@@ -6077,6 +6078,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261028_v55"></script>
+  <script src="app.js?v=20261028_v56"></script>
 </body>
 </html>

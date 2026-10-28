@@ -560,8 +560,7 @@ function purgeDraftDataFromState(state) {
       if (
         noteStr.includes('SEPAY_STK_') ||
         noteStr.includes('TEST_STK_') ||
-        noteStr.includes('TEST THỬ STK') ||
-        (s.status === 'Chờ duyệt' && noteStr.startsWith('Phụ huynh đã mở QR học phí'))
+        noteStr.includes('TEST THỬ STK')
       ) {
         if (s.status === 'Đã hoàn thành' || s.status === 'Chờ duyệt') {
           s.status = 'Chưa đóng';
@@ -753,29 +752,6 @@ function purgeDraftDataFromState(state) {
   }
   if (state.settings && state.settings.sepayApiToken) {
     state.settings.sepayApiToken = '';
-  }
-
-  // Nếu học sinh đang ở trạng thái "Chờ duyệt" nhưng không còn bất kỳ phiếu "Chờ duyệt" nào thì trả về "Chưa đóng"
-  if (Array.isArray(state.students)) {
-    const activePendingCodes = new Set();
-    const activePendingRecIds = new Set();
-    (state.paymentRequests || []).forEach(r => {
-      if (r && r.status === 'Chờ duyệt') {
-        if (r.studentCode) activePendingCodes.add(String(r.studentCode).trim().toUpperCase());
-        if (r.studentRecordId) activePendingRecIds.add(String(r.studentRecordId).trim());
-      }
-    });
-    state.students.forEach(s => {
-      if (!s || s.status !== 'Chờ duyệt') return;
-      const codeUpper = String(s.studentCode || '').trim().toUpperCase();
-      const idStr = String(s.id || '').trim();
-      if (!activePendingCodes.has(codeUpper) && !activePendingRecIds.has(idStr)) {
-        s.status = 'Chưa đóng';
-        if (String(s.note || '').includes('Chờ Quản lý duyệt')) {
-          s.note = '';
-        }
-      }
-    });
   }
 
   if (Array.isArray(state.transactions)) {
@@ -3472,7 +3448,9 @@ function loadStateFromLocal() {
       localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
       const restored = getInitialDemoState();
       restored.settings.adminPassword = "336699";
-      localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(restored));
+      try {
+        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(restored));
+      } catch (err) {}
       return restored;
     }
     const raw = localStorage.getItem(STORAGE_KEYS.STATE);
@@ -3480,13 +3458,19 @@ function loadStateFromLocal() {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.students && parsed.transactions && parsed.settings) {
         if (!localStorage.getItem("TC_RESTORE_ADMIN_PASS_V47")) {
-          localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
+          try {
+            localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
+          } catch (err) {}
           if (!parsed.settings.adminPassword || parsed.settings.adminPassword === "123456") {
             parsed.settings.adminPassword = "336699";
           }
         }
         const cleaned = purgeDraftDataFromState(parsed);
-        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
+        try {
+          localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
+        } catch (err) {
+          console.warn('Cảnh báo lưu LocalStorage khi tải:', err);
+        }
         return cleaned;
       }
     }
@@ -3494,7 +3478,9 @@ function loadStateFromLocal() {
     console.warn('Không đọc được LocalStorage, dùng dữ liệu mẫu:', e);
   }
   const initial = getInitialDemoState();
-  localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(initial));
+  try {
+    localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(initial));
+  } catch (err) {}
   return initial;
 }
 
@@ -3701,7 +3687,11 @@ function saveStateToLocal() {
   }
   lastCommittedStateJson = currentJson;
   const targetStorageKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_STATE : STORAGE_KEYS.STATE;
-  localStorage.setItem(targetStorageKey, currentJson);
+  try {
+    localStorage.setItem(targetStorageKey, currentJson);
+  } catch (err) {
+    console.warn('Cảnh báo bộ nhớ LocalStorage:', err);
+  }
   refreshAllViews();
 }
 
@@ -8110,8 +8100,10 @@ function quickChangeStudentStatus(studentId, newStatus) {
   if (!student) return;
 
   const oldStatus = student.status;
+  const nowStr = getCurrentDateTimeString();
   student.status = newStatus;
-  student.updatedAt = getCurrentDateTimeString();
+  student.updatedAt = nowStr;
+  student.manualStatusUpdatedAt = nowStr;
 
   // Nếu chuyển sang "Đã hoàn thành", kiểm tra xem đã có phiếu thu học phí cho HS này trong kỳ chưa
   if (newStatus === 'Đã hoàn thành' && oldStatus !== 'Đã hoàn thành') {
@@ -8125,7 +8117,7 @@ function quickChangeStudentStatus(studentId, newStatus) {
     if (!alreadyRecorded) {
       appState.transactions.unshift({
         id: 'GD_' + Date.now(),
-        date: getCurrentDateTimeString(),
+        date: nowStr,
         type: 'Thu',
         category: 'Thu học phí',
         amount: Number(student.tuitionFee) || 0,
@@ -8148,16 +8140,22 @@ function quickChangeStudentStatus(studentId, newStatus) {
       }
     });
   } else if (newStatus !== 'Đã hoàn thành' && oldStatus === 'Đã hoàn thành') {
-    // Nếu bỏ chọn "Đã hoàn thành" (về Chưa đóng / Chờ duyệt), xóa phiếu thu tự động của kỳ hiện tại để hệ thống đếm lại số đợt chính xác
-    appState.transactions = (appState.transactions || []).filter(
+    // Đánh dấu mọi giao dịch SePay hiện có là đã xử lý để khi đổi về Chưa đóng/Chờ duyệt không bị SePay tự gạch nợ lại
+    markSepayTxIdsProcessed(appState);
+    const toRemove = (appState.transactions || []).filter(
       t =>
-        !(
-          t.type === 'Thu' &&
-          t.studentCode === student.studentCode &&
-          t.description &&
-          t.description.includes(student.period)
-        )
+        t &&
+        t.type === 'Thu' &&
+        t.studentCode === student.studentCode &&
+        t.description &&
+        t.description.includes(student.period) &&
+        !String(t.id || '').startsWith('GD_SEPAY_')
     );
+    if (toRemove.length > 0) {
+      markTransactionsAsDeletedInState(toRemove, appState);
+      const removeSet = new Set(toRemove.map(t => t.id));
+      appState.transactions = (appState.transactions || []).filter(t => !removeSet.has(t?.id));
+    }
   }
 
   saveStateToLocal();
@@ -8383,7 +8381,8 @@ function saveStudentForm(event) {
         tuitionFee,
         status,
         note,
-        updatedAt: nowStr
+        updatedAt: nowStr,
+        manualStatusUpdatedAt: nowStr
       };
     }
   } else {
@@ -8400,6 +8399,7 @@ function saveStudentForm(event) {
       status,
       receiptUrl: '',
       updatedAt: nowStr,
+      manualStatusUpdatedAt: nowStr,
       note
     });
   }
@@ -8529,12 +8529,14 @@ function handleCreateBatchPeriod(event) {
     }
     if (oldCfg) {
       oldCfg.periodLabel = newPeriod;
+      oldCfg.rolledOverAt = nowStr;
     }
   });
 
   if (!appState.settings) appState.settings = {};
   appState.settings.classHistoryJson = JSON.stringify(historyList);
   appState.settings.classSchedulesJson = JSON.stringify(map);
+  markSepayTxIdsProcessed(appState);
 
   // Chuyển học sinh hiện tại sang kỳ mới (không nhân đôi sĩ số học sinh)
   let updatedCount = 0;
@@ -8544,6 +8546,7 @@ function handleCreateBatchPeriod(event) {
     s.note = '';
     s.receiptUrl = '';
     s.updatedAt = nowStr;
+    s.manualStatusUpdatedAt = nowStr;
     updatedCount++;
   });
 
@@ -11807,6 +11810,64 @@ function parseSepayRawVnd(raw) {
   return digits ? Number(digits) || 0 : 0;
 }
 
+function getProcessedSepayTxIdsSet(stateObj = appState) {
+  const target = stateObj || appState;
+  const set = new Set();
+  try {
+    if (target?.settings?.processedSepayTxIdsJson) {
+      const arr = JSON.parse(target.settings.processedSepayTxIdsJson);
+      if (Array.isArray(arr)) {
+        arr.forEach(k => {
+          if (k) set.add(String(k).trim());
+        });
+      }
+    }
+  } catch (e) {}
+  (target?.transactions || []).forEach(t => {
+    const tid = String(t?.id || '').trim();
+    if (tid) {
+      set.add(tid);
+      set.add(tid.replace(/^GD_SEPAY_/, '').replace(/^GD_/, ''));
+    }
+  });
+  return set;
+}
+
+function markSepayTxIdsProcessed(stateObj = appState, extraKeys = []) {
+  const target = stateObj || appState;
+  if (!target) return;
+  if (!target.settings) target.settings = {};
+  const set = getProcessedSepayTxIdsSet(target);
+  (Array.isArray(extraKeys) ? extraKeys : [extraKeys]).forEach(k => {
+    const clean = String(k || '').trim();
+    if (clean) {
+      set.add(clean);
+      set.add(clean.replace(/^GD_SEPAY_/, '').replace(/^GD_/, ''));
+    }
+  });
+  target.settings.processedSepayTxIdsJson = JSON.stringify(Array.from(set).slice(-800));
+}
+
+function isTxDateOlderThanAction(txDateStr, actionDateStr) {
+  if (!txDateStr || !actionDateStr) return false;
+  const norm = s => {
+    const str = String(s || '').trim();
+    const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/);
+    if (iso) {
+      return `${iso[1]}-${iso[2]}-${iso[3]} ${iso[4] || '00'}:${iso[5] || '00'}`;
+    }
+    const vn = str.match(/(?:(\d{2}):(\d{2})\s+)?(\d{2})\/(\d{2})\/(\d{4})/);
+    if (vn) {
+      return `${vn[5]}-${vn[4]}-${vn[3]} ${vn[1] || '00'}:${vn[2] || '00'}`;
+    }
+    return '';
+  };
+  const a = norm(txDateStr);
+  const b = norm(actionDateStr);
+  if (!a || !b) return false;
+  return a < b;
+}
+
 // Tự động đọc & đối soát giao dịch thật từ tab "Tích hợp Google Sheets" của SePay (trong rawClassSheets) mà không bị lỗi 302 Redirect
 function reconcileSepaySheetTransactions(state, rawClassSheets) {
   if (!state || !Array.isArray(rawClassSheets)) return state;
@@ -11828,6 +11889,15 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
   if (!Array.isArray(state.transactions)) state.transactions = [];
   if (!Array.isArray(state.paymentRequests)) state.paymentRequests = [];
   if (!Array.isArray(state.students)) state.students = [];
+
+  const processedSepaySet = getProcessedSepayTxIdsSet(state);
+  let processedSetMutated = false;
+  let scheduleMapForCutoff = {};
+  try {
+    if (state.settings.classSchedulesJson) {
+      scheduleMapForCutoff = JSON.parse(state.settings.classSchedulesJson) || {};
+    }
+  } catch (e) {}
 
   for (const sheetObj of rawClassSheets) {
     const rows = Array.isArray(sheetObj?.values) ? sheetObj.values : [];
@@ -12009,6 +12079,11 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       });
       if (existingMatchedTx) {
         pairedTxIds.add(String(existingMatchedTx.id || ''));
+        if (!processedSepaySet.has(sepayTxId) || !processedSepaySet.has(cleanKey)) {
+          processedSepaySet.add(sepayTxId);
+          processedSepaySet.add(cleanKey);
+          processedSetMutated = true;
+        }
         if (rawDateCell && rawDateCell.length > 10 && String(existingMatchedTx.date || '') !== rawDateCell) {
           existingMatchedTx.date = rawDateCell;
         }
@@ -12025,18 +12100,8 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         } else if (!isDraftSepayAcc && existingMatchedTx.method !== 'Chuyển khoản STK (Tự động)') {
           existingMatchedTx.method = 'Chuyển khoản STK (Tự động)';
         }
-
-        // Đảm bảo học sinh được gạch nợ thành công nếu giao dịch đã có trong sổ
-        const stuCodeToConfirm = existingMatchedTx.studentCode || (findStudentFromTransferContent(combinedContent, amount, state.students, state.paymentRequests)?.studentCode);
-        if (stuCodeToConfirm && autoApproveOn) {
-          const stObj = (state.students || []).find(s => s && s.studentCode === stuCodeToConfirm);
-          if (stObj && stObj.status !== 'Đã hoàn thành') {
-            stObj.status = 'Đã hoàn thành';
-            stObj.updatedAt = alertTime;
-            stObj.note = `${draftDescPrefix}Đã CK thành công vào STK (SePay): +${formatCurrency(amount)} (${alertTime})`;
-            state._sepayAutoReconciled = true;
-          }
-        }
+        // Không tự động đổi lại trạng thái học sinh cho các giao dịch cũ đã có trong Sổ Thu Chi
+        // để bảo toàn mọi thao tác chuyển sang đợt mới hoặc chỉnh sửa thủ công của Quản lý trên Web
         continue;
       }
 
@@ -12047,14 +12112,33 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         markDraftBankTx(state, sepayTxId);
       }
 
-      if (!isOut) {
+      const wasPreviouslyProcessed =
+        processedSepaySet.has(sepayTxId) ||
+        processedSepaySet.has(cleanKey) ||
+        (rawRefCell && processedSepaySet.has(rawRefCell));
+      processedSepaySet.add(sepayTxId);
+      processedSepaySet.add(cleanKey);
+      processedSetMutated = true;
+
+      if (!isOut && !wasPreviouslyProcessed) {
         const matchedStu = findStudentFromTransferContent(
           combinedContent,
           amount,
           state.students,
           state.paymentRequests
         );
-        if (matchedStu) {
+        const clsRolloverCutoff = matchedStu ? scheduleMapForCutoff[matchedStu.className]?.rolledOverAt || '' : '';
+        const stuManualCutoff = matchedStu?.manualStatusUpdatedAt || '';
+        const latestCutoff =
+          clsRolloverCutoff && stuManualCutoff
+            ? clsRolloverCutoff > stuManualCutoff
+              ? clsRolloverCutoff
+              : stuManualCutoff
+            : clsRolloverCutoff || stuManualCutoff;
+        const isOlderThanManualOrRollover =
+          latestCutoff && isTxDateOlderThanAction(rawDateCell || txDateOnly, latestCutoff);
+
+        if (matchedStu && !isOlderThanManualOrRollover) {
           if (amount > 0 && amount < 20000) {
             recordExactSmallAmount(state, sepayTxId, matchedStu.studentCode, amount);
           }
@@ -12182,6 +12266,9 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
     }
   }
 
+  if (processedSetMutated) {
+    state.settings.processedSepayTxIdsJson = JSON.stringify(Array.from(processedSepaySet).slice(-800));
+  }
   if (Array.isArray(state.transactions)) {
     state.transactions.sort(sortTransactionsNewestFirst);
   }
@@ -12264,31 +12351,10 @@ function safeMergeServerData(serverData) {
     }
   }
 
-  // 3. Khớp trạng thái học phí nếu Google Sheet đã xác nhận chuyển khoản ngân hàng thành công
-  if (Array.isArray(serverData.students)) {
-    const serverPaidMap = new Map();
-    serverData.students.forEach(st => {
-      if (st && st.studentCode && st.status === 'Đã hoàn thành') {
-        serverPaidMap.set(st.studentCode, st);
-      }
-    });
+  // 3. Tuyệt đối KHÔNG lấy danh sách học sinh (serverData.students) từ Google Sheet đè ngược về Web
+  // để bảo toàn 100% thao tác chuyển sang đợt mới, sửa trạng thái và lịch học trên Web (1 chiều Web -> Sheet).
 
-    (appState.students || []).forEach(localSt => {
-      if (localSt && localSt.studentCode && localSt.status !== 'Đã hoàn thành') {
-        const srvSt = serverPaidMap.get(localSt.studentCode);
-        if (srvSt) {
-          localSt.status = 'Đã hoàn thành';
-          if (srvSt.updatedAt) localSt.updatedAt = srvSt.updatedAt;
-          if (srvSt.note && /CK|SePay|STK/i.test(srvSt.note)) {
-            localSt.note = srvSt.note;
-          }
-          changed = true;
-        }
-      }
-    });
-  }
-
-  // Thu thập học sinh vừa chuyển sang "Đã hoàn thành" để hiển thị thông báo
+  // Thu thập học sinh vừa chuyển sang "Đã hoàn thành" (do giao dịch SePay mới thực sự phát sinh) để hiển thị thông báo
   (appState.students || []).forEach(s => {
     if (prevUnpaidCodes.has(s.studentCode) && s.status === 'Đã hoàn thành') {
       if (!newlyPaid.some(p => p.studentCode === s.studentCode)) {
@@ -12297,12 +12363,16 @@ function safeMergeServerData(serverData) {
     }
   });
 
-  // 4. Cập nhật thông báo biến động số dư và số dư SePay từ Server
+  // 4. Cập nhật thông báo biến động số dư và số dư SePay từ Server (nếu người dùng không khóa số dư thủ công)
   if (serverData.settings) {
-    if (serverData.settings.lastBankAlertJson) {
+    if (serverData.settings.lastBankAlertJson && !appState.settings.lastBankAlertJson) {
       appState.settings.lastBankAlertJson = serverData.settings.lastBankAlertJson;
     }
-    if (serverData.settings.sepayBalance) {
+    if (
+      serverData.settings.sepayBalance &&
+      !appState.settings.sepayBalanceManualAt &&
+      appState.settings.sepayBalanceMode !== 'auto'
+    ) {
       appState.settings.sepayBalance = serverData.settings.sepayBalance;
     }
     if (serverData.settings.sepayLinkedStatus) {
@@ -15805,7 +15875,18 @@ function saveClassScheduleForm(event) {
 
   unmarkClassAsDeletedInState(className);
   const map = getClassSchedulesMap();
-  const existingStates = (!isNew && oldName && map[oldName]?.sessionStates) ? map[oldName].sessionStates : {};
+  const prevCfg = (!isNew && oldName && map[oldName]) ? map[oldName] : map[className];
+  const rawStates = (prevCfg && prevCfg.sessionStates) ? prevCfg.sessionStates : {};
+  const existingStates = {};
+  Object.keys(rawStates).forEach(dateKey => {
+    if ((!startDate || dateKey >= startDate) && (!endDate || dateKey <= endDate)) {
+      existingStates[dateKey] = rawStates[dateKey];
+    }
+  });
+  const nowStr = getCurrentDateTimeString();
+  const batchOrPeriodChanged = Boolean(
+    prevCfg && (prevCfg.batchLabel !== batchLabel || prevCfg.periodLabel !== periodLabel)
+  );
 
   if (!isNew && oldName && oldName !== className) {
     delete map[oldName];
@@ -15818,7 +15899,18 @@ function saveClassScheduleForm(event) {
     });
   }
 
+  // Đồng bộ kỳ học mới cho toàn bộ học sinh của lớp này để không bị lệch kỳ cũ
+  (appState.students || []).forEach(s => {
+    if (s && s.className === className) {
+      s.period = periodLabel;
+      if (batchOrPeriodChanged) {
+        s.updatedAt = nowStr;
+      }
+    }
+  });
+
   map[className] = {
+    ...(prevCfg || {}),
     className,
     gradeKey: gradeKey !== 'AUTO' ? gradeKey : undefined,
     subject,
@@ -15828,8 +15920,10 @@ function saveClassScheduleForm(event) {
     startDate,
     endDate,
     daysOfWeek,
-    sessionStates: existingStates
+    sessionStates: existingStates,
+    rolledOverAt: batchOrPeriodChanged ? nowStr : prevCfg?.rolledOverAt
   };
+  markSepayTxIdsProcessed(appState);
 
   selectedClassbookClass = className;
   if (gradeKey && gradeKey !== 'AUTO') {
@@ -16161,9 +16255,22 @@ async function confirmRolloverClassBatch(event) {
     batchLabel: newBatch,
     startDate: newStart,
     endDate: newEnd,
-    sessionStates: {}
+    sessionStates: {},
+    rolledOverAt: nowStr
   };
   appState.settings.classSchedulesJson = JSON.stringify(map);
+  markSepayTxIdsProcessed(appState);
+
+  // Xóa điểm danh buổi cũ của lớp để bắt đầu đợt mới từ 0 buổi
+  if (typeof getStudentAttendanceMap === 'function') {
+    const attMap = getStudentAttendanceMap();
+    if (attMap && attMap[targetClass]) {
+      archiveRecord.studentAttendanceSnapshot = { ...attMap[targetClass] };
+      appState.settings.classHistoryJson = JSON.stringify(historyList);
+      delete attMap[targetClass];
+      appState.settings.studentAttendanceJson = JSON.stringify(attMap);
+    }
+  }
 
   // 3. Giữ nguyên toàn bộ Học sinh & Số tiền học phí của lớp, đặt lại trạng thái đóng học phí cho Đợt mới
   (appState.students || []).forEach(st => {
@@ -16173,6 +16280,7 @@ async function confirmRolloverClassBatch(event) {
       st.note = '';
       st.receiptUrl = '';
       st.updatedAt = nowStr;
+      st.manualStatusUpdatedAt = nowStr;
     }
   });
 
@@ -18967,9 +19075,12 @@ function positionTcDatePickerPopover() {
   const anchor = _tcDatePickerState.anchorEl;
   if (!pop || !anchor || typeof anchor.getBoundingClientRect !== 'function') return;
 
+  pop.style.maxHeight = '';
+  pop.style.overflowY = '';
+
   const rect = anchor.getBoundingClientRect();
-  const popWidth = 296;
-  const popHeight = 338;
+  const popWidth = pop.offsetWidth || 296;
+  const popHeight = pop.offsetHeight || 338;
   const vw = window.innerWidth || 1024;
   const vh = window.innerHeight || 768;
 
@@ -18979,11 +19090,26 @@ function positionTcDatePickerPopover() {
   }
   left = Math.max(12, left);
 
+  const spaceBelow = vh - rect.bottom - 12;
+  const spaceAbove = rect.top - 12;
   let top = rect.bottom + 6;
-  if (top + popHeight > vh - 12 && rect.top > popHeight + 16) {
-    top = rect.top - popHeight - 6;
+
+  // Không bao giờ đặt hộp lịch đè lên ô input đang bấm (tránh lỗi mousedown/mouseup khác phần tử làm tự đóng hộp thoại)
+  if (spaceBelow >= popHeight || spaceBelow >= spaceAbove) {
+    top = rect.bottom + 6;
+    if (top + popHeight > vh - 8) {
+      const availH = Math.max(180, vh - top - 8);
+      pop.style.maxHeight = `${Math.round(availH)}px`;
+      pop.style.overflowY = 'auto';
+    }
+  } else {
+    const availH = Math.min(popHeight, Math.max(180, spaceAbove - 6));
+    if (availH < popHeight) {
+      pop.style.maxHeight = `${Math.round(availH)}px`;
+      pop.style.overflowY = 'auto';
+    }
+    top = Math.max(8, rect.top - availH - 6);
   }
-  top = Math.max(12, Math.min(top, Math.max(12, vh - popHeight - 12)));
 
   pop.style.left = `${Math.round(left)}px`;
   pop.style.top = `${Math.round(top)}px`;
@@ -19162,6 +19288,7 @@ function openTcDatePicker(options = {}) {
   _tcDatePickerState = {
     open: true,
     openedAt: Date.now(),
+    pointerDownInside: true,
     anchorEl: options.anchorEl || null,
     selectedIso: parsed ? options.selectedIso : '',
     viewYear: parsed ? parsed.year : now.getFullYear(),
@@ -19269,52 +19396,88 @@ function initTcCustomDatePickerEngine() {
     const dateInput = target.closest('input[type="date"]');
     if (dateInput && !dateInput.disabled && !dateInput.readOnly) {
       e.preventDefault();
+      if (_tcDatePickerState.open && _tcDatePickerState.anchorEl === dateInput) {
+        _tcDatePickerState.openedAt = Date.now();
+        _tcDatePickerState.pointerDownInside = true;
+        positionTcDatePickerPopover();
+        return true;
+      }
       openTcDatePickerForInput(dateInput);
       return true;
     }
     return false;
   };
 
-  document.addEventListener('mousedown', e => {
-    handleDateInputTrigger(e);
-  });
+  document.addEventListener(
+    'mousedown',
+    e => {
+      if (handleDateInputTrigger(e)) return;
+      if (_tcDatePickerState.open) {
+        const target = e.target;
+        const pop = document.getElementById('tc-datepicker-popover');
+        const insidePop = Boolean(pop && target && typeof pop.contains === 'function' && pop.contains(target));
+        const insideAnchor = Boolean(
+          _tcDatePickerState.anchorEl &&
+            target &&
+            typeof _tcDatePickerState.anchorEl.contains === 'function' &&
+            _tcDatePickerState.anchorEl.contains(target)
+        );
+        _tcDatePickerState.pointerDownInside = insidePop || insideAnchor;
+        if (!insidePop && !insideAnchor) {
+          if (_tcDatePickerState.openedAt && Date.now() - _tcDatePickerState.openedAt < 350) {
+            return;
+          }
+          closeTcDatePickerPopover();
+        }
+      }
+    },
+    true
+  );
 
-  document.addEventListener('click', e => {
-    const t = e.target;
-    if (t && typeof t.closest === 'function') {
-      if (!t.closest('[id^="quick-assign-suggest-box"]') && !t.closest('[id^="quick-assign-stu-input"]')) {
-        document.querySelectorAll('[id^="quick-assign-suggest-box"]').forEach(el => el.classList.add('hidden'));
+  document.addEventListener(
+    'click',
+    e => {
+      const t = e.target;
+      if (t && typeof t.closest === 'function') {
+        if (!t.closest('[id^="quick-assign-suggest-box"]') && !t.closest('[id^="quick-assign-stu-input"]')) {
+          document.querySelectorAll('[id^="quick-assign-suggest-box"]').forEach(el => el.classList.add('hidden'));
+        }
       }
-    }
-    if (handleDateInputTrigger(e)) return;
-    const target = e.target;
-    if (!target || typeof target.closest !== 'function') return;
+      if (handleDateInputTrigger(e)) return;
+      const target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
 
-    if (_tcNotifPopoverOpen) {
-      const notifPop = document.getElementById('tc-notification-popover');
-      const notifBtn = document.getElementById('btn-header-notifications');
-      const insideNotif = notifPop && typeof notifPop.contains === 'function' && notifPop.contains(target);
-      const insideBtn = notifBtn && typeof notifBtn.contains === 'function' && notifBtn.contains(target);
-      if (!insideNotif && !insideBtn) {
-        closeTcNotificationPopover();
+      if (_tcNotifPopoverOpen) {
+        const notifPop = document.getElementById('tc-notification-popover');
+        const notifBtn = document.getElementById('btn-header-notifications');
+        const insideNotif = notifPop && typeof notifPop.contains === 'function' && notifPop.contains(target);
+        const insideBtn = notifBtn && typeof notifBtn.contains === 'function' && notifBtn.contains(target);
+        if (!insideNotif && !insideBtn) {
+          closeTcNotificationPopover();
+        }
       }
-    }
 
-    if (_tcDatePickerState.open) {
-      if (_tcDatePickerState.openedAt && Date.now() - _tcDatePickerState.openedAt < 90) {
-        return;
+      if (_tcDatePickerState.open) {
+        if (_tcDatePickerState.pointerDownInside) {
+          _tcDatePickerState.pointerDownInside = false;
+          return;
+        }
+        if (_tcDatePickerState.openedAt && Date.now() - _tcDatePickerState.openedAt < 450) {
+          return;
+        }
+        const pop = document.getElementById('tc-datepicker-popover');
+        const clickedInsidePop = pop && typeof pop.contains === 'function' && pop.contains(target);
+        const clickedAnchor =
+          _tcDatePickerState.anchorEl &&
+          typeof _tcDatePickerState.anchorEl.contains === 'function' &&
+          _tcDatePickerState.anchorEl.contains(target);
+        if (!clickedInsidePop && !clickedAnchor) {
+          closeTcDatePickerPopover();
+        }
       }
-      const pop = document.getElementById('tc-datepicker-popover');
-      const clickedInsidePop = pop && typeof pop.contains === 'function' && pop.contains(target);
-      const clickedAnchor =
-        _tcDatePickerState.anchorEl &&
-        typeof _tcDatePickerState.anchorEl.contains === 'function' &&
-        _tcDatePickerState.anchorEl.contains(target);
-      if (!clickedInsidePop && !clickedAnchor) {
-        closeTcDatePickerPopover();
-      }
-    }
-  });
+    },
+    true
+  );
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
