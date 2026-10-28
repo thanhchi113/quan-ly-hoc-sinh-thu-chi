@@ -19,11 +19,15 @@ const DEFAULT_GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyXFB8Ug
 const STORAGE_KEYS = {
   STATE: 'edupay_app_state_v2',
   SANDBOX_STATE: 'edupay_sandbox_draft_state_v2',
+  UNDO_STACK: 'edupay_undo_stack_v2',
+  REDO_STACK: 'edupay_redo_stack_v2',
   GAS_URL: 'edupay_gas_webapp_url',
   AUTO_SYNC: 'edupay_auto_sync_enabled',
   ADMIN_AUTH: 'edupay_admin_authenticated',
   SANDBOX_AUTH: 'edupay_sandbox_authenticated'
 };
+
+var appState = null;
 
 // Chỉ chuyển đổi các icon chưa render hoặc vừa đổi data-lucide thay vì quét lại toàn bộ SVG trên trang
 if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function' && !lucide.__optimizedCreateIcons) {
@@ -415,10 +419,10 @@ function extractTxDedupKeys(tx, stateObj = appState) {
   return Array.from(new Set(keys.filter(Boolean)));
 }
 
-function isTransactionMarkedDeleted(tx, deletedSet) {
-  const set = deletedSet instanceof Set ? deletedSet : getDeletedTxIdsSet();
+function isTransactionMarkedDeleted(tx, deletedSet, stateObj = appState) {
+  const set = deletedSet instanceof Set ? deletedSet : getDeletedTxIdsSet(stateObj);
   if (set.size === 0 || !tx) return false;
-  return extractTxDedupKeys(tx).some(k => set.has(k));
+  return extractTxDedupKeys(tx, stateObj).some(k => set.has(k));
 }
 
 function extractPaymentRequestSyncBlockKeys(reqOrId) {
@@ -658,7 +662,7 @@ function purgeDraftDataFromState(state) {
   ];
   let deletedSetMutated = false;
   obsoleteDuplicateIds.forEach(id => {
-    extractTxDedupKeys(id).forEach(k => {
+    extractTxDedupKeys(id, state).forEach(k => {
       if (!deletedTxSet.has(k)) {
         deletedTxSet.add(k);
         deletedSetMutated = true;
@@ -761,7 +765,7 @@ function purgeDraftDataFromState(state) {
     for (const item of state.transactions) {
       if (!item) continue;
       const tid = String(item.id || '').trim();
-      if (obsoleteDuplicateIds.has(tid) || isTransactionMarkedDeleted(item, deletedTxSet)) continue;
+      if (obsoleteDuplicateIds.has(tid) || isTransactionMarkedDeleted(item, deletedTxSet, state)) continue;
       const uuidMatch = tid.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
       if (uuidMatch) {
         const uKey = uuidMatch[0].toLowerCase();
@@ -784,7 +788,7 @@ function purgeDraftDataFromState(state) {
         if (!t) return false;
         const txId = String(t.id || '').trim();
         if (obsoleteDuplicateIds.has(txId)) return false;
-        if (isTransactionMarkedDeleted(t, deletedTxSet)) return false;
+        if (isTransactionMarkedDeleted(t, deletedTxSet, state)) return false;
 
         const uuidMatch = txId.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
         if (uuidMatch) {
@@ -951,12 +955,14 @@ function getInitialDemoState() {
     "customQrUrl": "",
     "sepayBalance": "0",
     "autoApproveBankTransfer": "true",
-    "classSchedulesJson": "{\"9 2K12\":{\"className\":\"9 2K12\",\"subject\":\"Toán 9\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-17\",\"endDate\":\"2026-10-10\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-17\":1,\"2026-09-19\":1,\"2026-09-22\":1,\"2026-09-26\":1,\"2026-10-01\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1}},\"12B 2K9\":{\"className\":\"12B 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 5\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-26\",\"endDate\":\"2026-10-22\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-26\":1,\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1,\"2026-10-22\":1}},\"12A 2K9\":{\"className\":\"12A 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 5\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-23\",\"endDate\":\"2026-10-23\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-23\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1,\"2026-10-21\":1,\"2026-10-23\":1}},\"11B 2K10\":{\"className\":\"11B 2K10\",\"subject\":\"Toán 11\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 4\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-03\",\"endDate\":\"2026-10-24\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1,\"2026-10-22\":1,\"2026-10-24\":1}},\"11A 2K10\":{\"className\":\"11A 2K10\",\"subject\":\"Toán 11\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 4\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-02\",\"endDate\":\"2026-10-23\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1,\"2026-10-21\":1,\"2026-10-23\":1}},\"10A 2K11\":{\"className\":\"10A 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-21\",\"endDate\":\"2026-10-19\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-21\":1,\"2026-09-25\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1}},\"7 2K14\":{\"className\":\"7 2K14\",\"subject\":\"Toán 7\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-25\",\"endDate\":\"2026-10-09\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-25\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1}},\"7 Onl\":{\"className\":\"7 Onl\",\"subject\":\"Toán 7\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2025-08-22\",\"endDate\":\"2026-01-18\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2025-08-22\":1,\"2025-08-25\":1,\"2025-08-27\":1,\"2025-08-29\":1,\"2025-09-01\":1,\"2025-09-03\":1,\"2025-09-05\":1,\"2025-09-08\":1,\"2025-09-10\":1,\"2025-09-12\":1,\"2025-09-15\":1,\"2025-09-17\":1,\"2025-09-19\":1,\"2025-09-22\":1}},\"12 nháp\":{\"className\":\"12 nháp\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}},\"10B 2K11\":{\"className\":\"10B 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-26\",\"endDate\":\"2026-10-20\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-26\":1,\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1}},\"10C 2K11\":{\"className\":\"10C 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 2\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-29\",\"endDate\":\"2026-10-10\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1}},\"8A 2K13\":{\"className\":\"8A 2K13\",\"subject\":\"Toán 8\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-02\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}},\"8B 2K13\":{\"className\":\"8B 2K13\",\"subject\":\"Toán 8\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-08-01\",\"endDate\":\"2026-10-31\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{}},\"12D\":{\"className\":\"12D\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}}}",
-    "classHistoryJson": "[]",
+    "classSchedulesJson": "{\"9 2K12\":{\"className\":\"9 2K12\",\"subject\":\"Toán 9\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-17\",\"endDate\":\"2026-10-10\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-17\":1,\"2026-09-19\":1,\"2026-09-22\":1,\"2026-09-26\":1,\"2026-10-01\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1}},\"12B 2K9\":{\"className\":\"12B 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 10/2026\",\"batchLabel\":\"ĐỢT 6\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-22\",\"endDate\":\"2026-11-26\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-10-22\":1,\"2026-10-24\":1,\"2026-10-27\":1},\"rolledOverAt\":\"2026-10-28 21:00\"},\"12A 2K9\":{\"className\":\"12A 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 10/2026\",\"batchLabel\":\"ĐỢT 6\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-23\",\"endDate\":\"2026-11-27\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{},\"rolledOverAt\":\"2026-10-26 11:09\"},\"11B 2K10\":{\"className\":\"11B 2K10\",\"subject\":\"Toán 11\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 4\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-03\",\"endDate\":\"2026-10-24\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1,\"2026-10-22\":1,\"2026-10-24\":1}},\"11A 2K10\":{\"className\":\"11A 2K10\",\"subject\":\"Toán 11\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 4\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-02\",\"endDate\":\"2026-10-23\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1,\"2026-10-21\":1,\"2026-10-23\":1}},\"10A 2K11\":{\"className\":\"10A 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-21\",\"endDate\":\"2026-10-19\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-21\":1,\"2026-09-25\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1}},\"7 2K14\":{\"className\":\"7 2K14\",\"subject\":\"Toán 7\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-25\",\"endDate\":\"2026-10-09\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-25\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-05\":1,\"2026-10-07\":1,\"2026-10-09\":1}},\"7 Onl\":{\"className\":\"7 Onl\",\"subject\":\"Toán 7\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2025-08-22\",\"endDate\":\"2026-01-18\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2025-08-22\":1,\"2025-08-25\":1,\"2025-08-27\":1,\"2025-08-29\":1,\"2025-09-01\":1,\"2025-09-03\":1,\"2025-09-05\":1,\"2025-09-08\":1,\"2025-09-10\":1,\"2025-09-12\":1,\"2025-09-15\":1,\"2025-09-17\":1,\"2025-09-19\":1,\"2025-09-22\":1}},\"12 nháp\":{\"className\":\"12 nháp\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}},\"10B 2K11\":{\"className\":\"10B 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 3\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-26\",\"endDate\":\"2026-10-20\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-26\":1,\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1}},\"10C 2K11\":{\"className\":\"10C 2K11\",\"subject\":\"Toán 10\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 2\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-09-29\",\"endDate\":\"2026-10-10\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1}},\"8A 2K13\":{\"className\":\"8A 2K13\",\"subject\":\"Toán 8\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-02\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}},\"8B 2K13\":{\"className\":\"8B 2K13\",\"subject\":\"Toán 8\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-08-01\",\"endDate\":\"2026-10-31\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{}},\"12D\":{\"className\":\"12D\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT SỐ 1\",\"status\":\"Đang diễn ra\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-11-30\",\"daysOfWeek\":[1,3,5,0],\"sessionStates\":{}}}",
+    "classHistoryJson": "[{\"id\":\"HIST_1792987987983\",\"archivedAt\":\"2026-10-26 11:13\",\"className\":\"12B 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 5\",\"startDate\":\"2026-09-26\",\"endDate\":\"2026-10-22\",\"daysOfWeek\":[2,4,6],\"sessionStates\":{\"2026-09-26\":1,\"2026-09-29\":1,\"2026-10-01\":1,\"2026-10-03\":1,\"2026-10-06\":1,\"2026-10-08\":1,\"2026-10-10\":1,\"2026-10-13\":1,\"2026-10-15\":1,\"2026-10-17\":1,\"2026-10-20\":1,\"2026-10-22\":1},\"checkedSessions\":12,\"totalStudents\":10,\"paidCount\":7,\"totalExpected\":6000000,\"totalCollected\":4200000,\"totalMissing\":1800000,\"studentsSnapshot\":[{\"id\":\"ST_REAL_001\",\"studentCode\":\"HS001\",\"fullName\":\"Quốc Việt\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Chưa đóng\",\"receiptUrl\":\"\",\"updatedAt\":\"Sun Oct 25 2026 20:51:00 GMT+0700 (Indochina Time)\",\"note\":\"\"},{\"id\":\"ST_REAL_002\",\"studentCode\":\"HS002\",\"fullName\":\"Đăng Quang\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:12\",\"note\":\"Đã chuyển khoản học phí\"},{\"id\":\"ST_REAL_003\",\"studentCode\":\"HS003\",\"fullName\":\"Rum\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:12\",\"note\":\"Đã chuyển khoản học phí\"},{\"id\":\"ST_REAL_004\",\"studentCode\":\"HS004\",\"fullName\":\"Châu Hiểu Nhiên\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Chưa đóng\",\"receiptUrl\":\"\",\"updatedAt\":\"Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)\",\"note\":\"\"},{\"id\":\"ST_REAL_005\",\"studentCode\":\"HS005\",\"fullName\":\"Ngọc Uyên\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:12\",\"note\":\"Đã thanh toán\"},{\"id\":\"ST_REAL_006\",\"studentCode\":\"HS006\",\"fullName\":\"Đặng Hân\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:12\",\"note\":\"Đã thanh toán\"},{\"id\":\"ST_REAL_007\",\"studentCode\":\"HS007\",\"fullName\":\"Tuệ Nhi\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:12\",\"note\":\"Đã thanh toán\"},{\"id\":\"ST_REAL_008\",\"studentCode\":\"HS008\",\"fullName\":\"Nhật Phi\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Chưa đóng\",\"receiptUrl\":\"\",\"updatedAt\":\"Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)\",\"note\":\"\"},{\"id\":\"ST_REAL_009\",\"studentCode\":\"HS009\",\"fullName\":\"Bảo Thy\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)\",\"note\":\"?? chuy?n kho?n h?c ph?\"},{\"id\":\"ST_REAL_010\",\"studentCode\":\"HS010\",\"fullName\":\"Khánh Vy\",\"className\":\"12B 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"?? ho?n th?nh\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:12\",\"note\":\"Đã chuyển khoản\"}]},{\"id\":\"HIST_1792987783284\",\"archivedAt\":\"2026-10-26 11:09\",\"className\":\"12A 2K9\",\"subject\":\"Toán 12\",\"periodLabel\":\"Tháng 9-10/2026\",\"batchLabel\":\"ĐỢT 5\",\"startDate\":\"2026-09-23\",\"endDate\":\"2026-10-23\",\"daysOfWeek\":[1,3,5],\"sessionStates\":{\"2026-09-23\":1,\"2026-09-28\":1,\"2026-09-30\":1,\"2026-10-02\":1,\"2026-10-07\":1,\"2026-10-09\":1,\"2026-10-12\":1,\"2026-10-14\":1,\"2026-10-16\":1,\"2026-10-19\":1,\"2026-10-21\":1,\"2026-10-23\":1},\"checkedSessions\":12,\"totalStudents\":6,\"paidCount\":5,\"totalExpected\":3600000,\"totalCollected\":3000000,\"totalMissing\":600000,\"studentsSnapshot\":[{\"id\":\"ST_REAL_011\",\"studentCode\":\"HS011\",\"fullName\":\"Hoàng Như\",\"className\":\"12A 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Đã hoàn thành\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:09\",\"note\":\"\"},{\"id\":\"ST_REAL_012\",\"studentCode\":\"HS012\",\"fullName\":\"Gia Khánh\",\"className\":\"12A 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Đã hoàn thành\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:09\",\"note\":\"\"},{\"id\":\"ST_REAL_013\",\"studentCode\":\"HS013\",\"fullName\":\"Tùng\",\"className\":\"12A 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Đã hoàn thành\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:09\",\"note\":\"\"},{\"id\":\"ST_REAL_014\",\"studentCode\":\"HS014\",\"fullName\":\"Bảo An\",\"className\":\"12A 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Đã hoàn thành\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:09\",\"note\":\"\"},{\"id\":\"ST_REAL_015\",\"studentCode\":\"HS015\",\"fullName\":\"Thủy Tiên\",\"className\":\"12A 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Chưa đóng\",\"receiptUrl\":\"\",\"updatedAt\":\"Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)\",\"note\":\"\"},{\"id\":\"ST_REAL_016\",\"studentCode\":\"HS016\",\"fullName\":\"Lâm Anh\",\"className\":\"12A 2K9\",\"parentName\":\"\",\"parentPhone\":\"\",\"period\":\"Tháng 9-10/2026\",\"tuitionFee\":600000,\"status\":\"Đã hoàn thành\",\"receiptUrl\":\"\",\"updatedAt\":\"2026-10-26 11:09\",\"note\":\"\"}]}]",
     "studentMetaJson": "{\"HS001\":{\"startDate\":\"2026-09-26\"},\"HS002\":{\"startDate\":\"2026-09-26\"},\"HS003\":{\"startDate\":\"2026-09-26\"},\"HS004\":{\"startDate\":\"2026-09-26\"},\"HS005\":{\"startDate\":\"2026-09-26\"},\"HS006\":{\"startDate\":\"2026-09-26\"},\"HS007\":{\"startDate\":\"2026-09-26\"},\"HS008\":{\"startDate\":\"2026-09-26\"},\"HS009\":{\"startDate\":\"2026-09-26\"},\"HS010\":{\"startDate\":\"2026-09-26\"},\"HS011\":{\"startDate\":\"2026-09-23\"},\"HS012\":{\"startDate\":\"2026-09-23\"},\"HS013\":{\"startDate\":\"2026-09-23\"},\"HS014\":{\"startDate\":\"2026-09-23\"},\"HS015\":{\"startDate\":\"2026-09-23\"},\"HS016\":{\"startDate\":\"2026-09-23\"},\"HS017\":{\"startDate\":\"2026-10-03\"},\"HS018\":{\"startDate\":\"2026-10-03\"},\"HS019\":{\"startDate\":\"2026-10-03\"},\"HS020\":{\"startDate\":\"2026-10-03\"},\"HS021\":{\"startDate\":\"2026-10-03\"},\"HS022\":{\"startDate\":\"2026-10-03\"},\"HS023\":{\"startDate\":\"2026-10-03\"},\"HS024\":{\"startDate\":\"2026-10-03\"},\"HS025\":{\"startDate\":\"2026-10-03\"},\"HS026\":{\"startDate\":\"2026-10-03\"},\"HS027\":{\"startDate\":\"2026-10-03\"},\"HS028\":{\"startDate\":\"2026-10-03\"},\"HS029\":{\"startDate\":\"2026-10-03\"},\"HS030\":{\"startDate\":\"2026-10-03\"},\"HS031\":{\"startDate\":\"2026-10-03\"},\"HS032\":{\"startDate\":\"2026-10-03\"},\"HS033\":{\"startDate\":\"2026-10-03\"},\"HS034\":{\"startDate\":\"2026-10-03\"},\"HS035\":{\"startDate\":\"2026-10-03\"},\"HS036\":{\"startDate\":\"2026-10-03\"},\"HS037\":{\"startDate\":\"2026-10-03\"},\"HS038\":{\"startDate\":\"2026-10-02\"},\"HS039\":{\"startDate\":\"2026-10-02\"},\"HS040\":{\"startDate\":\"2026-10-02\"},\"HS041\":{\"startDate\":\"2026-10-02\"},\"HS042\":{\"startDate\":\"2026-10-02\"},\"HS043\":{\"startDate\":\"2026-10-02\"},\"HS044\":{\"startDate\":\"2026-10-02\"},\"HS045\":{\"startDate\":\"2026-10-02\"},\"HS046\":{\"startDate\":\"2026-10-02\"},\"HS047\":{\"startDate\":\"2026-10-02\"},\"HS048\":{\"startDate\":\"2026-10-02\"},\"HS049\":{\"startDate\":\"2026-10-02\"},\"HS050\":{\"startDate\":\"2026-10-02\"},\"HS051\":{\"startDate\":\"2026-10-02\"},\"HS052\":{\"startDate\":\"2026-09-21\"},\"HS053\":{\"startDate\":\"2026-09-21\"},\"HS054\":{\"startDate\":\"2026-09-21\"},\"HS055\":{\"startDate\":\"2026-09-21\"},\"HS056\":{\"startDate\":\"2026-09-21\"},\"HS057\":{\"startDate\":\"2026-09-21\"},\"HS058\":{\"startDate\":\"2026-09-21\"},\"HS059\":{\"startDate\":\"2026-09-21\"},\"HS060\":{\"startDate\":\"2026-09-21\"},\"HS061\":{\"startDate\":\"2026-09-21\"},\"HS062\":{\"startDate\":\"2026-09-26\"},\"HS063\":{\"startDate\":\"2026-09-26\"},\"HS064\":{\"startDate\":\"2026-09-26\"},\"HS065\":{\"startDate\":\"2026-09-26\"},\"HS066\":{\"startDate\":\"2026-09-26\"},\"HS067\":{\"startDate\":\"2026-09-26\"},\"HS068\":{\"startDate\":\"2026-09-26\"},\"HS069\":{\"startDate\":\"2026-09-26\"},\"HS070\":{\"startDate\":\"2026-09-26\"},\"HS071\":{\"startDate\":\"2026-09-26\"},\"HS072\":{\"startDate\":\"2026-09-26\"},\"HS073\":{\"startDate\":\"2026-09-26\"},\"HS074\":{\"startDate\":\"2026-09-26\"},\"HS075\":{\"startDate\":\"2026-09-26\"},\"HS076\":{\"startDate\":\"2026-09-29\"},\"HS077\":{\"startDate\":\"2026-09-29\"},\"HS078\":{\"startDate\":\"2026-09-29\"},\"HS079\":{\"startDate\":\"2026-09-29\"},\"HS080\":{\"startDate\":\"2026-09-17\"},\"HS081\":{\"startDate\":\"2026-09-17\"},\"HS082\":{\"startDate\":\"2026-01-01\"},\"HS083\":{\"startDate\":\"2026-01-01\"},\"HS084\":{\"startDate\":\"2026-09-25\"},\"HS085\":{\"startDate\":\"2026-09-25\"},\"HS086\":{\"startDate\":\"2026-09-25\"},\"HS087\":{\"startDate\":\"2026-09-25\",\"feeMode\":\"FIXED\"},\"HS088\":{\"startDate\":\"2026-10-23\"},\"HS089\":{\"startDate\":\"2026-07-06\"},\"HS090\":{\"startDate\":\"2026-04-26\"},\"HS091\":{\"startDate\":\"2026-04-26\"},\"HS092\":{\"startDate\":\"2026-04-26\"},\"HS093\":{\"startDate\":\"2026-04-26\"},\"HS094\":{\"startDate\":\"2025-08-22\"},\"HS095\":{\"startDate\":\"2026-05-03\",\"manualPaidBatches\":0},\"HS096\":{\"startDate\":\"2026-10-23\"},\"HS097\":{\"startDate\":\"2026-05-03\"},\"HS098\":{\"startDate\":\"2026-05-03\"},\"HS099\":{\"startDate\":\"2026-05-03\"},\"HS100\":{\"startDate\":\"2026-10-23\",\"manualPaidBatches\":0},\"HS101\":{\"startDate\":\"2026-05-03\",\"manualPaidBatches\":0},\"HS102\":{\"startDate\":\"2026-05-03\"},\"HS103\":{\"startDate\":\"2026-05-05\"},\"HS104\":{\"startDate\":\"2026-05-05\"},\"HS105\":{\"startDate\":\"2026-05-05\"},\"HS106\":{\"startDate\":\"2026-05-05\"},\"HS107\":{\"startDate\":\"2026-05-05\"},\"HS108\":{\"startDate\":\"2026-05-05\"},\"HS109\":{\"startDate\":\"2026-05-05\"},\"HS110\":{\"startDate\":\"2026-05-05\"},\"HS111\":{\"startDate\":\"2026-05-05\"},\"HS112\":{\"startDate\":\"2026-05-05\"},\"HS113\":{\"startDate\":\"2026-05-05\"},\"HS114\":{\"startDate\":\"2026-05-05\"},\"HS115\":{\"startDate\":\"2026-05-05\"},\"HS116\":{\"startDate\":\"2026-05-05\"},\"HS117\":{\"startDate\":\"2026-05-05\"},\"HS118\":{\"startDate\":\"2026-05-05\"},\"HS119\":{\"startDate\":\"2026-05-05\"},\"HS120\":{\"startDate\":\"2026-05-05\"},\"HS121\":{\"startDate\":\"2026-05-05\"},\"HS122\":{\"startDate\":\"2026-05-05\"},\"HS123\":{\"startDate\":\"2026-05-12\"},\"HS124\":{\"startDate\":\"2026-05-12\"},\"HS125\":{\"startDate\":\"2026-05-12\"},\"HS126\":{\"startDate\":\"2026-05-12\"},\"HS127\":{\"startDate\":\"2026-05-06\"},\"HS128\":{\"startDate\":\"2026-05-06\"},\"HS129\":{\"startDate\":\"2026-05-06\"},\"HS130\":{\"startDate\":\"2026-05-06\"},\"HS131\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0,\"transferHistory\":[{\"id\":\"TR_1792952496662\",\"transferredAt\":\"2026-10-26 01:21\",\"mode\":\"NEW_BATCH\",\"fromClass\":\"12 nháp\",\"toClass\":\"12D\",\"startDate\":\"2026-10-01\",\"batchLabel\":\"ĐỢT SỐ 1\",\"periodLabel\":\"Tháng 9-10/2026\",\"dateRange\":\"01/10/2026 → 30/11/2026\",\"tuitionFee\":5000,\"status\":\"Chưa đóng\",\"note\":\"\"}]},\"HS132\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS133\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS134\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS135\":{\"startDate\":\"2026-10-01\",\"manualPaidBatches\":0},\"HS136\":{\"startDate\":\"2026-01-01\",\"manualPaidBatches\":0},\"HS137\":{\"startDate\":\"2026-10-02\",\"manualPaidBatches\":0},\"HS138\":{\"startDate\":\"2026-08-01\",\"manualPaidBatches\":0},\"HS139\":{\"startDate\":\"2025-08-22\",\"manualPaidBatches\":0,\"feeMode\":\"PER_SESSION\",\"perSessionRate\":150000,\"lastSessionCount\":14}}",
     "deletedClassesJson": "[\"12 2K8 (Ca 2 - T3,5,7,CN)\",\"12 2K8 (Ca 1 - T2,4,6,CN)\",\"6 (Ca 1 - T4-5)\",\"9 2K11 (Ca 2 - T2,4,6)\",\"9 2K11 (Ca 1 - T3,5,7)\",\"12 2K9 (Ca 1 - T3,5,7)\",\"12 2K9 (Ca 2 - T2,4,6)\",\"11 2K10 (Ca 1 - T3,5,7)\",\"11 2K10 (Ca 2 - T2,4,6)\",\"10 2K11 (Ca 1 - T2,4,6)\",\"10 2K11 (Ca 3 - Đợt 2)\",\"10 2K11 (Ca 2 - T3,5,7)\",\"7 2K14 (Ca 2 - T7-8)\",\"7 2K14 (Ca 1 - T9-10)\",\"6 (Na và Nin)\",\"11B1\",\"10A2\",\"10A1\",\"10AB 2K11\",\"8 2K13\",\"8B 2k13\"]",
     "exactAmountsJson": "{\"ST_1792759143949\":5000,\"HS100\":5000,\"ST_1792759460958\":5000,\"HS101\":5000,\"YC_STK_1792759710531\":5000,\"ST_1792772564014\":5000,\"HS131\":5000,\"ST_1792772572149\":5000,\"HS132\":5000,\"ST_1792830254167\":10000,\"HS133\":10000,\"ST_1792830646018\":5000,\"HS134\":5000,\"ST_1792854291574\":5000,\"HS135\":5000,\"ST_1792938304725\":0,\"HS138\":0,\"GD_f242a99e-082f-4f02-a5c5-a9830efe19c5\":3000,\"GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\":7000,\"GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb\":11000,\"GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20\":3000,\"GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\":2000,\"GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934\":5000,\"GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\":5000,\"GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\":5000,\"GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881\":10000,\"GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\":5000}",
-    "dismissedNotifIdsJson": "[\"GD_1792936777067\",\"GD_1792936402245\",\"GD_1792936393856\",\"GD_1792936290375\",\"GD_5c44b4be-751b-4e28-ae00-0e8b47eaad90\",\"GD_1792934741181\",\"GD_1792934740649\",\"GD_f242a99e-082f-4f02-a5c5-a9830efe19c5\",\"GD_SEPAY_2b73f513-c00b-45d8-980c-a02d496578d0\",\"GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\",\"GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb\",\"GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20\",\"GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\",\"GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934\",\"GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\",\"GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\",\"GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881\",\"GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\"]"
+    "dismissedNotifIdsJson": "[\"GD_1792936777067\",\"GD_1792936402245\",\"GD_1792936393856\",\"GD_1792936290375\",\"GD_5c44b4be-751b-4e28-ae00-0e8b47eaad90\",\"GD_1792934741181\",\"GD_1792934740649\",\"GD_f242a99e-082f-4f02-a5c5-a9830efe19c5\",\"GD_SEPAY_2b73f513-c00b-45d8-980c-a02d496578d0\",\"GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\",\"GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb\",\"GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20\",\"GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\",\"GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934\",\"GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\",\"GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\",\"GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881\",\"GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\"]",
+    "processedSepayTxIdsJson": "[\"GD_SEPAY_c71e29bb-aba2-4ecc-a4a0-a73ae1129a09\",\"c71e29bb-aba2-4ecc-a4a0-a73ae1129a09\",\"GD_SEPAY_63c5b2ac-4ab9-4c85-be22-90f1ef8c4a91\",\"63c5b2ac-4ab9-4c85-be22-90f1ef8c4a91\",\"GD_SEPAY_6c9436ae-0d8f-4e55-b0f5-4a9a6456d47d\",\"6c9436ae-0d8f-4e55-b0f5-4a9a6456d47d\",\"GD_SEPAY_2239bce8-0e79-42c1-beae-7091d66bfb3f\",\"2239bce8-0e79-42c1-beae-7091d66bfb3f\",\"GD_SEPAY_b813a2a1-785c-41ef-957c-34116f0211e3\",\"b813a2a1-785c-41ef-957c-34116f0211e3\",\"GD_SEPAY_2bc94cbd-7f6c-4212-8499-552cec0359a0\",\"2bc94cbd-7f6c-4212-8499-552cec0359a0\",\"GD_SEPAY_a9334a2a-07ec-4e55-a4b3-259e63cf1a6c\",\"a9334a2a-07ec-4e55-a4b3-259e63cf1a6c\",\"GD_981b9925-f579-4630-b895-21f02d6535a7\",\"981b9925-f579-4630-b895-21f02d6535a7\",\"GD_1793177555806\",\"1793177555806\",\"GD_1793177562852\",\"1793177562852\",\"GD_1793177565146\",\"1793177565146\",\"GD_1793177565793\",\"1793177565793\",\"GD_1793177568634\",\"1793177568634\",\"GD_1793177602573\",\"1793177602573\",\"GD_1793177763170\",\"1793177763170\",\"GD_1793178076565\",\"1793178076565\",\"GD_1792936777067\",\"1792936777067\",\"GD_1792936402245\",\"1792936402245\",\"GD_1792936393856\",\"1792936393856\",\"GD_1792936290375\",\"1792936290375\",\"GD_5c44b4be-751b-4e28-ae00-0e8b47eaad90\",\"5c44b4be-751b-4e28-ae00-0e8b47eaad90\",\"GD_1792934741181\",\"1792934741181\",\"GD_1792934740649\",\"1792934740649\",\"GD_f242a99e-082f-4f02-a5c5-a9830efe19c5\",\"f242a99e-082f-4f02-a5c5-a9830efe19c5\",\"GD_SEPAY_2b73f513-c00b-45d8-980c-a02d496578d0\",\"2b73f513-c00b-45d8-980c-a02d496578d0\",\"GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\",\"99531315-1ccc-410f-a4a9-4c0b9e6d7b59\",\"GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb\",\"a03e0891-9f99-4a6b-a9c0-e413a77182fb\",\"GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20\",\"dea21157-86bb-4d4b-800b-7575d95eca20\",\"GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\",\"e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\",\"GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934\",\"8e809d08-f9c3-4dff-8046-8a799096d934\",\"GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\",\"711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79\",\"GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\",\"4f472a3e-5c21-4b9e-a431-1c0c5c9f286b\",\"GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881\",\"62b4853d-d098-459c-8e29-eac50d513881\",\"GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\",\"1c8deae5-e25e-4f6c-8d15-fd4fa31741cf\",\"GD_SEPAY_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554\",\"GD_SEPAY_a03e0891-9f99-4a6b-a9c0-e413a77182fb\",\"GD_SEPAY_99531315-1ccc-410f-a4a9-4c0b9e6d7b59\",\"GD_SEPAY_f242a99e-082f-4f02-a5c5-a9830efe19c5\",\"GD_SEPAY_5c44b4be-751b-4e28-ae00-0e8b47eaad90\",\"GD_SEPAY_981b9925-f579-4630-b895-21f02d6535a7\"]",
+    "_lastSavedAtMs": 1793198179936
   },
   "students": [
     {
@@ -966,12 +972,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:51:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_002",
@@ -980,12 +987,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": "Đã chuyển khoản học phí"
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_003",
@@ -994,12 +1002,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:33:00 GMT+0700 (Indochina Time)",
-      "note": "Đã chuyển khoản học phí"
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_004",
@@ -1008,12 +1017,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_005",
@@ -1022,12 +1032,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": "Đã thanh toán"
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_006",
@@ -1036,12 +1047,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": "Đã thanh toán"
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_007",
@@ -1050,12 +1062,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "?? ho?n th?nh",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": "Đã thanh toán"
+      "updatedAt": "2026-10-28 21:02",
+      "note": "?? nh?n CK: +600.000 ? (2026-10-28 13:36:14)",
+      "manualStatusUpdatedAt": "2026-10-28 21:02"
     },
     {
       "id": "ST_REAL_008",
@@ -1064,12 +1077,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_009",
@@ -1078,12 +1092,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-28 21:00",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_010",
@@ -1092,12 +1107,13 @@ function getInitialDemoState() {
       "className": "12B 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "?? ho?n th?nh",
       "receiptUrl": "",
-      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-28 21:00",
+      "note": "?? chuy?n kho?n",
+      "manualStatusUpdatedAt": "2026-10-28 21:00"
     },
     {
       "id": "ST_REAL_011",
@@ -1106,12 +1122,13 @@ function getInitialDemoState() {
       "className": "12A 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-26 11:09",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-26 11:09"
     },
     {
       "id": "ST_REAL_012",
@@ -1120,12 +1137,13 @@ function getInitialDemoState() {
       "className": "12A 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-26 11:09",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-26 11:09"
     },
     {
       "id": "ST_REAL_013",
@@ -1134,12 +1152,13 @@ function getInitialDemoState() {
       "className": "12A 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:13:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-26 11:09",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-26 11:09"
     },
     {
       "id": "ST_REAL_014",
@@ -1148,12 +1167,13 @@ function getInitialDemoState() {
       "className": "12A 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:13:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-26 11:09",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-26 11:09"
     },
     {
       "id": "ST_REAL_015",
@@ -1162,12 +1182,13 @@ function getInitialDemoState() {
       "className": "12A 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:12:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-26 11:09",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-26 11:09"
     },
     {
       "id": "ST_REAL_016",
@@ -1176,12 +1197,13 @@ function getInitialDemoState() {
       "className": "12A 2K9",
       "parentName": "",
       "parentPhone": "",
-      "period": "Tháng 9-10/2026",
+      "period": "Th?ng 10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "Ch?a ??ng",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 20:13:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-26 11:09",
+      "note": "",
+      "manualStatusUpdatedAt": "2026-10-26 11:09"
     },
     {
       "id": "ST_REAL_017",
@@ -1570,10 +1592,11 @@ function getInitialDemoState() {
       "parentPhone": "",
       "period": "Tháng 9-10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "?? ho?n th?nh",
       "receiptUrl": "",
-      "updatedAt": "Fri Oct 23 2026 01:20:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-28 21:07",
+      "note": "?? thanh to?n",
+      "manualStatusUpdatedAt": "2026-10-28 21:07"
     },
     {
       "id": "ST_REAL_045",
@@ -2088,10 +2111,11 @@ function getInitialDemoState() {
       "parentPhone": "",
       "period": "Tháng 9-10/2026",
       "tuitionFee": 600000,
-      "status": "Chưa đóng",
+      "status": "?? ho?n th?nh",
       "receiptUrl": "",
-      "updatedAt": "Sun Oct 25 2026 21:06:00 GMT+0700 (Indochina Time)",
-      "note": ""
+      "updatedAt": "2026-10-27 12:04",
+      "note": "?? nh?n CK: +600.000 ? (2026-10-27 12:04:01)",
+      "manualStatusUpdatedAt": "2026-10-27 12:04"
     },
     {
       "id": "ST_REAL_083",
@@ -2278,8 +2302,188 @@ function getInitialDemoState() {
   ],
   "transactions": [
     {
+      "id": "GD_1793178076565",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 9-10/2026 - HS044 Quang Tiến",
+      "studentCode": "HS044",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_1793177602573",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 10/2026 - HS010 Khánh Vy",
+      "studentCode": "HS010",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_1793177568634",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 9-10/2026 - HS009 Bảo Thy",
+      "studentCode": "HS009",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_1793177565793",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 9-10/2026 - HS006 Đặng Hân",
+      "studentCode": "HS006",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_1793177565146",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 9-10/2026 - HS005 Ngọc Uyên",
+      "studentCode": "HS005",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_1793177562852",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 9-10/2026 - HS003 Rum",
+      "studentCode": "HS003",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_1793177555806",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Thu học phí Tháng 9-10/2026 - HS002 Đăng Quang",
+      "studentCode": "HS002",
+      "method": "Chuyển khoản",
+      "receiptUrl": "",
+      "createdBy": "Quản lý"
+    },
+    {
+      "id": "GD_981b9925-f579-4630-b895-21f02d6535a7",
+      "date": "2026-10-28",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Tự động lưu CK vào STK: HS007 - Tuệ Nhi (Tháng 10-11/2026) | ND: MBVCB.16755047338.875895.tue nhi.CT tu 1016802656 LE THI THANH THUY toi 96247E8DEZ HO KINH DOANH TRU",
+      "studentCode": "HS007",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_a9334a2a-07ec-4e55-a4b3-259e63cf1a6c",
+      "date": "2026-10-27",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 20000,
+      "description": "[STK Nháp 5801434567] Tự động lưu GD SePay (5801434567): HUYNH THANH CHI chuyen tien",
+      "studentCode": "",
+      "method": "Chuyển khoản STK Nháp",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_2bc94cbd-7f6c-4212-8499-552cec0359a0",
+      "date": "2026-10-27",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 50000,
+      "description": "Tự động lưu CK SePay: HS061 - Khánh Phương (Tháng 9-10/2026) | ND: 153811640773 0975850637 NGUYEN HUYNH KHANH PHUONG chuyen tien qua MoMo",
+      "studentCode": "HS061",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_b813a2a1-785c-41ef-957c-34116f0211e3",
+      "date": "2026-10-27",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Tự động lưu CK SePay: HS016 - Lâm Anh (Tháng 9-10/2026) | ND: NGUYEN HUYNH LAM ANH chuyen tien",
+      "studentCode": "HS016",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_2239bce8-0e79-42c1-beae-7091d66bfb3f",
+      "date": "2026-10-27",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Tự động lưu GD SePay (8601774789): PHAN THI THUY TRINH CHUYEN KHOAN",
+      "studentCode": "HS069",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_6c9436ae-0d8f-4e55-b0f5-4a9a6456d47d",
+      "date": "2026-10-27",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Tự động lưu CK SePay: HS081 - Thanh (Tháng 9-10/2026) | ND: Thanh Van chuyen khoan nhanh qua Zalo",
+      "studentCode": "HS081",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_63c5b2ac-4ab9-4c85-be22-90f1ef8c4a91",
+      "date": "2026-10-26",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 600000,
+      "description": "Tự động lưu GD SePay (8601774789): Thanhvan Tran chuyen khoan nhanh qua Zalo",
+      "studentCode": "",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
+      "id": "GD_SEPAY_c71e29bb-aba2-4ecc-a4a0-a73ae1129a09",
+      "date": "2026-10-26",
+      "type": "Thu",
+      "category": "Thu học phí",
+      "amount": 950000,
+      "description": "Tự động lưu CK SePay: HS010 - Khánh Vy (Tháng 9-10/2026) | ND: Khanh Vy chuyen khoan nhanh qua Zalo",
+      "studentCode": "HS010",
+      "method": "Chuyển khoản STK (Tự động)",
+      "receiptUrl": "",
+      "createdBy": "Tự động từ STK (SePay)"
+    },
+    {
       "id": "GD_1792936777067",
-      "date": "2026-10-25 20:59:37",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2291,7 +2495,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_1792936402245",
-      "date": "2026-10-25 20:53:22",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2303,7 +2507,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_1792936393856",
-      "date": "2026-10-25 20:53:13",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2315,7 +2519,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_1792936290375",
-      "date": "2026-10-25 20:51:30",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2327,7 +2531,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_5c44b4be-751b-4e28-ae00-0e8b47eaad90",
-      "date": "2026-10-25 20:40:14",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2339,7 +2543,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_1792934741181",
-      "date": "2026-10-25 20:25:41",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2351,7 +2555,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_1792934740649",
-      "date": "2026-10-25 20:25:40",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 600000,
@@ -2363,7 +2567,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_f242a99e-082f-4f02-a5c5-a9830efe19c5",
-      "date": "2026-10-25 19:43:58",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 3000,
@@ -2375,7 +2579,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_2b73f513-c00b-45d8-980c-a02d496578d0",
-      "date": "2026-10-25 19:42:23",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 20000,
@@ -2387,7 +2591,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_99531315-1ccc-410f-a4a9-4c0b9e6d7b59",
-      "date": "2026-10-25 19:09:21",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 7000,
@@ -2399,7 +2603,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_a03e0891-9f99-4a6b-a9c0-e413a77182fb",
-      "date": "2026-10-25 17:00:42",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 11000,
@@ -2411,7 +2615,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_dea21157-86bb-4d4b-800b-7575d95eca20",
-      "date": "2026-10-25 17:00:19",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 3000,
@@ -2423,7 +2627,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_e8a5f2cc-04f4-4b1a-84c1-9725bb24a554",
-      "date": "2026-10-25 16:32:11",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 2000,
@@ -2435,7 +2639,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_8e809d08-f9c3-4dff-8046-8a799096d934",
-      "date": "2026-10-25 16:15:30",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 5000,
@@ -2447,7 +2651,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_711bdb9b-b7b0-4fd7-8c87-b4bba7e9fa79",
-      "date": "2026-10-25 15:53:17",
+      "date": "2026-10-25",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 5000,
@@ -2459,7 +2663,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_4f472a3e-5c21-4b9e-a431-1c0c5c9f286b",
-      "date": "2026-10-24 22:15:00",
+      "date": "2026-10-24",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 5000,
@@ -2471,7 +2675,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_62b4853d-d098-459c-8e29-eac50d513881",
-      "date": "2026-10-24 21:45:17",
+      "date": "2026-10-24",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 10000,
@@ -2483,7 +2687,7 @@ function getInitialDemoState() {
     },
     {
       "id": "GD_SEPAY_1c8deae5-e25e-4f6c-8d15-fd4fa31741cf",
-      "date": "2026-10-24 21:42:39",
+      "date": "2026-10-24",
       "type": "Thu",
       "category": "Thu học phí",
       "amount": 5000,
@@ -2933,16 +3137,18 @@ let isSandboxDraftMode = false;
 let isOpenedViaFriendSandboxUrl = checkIsSandboxUrlRequested();
 let realAppStateBackup = null;
 let modeBeforeEnteringSandbox = 'parent';
-let appState = isOpenedViaFriendSandboxUrl ? loadSandboxDraftStateFromLocal() : loadStateFromLocal();
-if (isOpenedViaFriendSandboxUrl) {
-  isSandboxDraftMode = true;
-}
-let lastCommittedStateJson = JSON.stringify(appState);
 let actionUndoStack = [];
 let actionRedoStack = [];
 let isRestoringUndoRedo = false;
 let isSilentServerSync = false;
 const MAX_UNDO_HISTORY = 30;
+appState = isOpenedViaFriendSandboxUrl ? loadSandboxDraftStateFromLocal() : loadStateFromLocal();
+if (isOpenedViaFriendSandboxUrl) {
+  isSandboxDraftMode = true;
+} else {
+  loadUndoRedoHistoryFromLocal();
+}
+let lastCommittedStateJson = JSON.stringify(appState);
 
 let currentMode = 'parent'; // 'parent' | 'admin'
 let currentAdminTab = 'classbook';
@@ -3440,47 +3646,231 @@ function enableSourceProtection() {
   });
 }
 
-function loadStateFromLocal() {
+function safeWriteLocalStorage(key, value) {
   try {
-    localStorage.removeItem("edupay_app_state_v1");
-    if (!localStorage.getItem("TC_RESTORE_PRE_SHEET_V45")) {
-      localStorage.setItem("TC_RESTORE_PRE_SHEET_V45", "1");
-      localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
-      const restored = getInitialDemoState();
-      restored.settings.adminPassword = "336699";
+    localStorage.setItem(key, value);
+    if (key === STORAGE_KEYS.STATE) {
       try {
-        localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(restored));
-      } catch (err) {}
-      return restored;
+        sessionStorage.setItem(STORAGE_KEYS.STATE, value);
+      } catch (e) {}
     }
-    const raw = localStorage.getItem(STORAGE_KEYS.STATE);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.students && parsed.transactions && parsed.settings) {
-        if (!localStorage.getItem("TC_RESTORE_ADMIN_PASS_V47")) {
-          try {
-            localStorage.setItem("TC_RESTORE_ADMIN_PASS_V47", "1");
-          } catch (err) {}
-          if (!parsed.settings.adminPassword || parsed.settings.adminPassword === "123456") {
-            parsed.settings.adminPassword = "336699";
-          }
+    return true;
+  } catch (err) {
+    try {
+      localStorage.removeItem('edupay_app_state_v1');
+      localStorage.removeItem('TC_NOTIFIED_BANK_TX_IDS');
+      localStorage.removeItem(STORAGE_KEYS.REDO_STACK);
+      if (key === STORAGE_KEYS.STATE) {
+        localStorage.removeItem(STORAGE_KEYS.UNDO_STACK);
+        if (!isSandboxDraftMode) {
+          localStorage.removeItem(STORAGE_KEYS.SANDBOX_STATE);
         }
-        const cleaned = purgeDraftDataFromState(parsed);
+      }
+      localStorage.setItem(key, value);
+      if (key === STORAGE_KEYS.STATE) {
         try {
-          localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
-        } catch (err) {
-          console.warn('Cảnh báo lưu LocalStorage khi tải:', err);
-        }
-        return cleaned;
+          sessionStorage.setItem(STORAGE_KEYS.STATE, value);
+        } catch (e) {}
+      }
+      return true;
+    } catch (retryErr) {
+      if (key === STORAGE_KEYS.STATE) {
+        try {
+          sessionStorage.setItem(STORAGE_KEYS.STATE, value);
+        } catch (e) {}
+      }
+      console.warn('Cảnh báo bộ nhớ LocalStorage:', retryErr);
+      return false;
+    }
+  }
+}
+
+function saveUndoRedoHistoryToLocal() {
+  if (isSandboxDraftMode) return;
+  try {
+    const persistedUndo = (actionUndoStack || []).slice(-8);
+    const persistedRedo = (actionRedoStack || []).slice(-5);
+    const undoJson = JSON.stringify(persistedUndo);
+    const redoJson = JSON.stringify(persistedRedo);
+    try {
+      sessionStorage.setItem(STORAGE_KEYS.UNDO_STACK, undoJson);
+      sessionStorage.setItem(STORAGE_KEYS.REDO_STACK, redoJson);
+    } catch (e) {}
+    try {
+      localStorage.setItem(STORAGE_KEYS.UNDO_STACK, undoJson);
+      localStorage.setItem(STORAGE_KEYS.REDO_STACK, redoJson);
+    } catch (e) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.UNDO_STACK, JSON.stringify(persistedUndo.slice(-3)));
+      } catch (e2) {}
+    }
+  } catch (err) {}
+}
+
+function loadUndoRedoHistoryFromLocal() {
+  if (isSandboxDraftMode) return;
+  try {
+    const rawUndo = sessionStorage.getItem(STORAGE_KEYS.UNDO_STACK) || localStorage.getItem(STORAGE_KEYS.UNDO_STACK);
+    const rawRedo = sessionStorage.getItem(STORAGE_KEYS.REDO_STACK) || localStorage.getItem(STORAGE_KEYS.REDO_STACK);
+    if (rawUndo) {
+      const parsedUndo = JSON.parse(rawUndo);
+      if (Array.isArray(parsedUndo)) {
+        actionUndoStack = parsedUndo.filter(item => item && typeof item.stateJson === 'string');
       }
     }
+    if (rawRedo) {
+      const parsedRedo = JSON.parse(rawRedo);
+      if (Array.isArray(parsedRedo)) {
+        actionRedoStack = parsedRedo.filter(item => item && typeof item.stateJson === 'string');
+      }
+    }
+  } catch (err) {}
+}
+
+function migrateAndRestoreUserBatchEditsV57(state) {
+  if (!state || !state.settings) return state;
+  try {
+    if (localStorage.getItem('TC_MIGRATE_V57_RESTORE_DOT6')) return state;
+    const baseline = getInitialDemoState();
+    const curHist = (() => {
+      try {
+        return JSON.parse(state.settings.classHistoryJson || '[]') || [];
+      } catch (e) {
+        return [];
+      }
+    })();
+    const baseHist = (() => {
+      try {
+        return JSON.parse(baseline.settings.classHistoryJson || '[]') || [];
+      } catch (e) {
+        return [];
+      }
+    })();
+
+    // Khôi phục lịch sử các đợt cũ (ĐỢT 5 của 12B 2K9 & 12A 2K9) nếu bị mất do lỗi TDZ trước v57
+    const existingIds = new Set(curHist.map(h => h && h.id));
+    let histChanged = false;
+    baseHist.forEach(bh => {
+      if (bh && bh.id && !existingIds.has(bh.id)) {
+        const alreadySameBatch = curHist.some(
+          ch => ch && ch.className === bh.className && ch.batchLabel === bh.batchLabel && ch.periodLabel === bh.periodLabel
+        );
+        if (!alreadySameBatch) {
+          curHist.push(bh);
+          histChanged = true;
+        }
+      }
+    });
+    if (histChanged) {
+      state.settings.classHistoryJson = JSON.stringify(curHist);
+    }
+
+    // Khôi phục lịch ĐỢT 6 cho 12B 2K9 và 12A 2K9 nếu đang bị kẹt ở ĐỢT 5 cũ
+    const curMap = JSON.parse(state.settings.classSchedulesJson || '{}') || {};
+    const baseMap = JSON.parse(baseline.settings.classSchedulesJson || '{}') || {};
+    let mapChanged = false;
+    ['12B 2K9', '12A 2K9'].forEach(cls => {
+      if (baseMap[cls] && (!curMap[cls] || curMap[cls].batchLabel === 'ĐỢT 5')) {
+        curMap[cls] = { ...baseMap[cls] };
+        mapChanged = true;
+      }
+    });
+    if (mapChanged) {
+      state.settings.classSchedulesJson = JSON.stringify(curMap);
+    }
+
+    // Khôi phục kỳ học và trạng thái học sinh đã chỉnh sửa nhưng bị TDZ reset
+    const baseStuByCode = new Map((baseline.students || []).map(s => [s.studentCode, s]));
+    if (Array.isArray(state.students)) {
+      state.students.forEach(s => {
+        if (!s) return;
+        if ((s.className === '12B 2K9' || s.className === '12A 2K9') && s.period === 'Tháng 9-10/2026') {
+          s.period = 'Tháng 10/2026';
+          if (s.studentCode !== 'HS007' && s.studentCode !== 'HS010') {
+            s.note = '';
+          }
+        }
+        const bs = baseStuByCode.get(s.studentCode);
+        if (bs && bs.status === 'Đã hoàn thành' && s.status !== 'Đã hoàn thành') {
+          if (['HS007', 'HS010', 'HS044', 'HS081'].includes(s.studentCode)) {
+            s.status = 'Đã hoàn thành';
+            s.updatedAt = bs.updatedAt || s.updatedAt;
+            s.manualStatusUpdatedAt = bs.manualStatusUpdatedAt || bs.updatedAt || s.updatedAt;
+            if (!s.note && bs.note) s.note = bs.note;
+          }
+        }
+      });
+    }
+
+    try {
+      localStorage.setItem('TC_MIGRATE_V57_RESTORE_DOT6', '1');
+    } catch (e) {}
   } catch (e) {
-    console.warn('Không đọc được LocalStorage, dùng dữ liệu mẫu:', e);
+    console.warn('Migration V57 warning:', e);
+  }
+  return state;
+}
+
+function loadStateFromLocal() {
+  let parsed = null;
+  try {
+    try {
+      localStorage.removeItem('edupay_app_state_v1');
+    } catch (e) {}
+
+    const rawLocal = localStorage.getItem(STORAGE_KEYS.STATE);
+    let rawSession = null;
+    try {
+      rawSession = sessionStorage.getItem(STORAGE_KEYS.STATE);
+    } catch (e) {}
+
+    let candidateLocal = null;
+    let candidateSession = null;
+    if (rawLocal) {
+      try {
+        candidateLocal = JSON.parse(rawLocal);
+      } catch (e) {}
+    }
+    if (rawSession) {
+      try {
+        candidateSession = JSON.parse(rawSession);
+      } catch (e) {}
+    }
+
+    if (candidateLocal && candidateSession) {
+      const tLocal = Number(candidateLocal?.settings?._lastSavedAtMs || 0);
+      const tSess = Number(candidateSession?.settings?._lastSavedAtMs || 0);
+      parsed = tSess > tLocal ? candidateSession : candidateLocal;
+    } else {
+      parsed = candidateLocal || candidateSession;
+    }
+
+    if (parsed && parsed.students && parsed.transactions && parsed.settings) {
+      if (!parsed.settings.adminPassword || parsed.settings.adminPassword === '123456') {
+        parsed.settings.adminPassword = '336699';
+      }
+      let cleaned = parsed;
+      try {
+        cleaned = purgeDraftDataFromState(parsed);
+      } catch (cleanErr) {
+        console.warn('Cảnh báo làm sạch dữ liệu khi tải (giữ nguyên dữ liệu gốc):', cleanErr);
+        cleaned = parsed;
+      }
+      cleaned = migrateAndRestoreUserBatchEditsV57(cleaned);
+      safeWriteLocalStorage(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
+      return cleaned;
+    }
+  } catch (e) {
+    console.warn('Không đọc được LocalStorage, kiểm tra bản lưu tạm:', e);
+    if (parsed && parsed.students && parsed.settings) {
+      return parsed;
+    }
   }
   const initial = getInitialDemoState();
   try {
-    localStorage.setItem(STORAGE_KEYS.STATE, JSON.stringify(initial));
-  } catch (err) {}
+    localStorage.setItem('TC_MIGRATE_V57_RESTORE_DOT6', '1');
+  } catch (e) {}
+  safeWriteLocalStorage(STORAGE_KEYS.STATE, JSON.stringify(initial));
   return initial;
 }
 
@@ -3664,6 +4054,9 @@ let inFlightSheetPushCount = 0;
 let lastLocalMutationAtMs = 0;
 
 function saveStateToLocal() {
+  if (!isSilentServerSync && appState && appState.settings) {
+    appState.settings._lastSavedAtMs = Date.now();
+  }
   const currentJson = JSON.stringify(appState);
   if (
     lastCommittedStateJson &&
@@ -3682,16 +4075,16 @@ function saveStateToLocal() {
       actionUndoStack.shift();
     }
     actionRedoStack = [];
+    saveUndoRedoHistoryToLocal();
+  } else if (isRestoringUndoRedo) {
+    lastLocalMutationAtMs = Date.now();
+    saveUndoRedoHistoryToLocal();
   } else if (!isSilentServerSync && currentJson !== lastCommittedStateJson) {
     lastLocalMutationAtMs = Date.now();
   }
   lastCommittedStateJson = currentJson;
   const targetStorageKey = isSandboxDraftMode ? STORAGE_KEYS.SANDBOX_STATE : STORAGE_KEYS.STATE;
-  try {
-    localStorage.setItem(targetStorageKey, currentJson);
-  } catch (err) {
-    console.warn('Cảnh báo bộ nhớ LocalStorage:', err);
-  }
+  safeWriteLocalStorage(targetStorageKey, currentJson);
   refreshAllViews();
 }
 
@@ -11694,8 +12087,12 @@ async function syncSepayTransactionsToWeb(showUserToast = true, force = false) {
       } else if (showUserToast) {
         showToast('Dữ liệu SePay đã ở trạng thái mới nhất!', 'info');
       }
+      if (resMerge.changed || showUserToast || lastLocalMutationAtMs > 0) {
+        await syncAllToGoogleSheet(false);
+      }
+    } else if (showUserToast || lastLocalMutationAtMs > 0) {
+      await syncAllToGoogleSheet(false);
     }
-    await syncAllToGoogleSheet(false);
   } catch (err) {
     console.warn('Lỗi đồng bộ SePay về Web:', err);
     if (showUserToast) await syncAllToGoogleSheet(true);
@@ -12351,8 +12748,51 @@ function safeMergeServerData(serverData) {
     }
   }
 
-  // 3. Tuyệt đối KHÔNG lấy danh sách học sinh (serverData.students) từ Google Sheet đè ngược về Web
-  // để bảo toàn 100% thao tác chuyển sang đợt mới, sửa trạng thái và lịch học trên Web (1 chiều Web -> Sheet).
+  // 3. Bảo toàn 100% thao tác đã chỉnh sửa trên trình duyệt hiện tại.
+  // Chỉ khôi phục state từ Google Sheet nếu trình duyệt vừa mở mới (chưa có chỉnh sửa cục bộ) mà trên Google Sheet có bản lưu mới hơn (_lastSavedAtMs lớn hơn).
+  const localSavedAt = Number(appState.settings?._lastSavedAtMs || 0);
+  const serverSavedAt = Number(serverData.settings?._lastSavedAtMs || 0);
+  if (lastLocalMutationAtMs === 0 && serverSavedAt > localSavedAt && serverData.settings) {
+    const syncKeys = [
+      'classSchedulesJson',
+      'classHistoryJson',
+      'studentMetaJson',
+      'studentAttendanceJson',
+      'customGradesJson',
+      'deletedGradesJson',
+      'deletedClassesJson',
+      'defaultPeriod',
+      '_lastSavedAtMs'
+    ];
+    syncKeys.forEach(k => {
+      if (serverData.settings[k] !== undefined && serverData.settings[k] !== '') {
+        appState.settings[k] = serverData.settings[k];
+      }
+    });
+    if (Array.isArray(serverData.students) && serverData.students.length > 0) {
+      appState.students = serverData.students.map(s => ({ ...s }));
+    }
+    changed = true;
+  } else if (serverData.settings?.classHistoryJson && lastLocalMutationAtMs === 0) {
+    try {
+      const sHist = JSON.parse(serverData.settings.classHistoryJson || '[]');
+      const lHist = getClassHistoryList();
+      if (Array.isArray(sHist) && sHist.length > lHist.length) {
+        const lIds = new Set(lHist.map(h => h && h.id));
+        let histAdded = false;
+        sHist.forEach(sh => {
+          if (sh && sh.id && !lIds.has(sh.id)) {
+            lHist.push(sh);
+            histAdded = true;
+          }
+        });
+        if (histAdded) {
+          appState.settings.classHistoryJson = JSON.stringify(lHist);
+          changed = true;
+        }
+      }
+    } catch (e) {}
+  }
 
   // Thu thập học sinh vừa chuyển sang "Đã hoàn thành" (do giao dịch SePay mới thực sự phát sinh) để hiển thị thông báo
   (appState.students || []).forEach(s => {
@@ -12809,10 +13249,11 @@ function getCurrentDateTimeString() {
 }
 
 // shortcut: xóa toàn bộ cache khi vượt 3000 chuỗi, nâng cấp sang LRU nếu dữ liệu >10.000 học sinh
-const _vnToneCache = new Map();
+var _vnToneCache = null;
 function removeVietnameseTones(str) {
   const key = String(str || '');
   if (!key) return '';
+  if (!_vnToneCache) _vnToneCache = new Map();
   const hit = _vnToneCache.get(key);
   if (hit !== undefined) return hit;
   const out = key
@@ -15887,6 +16328,42 @@ function saveClassScheduleForm(event) {
   const batchOrPeriodChanged = Boolean(
     prevCfg && (prevCfg.batchLabel !== batchLabel || prevCfg.periodLabel !== periodLabel)
   );
+
+  // Nếu người dùng đổi sang Đợt mới trực tiếp trong Cài đặt Lịch học, tự động lưu Đợt cũ vào Lịch sử để không bị mất
+  if (!isNew && prevCfg && prevCfg.batchLabel && prevCfg.batchLabel !== batchLabel) {
+    const targetClsName = oldName || className;
+    const clsStudents = (appState.students || []).filter(s => s && (s.className === targetClsName || s.className === className));
+    const historyList = getClassHistoryList();
+    const alreadyArchived = historyList.some(
+      h => h && h.className === className && h.batchLabel === prevCfg.batchLabel && h.periodLabel === prevCfg.periodLabel
+    );
+    if (!alreadyArchived && clsStudents.length > 0) {
+      const paidSt = clsStudents.filter(item => item.status === 'Đã hoàn thành');
+      const totalExp = clsStudents.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
+      const totalCol = paidSt.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
+      historyList.unshift({
+        id: 'HIST_' + Date.now(),
+        archivedAt: nowStr,
+        className,
+        subject: prevCfg.subject || subject || 'Toán',
+        periodLabel: prevCfg.periodLabel || periodLabel,
+        batchLabel: prevCfg.batchLabel,
+        startDate: prevCfg.startDate,
+        endDate: prevCfg.endDate,
+        daysOfWeek: Array.isArray(prevCfg.daysOfWeek) ? [...prevCfg.daysOfWeek] : daysOfWeek,
+        sessionStates: { ...(prevCfg.sessionStates || {}) },
+        checkedSessions: countCheckedSessionsInConfig(prevCfg),
+        totalStudents: clsStudents.length,
+        paidCount: paidSt.length,
+        totalExpected: totalExp,
+        totalCollected: totalCol,
+        totalMissing: Math.max(0, totalExp - totalCol),
+        studentsSnapshot: clsStudents.map(st => ({ ...st }))
+      });
+      if (!appState.settings) appState.settings = {};
+      appState.settings.classHistoryJson = JSON.stringify(historyList);
+    }
+  }
 
   if (!isNew && oldName && oldName !== className) {
     delete map[oldName];

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thanhchi-edu-shell-v56';
+const CACHE_NAME = 'thanhchi-edu-shell-v57';
 const SHELL_ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
@@ -24,7 +24,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-store' })
       .then(res => {
         if (res && res.status === 200) {
           const clone = res.clone();
