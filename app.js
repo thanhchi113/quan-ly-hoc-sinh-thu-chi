@@ -3558,7 +3558,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v63', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v64', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -20990,9 +20990,12 @@ function renderTcDatePickerPopover() {
   const pop = document.getElementById('tc-datepicker-popover');
   if (!pop) return;
 
-  const { viewYear, viewMonth, selectedIso, title, allowClear } = _tcDatePickerState;
+  const { viewYear, viewMonth, selectedIso, peerIso, rangeRole, title, allowClear } = _tcDatePickerState;
   const now = new Date();
   const todayIso = formatYearMonthDayIso(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const rawStart = rangeRole === 'end' ? peerIso : selectedIso;
+  const rawEnd = rangeRole === 'end' ? selectedIso : peerIso;
+  const hasRange = Boolean(rawStart && rawEnd && rawStart <= rawEnd);
 
   const firstDayDate = new Date(viewYear, viewMonth - 1, 1);
   // Quy đổi Thứ Hai = 0 ... Chủ Nhật = 6
@@ -21041,19 +21044,23 @@ function renderTcDatePickerPopover() {
     yearOptions += `<option value="${y}" ${y === viewYear ? 'selected' : ''}>Năm ${y}</option>`;
   }
 
-  const selectedLabel = selectedIso ? formatShortDateVN(selectedIso) : 'Chưa chọn';
+  const selectedLabel = hasRange && rawStart !== rawEnd
+    ? `${formatShortDateVN(rawStart)} → ${formatShortDateVN(rawEnd)}`
+    : selectedIso
+    ? formatShortDateVN(selectedIso)
+    : 'Chưa chọn';
 
   pop.innerHTML = `
     <div class="tc-datepicker-header">
       <div class="flex items-center justify-between gap-2 mb-2">
-        <span class="text-xs font-extrabold uppercase tracking-normal text-slate-200 flex items-center gap-1.5">
+        <span class="text-xs font-extrabold uppercase tracking-normal text-white flex items-center gap-1.5">
           <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-amber-300"></i>
           <span>${escapeHtml(title || 'Chọn ngày')}</span>
         </span>
         <button
           type="button"
           onclick="closeTcDatePickerPopover()"
-          class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition cursor-pointer"
+          class="tc-dp-nav-btn"
           title="Đóng lịch"
         >
           <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -21080,7 +21087,7 @@ function renderTcDatePickerPopover() {
           <button
             type="button"
             onclick="stepTcDatePickerMonth(-1)"
-            class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+            class="tc-dp-nav-btn"
             title="Tháng trước"
           >
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -21088,7 +21095,7 @@ function renderTcDatePickerPopover() {
           <button
             type="button"
             onclick="stepTcDatePickerMonth(1)"
-            class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+            class="tc-dp-nav-btn"
             title="Tháng sau"
           >
             <i data-lucide="chevron-right" class="w-4 h-4"></i>
@@ -21098,30 +21105,32 @@ function renderTcDatePickerPopover() {
     </div>
     <div class="p-3">
       <div class="grid grid-cols-7 gap-1 mb-1 text-center">
-        <span class="text-xs font-extrabold text-slate-400 py-1">T2</span>
-        <span class="text-xs font-extrabold text-slate-400 py-1">T3</span>
-        <span class="text-xs font-extrabold text-slate-400 py-1">T4</span>
-        <span class="text-xs font-extrabold text-slate-400 py-1">T5</span>
-        <span class="text-xs font-extrabold text-slate-400 py-1">T6</span>
-        <span class="text-xs font-extrabold text-slate-700 py-1">T7</span>
-        <span class="text-xs font-extrabold text-rose-500 py-1">CN</span>
+        <span class="text-xs font-extrabold text-slate-500 py-1">T2</span>
+        <span class="text-xs font-extrabold text-slate-500 py-1">T3</span>
+        <span class="text-xs font-extrabold text-slate-500 py-1">T4</span>
+        <span class="text-xs font-extrabold text-slate-500 py-1">T5</span>
+        <span class="text-xs font-extrabold text-slate-500 py-1">T6</span>
+        <span class="text-xs font-extrabold text-blue-700 py-1">T7</span>
+        <span class="text-xs font-extrabold text-rose-600 py-1">CN</span>
       </div>
       <div class="grid grid-cols-7 gap-1">
         ${cells
           .map(c => {
-            const isSel = c.iso === selectedIso;
+            const isSel = Boolean(selectedIso && c.iso === selectedIso);
+            const isPeer = Boolean(!isSel && peerIso && c.iso === peerIso);
+            const isInRange = Boolean(!isSel && !isPeer && hasRange && c.iso > rawStart && c.iso < rawEnd);
             const isToday = c.iso === todayIso;
             return `<button
               type="button"
               onclick="selectTcDatePickerDay('${c.iso}')"
-              class="tc-dp-day ${isSel ? 'is-selected' : ''} ${isToday ? 'is-today' : ''} ${
-              c.outside ? 'is-outside' : ''
-            }"
+              class="tc-dp-day ${isSel ? 'is-selected' : ''} ${isPeer ? 'is-range-peer' : ''} ${
+              isInRange ? 'is-in-range' : ''
+            } ${isToday ? 'is-today' : ''} ${c.outside ? 'is-outside' : ''}"
             >${c.day}</button>`;
           })
           .join('')}
       </div>
-      <div class="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+      <div class="mt-2.5 pt-2.5 border-t border-slate-200 flex items-center justify-between gap-2">
         ${
           allowClear
             ? `<button
@@ -21131,13 +21140,15 @@ function renderTcDatePickerPopover() {
               >
                 Xóa
               </button>`
-            : `<span class="text-[11px] font-semibold text-slate-400">Đang chọn:</span>`
+            : `<span class="text-[11px] font-semibold text-slate-500">Đang chọn:</span>`
         }
-        <span class="text-[11px] font-extrabold text-slate-900">${escapeHtml(selectedLabel)}</span>
+        <span class="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-[11px] font-extrabold text-blue-900 tabular-nums">${escapeHtml(
+          selectedLabel
+        )}</span>
         <button
           type="button"
           onclick="selectTcDatePickerDay('${todayIso}')"
-          class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-100 text-slate-900 text-[11px] font-extrabold transition cursor-pointer"
+          class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-extrabold transition cursor-pointer"
         >
           Hôm nay
         </button>
@@ -21154,7 +21165,12 @@ function openTcDatePicker(options = {}) {
   const pop = document.getElementById('tc-datepicker-popover');
   if (!pop) return;
 
+  if (_tcDatePickerState.anchorEl?.classList) {
+    _tcDatePickerState.anchorEl.classList.remove('tc-datepicker-anchor-active');
+  }
+
   const parsed = parseIsoYearMonthDay(options.selectedIso);
+  const parsedPeer = parseIsoYearMonthDay(options.peerIso);
   const now = new Date();
   _tcDatePickerState = {
     open: true,
@@ -21162,12 +21178,18 @@ function openTcDatePicker(options = {}) {
     pointerDownInside: true,
     anchorEl: options.anchorEl || null,
     selectedIso: parsed ? options.selectedIso : '',
-    viewYear: parsed ? parsed.year : now.getFullYear(),
-    viewMonth: parsed ? parsed.month : now.getMonth() + 1,
+    peerIso: parsedPeer ? options.peerIso : '',
+    rangeRole: options.rangeRole || '',
+    viewYear: parsed ? parsed.year : parsedPeer ? parsedPeer.year : now.getFullYear(),
+    viewMonth: parsed ? parsed.month : parsedPeer ? parsedPeer.month : now.getMonth() + 1,
     title: options.title || 'Chọn ngày',
     allowClear: options.allowClear !== false,
     onSelect: typeof options.onSelect === 'function' ? options.onSelect : null
   };
+
+  if (_tcDatePickerState.anchorEl?.classList) {
+    _tcDatePickerState.anchorEl.classList.add('tc-datepicker-anchor-active');
+  }
 
   renderTcDatePickerPopover();
   pop.classList.remove('hidden');
@@ -21208,6 +21230,9 @@ function selectTcDatePickerDay(isoStr) {
 }
 
 function closeTcDatePickerPopover() {
+  if (_tcDatePickerState.anchorEl?.classList) {
+    _tcDatePickerState.anchorEl.classList.remove('tc-datepicker-anchor-active');
+  }
   _tcDatePickerState.open = false;
   const pop = document.getElementById('tc-datepicker-popover');
   if (pop) pop.classList.add('hidden');
@@ -21233,6 +21258,15 @@ function openStudentStartDatePicker(arg1, arg2, arg3) {
   });
 }
 
+const RANGE_DATE_INPUT_PAIRS = {
+  'cs-form-start-date': ['cs-form-end-date', 'start'],
+  'cs-form-end-date': ['cs-form-start-date', 'end'],
+  'rollover-new-start': ['rollover-new-end', 'start'],
+  'rollover-new-end': ['rollover-new-start', 'end'],
+  'filter-stu-from-date': ['filter-stu-to-date', 'start'],
+  'filter-stu-to-date': ['filter-stu-from-date', 'end']
+};
+
 function openTcDatePickerForInput(inputEl, customTitle = '') {
   if (!inputEl) return;
   const labelEl = inputEl.closest('div')?.querySelector('label');
@@ -21241,9 +21275,13 @@ function openTcDatePickerForInput(inputEl, customTitle = '') {
     inputEl.getAttribute('title') ||
     (labelEl ? labelEl.textContent.trim() : '') ||
     'Chọn ngày tháng';
+  const pairCfg = inputEl.id ? RANGE_DATE_INPUT_PAIRS[inputEl.id] : null;
+  const peerIso = pairCfg ? document.getElementById(pairCfg[0])?.value || '' : '';
   openTcDatePicker({
     anchorEl: inputEl,
     selectedIso: inputEl.value || '',
+    peerIso,
+    rangeRole: pairCfg ? pairCfg[1] : '',
     title: titleText,
     allowClear: true,
     onSelect: nextIso => {
