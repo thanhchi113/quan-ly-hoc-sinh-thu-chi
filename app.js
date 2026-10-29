@@ -214,15 +214,26 @@ function stripRedundantTestPrefix(text) {
 
 function isDraftBankAccountNumber(accStr, stateObj = appState) {
   const clean = String(accStr || '').trim().toUpperCase();
-  const stg = (stateObj || appState)?.settings || {};
-  const activeAcc = String(stg.bankAccountNo || '').trim().toUpperCase();
-  if (activeAcc && clean === activeAcc) return false;
-  return clean === '5801434567' || clean === '962478SJJ2';
+  if (!clean) return false;
+  if (clean === '8601774789' || clean === '96247E8DEZ') return false;
+  if (clean === '5801434567' || clean === '962478SJJ2') return true;
+  try {
+    const raw = (stateObj || appState)?.settings?.receivingAccountsJson;
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        const hit = arr.find(a => a && String(a.bankAccountNo || '').trim().toUpperCase() === clean);
+        if (hit) return Boolean(hit.isTest);
+      }
+    }
+  } catch (e) {}
+  return false;
 }
 
 function isActiveBankAccountDraft(stateObj = appState) {
   const stg = (stateObj || appState)?.settings || {};
-  return stg.activeBankProfileId === 'TEST_BIDV' || isDraftBankAccountNumber(stg.bankAccountNo);
+  if (stg.bankAccountNo && !isDraftBankAccountNumber(stg.bankAccountNo, stateObj)) return false;
+  return stg.activeBankProfileId === 'TEST_BIDV' || isDraftBankAccountNumber(stg.bankAccountNo, stateObj);
 }
 
 function getDraftBankTxIdsSet(stateObj = appState) {
@@ -247,27 +258,46 @@ function markDraftBankTx(stateObj, txId) {
   }
 }
 
+function unmarkDraftBankTx(stateObj, txId) {
+  const target = stateObj || appState;
+  const cleanId = String(txId || '').trim();
+  if (!target || !cleanId || !target.settings) return false;
+  let changed = false;
+  const set = getDraftBankTxIdsSet(target);
+  if (set.has(cleanId)) {
+    set.delete(cleanId);
+    target.settings.draftBankTxIdsJson = JSON.stringify(Array.from(set));
+    changed = true;
+  }
+  const incMap = getDraftTxIncludeMap(target);
+  if (incMap[cleanId] !== undefined) {
+    delete incMap[cleanId];
+    target.settings.draftTxIncludeJson = JSON.stringify(incMap);
+    changed = true;
+  }
+  return changed;
+}
+
 function isDraftBankTransaction(tx, stateObj = appState) {
   if (!tx || isSimulatedBankTestItem(tx)) return false;
+  if (tx.isDraftBank === false || tx.isDraftBank === 'false') return false;
+  const txAcc = String(tx.bankAccountNo || '').trim().toUpperCase();
+  if (txAcc === '8601774789' || txAcc === '96247E8DEZ') return false;
+  if (/8601774789|96247E8DEZ/.test(String(tx.description || ''))) return false;
   if (tx.isDraftBank === true || tx.isDraftBank === 'true') return true;
   const txId = String(tx.id || '').trim();
   if (txId && getDraftBankTxIdsSet(stateObj).has(txId)) return true;
 
-  const stg = (stateObj || appState)?.settings || {};
-  const activeAcc = String(stg.bankAccountNo || '').trim();
-  const txAcc = String(tx.bankAccountNo || '').trim();
-  if (activeAcc && (txAcc === activeAcc || String(tx.description || '').includes(activeAcc))) {
-    return false;
-  }
-
   const hay = `${tx.method || ''} ${tx.description || ''} ${tx.bankAccountNo || ''}`;
-  return /STK\s*Nh[aá]p/i.test(hay);
+  return /5801434567|962478SJJ2|STK\s*Nh[aá]p/i.test(hay);
 }
 
 function isDraftPaymentRequest(req, stateObj = appState) {
   if (!req || isSimulatedBankTestItem(req)) return false;
-  if (req.isDraftBank === true || req.isDraftBank === 'true') return true;
+  if (req.isDraftBank === false || req.isDraftBank === 'false') return false;
   const hay = `${req.note || ''} ${req.payerName || ''} ${req.bankAccountNo || ''}`;
+  if (/8601774789|96247E8DEZ/.test(hay)) return false;
+  if (req.isDraftBank === true || req.isDraftBank === 'true') return true;
   return /5801434567|962478SJJ2|STK\s*Nh[aá]p/i.test(hay);
 }
 
@@ -3528,7 +3558,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v62', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v63', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -3888,6 +3918,64 @@ function repairCorruptedStatusAndPeriodV58(state) {
       }
     });
   }
+
+  // Tự động khôi phục các giao dịch chuyển khoản vào TK Chính (8601774789) nhưng từng bị đóng dấu nhầm là STK Nháp khi Quản lý bấm Duyệt
+  if (state.settings && !state.settings.isSandboxData) {
+    if (!state.settings._restoredMainBankV63 && (state.settings.activeBankProfileId === 'TEST_BIDV' || state.settings.bankAccountNo === '5801434567')) {
+      state.settings.bankBin = 'BIDV';
+      state.settings.bankAccountNo = '8601774789';
+      state.settings.bankAccountName = 'HKD TRUNG TAM HUYNH THANH CHI';
+      state.settings.activeBankProfileId = 'MAIN_BIDV';
+      state.settings.sepayLinkedAccount = 'BIDV • 8601774789';
+      state.settings._restoredMainBankV63 = 'true';
+      state._repairedV63 = true;
+    }
+
+    const mainAccountVerifiedCodes = new Set();
+    (state.paymentRequests || []).forEach(r => {
+      if (!r || isDraftPaymentRequest(r, state)) return;
+      const isSepayMainReq =
+        /^YC_(?:SEPAY|STK_SEPAY)_/i.test(String(r.id || '')) ||
+        Boolean(r.bankVerified) ||
+        /Chuyển khoản STK \(SePay\)|SePay đã ghi nhận/i.test(`${r.payerName || ''} ${r.note || ''}`);
+      if (isSepayMainReq && r.studentCode) {
+        mainAccountVerifiedCodes.add(String(r.studentCode).trim().toUpperCase());
+      }
+    });
+
+    if (Array.isArray(state.transactions)) {
+      state.transactions.forEach(t => {
+        if (!t || !isDraftBankTransaction(t, state)) return;
+        const tid = String(t.id || '').trim();
+        const desc = String(t.description || '');
+        if (/^GD_SEPAY_/i.test(tid) || /Tự động lưu (?:GD|CK) SePay \(5801434567\)|962478SJJ2/i.test(desc)) {
+          return;
+        }
+        const codeUpper = String(t.studentCode || '').trim().toUpperCase();
+        const isFalseDraftFromMainSepay =
+          desc.includes('(Chuyển khoản STK (SePay))') ||
+          (codeUpper && mainAccountVerifiedCodes.has(codeUpper) && String(t.createdBy || '').includes('Duyệt'));
+        if (isFalseDraftFromMainSepay) {
+          unmarkDraftBankTx(state, tid);
+          t.isDraftBank = false;
+          t.bankAccountNo = '8601774789';
+          t.description = desc.replace(/^\s*\[STK\s*Nh[aá]p[^\]]*\]\s*/i, '').trim();
+          if (/STK\s*Nh[aá]p/i.test(String(t.method || ''))) {
+            t.method = desc.includes('(Chuyển khoản STK (SePay))')
+              ? 'Chuyển khoản STK (Tự động)'
+              : 'Chuyển khoản';
+          }
+          if (codeUpper && Array.isArray(state.students)) {
+            const stu = state.students.find(s => s && String(s.studentCode || '').trim().toUpperCase() === codeUpper);
+            if (stu && typeof stu.note === 'string' && /\[STK\s*Nh[aá]p/i.test(stu.note)) {
+              stu.note = stu.note.replace(/\[STK\s*Nh[aá]p[^\]]*\]\s*/gi, '').trim();
+            }
+          }
+          state._repairedV63 = true;
+        }
+      });
+    }
+  }
   return state;
 }
 
@@ -3938,6 +4026,10 @@ function loadStateFromLocal() {
         cleaned = parsed;
       }
       cleaned = repairCorruptedStatusAndPeriodV58(cleaned);
+      if (cleaned && cleaned._repairedV63) {
+        delete cleaned._repairedV63;
+        safeWriteLocalStorage(STORAGE_KEYS.DIRTY_SYNC, '1');
+      }
       safeWriteLocalStorage(STORAGE_KEYS.STATE, JSON.stringify(cleaned));
       return cleaned;
     }
@@ -5923,11 +6015,28 @@ async function submitParentPaymentConfirm(event) {
   const note = document.getElementById('pay-form-note').value.trim();
   const nowStr = getCurrentDateTimeString();
   const todayDate = new Date().toISOString().slice(0, 10);
-  const isDraftQrAcc = isActiveBankAccountDraft(appState);
-  const draftNotePrefix = isDraftQrAcc ? '[STK Nháp 5801434567] ' : '';
 
   // Kiểm tra xem ngân hàng / SePay đã ghi nhận chuyển tiền thành công vào STK cho học sinh này chưa
   const hasVerifiedBankTx = checkHasVerifiedBankTransfer(student, typedStudentName);
+  const hasMainVerifiedReqOrTx =
+    hasVerifiedBankTx &&
+    student &&
+    ((appState.paymentRequests || []).some(
+      r =>
+        r &&
+        r.bankVerified &&
+        !isDraftPaymentRequest(r, appState) &&
+        String(r.studentCode || '').trim().toUpperCase() === String(student.studentCode || '').trim().toUpperCase()
+    ) ||
+      (appState.transactions || []).some(
+        t =>
+          t &&
+          t.type === 'Thu' &&
+          !isDraftBankTransaction(t, appState) &&
+          String(t.studentCode || '').trim().toUpperCase() === String(student.studentCode || '').trim().toUpperCase()
+      ));
+  const isDraftQrAcc = hasMainVerifiedReqOrTx ? false : isActiveBankAccountDraft(appState);
+  const draftNotePrefix = isDraftQrAcc ? '[STK Nháp 5801434567] ' : '';
   const autoApproveOn = isAutoApprovePaymentEnabled();
   const shouldAutoApproveNow = Boolean(hasVerifiedBankTx && autoApproveOn);
 
@@ -6702,7 +6811,8 @@ async function handleReviewPaymentRequest(requestId, decision) {
     if (finalAmt > 0 && finalAmt < 20000) {
       recordExactSmallAmount(appState, txId, '', finalAmt);
     }
-    const isDraftReq = isDraftPaymentRequest(req, appState) || isActiveBankAccountDraft(appState);
+    // Chỉ gắn STK Nháp khi chính yêu cầu chuyển khoản đó thuộc STK Nháp (5801434567), tuyệt đối không gán nhầm giao dịch TK Chính
+    const isDraftReq = isDraftPaymentRequest(req, appState);
     if (isDraftReq) {
       markDraftBankTx(appState, txId);
     }
@@ -6718,6 +6828,10 @@ async function handleReviewPaymentRequest(requestId, decision) {
     const periodDescPart = resolvedBatch
       ? `${resolvedBatch}${resolvedPeriod ? ` (${resolvedPeriod})` : ''}`
       : resolvedPeriod || 'kỳ này';
+    const isSepayVerifiedReq =
+      /^YC_(?:SEPAY|STK_SEPAY)_/i.test(String(req.id || '')) ||
+      Boolean(req.bankVerified) ||
+      /SePay/i.test(`${req.payerName || ''} ${req.note || ''}`);
 
     createdTransaction = {
       id: txId,
@@ -6732,7 +6846,13 @@ async function handleReviewPaymentRequest(requestId, decision) {
       className: resolvedClsName,
       batchLabel: resolvedBatch,
       period: resolvedPeriod,
-      method: isDraftReq ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản',
+      bankAccountNo: isDraftReq ? '5801434567' : '8601774789',
+      isDraftBank: isDraftReq,
+      method: isDraftReq
+        ? 'Chuyển khoản STK Nháp'
+        : isSepayVerifiedReq
+        ? 'Chuyển khoản STK (Tự động)'
+        : 'Chuyển khoản',
       receiptUrl: req.receiptUrl || '',
       createdBy: 'Quản lý (Duyệt CK)'
     };
@@ -13355,7 +13475,6 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       const accNum =
         (accIdx !== -1 && String(r[accIdx] || '').trim()) ||
         subAccVal ||
-        state.settings.bankAccountNo ||
         '8601774789';
       const isDraftSepayAcc = isDraftBankAccountNumber(accNum, state) || isDraftBankAccountNumber(subAccVal, state);
       const draftDescPrefix = isDraftSepayAcc ? '[STK Nháp 5801434567] ' : '';
@@ -13413,11 +13532,40 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         state.settings.sepayBalance = String(accumVal);
       }
 
-      const alreadyInPaymentReqs = (state.paymentRequests || []).some(req => {
+      const matchedExistingReq = (state.paymentRequests || []).find(req => {
         const rid = String(req?.id || '').trim();
         return rid === `YC_SEPAY_${cleanKey}` || rid === `YC_STK_${cleanKey}` || rid === `YC_STK_SEPAY_${cleanKey}`;
       });
-      if (alreadyInPaymentReqs) continue;
+      if (matchedExistingReq) {
+        if (!isDraftSepayAcc) {
+          if (matchedExistingReq.isDraftBank) {
+            matchedExistingReq.isDraftBank = false;
+            reconciledAny = true;
+          }
+          const reqStuCode = String(matchedExistingReq.studentCode || '').trim().toUpperCase();
+          if (matchedExistingReq.status === 'Đã duyệt' && reqStuCode && Array.isArray(state.transactions)) {
+            state.transactions.forEach(t => {
+              if (
+                t &&
+                String(t.studentCode || '').trim().toUpperCase() === reqStuCode &&
+                isDraftBankTransaction(t, state) &&
+                !/^GD_SEPAY_/i.test(String(t.id || '')) &&
+                !/Tự động lưu (?:GD|CK) SePay \(5801434567\)|962478SJJ2/i.test(String(t.description || ''))
+              ) {
+                unmarkDraftBankTx(state, t.id);
+                t.isDraftBank = false;
+                t.bankAccountNo = accNum;
+                t.description = String(t.description || '').replace(/^\s*\[STK\s*Nh[aá]p[^\]]*\]\s*/i, '').trim();
+                if (/STK\s*Nh[aá]p/i.test(String(t.method || ''))) {
+                  t.method = 'Chuyển khoản STK (Tự động)';
+                }
+                reconciledAny = true;
+              }
+            });
+          }
+        }
+        continue;
+      }
 
       const editedOverrides = getEditedTxOverridesMap(state);
       const existingMatchedTx = state.transactions.find(t => {
@@ -18624,7 +18772,7 @@ async function toggleAutoApprovePayment(forceVal) {
         );
         if (!alreadyHasTx) {
           const autoId = 'GD_AUTO_' + Date.now() + '_' + autoApprovedCount;
-          const isDraftReq = isDraftPaymentRequest(req, appState) || isActiveBankAccountDraft(appState);
+          const isDraftReq = isDraftPaymentRequest(req, appState);
           if (isDraftReq) markDraftBankTx(appState, autoId);
           appState.transactions.unshift({
             id: autoId,
@@ -18635,6 +18783,8 @@ async function toggleAutoApprovePayment(forceVal) {
             description: `${isDraftReq ? '[STK Nháp 5801434567] ' : ''}Tự động duyệt học phí đã nhận vào STK - ${req.studentCode} ${req.studentName} (${req.period})`,
             studentCode: req.studentCode,
             batchLabel: req.batchLabel || getCurrentBatchLabelForClass(req.className || stu?.className || '', appState),
+            bankAccountNo: isDraftReq ? '5801434567' : '8601774789',
+            isDraftBank: isDraftReq,
             method: isDraftReq ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (Tự động)',
             receiptUrl: req.receiptUrl || '',
             createdBy: 'Duyệt tự động SePay'
@@ -19299,7 +19449,7 @@ async function saveSepayApiTokenFromModal() {
 }
 
 async function testSepayDraftAccount5801434567() {
-  // Chuyển sang STK Nháp 5801434567 BIDV để test chuẩn thực tế
+  const prevProfileId = getCurrentActiveBankProfile()?.id || 'MAIN_BIDV';
   await selectReceivingBankAccount('TEST_BIDV', true);
 
   const targetStu =
@@ -19319,6 +19469,9 @@ async function testSepayDraftAccount5801434567() {
   }
 
   await simulateIncomingBankTransfer();
+  if (!isSandboxDraftMode && prevProfileId && prevProfileId !== 'TEST_BIDV') {
+    await selectReceivingBankAccount(prevProfileId, true);
+  }
 }
 
 function playTingSound() {
