@@ -3558,7 +3558,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v65', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v66', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -4076,6 +4076,9 @@ function detectActionDescription(prevJson, nextJsonOrObj) {
         return `Đổi trạng thái ${b.fullName}: ${a.status} → ${b.status}`;
       }
       if (Number(a.tuitionFee) !== Number(b.tuitionFee)) {
+        if (prev.settings?.classSchedulesJson !== next.settings?.classSchedulesJson) {
+          return `Tích buổi học & nhân học phí theo số buổi (${b.className || ''})`.trim();
+        }
         return `Đổi học phí ${b.fullName}: ${formatCurrency(a.tuitionFee)} → ${formatCurrency(b.tuitionFee)}`;
       }
       if ((a.note || '') !== (b.note || '')) {
@@ -7429,6 +7432,24 @@ function saveStudentMetaMap(map, syncMsg = '') {
   }
 }
 
+function resolveStudentMetaEntry(metaMap, s, ensureWrite = false) {
+  if (!metaMap || !s) return { key: '', meta: {} };
+  const rawCode = String(s.studentCode || '').trim();
+  const codeUpper = rawCode.toUpperCase();
+  const idKey = String(s.id || '').trim();
+  const canonicalKey = codeUpper || idKey;
+  const merged = {
+    ...(idKey && metaMap[idKey] ? metaMap[idKey] : {}),
+    ...(rawCode && metaMap[rawCode] ? metaMap[rawCode] : {}),
+    ...(codeUpper && metaMap[codeUpper] ? metaMap[codeUpper] : {})
+  };
+  if (ensureWrite && canonicalKey) {
+    metaMap[canonicalKey] = merged;
+    if (rawCode && rawCode !== canonicalKey && metaMap[rawCode]) delete metaMap[rawCode];
+  }
+  return { key: canonicalKey, meta: ensureWrite && canonicalKey ? metaMap[canonicalKey] : merged };
+}
+
 function buildStudentStatsContext(scheduleMap = null) {
   const historyList = typeof getClassHistoryList === 'function' ? getClassHistoryList() : [];
   return {
@@ -7441,8 +7462,7 @@ function buildStudentStatsContext(scheduleMap = null) {
 
 function getStudentStatistics(s, ctx = null) {
   const metaMap = ctx ? ctx.metaMap : getStudentMetaMap();
-  const codeKey = s.studentCode || s.id;
-  const meta = metaMap[codeKey] || metaMap[String(codeKey).toUpperCase()] || {};
+  const { meta } = resolveStudentMetaEntry(metaMap, s, false);
   const chronologicalHist = ctx
     ? ctx.chronologicalHist
     : [...(typeof getClassHistoryList === 'function' ? getClassHistoryList() : [])].reverse();
@@ -8928,11 +8948,22 @@ function handleStudentModalClassSelectChange(selectedVal) {
     inputEl.classList.add('hidden');
   }
   if (!isEditing && selectedVal && typeof getClassSchedulesMap === 'function') {
-    const cfg = getClassSchedulesMap()[selectedVal];
+    const map = getClassSchedulesMap();
+    const cfg = map[selectedVal];
     const periodEl = document.getElementById('stu-form-period');
     const startDateEl = document.getElementById('stu-form-start-date');
+    const feeEl = document.getElementById('stu-form-fee');
     if (cfg?.periodLabel && periodEl) periodEl.value = cfg.periodLabel;
     if (cfg?.startDate && startDateEl) startDateEl.value = cfg.startDate;
+    if (feeEl) {
+      feeEl._lastParsedMultiplication = null;
+      if (cfg?.feeMode === 'PER_SESSION' && normalizeStoredVnd(cfg.perSessionRate) > 0) {
+        const sessCnt = getClassTotalSessionsCount(selectedVal, map);
+        feeEl.value = toShortMoney(normalizeStoredVnd(cfg.perSessionRate) * sessCnt);
+      } else {
+        feeEl.value = 600;
+      }
+    }
   }
 }
 
@@ -8940,6 +8971,8 @@ function openStudentModal(studentId = '', preferredClass = '') {
   const modal = document.getElementById('student-modal');
   const title = document.getElementById('student-modal-title');
   const startDateInput = document.getElementById('stu-form-start-date');
+  const feeInputEl = document.getElementById('stu-form-fee');
+  if (feeInputEl) feeInputEl._lastParsedMultiplication = null;
 
   if (studentId) {
     const s = appState.students.find(item => item.id === studentId);
@@ -8961,6 +8994,10 @@ function openStudentModal(studentId = '', preferredClass = '') {
     const defaultCls = resolveDefaultModalClassName(preferredClass);
     const map = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
     const clsCfg = defaultCls ? map[defaultCls] : null;
+    const defaultFeeVnd =
+      clsCfg?.feeMode === 'PER_SESSION' && normalizeStoredVnd(clsCfg.perSessionRate) > 0
+        ? normalizeStoredVnd(clsCfg.perSessionRate) * getClassTotalSessionsCount(defaultCls, map)
+        : 600000;
     title.textContent = 'Thêm Học Sinh Mới';
     document.getElementById('stu-form-id').value = '';
     document.getElementById('stu-form-code').value = generateNextStudentCode();
@@ -8970,7 +9007,7 @@ function openStudentModal(studentId = '', preferredClass = '') {
       clsCfg?.periodLabel || appState.settings.defaultPeriod || 'Tháng 10/2026';
     document.getElementById('stu-form-parent').value = '';
     document.getElementById('stu-form-phone').value = '';
-    document.getElementById('stu-form-fee').value = 600;
+    document.getElementById('stu-form-fee').value = toShortMoney(defaultFeeVnd);
     document.getElementById('stu-form-status').value = 'Chưa đóng';
     document.getElementById('stu-form-note').value = '';
     if (startDateInput) startDateInput.value = clsCfg?.startDate || new Date().toISOString().slice(0, 10);
@@ -9021,7 +9058,16 @@ function saveStudentForm(event) {
   );
   const parentName = document.getElementById('stu-form-parent').value.trim();
   const parentPhone = document.getElementById('stu-form-phone').value.trim();
-  const tuitionFee = fromShortMoney(document.getElementById('stu-form-fee').value);
+  const stuFeeInputEl = document.getElementById('stu-form-fee');
+  const rawStuFeeVal = stuFeeInputEl?.value;
+  const typedFeeMult =
+    parseMoneyMultiplication(rawStuFeeVal) ||
+    (stuFeeInputEl?._lastParsedMultiplication &&
+    toShortMoney(stuFeeInputEl._lastParsedMultiplication.totalVnd) === toShortMoney(rawStuFeeVal)
+      ? stuFeeInputEl._lastParsedMultiplication
+      : null);
+  if (stuFeeInputEl) stuFeeInputEl._lastParsedMultiplication = null;
+  const tuitionFee = typedFeeMult ? typedFeeMult.totalVnd : fromShortMoney(rawStuFeeVal);
   const status = document.getElementById('stu-form-status').value || 'Chưa đóng';
   const note = document.getElementById('stu-form-note').value.trim();
   const startDateIso = (document.getElementById('stu-form-start-date')?.value || '').trim();
@@ -9133,21 +9179,48 @@ function saveStudentForm(event) {
   }
 
   const metaMap = getStudentMetaMap();
-  const key = String(studentCode || targetRecordId).trim().toUpperCase();
-  if (!metaMap[key]) metaMap[key] = {};
+  const { meta: stuMeta } = resolveStudentMetaEntry(
+    metaMap,
+    { id: targetRecordId, studentCode },
+    true
+  );
   if (startDateIso) {
-    metaMap[key].startDate = startDateIso;
+    stuMeta.startDate = startDateIso;
+  }
+  const targetClsCfg = map[className] || {};
+  if (typedFeeMult) {
+    stuMeta.feeMode = 'PER_SESSION';
+    stuMeta.perSessionRate = typedFeeMult.rateVnd;
+    stuMeta.lastSessionCount = typedFeeMult.sessions;
+  } else if (oldStuSnapshot) {
+    if (
+      stuMeta.feeMode === 'PER_SESSION' &&
+      normalizeStoredVnd(oldStuSnapshot.tuitionFee) !== tuitionFee
+    ) {
+      stuMeta.feeMode = 'FIXED';
+    }
+  } else if (
+    targetClsCfg.feeMode === 'PER_SESSION' &&
+    normalizeStoredVnd(targetClsCfg.perSessionRate) > 0
+  ) {
+    const clsSessCnt = getClassTotalSessionsCount(className, map);
+    const clsExpectedFee = normalizeStoredVnd(targetClsCfg.perSessionRate) * clsSessCnt;
+    if (tuitionFee === clsExpectedFee) {
+      stuMeta.feeMode = 'PER_SESSION';
+      stuMeta.perSessionRate = normalizeStoredVnd(targetClsCfg.perSessionRate);
+      stuMeta.lastSessionCount = clsSessCnt;
+    }
   }
   if (oldStuSnapshot && oldStuSnapshot.className && oldStuSnapshot.className !== className) {
     const oldCfg = map[oldStuSnapshot.className] || {};
-    if (!Array.isArray(metaMap[key].transferHistory)) metaMap[key].transferHistory = [];
-    metaMap[key].transferHistory.push({
+    if (!Array.isArray(stuMeta.transferHistory)) stuMeta.transferHistory = [];
+    stuMeta.transferHistory.push({
       id: 'TR_' + Date.now(),
       transferredAt: nowStr,
       mode: oldStuSnapshot.period !== period || status === 'Chưa đóng' ? 'NEW_BATCH' : 'SAME_BATCH',
       fromClass: oldStuSnapshot.className,
       toClass: className,
-      startDate: oldCfg.startDate || metaMap[key].startDate || '',
+      startDate: oldCfg.startDate || stuMeta.startDate || '',
       batchLabel: oldCfg.batchLabel || 'ĐỢT TRƯỚC',
       periodLabel: oldStuSnapshot.period || oldCfg.periodLabel || '',
       dateRange:
@@ -14545,19 +14618,7 @@ function isFullVndAmount(num) {
   return abs >= 3000 && abs % 1000 === 0;
 }
 
-// Rút gọn 3 số 000 cuối khi hiển thị trong ô nhập tiền (VD: 5000 -> 5, 600000 -> 600, 2000000 -> 2000, 50000 -> 50; nếu đã là 5, 600 hoặc 2000 thì giữ nguyên)
-function toShortMoney(val) {
-  const num = parseRawMoneyDigits(val);
-  if (num === 0) return 0;
-  if (isFullVndAmount(num)) {
-    return Math.round(num / 1000);
-  }
-  return num;
-}
-
-// Chuyển từ số tiền rút gọn (VD: 5, 600, 2000, "1.200") HOẶC số tiền đầy đủ (VD: 5000, 600000, "600.000", 2000000, 50000)
-// sang số tiền VNĐ đầy đủ chuẩn xác 100% (5000, 600000, 2000000, 1200000, 50000)
-function fromShortMoney(val) {
+function fromShortMoneySingle(val) {
   const num = parseRawMoneyDigits(val);
   if (num === 0) return 0;
   if (isFullVndAmount(num)) {
@@ -14566,8 +14627,63 @@ function fromShortMoney(val) {
   return Math.round(num * 1000);
 }
 
+// Nhận diện phép nhân Tiền 1 buổi × Số buổi (VD: "75*8", "75x10", "50 * 12", "75.000 * 8b", "8 * 75000")
+function parseMoneyMultiplication(val) {
+  if (typeof val !== 'string') return null;
+  const s = val.trim();
+  const m = s.match(
+    /^([0-9][0-9.,\s]*(?:k|ng|nghìn|nghin|tr|triệu|trieu|đ|d|₫|vnd)?)\s*[*x×]\s*([0-9][0-9.,\s]*(?:b|buổi|buoi|k|ng|nghìn|nghin|tr|triệu|trieu|đ|d|₫|vnd)?)$/i
+  );
+  if (!m) return null;
+  const leftRaw = m[1].trim();
+  const rightRaw = m[2].trim();
+  const leftHasMoneyUnit = /(?:k|ng|nghìn|nghin|tr|triệu|trieu|đ|d|₫|vnd)$/i.test(leftRaw);
+  const rightHasSessionUnit = /(?:b|buổi|buoi)$/i.test(rightRaw);
+  const rightHasMoneyUnit = /(?:k|ng|nghìn|nghin|tr|triệu|trieu|đ|d|₫|vnd)$/i.test(rightRaw);
+  const leftDigits = parseRawMoneyDigits(leftRaw);
+  const rightDigits = parseRawMoneyDigits(rightRaw);
+  if (leftDigits <= 0 || rightDigits <= 0) return null;
+
+  let rateVnd = 0;
+  let sessions = 0;
+  if (
+    !leftHasMoneyUnit &&
+    !rightHasSessionUnit &&
+    (rightHasMoneyUnit || isFullVndAmount(rightDigits)) &&
+    leftDigits <= 100
+  ) {
+    sessions = leftDigits;
+    rateVnd = fromShortMoneySingle(rightRaw);
+  } else {
+    rateVnd = fromShortMoneySingle(leftRaw);
+    sessions = rightDigits;
+  }
+  if (rateVnd <= 0 || sessions <= 0) return null;
+  return { rateVnd, sessions, totalVnd: Math.round(rateVnd * sessions) };
+}
+
+// Rút gọn 3 số 000 cuối khi hiển thị trong ô nhập tiền (VD: 5000 -> 5, 600000 -> 600, 2000000 -> 2000, 50000 -> 50; nếu đã là 5, 600 hoặc 2000 thì giữ nguyên)
+function toShortMoney(val) {
+  const mult = parseMoneyMultiplication(val);
+  if (mult) return Math.round(mult.totalVnd / 1000);
+  const num = parseRawMoneyDigits(val);
+  if (num === 0) return 0;
+  if (isFullVndAmount(num)) {
+    return Math.round(num / 1000);
+  }
+  return num;
+}
+
+// Chuyển từ số tiền rút gọn (VD: 5, 600, 2000, "1.200"), phép nhân (VD: "75*8"), HOẶC số tiền đầy đủ (VD: 5000, 600000, "600.000")
+// sang số tiền VNĐ đầy đủ chuẩn xác 100%
+function fromShortMoney(val) {
+  const mult = parseMoneyMultiplication(val);
+  if (mult) return mult.totalVnd;
+  return fromShortMoneySingle(val);
+}
+
 // Nếu người dùng gõ dư 3 số 000 (VD: 600000, 600.000, 50000, 2000000), tự động cắt gọn 3 số 000 trong ô nhập (thành 600, 50, 2000)
-// Có chống giật khi đang gõ dở tay (debounce 450ms khi đang gõ, và thực thi ngay lập tức khi rời ô / nhấn Enter)
+// Có chống giật khi đang gõ dở tay (debounce 450ms khi đang gõ, giữ nguyên dấu * / x khi đang nhập phép nhân và tính kết quả khi rời ô / nhấn Enter)
 function autoShortenMoneyInput(inputEl, forceNow = false) {
   if (!inputEl) return;
   if (inputEl._shortenTimer) {
@@ -14575,13 +14691,37 @@ function autoShortenMoneyInput(inputEl, forceNow = false) {
     inputEl._shortenTimer = null;
   }
 
+  const rawNow = String(inputEl.value || '').trim();
+  const hasMultSymbol = /[*x×]/i.test(rawNow);
+
   const applyShorten = () => {
     const raw = String(inputEl.value || '').trim();
-    if (!raw) return;
+    if (!raw) {
+      inputEl._lastParsedMultiplication = null;
+      return;
+    }
+    const mult = parseMoneyMultiplication(raw);
+    if (mult) {
+      inputEl._lastParsedMultiplication = mult;
+      if (forceNow) {
+        inputEl.value = String(toShortMoney(mult.totalVnd));
+      }
+      inputEl.title = `${formatCurrency(mult.rateVnd)}/buổi × ${mult.sessions} buổi = ${formatCurrency(mult.totalVnd)}`;
+      return;
+    }
+    if (!forceNow && /[*x×]/i.test(raw)) {
+      return;
+    }
     const digits = parseRawMoneyDigits(raw);
     if (digits === 0) return;
     const shortened = toShortMoney(digits);
     const nextStr = String(shortened);
+    if (
+      inputEl._lastParsedMultiplication &&
+      toShortMoney(inputEl._lastParsedMultiplication.totalVnd) !== shortened
+    ) {
+      inputEl._lastParsedMultiplication = null;
+    }
     if (inputEl.value !== nextStr && (forceNow || isFullVndAmount(digits) || /[^0-9]/.test(raw))) {
       inputEl.value = nextStr;
     }
@@ -14591,9 +14731,13 @@ function autoShortenMoneyInput(inputEl, forceNow = false) {
 
   if (forceNow) {
     applyShorten();
+  } else if (hasMultSymbol) {
+    const mult = parseMoneyMultiplication(rawNow);
+    if (mult) {
+      inputEl._lastParsedMultiplication = mult;
+      inputEl.title = `${formatCurrency(mult.rateVnd)}/buổi × ${mult.sessions} buổi = ${formatCurrency(mult.totalVnd)}`;
+    }
   } else {
-    // Chỉ lọc ký tự chữ ngay lập tức nếu có, và đợi 450ms sau khi ngừng gõ mới tự cắt 3 số 000 để không ngắt nhịp gõ các số hàng triệu (VD: 1200000)
-    const rawNow = String(inputEl.value || '');
     const fullPreview = fromShortMoney(rawNow);
     if (fullPreview > 0) {
       inputEl.title = `Tương đương: ${formatCurrency(fullPreview)}`;
@@ -15169,6 +15313,18 @@ function renderAdminClassbook() {
   }
 
   const cfg = map[selectedClassbookClass] || getDefaultClassScheduleConfig(selectedClassbookClass);
+  const quickFeeEl = document.getElementById('cb-quick-fee');
+  if (quickFeeEl && _lastQuickFeeSyncedClass !== selectedClassbookClass) {
+    _lastQuickFeeSyncedClass = selectedClassbookClass;
+    quickFeeEl._lastParsedMultiplication = null;
+    if (cfg.feeMode === 'PER_SESSION' && normalizeStoredVnd(cfg.perSessionRate) > 0) {
+      quickFeeEl.value = toShortMoney(
+        normalizeStoredVnd(cfg.perSessionRate) * getClassTotalSessionsCount(selectedClassbookClass, map)
+      );
+    } else {
+      quickFeeEl.value = 600;
+    }
+  }
 
   // 2. Render thông tin Metadata của Lớp
   document.getElementById('cb-meta-classname').textContent = cfg.className;
@@ -15380,44 +15536,79 @@ function updateClassbookStudentNote(studentId, newNote) {
   triggerAutoSyncIfNeeded('Đã lưu ghi chú học sinh!');
 }
 
-function getClassTotalSessionsCount(className, scheduleMap = null) {
-  if (!className) return 0;
+var _lastQuickFeeSyncedClass = '';
+var _draftClassSessionRateByClass = {};
+
+function getClassSessionCounts(className, scheduleMap = null) {
+  const cleanCls = String(className || '').trim();
+  if (!cleanCls) {
+    return { cfg: null, checkedSessions: 0, scheduledSessions: 0, effectiveSessions: 0, mode: 'AUTO' };
+  }
   const map = scheduleMap || (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {});
-  const cfg = map[className];
-  if (!cfg) return 0;
-  return typeof countCheckedSessionsInConfig === 'function' ? countCheckedSessionsInConfig(cfg) : 0;
+  const cfg =
+    map[cleanCls] ||
+    map[className] ||
+    Object.values(map).find(c => String(c?.className || '').trim() === cleanCls) ||
+    null;
+  if (!cfg) {
+    return { cfg: null, checkedSessions: 0, scheduledSessions: 0, effectiveSessions: 0, mode: 'AUTO' };
+  }
+  const checkedSessions = typeof countCheckedSessionsInConfig === 'function' ? countCheckedSessionsInConfig(cfg) : 0;
+  const scheduledSessions = generateScheduleWeeks(cfg.startDate, cfg.endDate, cfg.daysOfWeek).totalSessions || 0;
+  const mode = cfg.sessionCountMode || 'AUTO';
+  let effectiveSessions = checkedSessions;
+  if (mode === 'SCHEDULED') {
+    effectiveSessions = scheduledSessions;
+  } else if (mode === 'CHECKED') {
+    effectiveSessions = checkedSessions;
+  } else {
+    effectiveSessions = checkedSessions > 0 ? checkedSessions : scheduledSessions;
+  }
+  return { cfg, checkedSessions, scheduledSessions, effectiveSessions, mode };
+}
+
+function getClassTotalSessionsCount(className, scheduleMap = null) {
+  return getClassSessionCounts(className, scheduleMap).effectiveSessions;
 }
 
 function recalcPerSessionTuitionForClass(className, scheduleMap = null) {
-  if (!className) return 0;
+  const cleanCls = String(className || '').trim();
+  if (!cleanCls) return 0;
   const map = scheduleMap || (typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {});
-  const sessionsCnt = getClassTotalSessionsCount(className, map);
-  if (sessionsCnt <= 0) return 0;
+  const { checkedSessions, scheduledSessions, effectiveSessions, mode } = getClassSessionCounts(cleanCls, map);
+  if (effectiveSessions < 0) return 0;
+  if (effectiveSessions === 0 && mode !== 'CHECKED' && scheduledSessions === 0 && checkedSessions === 0) {
+    return 0;
+  }
 
   const metaMap = getStudentMetaMap();
   let updatedCount = 0;
+  let metaTouched = false;
   const nowStr = getCurrentDateTimeString();
 
   (appState.students || []).forEach(s => {
-    if (s.className !== className) return;
-    const codeKey = s.studentCode || s.id;
-    const meta = metaMap[codeKey] || metaMap[String(codeKey).toUpperCase()];
+    if (!s || String(s.className || '').trim() !== cleanCls) return;
+    const { meta } = resolveStudentMetaEntry(metaMap, s, true);
     if (meta && meta.feeMode === 'PER_SESSION') {
       const rate = normalizeStoredVnd(meta.perSessionRate) || 0;
       if (rate > 0) {
-        const nextFee = rate * sessionsCnt;
-        meta.lastSessionCount = sessionsCnt;
+        const nextFee = rate * effectiveSessions;
+        if (meta.lastSessionCount !== effectiveSessions) {
+          meta.lastSessionCount = effectiveSessions;
+          metaTouched = true;
+        }
         if (normalizeStoredVnd(s.tuitionFee) !== nextFee) {
           s.tuitionFee = nextFee;
           recordExactSmallAmount(appState, s.id, s.studentCode, nextFee);
           s.updatedAt = nowStr;
           updatedCount++;
+          metaTouched = true;
         }
       }
     }
   });
 
-  if (updatedCount > 0) {
+  if (metaTouched) {
     if (!appState.settings) appState.settings = {};
     appState.settings.studentMetaJson = JSON.stringify(metaMap);
   }
@@ -15442,24 +15633,25 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
   if (!s) return;
 
   const metaMap = getStudentMetaMap();
-  const codeKey = s.studentCode || s.id;
-  if (!metaMap[codeKey]) metaMap[codeKey] = {};
+  const { meta: stuMeta } = resolveStudentMetaEntry(metaMap, s, true);
 
   if (selectedVal === 'PER_SESSION') {
     const map = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
-    const checkedSessions = getClassTotalSessionsCount(s.className, map);
+    const { cfg, checkedSessions, scheduledSessions, effectiveSessions } = getClassSessionCounts(s.className, map);
     const curRate =
-      metaMap[codeKey].perSessionRate !== undefined && metaMap[codeKey].perSessionRate !== null
-        ? normalizeStoredVnd(metaMap[codeKey].perSessionRate)
+      stuMeta.perSessionRate !== undefined && stuMeta.perSessionRate !== null && normalizeStoredVnd(stuMeta.perSessionRate) > 0
+        ? normalizeStoredVnd(stuMeta.perSessionRate)
+        : cfg?.perSessionRate && normalizeStoredVnd(cfg.perSessionRate) > 0
+        ? normalizeStoredVnd(cfg.perSessionRate)
         : 75000;
-    const defaultSessionNum = checkedSessions > 0 ? checkedSessions : Number(metaMap[codeKey].lastSessionCount || 8);
+    const defaultSessionNum = effectiveSessions > 0 ? effectiveSessions : Number(stuMeta.lastSessionCount || 8);
 
     const res = await showTcAppDialog({
       mode: 'fields',
       tone: 'emerald',
       badge: 'THANH CHÍ EDU • TÍNH HỌC PHÍ THEO SỐ BUỔI',
       title: `Tính học phí theo số buổi - ${s.fullName}`,
-      message: `Lớp ${s.className} hiện có Tổng cộng số buổi dạy: ${checkedSessions} buổi. Nhập đơn giá 1 buổi học, hệ thống sẽ nhân với số buổi dạy của lớp (và tự động cập nhật khi bạn tích thêm/bớt buổi dạy trên lịch):`,
+      message: `Lớp ${s.className} hiện có: Đã tích dạy ${checkedSessions} buổi • Tổng lịch ${scheduledSessions} buổi. Nhập đơn giá 1 buổi học để nhân với số buổi học (và tự động cập nhật khi thay đổi buổi học ở mục Số buổi học):`,
       okText: 'Tính & Lưu học phí',
       moneyPreview: true,
       fields: [
@@ -15473,7 +15665,7 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
         },
         {
           key: 'sessionCount',
-          label: `2. Số buổi học để nhân (Mặc định lấy Tổng cộng số buổi dạy của lớp = ${checkedSessions} buổi)`,
+          label: `2. Số buổi học để nhân (Đã tích: ${checkedSessions} buổi • Tổng lịch: ${scheduledSessions} buổi)`,
           type: 'number',
           defaultValue: String(defaultSessionNum),
           placeholder: 'Nhập số buổi học...',
@@ -15498,9 +15690,15 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
       return;
     }
 
-    const rateVnd = fromShortMoney(res.rateInput);
-    const sessions = Math.max(1, parseInt(res.sessionCount, 10) || checkedSessions || 1);
-    if (isNaN(rateVnd) || rateVnd < 0) {
+    const rateMult = parseMoneyMultiplication(res.rateInput);
+    const rateVnd = rateMult ? rateMult.rateVnd : fromShortMoney(res.rateInput);
+    const parsedSess = parseInt(res.sessionCount, 10);
+    const sessions = rateMult
+      ? rateMult.sessions
+      : Number.isFinite(parsedSess) && parsedSess >= 0
+      ? parsedSess
+      : defaultSessionNum;
+    if (isNaN(rateVnd) || rateVnd <= 0) {
       showToast('Đơn giá 1 buổi học không hợp lệ!', 'warning');
       renderAdminClassbook();
       renderAdminStudents();
@@ -15513,21 +15711,33 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
       (appState.students || []).find(
         item => item && (item.id === studentId || (s.studentCode && item.studentCode === s.studentCode))
       ) || s;
-    const targetStudents =
-      res.applyScope === 'WHOLE_CLASS'
-        ? (appState.students || []).filter(item => item.className === liveStu.className)
-        : [liveStu];
+    const cleanCls = String(liveStu.className || '').trim();
+    const classStudentsList = (appState.students || []).filter(
+      item => item && String(item.className || '').trim() === cleanCls
+    );
+    const targetStudents = res.applyScope === 'WHOLE_CLASS' ? classStudentsList : [liveStu];
 
     targetStudents.forEach(stu => {
-      const k = stu.studentCode || stu.id;
-      if (!metaMap[k]) metaMap[k] = {};
-      metaMap[k].feeMode = 'PER_SESSION';
-      metaMap[k].perSessionRate = rateVnd;
-      metaMap[k].lastSessionCount = sessions;
+      const { meta } = resolveStudentMetaEntry(metaMap, stu, true);
+      meta.feeMode = 'PER_SESSION';
+      meta.perSessionRate = rateVnd;
+      meta.lastSessionCount = sessions;
       stu.tuitionFee = totalFee;
       recordExactSmallAmount(appState, stu.id, stu.studentCode, totalFee);
       stu.updatedAt = nowStr;
     });
+
+    if (cleanCls && map[cleanCls] && (res.applyScope === 'WHOLE_CLASS' || classStudentsList.length <= 1)) {
+      map[cleanCls].feeMode = 'PER_SESSION';
+      map[cleanCls].perSessionRate = rateVnd;
+      if (sessions === scheduledSessions && checkedSessions !== scheduledSessions) {
+        map[cleanCls].sessionCountMode = 'SCHEDULED';
+      } else if (sessions === checkedSessions && checkedSessions > 0) {
+        map[cleanCls].sessionCountMode = 'CHECKED';
+      }
+      if (!appState.settings) appState.settings = {};
+      appState.settings.classSchedulesJson = JSON.stringify(map);
+    }
 
     if (!appState.settings) appState.settings = {};
     appState.settings.studentMetaJson = JSON.stringify(metaMap);
@@ -15540,10 +15750,11 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
     return;
   }
 
+  let customMult = null;
   let newFee = fromShortMoney(selectedVal);
   if (selectedVal === 'CUSTOM') {
     const input = await appPrompt(
-      `Nhập mức học phí mới cho học sinh ${s.fullName} (Có thể nhập rút gọn 3 số 000 hoặc nhập đầy đủ - VD: nhập 600 hoặc 600000 đều = 600.000 ₫):`,
+      `Nhập mức học phí mới cho học sinh ${s.fullName} (Nhập rút gọn 000 hoặc phép nhân Tiền 1 buổi × Số buổi - VD: 600 hoặc 75*8 đều = 600.000 ₫):`,
       String(s.tuitionFee !== undefined && s.tuitionFee !== null ? toShortMoney(s.tuitionFee) : 600),
       {
         title: `Cập nhật học phí - ${s.fullName}`,
@@ -15558,7 +15769,8 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
       renderAdminStudents();
       return;
     }
-    newFee = fromShortMoney(input);
+    customMult = parseMoneyMultiplication(input);
+    newFee = customMult ? customMult.totalVnd : fromShortMoney(input);
   }
 
   if (isNaN(newFee) || newFee < 0) {
@@ -15571,9 +15783,15 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
     (appState.students || []).find(
       item => item && (item.id === studentId || (s.studentCode && item.studentCode === s.studentCode))
     ) || s;
+  const { meta: liveMeta } = resolveStudentMetaEntry(metaMap, liveStu, true);
 
-  // Khi chọn mức học phí cố định, tắt chế độ nhân tự động theo buổi
-  metaMap[codeKey].feeMode = 'FIXED';
+  if (customMult) {
+    liveMeta.feeMode = 'PER_SESSION';
+    liveMeta.perSessionRate = customMult.rateVnd;
+    liveMeta.lastSessionCount = customMult.sessions;
+  } else {
+    liveMeta.feeMode = 'FIXED';
+  }
   if (!appState.settings) appState.settings = {};
   appState.settings.studentMetaJson = JSON.stringify(metaMap);
 
@@ -15581,7 +15799,11 @@ async function handleClassbookFeeSelect(studentId, selectedVal) {
   recordExactSmallAmount(appState, liveStu.id, liveStu.studentCode, newFee);
   liveStu.updatedAt = getCurrentDateTimeString();
   saveStateToLocal();
-  await triggerAutoSyncIfNeeded(`Đã cập nhật học phí của ${liveStu.fullName} thành ${formatCurrency(newFee)}!`);
+  await triggerAutoSyncIfNeeded(
+    customMult
+      ? `Đã cập nhật học phí theo buổi của ${liveStu.fullName}: ${formatCurrency(customMult.rateVnd)}/buổi × ${customMult.sessions} buổi = ${formatCurrency(newFee)}!`
+      : `Đã cập nhật học phí của ${liveStu.fullName} thành ${formatCurrency(newFee)}!`
+  );
 }
 
 async function handleAllStudentsFeeSelect(studentId, selectedVal) {
@@ -15591,6 +15813,7 @@ async function handleAllStudentsFeeSelect(studentId, selectedVal) {
 function setClassbookQuickFee(amount) {
   const feeInput = document.getElementById('cb-quick-fee');
   if (feeInput) {
+    feeInput._lastParsedMultiplication = null;
     feeInput.value = toShortMoney(amount);
   }
 }
@@ -15621,7 +15844,15 @@ async function quickAddStudentInClassbook(event) {
 
   const fullName = (nameInput?.value || '').trim();
   const parentPhone = (phoneInput?.value || '').trim();
-  const tuitionFee = fromShortMoney(feeInput?.value);
+  const rawFeeVal = feeInput?.value;
+  const typedMult =
+    parseMoneyMultiplication(rawFeeVal) ||
+    (feeInput?._lastParsedMultiplication &&
+    toShortMoney(feeInput._lastParsedMultiplication.totalVnd) === toShortMoney(rawFeeVal)
+      ? feeInput._lastParsedMultiplication
+      : null);
+  if (feeInput) feeInput._lastParsedMultiplication = null;
+  const tuitionFee = typedMult ? typedMult.totalVnd : fromShortMoney(rawFeeVal);
 
   if (!fullName) {
     showToast('Vui lòng nhập Họ và tên học sinh!', 'warning');
@@ -15654,11 +15885,25 @@ async function quickAddStudentInClassbook(event) {
   recordExactSmallAmount(appState, newId, newCode, tuitionFee);
 
   const metaMap = getStudentMetaMap();
-  metaMap[newCode] = {
+  const nextMeta = {
     ...(metaMap[newCode] || {}),
     startDate: cfg.startDate || new Date().toISOString().slice(0, 10),
     manualPaidBatches: 0
   };
+  if (typedMult) {
+    nextMeta.feeMode = 'PER_SESSION';
+    nextMeta.perSessionRate = typedMult.rateVnd;
+    nextMeta.lastSessionCount = typedMult.sessions;
+  } else if (cfg.feeMode === 'PER_SESSION' && normalizeStoredVnd(cfg.perSessionRate) > 0) {
+    const clsSessCnt = getClassTotalSessionsCount(targetClass, map);
+    const clsExpectedFee = normalizeStoredVnd(cfg.perSessionRate) * clsSessCnt;
+    if (tuitionFee === clsExpectedFee) {
+      nextMeta.feeMode = 'PER_SESSION';
+      nextMeta.perSessionRate = normalizeStoredVnd(cfg.perSessionRate);
+      nextMeta.lastSessionCount = clsSessCnt;
+    }
+  }
+  metaMap[newCode] = nextMeta;
   if (!appState.settings) appState.settings = {};
   appState.settings.classSchedulesJson = JSON.stringify(map);
   appState.settings.studentMetaJson = JSON.stringify(metaMap);
@@ -15746,6 +15991,167 @@ function generateScheduleWeeks(startDateStr, endDateStr, daysOfWeek) {
   return { orderedCols, weeks, totalSessions };
 }
 
+function getActiveClassPerSessionRate(className, cfg = null) {
+  const cfgRate = normalizeStoredVnd(cfg?.perSessionRate) || 0;
+  if (cfgRate > 0) return cfgRate;
+  const cleanCls = String(className || cfg?.className || '').trim();
+  if (!cleanCls) return 0;
+  const metaMap = getStudentMetaMap();
+  const stuList = (appState.students || []).filter(s => s && String(s.className || '').trim() === cleanCls);
+  for (const stu of stuList) {
+    const { meta } = resolveStudentMetaEntry(metaMap, stu, false);
+    if (meta && meta.feeMode === 'PER_SESSION' && normalizeStoredVnd(meta.perSessionRate) > 0) {
+      return normalizeStoredVnd(meta.perSessionRate);
+    }
+  }
+  return 0;
+}
+
+function updateClassbookSessionCalcPreview(className = '') {
+  const targetClass = String(className || selectedClassbookClass || '').trim();
+  const rateInput = document.getElementById('cb-session-rate-input');
+  const sourceSelect = document.getElementById('cb-session-count-source');
+  const previewEl = document.getElementById('cb-session-calc-preview');
+  if (!rateInput || !previewEl) return;
+
+  const rawRate = String(rateInput.value || '').trim();
+  if (targetClass) {
+    _draftClassSessionRateByClass[targetClass] = rawRate;
+  }
+  const { checkedSessions, scheduledSessions } = getClassSessionCounts(targetClass);
+  const chosenMode = sourceSelect?.value === 'SCHEDULED' ? 'SCHEDULED' : 'CHECKED';
+  const mult = parseMoneyMultiplication(rawRate);
+  const rateVnd = mult ? mult.rateVnd : fromShortMoney(rawRate);
+  const sessions = mult ? mult.sessions : chosenMode === 'SCHEDULED' ? scheduledSessions : checkedSessions;
+
+  if (!rawRate || isNaN(rateVnd) || rateVnd <= 0) {
+    previewEl.textContent = 'Nhập tiền 1 buổi';
+    return;
+  }
+  previewEl.textContent = `= ${formatCurrency(rateVnd * sessions)}`;
+}
+
+async function handleClassbookSessionSourceChange(className, newSource) {
+  const cleanCls = String(className || selectedClassbookClass || '').trim();
+  const chosenMode = newSource === 'SCHEDULED' ? 'SCHEDULED' : 'CHECKED';
+  updateClassbookSessionCalcPreview(cleanCls);
+  if (!cleanCls) return;
+  const map = getClassSchedulesMap();
+  const cfg = map[cleanCls];
+  if (!cfg) return;
+  const activeRate = getActiveClassPerSessionRate(cleanCls, cfg);
+  if (activeRate > 0) {
+    cfg.sessionCountMode = chosenMode;
+    map[cleanCls] = cfg;
+    const updated = recalcPerSessionTuitionForClass(cleanCls, map);
+    const { effectiveSessions } = getClassSessionCounts(cleanCls, map);
+    saveClassSchedulesMap(
+      map,
+      updated > 0
+        ? `Đã cập nhật học phí Lớp ${cleanCls}: ${formatCurrency(activeRate)}/buổi × ${effectiveSessions} buổi = ${formatCurrency(activeRate * effectiveSessions)}!`
+        : ''
+    );
+  }
+}
+
+async function applyClassbookPerSessionFee(className = '') {
+  const map = getClassSchedulesMap();
+  const cleanCls = String(className || selectedClassbookClass || Object.keys(map)[0] || '').trim();
+  if (!cleanCls) return;
+
+  const rateInput = document.getElementById('cb-session-rate-input');
+  const sourceSelect = document.getElementById('cb-session-count-source');
+  const rawRate = String(rateInput?.value || '').trim();
+  const mult = parseMoneyMultiplication(rawRate);
+  const rateVnd = mult ? mult.rateVnd : fromShortMoney(rawRate);
+
+  if (!rawRate || isNaN(rateVnd) || rateVnd <= 0) {
+    showToast('Vui lòng nhập số tiền 1 buổi học (VD: 50, 75, 100)!', 'warning');
+    rateInput?.focus();
+    return;
+  }
+
+  const cfg = map[cleanCls] || getDefaultClassScheduleConfig(cleanCls);
+  const { checkedSessions, scheduledSessions } = getClassSessionCounts(cleanCls, map);
+  let chosenMode = sourceSelect?.value === 'SCHEDULED' ? 'SCHEDULED' : 'CHECKED';
+  let sessionsCnt = mult ? mult.sessions : chosenMode === 'SCHEDULED' ? scheduledSessions : checkedSessions;
+
+  if (!mult && sessionsCnt === 0 && scheduledSessions > 0 && chosenMode === 'CHECKED') {
+    chosenMode = 'SCHEDULED';
+    sessionsCnt = scheduledSessions;
+  }
+  if (sessionsCnt <= 0) {
+    showToast(
+      'Chưa có buổi học nào để nhân! Hãy tích chọn buổi dạy trên bảng bên dưới hoặc bấm "Cài đặt Lịch học" chọn Từ ngày → Đến ngày.',
+      'warning'
+    );
+    return;
+  }
+
+  const totalFee = rateVnd * sessionsCnt;
+  const nowStr = getCurrentDateTimeString();
+  const metaMap = getStudentMetaMap();
+  const classStudents = (appState.students || []).filter(s => s && String(s.className || '').trim() === cleanCls);
+
+  classStudents.forEach(stu => {
+    const { meta } = resolveStudentMetaEntry(metaMap, stu, true);
+    meta.feeMode = 'PER_SESSION';
+    meta.perSessionRate = rateVnd;
+    meta.lastSessionCount = sessionsCnt;
+    stu.tuitionFee = totalFee;
+    recordExactSmallAmount(appState, stu.id, stu.studentCode, totalFee);
+    stu.updatedAt = nowStr;
+  });
+
+  cfg.feeMode = 'PER_SESSION';
+  cfg.perSessionRate = rateVnd;
+  cfg.sessionCountMode = chosenMode;
+  map[cleanCls] = cfg;
+  delete _draftClassSessionRateByClass[cleanCls];
+
+  const quickFeeEl = document.getElementById('cb-quick-fee');
+  if (quickFeeEl && selectedClassbookClass === cleanCls) {
+    quickFeeEl.value = toShortMoney(totalFee);
+  }
+
+  if (!appState.settings) appState.settings = {};
+  appState.settings.studentMetaJson = JSON.stringify(metaMap);
+  saveClassSchedulesMap(
+    map,
+    classStudents.length > 0
+      ? `Đã nhân học phí Lớp ${cleanCls}: ${formatCurrency(rateVnd)}/buổi × ${sessionsCnt} buổi = ${formatCurrency(totalFee)} (${classStudents.length} HS)!`
+      : `Đã lưu đơn giá ${formatCurrency(rateVnd)}/buổi × ${sessionsCnt} buổi = ${formatCurrency(totalFee)} cho Lớp ${cleanCls}!`
+  );
+}
+
+function markAllScheduleSessionsInClassbook(className, markTaught = true) {
+  const map = getClassSchedulesMap();
+  const cleanCls = String(className || selectedClassbookClass || '').trim();
+  if (!cleanCls) return;
+  const cfg = map[cleanCls] || getDefaultClassScheduleConfig(cleanCls);
+  const { weeks } = generateScheduleWeeks(cfg.startDate, cfg.endDate, cfg.daysOfWeek);
+  const nextStates = {};
+  if (markTaught) {
+    weeks.forEach(row => {
+      row.forEach(cell => {
+        if (cell.inRange && cell.dateKey) {
+          nextStates[cell.dateKey] = 1;
+        }
+      });
+    });
+    cfg.sessionCountMode = 'CHECKED';
+  }
+  cfg.sessionStates = nextStates;
+  map[cleanCls] = cfg;
+  recalcPerSessionTuitionForClass(cleanCls, map);
+  saveClassSchedulesMap(
+    map,
+    markTaught
+      ? `Đã tích chọn toàn bộ ${Object.keys(nextStates).length} buổi dạy trên lịch Lớp ${cleanCls}!`
+      : `Đã bỏ tích các buổi dạy trên lịch Lớp ${cleanCls}.`
+  );
+}
+
 function renderClassbookScheduleTable(cfg) {
   const thead = document.getElementById('cb-schedule-thead');
   const tbody = document.getElementById('cb-schedule-tbody');
@@ -15780,6 +16186,23 @@ function renderClassbookScheduleTable(cfg) {
       .replace(/\(\s*ĐỢT[^)]*\)/gi, '')
       .trim() || 'THÁNG HIỆN TẠI';
 
+  const cleanCls = String(cfg.className || '').trim();
+  const activeRate = getActiveClassPerSessionRate(cleanCls, cfg);
+  const draftRate =
+    cleanCls && Object.prototype.hasOwnProperty.call(_draftClassSessionRateByClass, cleanCls)
+      ? _draftClassSessionRateByClass[cleanCls]
+      : activeRate > 0
+      ? String(toShortMoney(activeRate))
+      : '';
+  const selectedSource =
+    cfg.sessionCountMode === 'SCHEDULED' || (!cfg.sessionCountMode && checkedSessions === 0 && totalSessions > 0)
+      ? 'SCHEDULED'
+      : 'CHECKED';
+  const previewSessions = selectedSource === 'SCHEDULED' ? totalSessions : checkedSessions;
+  const previewRateVnd = draftRate ? fromShortMoney(draftRate) : 0;
+  const previewText =
+    previewRateVnd > 0 ? `= ${formatCurrency(previewRateVnd * previewSessions)}` : 'Nhập tiền 1 buổi';
+
   thead.innerHTML = `
     <tr class="sheet-navy-header">
       <th colspan="${colCount}" class="py-3 px-4 border-b border-blue-900/60">
@@ -15807,15 +16230,76 @@ function renderClassbookScheduleTable(cfg) {
         </div>
       </th>
     </tr>
-    <tr class="bg-slate-100 border-b-2 border-slate-300">
-      <td colspan="${colCount}" class="py-2.5 px-4">
-        <div class="flex items-center justify-between gap-2.5">
+    <tr class="bg-slate-100 border-b border-slate-300">
+      <td colspan="${colCount}" class="py-2.5 px-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="font-extrabold text-xs sm:text-sm uppercase tracking-normal text-slate-800">
             TỔNG CỘNG SỐ BUỔI DẠY
           </span>
-          <span class="px-4 py-1 rounded-full bg-blue-600 text-white font-black text-sm sm:text-base  shrink-0">
-            ${checkedSessions} buổi
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${
+              totalSessions > 0 && checkedSessions < totalSessions
+                ? `<button type="button" onclick="markAllScheduleSessionsInClassbook('${escapeAttr(cfg.className)}', true)" title="Tích chọn toàn bộ ${totalSessions} buổi trong lịch" class="px-2 py-1 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-extrabold transition cursor-pointer whitespace-nowrap">Tích đủ ${totalSessions}b</button>`
+                : ''
+            }
+            ${
+              checkedSessions > 0
+                ? `<button type="button" onclick="markAllScheduleSessionsInClassbook('${escapeAttr(cfg.className)}', false)" title="Bỏ tích toàn bộ các buổi trên lịch" class="px-2 py-1 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-300 text-[11px] font-bold transition cursor-pointer whitespace-nowrap">Bỏ tích</button>`
+                : ''
+            }
+            <span class="px-3.5 py-1 rounded-full bg-blue-600 text-white font-black text-sm sm:text-base shrink-0">
+              ${checkedSessions} buổi
+            </span>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="bg-emerald-50/90 border-b-2 border-emerald-200">
+      <td colspan="${colCount}" class="py-2.5 px-3 text-left">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <span class="text-[11px] font-extrabold uppercase tracking-normal text-emerald-950">
+            TÍNH HỌC PHÍ: TIỀN 1 BUỔI × SỐ BUỔI
           </span>
+          <span id="cb-session-calc-preview" class="text-xs font-black text-emerald-700 tabular-nums whitespace-nowrap">
+            ${escapeHtml(previewText)}
+          </span>
+        </div>
+        <div class="grid grid-cols-12 gap-1.5 items-center">
+          <div class="col-span-4 relative flex items-center">
+            <input
+              id="cb-session-rate-input"
+              type="search"
+              inputmode="decimal"
+              value="${escapeAttr(draftRate)}"
+              placeholder="VD: 75"
+              title="Nhập số tiền 1 buổi học (Rút gọn 000 hoặc đầy đủ - VD: 50, 75, 100 = 50.000₫..100.000₫/buổi)"
+              oninput="updateClassbookSessionCalcPreview('${escapeAttr(cfg.className)}')"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();applyClassbookPerSessionFee('${escapeAttr(cfg.className)}');}"
+              class="w-full h-8 pl-2 pr-8 rounded-lg border border-emerald-300 bg-white text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <span class="absolute right-1.5 text-[10px] font-bold text-slate-400 pointer-events-none select-none">.000</span>
+          </div>
+          <div class="col-span-5">
+            <select
+              id="cb-session-count-source"
+              onchange="handleClassbookSessionSourceChange('${escapeAttr(cfg.className)}', this.value)"
+              title="Chọn nhân với tổng số buổi đã tích dạy hoặc tổng số buổi trên lịch"
+              class="status-select w-full h-8 px-1.5 rounded-lg border border-emerald-300 bg-white text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            >
+              <option value="CHECKED" ${selectedSource === 'CHECKED' ? 'selected' : ''}>× ${checkedSessions} buổi dạy</option>
+              <option value="SCHEDULED" ${selectedSource === 'SCHEDULED' ? 'selected' : ''}>× ${totalSessions} buổi lịch</option>
+            </select>
+          </div>
+          <div class="col-span-3">
+            <button
+              type="button"
+              onclick="applyClassbookPerSessionFee('${escapeAttr(cfg.className)}')"
+              title="Nhân số tiền 1 buổi với tổng số buổi và cập nhật học phí cho cả lớp"
+              class="w-full h-8 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition cursor-pointer whitespace-nowrap"
+            >
+              Áp dụng
+            </button>
+          </div>
         </div>
       </td>
     </tr>
@@ -15900,6 +16384,9 @@ function toggleSessionDateState(className, dateKey) {
     cfg.sessionStates[dateKey] = nextSt;
   }
 
+  if (cfg.sessionCountMode !== 'SCHEDULED') {
+    cfg.sessionCountMode = 'CHECKED';
+  }
   map[className] = cfg;
   recalcPerSessionTuitionForClass(className, map);
   saveClassSchedulesMap(map);
@@ -15948,6 +16435,9 @@ function saveStudentAttendanceMap(attMap, scheduleMap = null, syncMsg = '') {
   if (!appState.settings) appState.settings = {};
   appState.settings.studentAttendanceJson = JSON.stringify(attMap || {});
   if (scheduleMap) {
+    Object.keys(scheduleMap).forEach(cls => {
+      recalcPerSessionTuitionForClass(cls, scheduleMap);
+    });
     appState.settings.classSchedulesJson = JSON.stringify(scheduleMap);
   }
   saveStateToLocal();
@@ -20659,8 +21149,10 @@ function updateTcDialogMoneyPreview(rawVal) {
     const rateEl = document.querySelector('#tc-dialog-fields-wrap [data-field-key="rateInput"]');
     const sessEl = document.querySelector('#tc-dialog-fields-wrap [data-field-key="sessionCount"]');
     if (rateEl && sessEl) {
-      const rateVnd = fromShortMoney(rateEl.value);
-      const sess = Math.max(1, parseInt(sessEl.value, 10) || 1);
+      const rateMult = parseMoneyMultiplication(rateEl.value);
+      const rateVnd = rateMult ? rateMult.rateVnd : fromShortMoney(rateEl.value);
+      const parsedSess = parseInt(sessEl.value, 10);
+      const sess = rateMult ? rateMult.sessions : Number.isFinite(parsedSess) && parsedSess >= 0 ? parsedSess : 1;
       valEl.textContent = isNaN(rateVnd)
         ? '0 ₫'
         : `${formatCurrency(rateVnd)}/b × ${sess}b = ${formatCurrency(rateVnd * sess)}`;
@@ -20668,6 +21160,11 @@ function updateTcDialogMoneyPreview(rawVal) {
     }
   }
   const str = String(rawVal ?? '').trim();
+  const mult = parseMoneyMultiplication(str);
+  if (mult) {
+    valEl.textContent = `${formatCurrency(mult.rateVnd)}/b × ${mult.sessions}b = ${formatCurrency(mult.totalVnd)}`;
+    return;
+  }
   const vnd = str === '0' ? 0 : fromShortMoney(str);
   valEl.textContent = isNaN(vnd) ? '0 ₫' : formatCurrency(vnd);
 }
