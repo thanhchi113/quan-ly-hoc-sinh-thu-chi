@@ -2192,3 +2192,321 @@ html.dark-mode #transaction-detail-modal .text-amber-950 {
 html.dark-mode #transaction-detail-modal .text-amber-800 {
   color: #fde68a !important;
 }
+
+
+/* ==========================================================================
+   PHÂN BIỆT MÀU SẮC RÕ RÀNG CÁC MỤC THU - CHI, DANH MỤC, HỌC SINH LIÊN KẾT & ĐỢT
+   ========================================================================== */
+#finance-transactions-table tbody tr.tc-fin-row-income {
+  border-left: 4px solid #10b981;
+}
+#finance-transactions-table tbody tr.tc-fin-row-expense {
+  border-left: 4px solid #f43f5e;
+}
+#finance-transactions-table tbody tr.tc-fin-row-pending {
+  border-left: 4px solid #f59e0b;
+}
+#finance-transactions-table tbody tr.tc-fin-row-excluded {
+  border-left: 4px solid #94a3b8;
+}
+
+/* Badge Danh mục (Category) có màu riêng biệt cho từng loại Thu / Chi */
+.tc-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.55rem;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  border-width: 1px;
+  border-style: solid;
+  text-align: center;
+}
+.tc-cat-tuition {
+  background-color: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
+}
+.tc-cat-material {
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border-color: #7dd3fc;
+}
+.tc-cat-rent {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border-color: #fdba74;
+}
+.tc-cat-print {
+  background-color: #f5f3ff;
+  color: #6d28d9;
+  border-color: #c4b5fd;
+}
+.tc-cat-salary {
+  background-color: #fff1f2;
+  color: #be123c;
+  border-color: #fda4af;
+}
+.tc-cat-reward {
+  background-color: #fdf4ff;
+  color: #a21caf;
+  border-color: #f0abfc;
+}
+.tc-cat-other {
+  background-color: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+.tc-cat-test {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+/* Badge Đợt học phí (ĐỢT 1 -> ĐỢT 6+) màu sắc tách biệt hoàn toàn */
+.tc-batch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  border-width: 1px;
+  border-style: solid;
+  white-space: nowrap;
+}
+.tc-batch-1 {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #60a5fa;
+}
+.tc-batch-2 {
+  background-color: #ccfbf1;
+  color: #115e59;
+  border-color: #2dd4bf;
+}
+.tc-batch-3 {
+  background-color: #e0f2fe;
+  color: #075985;
+  border-color: #38bdf8;
+}
+.tc-batch-4 {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+  border-color: #c084fc;
+}
+.tc-batch-5 {
+  background-color: #ffedd5;
+  color: #9a3412;
+  border-color: #fb923c;
+}
+.tc-batch-6 {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border-color: #818cf8;
+}
+.tc-batch-default {
+  background-color: #f1f5f9;
+  color: #334155;
+  border-color: #94a3b8;
+}
+
+/* Ô Học sinh liên kết & Đợt trong bảng Thu - Chi và Modal Chi tiết */
+.tc-linked-stu-box {
+  padding: 0.38rem 0.6rem;
+  border-radius: 0.65rem;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.tc-linked-stu-box.is-current-batch {
+  background-color: #f5f7ff;
+  border-color: #c7d2fe;
+}
+.tc-linked-stu-box.is-old-batch {
+  background-color: #fffaf5;
+  border-color: #fed7aa;
+}
+.tc-unlinked-stu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.55rem;
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px dashed #f59e0b;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.tc-expense-target-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+  background-color: #fff1f2;
+  color: #9f1239;
+  border-color: #fecdd3;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Badge Phương thức thanh toán */
+.tc-method-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.55rem;
+  border-width: 1px;
+  border-style: solid;
+}
+.tc-method-auto {
+  background-color: #eef2ff;
+  border-color: #a5b4fc;
+  color: #3730a3;
+}
+.tc-method-transfer {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.tc-method-cash {
+  background-color: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+.tc-method-draft {
+  background-color: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+/* Dark Mode tương phản cao cho toàn bộ nhãn màu Thu - Chi & Đợt */
+html.dark-mode .tc-cat-tuition {
+  background-color: rgba(6, 78, 59, 0.55) !important;
+  color: #6ee7b7 !important;
+  border-color: #059669 !important;
+}
+html.dark-mode .tc-cat-material {
+  background-color: rgba(12, 74, 110, 0.55) !important;
+  color: #7dd3fc !important;
+  border-color: #0284c7 !important;
+}
+html.dark-mode .tc-cat-rent {
+  background-color: rgba(124, 45, 18, 0.55) !important;
+  color: #fdba74 !important;
+  border-color: #ea580c !important;
+}
+html.dark-mode .tc-cat-print {
+  background-color: rgba(76, 29, 149, 0.55) !important;
+  color: #ddd6fe !important;
+  border-color: #7c3aed !important;
+}
+html.dark-mode .tc-cat-salary {
+  background-color: rgba(136, 19, 55, 0.55) !important;
+  color: #fda4af !important;
+  border-color: #e11d48 !important;
+}
+html.dark-mode .tc-cat-reward {
+  background-color: rgba(112, 26, 117, 0.55) !important;
+  color: #f5d0fe !important;
+  border-color: #c026d3 !important;
+}
+html.dark-mode .tc-cat-other {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+html.dark-mode .tc-cat-test {
+  background-color: rgba(120, 53, 15, 0.55) !important;
+  color: #fde68a !important;
+  border-color: #d97706 !important;
+}
+
+html.dark-mode .tc-batch-1 {
+  background-color: rgba(30, 64, 175, 0.5) !important;
+  color: #bfdbfe !important;
+  border-color: #3b82f6 !important;
+}
+html.dark-mode .tc-batch-2 {
+  background-color: rgba(17, 94, 89, 0.55) !important;
+  color: #99f6e4 !important;
+  border-color: #14b8a6 !important;
+}
+html.dark-mode .tc-batch-3 {
+  background-color: rgba(7, 89, 133, 0.55) !important;
+  color: #bae6fd !important;
+  border-color: #0ea5e9 !important;
+}
+html.dark-mode .tc-batch-4 {
+  background-color: rgba(107, 33, 168, 0.55) !important;
+  color: #e9d5ff !important;
+  border-color: #a855f7 !important;
+}
+html.dark-mode .tc-batch-5 {
+  background-color: rgba(154, 52, 18, 0.55) !important;
+  color: #fed7aa !important;
+  border-color: #f97316 !important;
+}
+html.dark-mode .tc-batch-6 {
+  background-color: rgba(55, 48, 163, 0.6) !important;
+  color: #c7d2fe !important;
+  border-color: #6366f1 !important;
+}
+html.dark-mode .tc-batch-default {
+  background-color: rgba(30, 41, 59, 0.85) !important;
+  color: #e2e8f0 !important;
+  border-color: #64748b !important;
+}
+
+html.dark-mode .tc-linked-stu-box {
+  background-color: rgba(30, 41, 59, 0.75) !important;
+  border-color: #334155 !important;
+}
+html.dark-mode .tc-linked-stu-box.is-current-batch {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  border-color: #4f46e5 !important;
+}
+html.dark-mode .tc-linked-stu-box.is-old-batch {
+  background-color: rgba(69, 26, 3, 0.38) !important;
+  border-color: #c2410c !important;
+}
+html.dark-mode .tc-unlinked-stu-pill {
+  background-color: rgba(120, 53, 15, 0.45) !important;
+  color: #fde68a !important;
+  border-color: #d97706 !important;
+}
+html.dark-mode .tc-expense-target-pill {
+  background-color: rgba(136, 19, 55, 0.4) !important;
+  color: #fecdd3 !important;
+  border-color: #e11d48 !important;
+}
+html.dark-mode .tc-method-auto {
+  background-color: rgba(49, 46, 129, 0.5) !important;
+  border-color: #6366f1 !important;
+  color: #c7d2fe !important;
+}
+html.dark-mode .tc-method-transfer {
+  background-color: rgba(30, 58, 138, 0.5) !important;
+  border-color: #3b82f6 !important;
+  color: #bfdbfe !important;
+}
+html.dark-mode .tc-method-cash {
+  background-color: rgba(6, 78, 59, 0.5) !important;
+  border-color: #10b981 !important;
+  color: #a7f3d0 !important;
+}
+html.dark-mode .tc-method-draft {
+  background-color: rgba(120, 53, 15, 0.5) !important;
+  border-color: #d97706 !important;
+  color: #fde68a !important;
+}

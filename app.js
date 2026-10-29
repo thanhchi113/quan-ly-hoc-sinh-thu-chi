@@ -3528,7 +3528,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v59', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v61', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -3611,11 +3611,11 @@ function bootstrapApp() {
     }
   }
 
-  // Chế độ 1 chiều tuyệt đối (Web -> Google Sheet): Tuyệt đối không lấy dữ liệu từ Google Sheet về Web.
-  // Chỉ đẩy bù dữ liệu từ Web lên Google Sheet nếu lần lưu trước đó chưa kịp đẩy xong trước khi tải lại trang.
+  // Web giữ toàn quyền dữ liệu Học sinh / Lớp / Đợt (Web -> Sheet), đồng thời tự động lấy giao dịch MỚI từ SePay trả về Web.
   const gasUrl = getGasUrl();
   if (gasUrl) {
     if (typeof seedCurrentBankTxAsNotified === 'function') seedCurrentBankTxAsNotified(appState);
+    startLiveBankPolling();
     const hasDirtySync = (() => {
       try {
         return localStorage.getItem(STORAGE_KEYS.DIRTY_SYNC) === '1';
@@ -3624,9 +3624,23 @@ function bootstrapApp() {
       }
     })();
     if (hasDirtySync && isAutoSyncEnabled()) {
-      syncAllToGoogleSheet(false).catch(() => {});
+      syncAllToGoogleSheet(false)
+        .catch(() => {})
+        .finally(() => {
+          pollSepayNewResults(false, true).catch(() => {});
+        });
+    } else {
+      pollSepayNewResults(false, true).catch(() => {});
     }
   }
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('visibilitychange', () => {
+    if (!isSandboxDraftMode && document.visibilityState === 'visible' && getGasUrl()) {
+      pollSepayNewResults(false, false).catch(() => {});
+    }
+  });
 }
 
 // Bảo vệ mã nguồn (chỉ chặn F12 / Ctrl+U / Ctrl+Shift+I), vẫn cho phép Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z, chọn chữ và chuột phải trong ô nhập liệu
@@ -3780,6 +3794,12 @@ function loadUndoRedoHistoryFromLocal() {
 
 function repairCorruptedStatusAndPeriodV58(state) {
   if (!state) return state;
+  let schedMap = {};
+  try {
+    if (state.settings?.classSchedulesJson) {
+      schedMap = JSON.parse(state.settings.classSchedulesJson) || {};
+    }
+  } catch (e) {}
   if (Array.isArray(state.students)) {
     state.students.forEach(s => {
       if (!s) return;
@@ -3794,6 +3814,13 @@ function repairCorruptedStatusAndPeriodV58(state) {
       }
       if (typeof s.period === 'string' && s.period.includes('Th?ng')) {
         s.period = s.period.replace(/Th\?ng/g, 'Tháng');
+      }
+      if (
+        !s.period ||
+        (typeof s.period === 'string' && (s.period.includes('GMT') || /^\d{4}-\d{2}-\d{2}T/.test(s.period)))
+      ) {
+        const clsCfg = s.className ? schedMap[String(s.className).trim()] : null;
+        s.period = clsCfg?.periodLabel || normalizePeriodValue(s.period);
       }
       if (typeof s.note === 'string' && s.note.includes('??')) {
         if (s.studentCode === 'HS010') s.note = 'Đã chuyển khoản';
@@ -3820,6 +3847,14 @@ function repairCorruptedStatusAndPeriodV58(state) {
                 st.note = 'Đã chuyển khoản học phí';
                 fixedHist = true;
               }
+              if (
+                st &&
+                typeof st.period === 'string' &&
+                (st.period.includes('GMT') || /^\d{4}-\d{2}-\d{2}T/.test(st.period))
+              ) {
+                st.period = h.periodLabel || normalizePeriodValue(st.period);
+                fixedHist = true;
+              }
             });
             const paid = h.studentsSnapshot.filter(x => x && x.status === 'Đã hoàn thành');
             if (paid.length !== h.paidCount) {
@@ -3833,6 +3868,25 @@ function repairCorruptedStatusAndPeriodV58(state) {
         if (fixedHist) state.settings.classHistoryJson = JSON.stringify(hist);
       }
     } catch (e) {}
+  }
+  if (Array.isArray(state.transactions) && typeof resolveTransactionBatchInfo === 'function') {
+    const editedMap = typeof getEditedTxOverridesMap === 'function' ? getEditedTxOverridesMap(state) : {};
+    state.transactions.forEach(t => {
+      if (!t || editedMap[t.id]) return;
+      const desc = String(t.description || '');
+      if ((desc.includes('GMT') || /Thu học phí\s+\d{4}-\d{2}-\d{2}T/i.test(desc)) && !desc.includes('| ND:')) {
+        const bInfo = resolveTransactionBatchInfo(t, state);
+        if (bInfo.studentCode || bInfo.studentName) {
+          const pPart = bInfo.batchLabel
+            ? `${bInfo.batchLabel}${bInfo.periodLabel ? ` (${bInfo.periodLabel})` : ''}`
+            : bInfo.periodLabel || 'kỳ hiện tại';
+          t.description = `Thu học phí ${pPart} - ${bInfo.studentCode ? `${bInfo.studentCode} ` : ''}${bInfo.studentName}`.trim();
+          if (bInfo.isHistorical && bInfo.batchLabel && !t.batchLabel) {
+            t.batchLabel = bInfo.batchLabel;
+          }
+        }
+      }
+    });
   }
   return state;
 }
@@ -4141,6 +4195,16 @@ function isAutoSyncEnabled() {
   if (isSandboxDraftMode) return false;
   const val = localStorage.getItem(STORAGE_KEYS.AUTO_SYNC);
   return val === null ? true : val === 'true';
+}
+
+function isLiveBankPollingEnabled() {
+  if (isSandboxDraftMode) return false;
+  try {
+    const val = localStorage.getItem('edupay_live_sepay_poll_enabled');
+    return val === null ? true : val !== 'false' && val !== '0';
+  } catch (e) {
+    return true;
+  }
 }
 
 function initAppUI() {
@@ -5978,6 +6042,7 @@ async function submitParentPaymentConfirm(event) {
         amount: amount,
         description: `${draftNotePrefix}Tự động duyệt CK đã xác thực vào STK - ${student.studentCode} ${student.fullName} (${student.period})`,
         studentCode: student.studentCode,
+        batchLabel: getCurrentBatchLabelForClass(student.className, appState),
         method: isDraftQrAcc ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (Tự động)',
         receiptUrl: uploadedReceiptBase64 || student.receiptUrl || '',
         createdBy: payerName || 'Tự động duyệt STK'
@@ -6642,15 +6707,31 @@ async function handleReviewPaymentRequest(requestId, decision) {
       markDraftBankTx(appState, txId);
     }
 
-    // Tự động ghi 1 phiếu Thu vào Sổ Thu - Chi
+    // Tự động ghi 1 phiếu Thu vào Sổ Thu - Chi (lấy đúng Tên HS, Tên Lớp & Tên Đợt từ mục Lớp học)
+    const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
+    const resolvedStuCode = reqBatchInfo.studentCode || req.studentCode || (student ? student.studentCode : '');
+    const resolvedStuName = reqBatchInfo.studentName || (student ? student.fullName : '') || req.studentName || '';
+    const resolvedClsName = reqBatchInfo.className || (student ? student.className : '') || req.className || '';
+    const resolvedBatch =
+      reqBatchInfo.batchLabel || getCurrentBatchLabelForClass(resolvedClsName, appState);
+    const resolvedPeriod = normalizePeriodValue(reqBatchInfo.periodLabel || req.period || student?.period || '');
+    const periodDescPart = resolvedBatch
+      ? `${resolvedBatch}${resolvedPeriod ? ` (${resolvedPeriod})` : ''}`
+      : resolvedPeriod || 'kỳ này';
+
     createdTransaction = {
       id: txId,
-      date: todayDate,
+      date: nowStr,
       type: 'Thu',
       category: 'Thu học phí',
       amount: finalAmt,
-      description: `${isDraftReq ? '[STK Nháp 5801434567] ' : ''}Thu học phí ${req.period || 'kỳ này'} - ${req.studentCode || ''} ${req.studentName} (${req.payerName || 'Phụ huynh'})`,
-      studentCode: req.studentCode || (student ? student.studentCode : ''),
+      description: `${isDraftReq ? '[STK Nháp 5801434567] ' : ''}Thu học phí ${periodDescPart} - ${resolvedStuCode ? `${resolvedStuCode} ` : ''}${resolvedStuName} (${req.payerName || 'Phụ huynh'})`,
+      studentRecordId: student?.id || req.studentRecordId || '',
+      studentCode: resolvedStuCode,
+      studentName: resolvedStuName,
+      className: resolvedClsName,
+      batchLabel: resolvedBatch,
+      period: resolvedPeriod,
       method: isDraftReq ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản',
       receiptUrl: req.receiptUrl || '',
       createdBy: 'Quản lý (Duyệt CK)'
@@ -7442,10 +7523,11 @@ function openStudentDetailModal(studentId) {
   if (s.parentName && s.parentName.trim()) {
     subParts.push(`Phụ huynh: ${s.parentName.trim()}`);
   }
+  const curClsCfgForHeader = scheduleMap[s.className] || {};
   if (s.parentPhone && s.parentPhone.trim() && s.parentPhone.trim() !== '1234567890') {
     subParts.push(`SĐT: ${s.parentPhone.trim()}`);
   } else {
-    subParts.push(`Kỳ học: ${s.period || '---'}`);
+    subParts.push(`Kỳ học: ${curClsCfgForHeader.periodLabel || normalizePeriodValue(s.period) || '---'}`);
   }
   document.getElementById('stu-detail-sub').textContent = subParts.join(' • ');
 
@@ -7514,7 +7596,7 @@ function openStudentDetailModal(studentId) {
   batchRecords.push({
     className: s.className,
     batchLabel: curClsCfg.batchLabel || 'ĐỢT HIỆN TẠI',
-    periodLabel: s.period || curClsCfg.periodLabel || '',
+    periodLabel: curClsCfg.periodLabel || normalizePeriodValue(s.period) || '',
     dateRange:
       curClsCfg.startDate && curClsCfg.endDate
         ? `${formatShortDateVN(curClsCfg.startDate)} → ${formatShortDateVN(curClsCfg.endDate)}`
@@ -7594,7 +7676,11 @@ function openStudentDetailModal(studentId) {
           const isTestTx = isSimulatedBankTestItem(tx);
           const isExcludedTx = !isTestTx && isTransactionExcludedFromSystem(tx);
           const txTag = getTransactionTagLabel(tx);
-          const cleanDesc = isTestTx ? stripRedundantTestPrefix(tx.description) : tx.description;
+          const compactTx = buildCompactTransactionInfo(tx, appState);
+          const txBatchInfo = compactTx.batchInfo;
+          const cleanDesc = isTestTx
+            ? stripRedundantTestPrefix(tx.description)
+            : compactTx.tableDescLine || tx.description;
           return `
           <div class="p-3 rounded-xl ${
             isTestTx
@@ -7608,6 +7694,13 @@ function openStudentDetailModal(studentId) {
                 <span class="px-2 py-0.2 rounded ${
                   isTestTx ? 'bg-amber-600' : isExcludedTx ? 'bg-slate-600' : 'bg-emerald-600'
                 } text-white tabular-nums text-xs">${escapeHtml(tx.id)}</span>
+                ${
+                  txBatchInfo?.batchLabel
+                    ? `<span class="tc-batch-badge ${getBatchBadgeColorClass(txBatchInfo.batchLabel)}">${escapeHtml(
+                        txBatchInfo.batchLabel
+                      )}</span>`
+                    : ''
+                }
                 ${
                   isExcludedTx
                     ? `<span class="px-2 py-0.2 rounded bg-rose-100 text-rose-800 border border-rose-300 font-extrabold text-[11px]">${escapeHtml(
@@ -7906,10 +7999,12 @@ async function adjustCurrentClassBatchNumber(delta) {
 
   const hasSo = curLabel.includes('SỐ');
   const nextLabel = hasSo ? `ĐỢT SỐ ${nextNum}` : `ĐỢT ${nextNum}`;
+  const prevBatchLabel = cfg.batchLabel || '';
   cfg.batchLabel = nextLabel;
   map[targetClass] = cfg;
   if (!appState.settings) appState.settings = {};
   appState.settings.classSchedulesJson = JSON.stringify(map);
+  syncClassCurrentBatchOnTransactions(targetClass, prevBatchLabel, nextLabel, cfg.periodLabel, cfg.rolledOverAt, appState);
   saveStateToLocal();
   await triggerAutoSyncIfNeeded(`Đã chuyển lớp ${targetClass} sang ${nextLabel}!`);
 }
@@ -8542,24 +8637,46 @@ function quickChangeStudentStatus(studentId, newStatus) {
   student.updatedAt = nowStr;
   student.manualStatusUpdatedAt = nowStr;
 
-  // Nếu chuyển sang "Đã hoàn thành", kiểm tra xem đã có phiếu thu học phí cho HS này trong kỳ chưa
+  // Nếu chuyển sang "Đã hoàn thành", kiểm tra xem đã có phiếu thu học phí cho HS này trong đợt hiện tại chưa
+  const curClsCfg = findClassScheduleConfig(student.className, getClassSchedulesMap(), appState);
+  const curBatch = formatBatchDisplayLabel(curClsCfg?.batchLabel);
+  const curPeriod = normalizePeriodValue(curClsCfg?.periodLabel || student.period || '');
+  if (curPeriod) {
+    student.period = curPeriod;
+  }
+
   if (newStatus === 'Đã hoàn thành' && oldStatus !== 'Đã hoàn thành') {
-    const alreadyRecorded = (appState.transactions || []).some(
-      t =>
-        t.type === 'Thu' &&
-        t.studentCode === student.studentCode &&
-        t.description.includes(student.period)
-    );
+    const alreadyRecorded = (appState.transactions || []).some(t => {
+      if (!t || t.type !== 'Thu') return false;
+      const sameStu =
+        (t.studentRecordId && t.studentRecordId === student.id) ||
+        (t.studentCode && student.studentCode && t.studentCode === student.studentCode);
+      if (!sameStu) return false;
+      const bInfo = resolveTransactionBatchInfo(t, appState);
+      if (bInfo.isHistorical) return false;
+      if (curBatch && bInfo.batchLabel) {
+        return normalizeBatchCompareKey(bInfo.batchLabel) === normalizeBatchCompareKey(curBatch);
+      }
+      return curPeriod ? String(t.description || '').includes(curPeriod) : true;
+    });
 
     if (!alreadyRecorded) {
+      const periodDescPart = curBatch
+        ? `${curBatch}${curPeriod ? ` (${curPeriod})` : ''}`
+        : curPeriod || 'kỳ hiện tại';
       appState.transactions.unshift({
         id: 'GD_' + Date.now(),
         date: nowStr,
         type: 'Thu',
         category: 'Thu học phí',
         amount: Number(student.tuitionFee) || 0,
-        description: `Thu học phí ${student.period} - ${student.studentCode} ${student.fullName}`,
+        description: `Thu học phí ${periodDescPart} - ${student.studentCode} ${student.fullName}`,
+        studentRecordId: student.id,
         studentCode: student.studentCode,
+        studentName: student.fullName,
+        className: student.className,
+        batchLabel: curBatch,
+        period: curPeriod,
         method: 'Chuyển khoản',
         receiptUrl: student.receiptUrl || '',
         createdBy: 'Quản lý'
@@ -8579,15 +8696,15 @@ function quickChangeStudentStatus(studentId, newStatus) {
   } else if (newStatus !== 'Đã hoàn thành' && oldStatus === 'Đã hoàn thành') {
     // Đánh dấu mọi giao dịch SePay hiện có là đã xử lý để khi đổi về Chưa đóng/Chờ duyệt không bị SePay tự gạch nợ lại
     markSepayTxIdsProcessed(appState);
-    const toRemove = (appState.transactions || []).filter(
-      t =>
-        t &&
-        t.type === 'Thu' &&
-        t.studentCode === student.studentCode &&
-        t.description &&
-        t.description.includes(student.period) &&
-        !String(t.id || '').startsWith('GD_SEPAY_')
-    );
+    const toRemove = (appState.transactions || []).filter(t => {
+      if (!t || t.type !== 'Thu' || String(t.id || '').startsWith('GD_SEPAY_')) return false;
+      const sameStu =
+        (t.studentRecordId && t.studentRecordId === student.id) ||
+        (t.studentCode && student.studentCode && t.studentCode === student.studentCode);
+      if (!sameStu) return false;
+      const bInfo = resolveTransactionBatchInfo(t, appState);
+      return !bInfo.isHistorical;
+    });
     if (toRemove.length > 0) {
       markTransactionsAsDeletedInState(toRemove, appState);
       const removeSet = new Set(toRemove.map(t => t.id));
@@ -8776,11 +8893,12 @@ function saveStudentForm(event) {
   }
 
   const map = typeof getClassSchedulesMap === 'function' ? getClassSchedulesMap() : {};
-  const period =
+  const period = normalizePeriodValue(
     document.getElementById('stu-form-period').value.trim() ||
-    map[className]?.periodLabel ||
-    appState.settings.defaultPeriod ||
-    'Tháng 10/2026';
+      map[className]?.periodLabel ||
+      appState.settings.defaultPeriod ||
+      'Tháng 10/2026'
+  );
   const parentName = document.getElementById('stu-form-parent').value.trim();
   const parentPhone = document.getElementById('stu-form-phone').value.trim();
   const tuitionFee = fromShortMoney(document.getElementById('stu-form-fee').value);
@@ -8842,6 +8960,57 @@ function saveStudentForm(event) {
   }
 
   recordExactSmallAmount(appState, targetRecordId, studentCode, tuitionFee);
+
+  if (oldStuSnapshot) {
+    const oldCodeUpper = String(oldStuSnapshot.studentCode || '').trim().toUpperCase();
+    const newCodeUpper = String(studentCode || '').trim().toUpperCase();
+    const editedMap = getEditedTxOverridesMap(appState);
+    let overridesTouched = false;
+
+    (appState.transactions || []).forEach(t => {
+      if (!t) return;
+      const tCodeUpper = String(t.studentCode || '').trim().toUpperCase();
+      if ((oldCodeUpper && tCodeUpper === oldCodeUpper) || (newCodeUpper && tCodeUpper === newCodeUpper)) {
+        if (oldCodeUpper && newCodeUpper && tCodeUpper === oldCodeUpper && oldCodeUpper !== newCodeUpper) {
+          t.studentCode = studentCode;
+          if (editedMap[t.id]) {
+            editedMap[t.id].studentCode = studentCode;
+            overridesTouched = true;
+          }
+        }
+        if (
+          !editedMap[t.id] &&
+          typeof t.description === 'string' &&
+          /^Thu học phí(?:\s|$)/i.test(t.description) &&
+          !t.description.includes('| ND:') &&
+          oldStuSnapshot.fullName &&
+          oldStuSnapshot.fullName !== fullName
+        ) {
+          t.description = t.description.split(oldStuSnapshot.fullName).join(fullName);
+        }
+      }
+    });
+    if (overridesTouched) {
+      appState.settings.editedTxOverridesJson = JSON.stringify(editedMap);
+    }
+
+    (appState.paymentRequests || []).forEach(r => {
+      if (!r) return;
+      const rCodeUpper = String(r.studentCode || '').trim().toUpperCase();
+      if (
+        r.studentRecordId === targetRecordId ||
+        (oldCodeUpper && rCodeUpper === oldCodeUpper) ||
+        (newCodeUpper && rCodeUpper === newCodeUpper)
+      ) {
+        r.studentCode = studentCode;
+        r.studentName = fullName;
+        if (r.status === 'Chờ duyệt') {
+          r.className = className;
+          r.period = period;
+        }
+      }
+    });
+  }
 
   const metaMap = getStudentMetaMap();
   const key = String(studentCode || targetRecordId).trim().toUpperCase();
@@ -8965,6 +9134,7 @@ function handleCreateBatchPeriod(event) {
       });
     }
     if (oldCfg) {
+      freezeCompletedBatchOnTransactions(cls, oldCfg.batchLabel, oldCfg.periodLabel, appState);
       oldCfg.periodLabel = newPeriod;
       oldCfg.rolledOverAt = nowStr;
     }
@@ -8998,6 +9168,495 @@ function handleCreateBatchPeriod(event) {
 // ============================================================================
 const selectedFinanceItemIds = new Set();
 
+function formatBatchDisplayLabel(rawBatch) {
+  const s = String(rawBatch || '').trim();
+  if (!s) return '';
+  if (/^\d+$/.test(s)) return `ĐỢT ${Number(s)}`;
+  return s;
+}
+
+function normalizeBatchCompareKey(rawBatch) {
+  const s = removeVietnameseTones(String(rawBatch || '').toUpperCase()).trim();
+  if (!s) return '';
+  const m = s.match(/^(?:DOT\s*(?:SO\s*)?)?(\d+)$/);
+  if (m) return `DOT_${Number(m[1])}`;
+  return s.replace(/\s+/g, ' ');
+}
+
+function findClassScheduleConfig(className, scheduleMap = {}, stateObj = appState) {
+  const cls = String(className || '').trim();
+  if (!cls) return null;
+  if (scheduleMap && scheduleMap[cls]) return scheduleMap[cls];
+  const lower = cls.toLowerCase();
+  const key = Object.keys(scheduleMap || {}).find(k => String(k || '').trim().toLowerCase() === lower);
+  if (key) return scheduleMap[key];
+  if (stateObj === appState && typeof getClassSchedulesMap === 'function') {
+    const fullMap = getClassSchedulesMap();
+    if (fullMap[cls]) return fullMap[cls];
+    const fk = Object.keys(fullMap).find(k => String(k || '').trim().toLowerCase() === lower);
+    if (fk) return fullMap[fk];
+  }
+  return null;
+}
+
+function getCurrentBatchLabelForClass(className, stateObj = appState) {
+  const cls = String(className || '').trim();
+  if (!cls) return '';
+  let map = {};
+  try {
+    const raw = stateObj?.settings?.classSchedulesJson;
+    if (raw) map = JSON.parse(raw) || {};
+  } catch (e) {}
+  const cfg = findClassScheduleConfig(cls, map, stateObj);
+  return cfg?.batchLabel ? formatBatchDisplayLabel(cfg.batchLabel) : '';
+}
+
+function syncClassCurrentBatchOnTransactions(
+  className,
+  oldBatchLabel,
+  newBatchLabel,
+  newPeriodLabel = '',
+  rolledOverAt = '',
+  stateObj = appState
+) {
+  const cls = String(className || '').trim();
+  if (!cls || !stateObj) return;
+  const classStudents = (stateObj.students || []).filter(
+    s => s && String(s.className || '').trim().toLowerCase() === cls.toLowerCase()
+  );
+  const stuByCode = new Map();
+  const stuById = new Map();
+  classStudents.forEach(s => {
+    const code = String(s.studentCode || '').trim().toUpperCase();
+    if (code) stuByCode.set(code, s);
+    if (s.id) stuById.set(s.id, s);
+  });
+
+  const oldKey = normalizeBatchCompareKey(oldBatchLabel);
+  const cleanNewBatch = formatBatchDisplayLabel(newBatchLabel);
+  const cleanNewPeriod = newPeriodLabel ? normalizePeriodValue(newPeriodLabel) : '';
+  const editedMap = getEditedTxOverridesMap(stateObj);
+  const extractIsoDate = s => {
+    const str = String(s || '').trim();
+    const iso = str.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+    const vn = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    return vn ? `${vn[3]}-${vn[2]}-${vn[1]}` : '';
+  };
+  const rollDateOnly = extractIsoDate(rolledOverAt);
+
+  (stateObj.transactions || []).forEach(t => {
+    if (!t || editedMap[t.id]?.batchLabel) return;
+    const tCode = String(t.studentCode || '').trim().toUpperCase();
+    const matchedStu =
+      (t.studentRecordId && stuById.get(t.studentRecordId)) || (tCode && stuByCode.get(tCode)) || null;
+    const tCls = String(t.className || '').trim().toLowerCase();
+    if (!matchedStu && (!tCls || tCls !== cls.toLowerCase())) return;
+
+    if (rolledOverAt && t.date) {
+      const tDateOnly = extractIsoDate(t.date);
+      const hasExplicitTime = /\d{1,2}:\d{2}/.test(String(t.date));
+      if (
+        (tDateOnly && rollDateOnly && tDateOnly < rollDateOnly) ||
+        (hasExplicitTime && isTxDateOlderThanAction(t.date, rolledOverAt))
+      ) {
+        return;
+      }
+    }
+    const curKey = normalizeBatchCompareKey(t.batchLabel);
+    if (!curKey || (oldKey && curKey === oldKey)) {
+      if (cleanNewBatch) t.batchLabel = cleanNewBatch;
+      if (cleanNewPeriod) t.period = cleanNewPeriod;
+      if (matchedStu) {
+        t.className = cls;
+        t.studentName = matchedStu.fullName || t.studentName;
+      }
+      if (!editedMap[t.id] && /^Thu học phí(?:\s|$)/i.test(String(t.description || '').trim()) && !String(t.description || '').includes('| ND:')) {
+        const stuName = matchedStu?.fullName || t.studentName || '';
+        const stuCode = matchedStu?.studentCode || tCode || '';
+        const pLabel = cleanNewPeriod || normalizePeriodValue(t.period || matchedStu?.period || '');
+        const pPart = cleanNewBatch ? `${cleanNewBatch}${pLabel ? ` (${pLabel})` : ''}` : pLabel;
+        if (pPart && (stuCode || stuName)) {
+          t.description = `Thu học phí ${pPart} - ${stuCode ? `${stuCode} ` : ''}${stuName}`.trim();
+        }
+      }
+    }
+  });
+
+  (stateObj.paymentRequests || []).forEach(r => {
+    if (!r || r.status !== 'Chờ duyệt') return;
+    const rCode = String(r.studentCode || '').trim().toUpperCase();
+    const matchedStu =
+      (r.studentRecordId && stuById.get(r.studentRecordId)) || (rCode && stuByCode.get(rCode)) || null;
+    if (!matchedStu && String(r.className || '').trim().toLowerCase() !== cls.toLowerCase()) return;
+    r.className = cls;
+    if (matchedStu) r.studentName = matchedStu.fullName || r.studentName;
+    if (cleanNewBatch) r.batchLabel = cleanNewBatch;
+    if (cleanNewPeriod) r.period = cleanNewPeriod;
+  });
+}
+
+function freezeCompletedBatchOnTransactions(className, completedBatchLabel, completedPeriodLabel = '', stateObj = appState) {
+  const cls = String(className || '').trim();
+  const frozenBatch = formatBatchDisplayLabel(completedBatchLabel);
+  if (!cls || !frozenBatch || !stateObj) return;
+  const targetCodes = new Set(
+    (stateObj.students || [])
+      .filter(s => s && String(s.className || '').trim().toLowerCase() === cls.toLowerCase())
+      .map(s => String(s.studentCode || '').trim().toUpperCase())
+      .filter(Boolean)
+  );
+  if (targetCodes.size === 0) return;
+  const frozenPeriod = completedPeriodLabel ? normalizePeriodValue(completedPeriodLabel) : '';
+
+  (stateObj.transactions || []).forEach(t => {
+    if (!t) return;
+    const tCode = String(t.studentCode || '').trim().toUpperCase();
+    if (!targetCodes.has(tCode)) return;
+    if (!t.batchLabel) {
+      t.batchLabel = frozenBatch;
+    }
+    if (!t.period && frozenPeriod) {
+      t.period = frozenPeriod;
+    }
+  });
+}
+
+function getBatchBadgeColorClass(batchLabel) {
+  const m = String(batchLabel || '').match(/(\d+)/);
+  if (!m) return 'tc-batch-default';
+  const n = Number(m[1]);
+  if (!n || n < 1) return 'tc-batch-default';
+  const slot = ((n - 1) % 6) + 1;
+  return `tc-batch-${slot}`;
+}
+
+function getCategoryColorClass(category, isTest = false) {
+  if (isTest) return 'tc-cat-test';
+  const c = removeVietnameseTones(String(category || '').toLowerCase());
+  if (c.includes('hoc phi')) return 'tc-cat-tuition';
+  if (c.includes('giao trinh') || (c.includes('thu') && c.includes('tai lieu'))) return 'tc-cat-material';
+  if (c.includes('thue phong') || c.includes('dien nuoc')) return 'tc-cat-rent';
+  if (c.includes('in an') || c.includes('tai lieu')) return 'tc-cat-print';
+  if (c.includes('luong') || c.includes('tro giang')) return 'tc-cat-salary';
+  if (c.includes('thuong') || c.includes('lien hoan')) return 'tc-cat-reward';
+  return 'tc-cat-other';
+}
+
+function getMethodBadgeColorClass(method, isTest = false, isDraft = false) {
+  if (isTest || isDraft) return 'tc-method-draft';
+  const m = removeVietnameseTones(String(method || '').toLowerCase());
+  if (m.includes('tien mat')) return 'tc-method-cash';
+  if (m.includes('tu dong') || m.includes('sepay') || m.includes('stk')) return 'tc-method-auto';
+  return 'tc-method-transfer';
+}
+
+function resolveTransactionBatchInfo(item, stateObj = appState) {
+  const empty = {
+    batchLabel: '',
+    periodLabel: '',
+    className: '',
+    matchedStu: null,
+    studentCode: '',
+    studentName: '',
+    isHistorical: false
+  };
+  if (!item) return empty;
+
+  let scheduleMap = {};
+  let historyList = [];
+  try {
+    if (stateObj?.settings?.classSchedulesJson) {
+      scheduleMap = JSON.parse(stateObj.settings.classSchedulesJson) || {};
+    }
+  } catch (e) {}
+  try {
+    if (stateObj?.settings?.classHistoryJson) {
+      historyList = JSON.parse(stateObj.settings.classHistoryJson) || [];
+    }
+  } catch (e) {}
+
+  const rawText = `${item.description || ''} ${item.note || ''}`;
+  let stuCode = String(item.studentCode || '').trim().toUpperCase();
+  const stuRecId = String(item.studentRecordId || '').trim();
+  if (!stuCode && !stuRecId && item.type !== 'Chi') {
+    const codeInText = rawText.match(/\b(HS\d{2,})\b/i);
+    if (codeInText) stuCode = codeInText[1].toUpperCase();
+  }
+
+  const matchedStu =
+    (stateObj?.students || []).find(s => {
+      if (!s) return false;
+      if (stuRecId && s.id === stuRecId) return true;
+      return Boolean(stuCode && String(s.studentCode || '').trim().toUpperCase() === stuCode);
+    }) || null;
+
+  let histMatchedStu = null;
+  if (!matchedStu && (stuCode || stuRecId) && Array.isArray(historyList)) {
+    for (let i = 0; i < historyList.length; i++) {
+      const h = historyList[i];
+      const found = (h?.studentsSnapshot || []).find(hs => {
+        if (!hs) return false;
+        if (stuRecId && hs.id === stuRecId) return true;
+        return Boolean(stuCode && String(hs.studentCode || '').trim().toUpperCase() === stuCode);
+      });
+      if (found) {
+        histMatchedStu = { ...found, className: found.className || h.className || '' };
+        break;
+      }
+    }
+  }
+
+  const resolvedStuCode = stuCode || String(matchedStu?.studentCode || histMatchedStu?.studentCode || '').trim().toUpperCase();
+  // Luôn ưu tiên đúng Họ tên & Lớp hiện đặt trong mục Lớp học (appState.students)
+  const studentName = String(matchedStu?.fullName || histMatchedStu?.fullName || item.studentName || '').trim();
+  const className = String(matchedStu?.className || item.className || histMatchedStu?.className || '').trim();
+
+  const curCfg = findClassScheduleConfig(className, scheduleMap, stateObj);
+  const classHistories = className
+    ? (Array.isArray(historyList)
+        ? historyList.filter(h => h && String(h.className || '').trim().toLowerCase() === className.toLowerCase())
+        : [])
+    : [];
+
+  const cleanPeriod = val => {
+    const raw = String(val || '').trim();
+    if (!raw) return '';
+    return normalizePeriodValue(raw);
+  };
+  const normPeriod = s => removeVietnameseTones(cleanPeriod(s).toLowerCase()).replace(/\s+/g, '');
+
+  const rawPeriodCandidate = String(item.period || '').trim();
+  const periodMatch = rawText.match(/(Tháng\s*\d{1,2}(?:\s*-\s*\d{1,2})?\/\d{4})/i);
+  const descPeriod = rawPeriodCandidate
+    ? cleanPeriod(rawPeriodCandidate)
+    : periodMatch
+    ? periodMatch[1].replace(/\s+/g, ' ').trim()
+    : '';
+  const curPeriodClean = cleanPeriod(curCfg?.periodLabel || matchedStu?.period || '');
+
+  const editedMap = getEditedTxOverridesMap(stateObj);
+  const overrideBatch = item.id && editedMap[item.id]?.batchLabel ? editedMap[item.id].batchLabel : '';
+  if (overrideBatch) {
+    const overKey = normalizeBatchCompareKey(overrideBatch);
+    const curKey = normalizeBatchCompareKey(curCfg?.batchLabel);
+    if (curCfg?.batchLabel && overKey === curKey) {
+      return {
+        batchLabel: formatBatchDisplayLabel(curCfg.batchLabel),
+        periodLabel: curPeriodClean || descPeriod,
+        className: curCfg.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: false
+      };
+    }
+    const matchedHist = classHistories.find(h => normalizeBatchCompareKey(h.batchLabel) === overKey);
+    return {
+      batchLabel: matchedHist?.batchLabel ? formatBatchDisplayLabel(matchedHist.batchLabel) : formatBatchDisplayLabel(overrideBatch),
+      periodLabel: cleanPeriod(matchedHist?.periodLabel) || descPeriod || curPeriodClean,
+      className,
+      matchedStu,
+      studentCode: resolvedStuCode,
+      studentName,
+      isHistorical: Boolean(curKey ? overKey !== curKey : matchedHist)
+    };
+  }
+
+  // Kiểm tra giao dịch diễn ra trước thời điểm chuyển sang đợt mới (rolledOverAt)
+  const txTimeStr = String(item.date || item.submittedAt || '').trim();
+  if (curCfg?.rolledOverAt && classHistories.length > 0 && txTimeStr) {
+    const extractIsoDate = s => {
+      const str = String(s || '').trim();
+      const iso = str.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (iso) return iso[1];
+      const vn = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      return vn ? `${vn[3]}-${vn[2]}-${vn[1]}` : '';
+    };
+    const txHasExplicitTime = /\d{1,2}:\d{2}/.test(txTimeStr);
+    const txDateOnly = extractIsoDate(txTimeStr);
+    const rollDateOnly = extractIsoDate(curCfg.rolledOverAt);
+
+    let isPreRollover = false;
+    if (txDateOnly && rollDateOnly && txDateOnly < rollDateOnly) {
+      isPreRollover = true;
+    } else if (txHasExplicitTime && isTxDateOlderThanAction(txTimeStr, curCfg.rolledOverAt)) {
+      isPreRollover = true;
+    } else if (txDateOnly && rollDateOnly && txDateOnly === rollDateOnly && !item.batchLabel) {
+      const descMatchesHistOnly =
+        descPeriod &&
+        (!curPeriodClean || normPeriod(descPeriod) !== normPeriod(curPeriodClean)) &&
+        classHistories.some(h => h.periodLabel && normPeriod(h.periodLabel) === normPeriod(descPeriod));
+      const paidInPrevHistOnly =
+        matchedStu &&
+        matchedStu.status !== 'Đã hoàn thành' &&
+        (classHistories[0]?.studentsSnapshot || []).some(
+          hs =>
+            hs &&
+            String(hs.studentCode || '').trim().toUpperCase() === resolvedStuCode &&
+            hs.status === 'Đã hoàn thành'
+        );
+      if (descMatchesHistOnly || paidInPrevHistOnly) {
+        isPreRollover = true;
+      }
+    }
+
+    if (isPreRollover) {
+      const itemBatchKey = normalizeBatchCompareKey(item.batchLabel);
+      const histMatch =
+        (itemBatchKey && classHistories.find(h => normalizeBatchCompareKey(h.batchLabel) === itemBatchKey)) ||
+        (descPeriod && classHistories.find(h => h.periodLabel && normPeriod(h.periodLabel) === normPeriod(descPeriod))) ||
+        classHistories[0];
+      return {
+        batchLabel: formatBatchDisplayLabel(histMatch.batchLabel),
+        periodLabel: cleanPeriod(histMatch.periodLabel) || descPeriod,
+        className: histMatch.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: true
+      };
+    }
+  }
+
+  const storedOrTextBatch =
+    item.batchLabel ||
+    (() => {
+      const m = rawText.match(/(?:^|[\s(\[-])((?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+)(?!\d)/i);
+      return m ? m[1] : '';
+    })();
+
+  if (storedOrTextBatch) {
+    const bKey = normalizeBatchCompareKey(storedOrTextBatch);
+    const curKey = normalizeBatchCompareKey(curCfg?.batchLabel);
+    if (curCfg?.batchLabel && bKey === curKey) {
+      return {
+        batchLabel: formatBatchDisplayLabel(curCfg.batchLabel),
+        periodLabel: curPeriodClean || descPeriod,
+        className: curCfg.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: false
+      };
+    }
+    const matchedHist = classHistories.find(h => normalizeBatchCompareKey(h.batchLabel) === bKey);
+    if (matchedHist) {
+      return {
+        batchLabel: formatBatchDisplayLabel(matchedHist.batchLabel),
+        periodLabel: cleanPeriod(matchedHist.periodLabel) || descPeriod,
+        className: matchedHist.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: true
+      };
+    }
+    return {
+      batchLabel: formatBatchDisplayLabel(storedOrTextBatch),
+      periodLabel: curPeriodClean || descPeriod,
+      className,
+      matchedStu,
+      studentCode: resolvedStuCode,
+      studentName,
+      isHistorical: Boolean(curKey && bKey !== curKey)
+    };
+  }
+
+  if (descPeriod) {
+    const nDesc = normPeriod(descPeriod);
+    if (curPeriodClean && normPeriod(curPeriodClean) === nDesc && curCfg?.batchLabel) {
+      return {
+        batchLabel: formatBatchDisplayLabel(curCfg.batchLabel),
+        periodLabel: curPeriodClean,
+        className: curCfg.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: false
+      };
+    }
+    const histByPeriod = classHistories.find(h => h.periodLabel && normPeriod(h.periodLabel) === nDesc);
+    if (histByPeriod) {
+      return {
+        batchLabel: formatBatchDisplayLabel(histByPeriod.batchLabel),
+        periodLabel: cleanPeriod(histByPeriod.periodLabel),
+        className: histByPeriod.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: true
+      };
+    }
+  }
+
+  if (curCfg?.batchLabel && (matchedStu || resolvedStuCode || className)) {
+    return {
+      batchLabel: formatBatchDisplayLabel(curCfg.batchLabel),
+      periodLabel: curPeriodClean || descPeriod,
+      className: curCfg.className || className,
+      matchedStu,
+      studentCode: resolvedStuCode,
+      studentName,
+      isHistorical: false
+    };
+  }
+
+  return {
+    batchLabel: '',
+    periodLabel: curPeriodClean || descPeriod,
+    className,
+    matchedStu,
+    studentCode: resolvedStuCode,
+    studentName,
+    isHistorical: false
+  };
+}
+
+function renderLinkedStudentBatchCellHtml(batchInfo, isIncome, isTestTx) {
+  if (isTestTx && !batchInfo.studentCode && !batchInfo.matchedStu) {
+    return `<span class="tc-cat-badge tc-cat-test">Test kết nối STK</span>`;
+  }
+  if (batchInfo.matchedStu || batchInfo.studentCode || batchInfo.studentName) {
+    const code = batchInfo.studentCode || batchInfo.matchedStu?.studentCode || 'HS';
+    const name = batchInfo.studentName || batchInfo.matchedStu?.fullName || 'Học sinh';
+    const cls = batchInfo.className || batchInfo.matchedStu?.className || '';
+    const batch = batchInfo.batchLabel;
+    const period = batchInfo.periodLabel;
+    const batchColor = getBatchBadgeColorClass(batch);
+    return `
+      <div class="tc-linked-stu-box ${batchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} max-w-[265px]">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white tabular-nums font-extrabold text-[11px] leading-none shrink-0">${escapeHtml(code)}</span>
+          <span class="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[180px]" title="${escapeAttr(name)}">${escapeHtml(name)}</span>
+          ${
+            batch
+              ? `<span class="tc-batch-badge ${batchColor}" title="Khoản thu này thuộc ${escapeAttr(batch)}${period ? ' (' + escapeAttr(period) + ')' : ''}">${escapeHtml(batch)}</span>`
+              : ''
+          }
+        </div>
+        <div class="text-[11px] text-slate-600 dark:text-slate-300 font-semibold truncate mt-0.5">
+          ${cls ? `Lớp ${escapeHtml(cls)}` : 'Đã liên kết HS'}${period ? ` • ${escapeHtml(period)}` : ''}${batchInfo.isHistorical ? ' (Đợt trước)' : ''}
+        </div>
+      </div>
+    `;
+  }
+  if (isIncome) {
+    return `
+      <span class="tc-unlinked-stu-pill" title="Bấm vào dòng để gán học sinh cho khoản thu này">
+        <i data-lucide="user-plus" class="w-3.5 h-3.5 shrink-0"></i>
+        <span>Chưa gán HS • Bấm gán</span>
+      </span>
+    `;
+  }
+  return `
+    <span class="tc-expense-target-pill">
+      <i data-lucide="receipt" class="w-3 h-3 shrink-0"></i>
+      <span>Khoản chi chung</span>
+    </span>
+  `;
+}
+
 function getFilteredPendingRequestsForFinance() {
   const q = removeVietnameseTones((document.getElementById('filter-trans-search')?.value || '').trim().toLowerCase());
   const typeFilter = document.getElementById('filter-trans-type')?.value || 'ALL';
@@ -9008,8 +9667,9 @@ function getFilteredPendingRequestsForFinance() {
     if (typeFilter === 'Chi') return false;
     if (catFilter !== 'ALL' && catFilter !== 'Thu học phí') return false;
     if (q) {
+      const bInfo = resolveTransactionBatchInfo(req, appState);
       const hay = removeVietnameseTones(
-        `${req.id} ${req.studentCode} ${req.studentName} ${req.className} ${req.payerName} ${req.note} ${req.period}`.toLowerCase()
+        `${req.id} ${req.studentCode} ${req.studentName} ${req.className} ${req.payerName} ${req.note} ${req.period} ${bInfo.batchLabel}`.toLowerCase()
       );
       if (!hay.includes(q)) return false;
     }
@@ -9128,7 +9788,10 @@ function getFilteredTransactions() {
     if (catFilter !== 'ALL' && t.category !== catFilter) return false;
     if (q) {
       const txTag = getTransactionTagLabel(t);
-      const hay = removeVietnameseTones(`${t.id} ${t.description} ${t.category} ${t.studentCode} ${txTag}`.toLowerCase());
+      const bInfo = resolveTransactionBatchInfo(t, appState);
+      const hay = removeVietnameseTones(
+        `${t.id} ${t.description} ${t.category} ${t.studentCode} ${txTag} ${bInfo.batchLabel} ${bInfo.studentName} ${bInfo.className}`.toLowerCase()
+      );
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -9194,6 +9857,8 @@ function renderFinancePendingApprovalsCard() {
         ? req.testDisplayAmount || 600000
         : normalizeStoredVnd(req.amount) || (linkedStu ? normalizeStoredVnd(linkedStu.tuitionFee) : 600000);
       const cleanNote = isTestReq ? stripRedundantTestPrefix(req.note) : req.note;
+      const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
+      const reqBatchClass = getBatchBadgeColorClass(reqBatchInfo.batchLabel);
 
       return `
         <div class="p-3 rounded-xl bg-white border-2 ${
@@ -9215,13 +9880,18 @@ function renderFinancePendingApprovalsCard() {
             }
             <div class="space-y-0.5 text-xs min-w-0">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 tabular-nums font-extrabold text-[11px]">${escapeHtml(
-                  req.studentCode || 'HS'
+                <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white tabular-nums font-extrabold text-[11px]">${escapeHtml(
+                  reqBatchInfo.studentCode || req.studentCode || 'HS'
                 )}</span>
-                <span class="font-extrabold text-slate-900 text-sm">${escapeHtml(req.studentName)}</span>
-                <span class="text-slate-500 font-semibold">• Lớp ${escapeHtml(req.className || '---')}</span>
+                <span class="font-extrabold text-slate-900 text-sm">${escapeHtml(reqBatchInfo.studentName || req.studentName)}</span>
+                <span class="text-slate-500 font-semibold">• Lớp ${escapeHtml(reqBatchInfo.className || req.className || '---')}</span>
+                ${
+                  reqBatchInfo.batchLabel
+                    ? `<span class="tc-batch-badge ${reqBatchClass}">${escapeHtml(reqBatchInfo.batchLabel)}</span>`
+                    : ''
+                }
                 <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[11px]">${escapeHtml(
-                  req.period || 'Kỳ hiện tại'
+                  reqBatchInfo.periodLabel || req.period || 'Kỳ hiện tại'
                 )}</span>
                 ${
                   isDraftReq
@@ -9342,7 +10012,7 @@ function renderAdminTransactions() {
   if (pendingList.length === 0 && list.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" class="py-10 text-center text-slate-400 text-sm">
+        <td colspan="11" class="py-10 text-center text-slate-400 text-sm">
           Chưa có giao dịch hoặc yêu cầu chờ duyệt nào khớp với bộ lọc.
         </td>
       </tr>
@@ -9362,6 +10032,7 @@ function renderAdminTransactions() {
       const linkedStu = (appState.students || []).find(
         s => s.id === req.studentRecordId || (s.studentCode && s.studentCode === req.studentCode)
       );
+      const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
       const amtVal = isTestReq
         ? req.testDisplayAmount || 600000
         : normalizeStoredVnd(req.amount) || (linkedStu ? normalizeStoredVnd(linkedStu.tuitionFee) : 600000);
@@ -9375,7 +10046,7 @@ function renderAdminTransactions() {
         <tr
           onclick="openTransactionDetailModal('${escapeAttr(rowKey)}')"
           title="Bấm vào dòng để xem thông tin chi tiết yêu cầu chuyển khoản"
-          class="bg-amber-50/70 hover:bg-amber-100/60 transition align-middle border-l-4 border-l-amber-500 cursor-pointer"
+          class="tc-fin-row-pending bg-amber-50/70 hover:bg-amber-100/60 transition align-middle cursor-pointer"
         >
           <td class="py-2.5 px-2 text-center align-middle" onclick="event.stopPropagation()">
             <input
@@ -9409,29 +10080,26 @@ function renderAdminTransactions() {
             </span>
           </td>
           <td class="py-2.5 px-2.5 text-center align-middle">
-            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs leading-tight max-w-[120px] text-center">
-              Thu học phí
+            <span class="tc-cat-badge ${isTestReq ? 'tc-cat-test' : 'tc-cat-tuition'} max-w-[125px]">
+              ${isTestReq ? 'Test STK' : 'Thu học phí'}
             </span>
           </td>
+          <td class="py-2.5 px-3 align-middle">
+            ${renderLinkedStudentBatchCellHtml(reqBatchInfo, true, isTestReq)}
+          </td>
           <td class="py-2.5 px-3.5 align-middle">
-            <div class="space-y-0.5 max-w-[360px]">
+            <div class="space-y-0.5 max-w-[330px]">
               <div class="flex flex-wrap items-center gap-1.5">
                 ${
                   isDraftReq
                     ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-xs whitespace-nowrap"><i data-lucide="tag" class="w-3 h-3"></i><span>STK Nháp</span></span>`
                     : ''
                 }
-                <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white tabular-nums font-bold text-xs whitespace-nowrap">${escapeHtml(
-                  req.studentCode || 'HS'
-                )}</span>
-                <span class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(req.studentName || 'Học sinh')}</span>
+                <span class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(req.payerName || 'Phụ huynh chuyển khoản')}</span>
               </div>
-              <div class="text-[11px] font-semibold text-slate-600 truncate">
-                Lớp ${escapeHtml(req.className || '---')} • ${escapeHtml(req.period || 'Kỳ hiện tại')}
-              </div>
-              <div class="text-[11px] text-slate-500 truncate flex items-center gap-1">
+              <div class="text-[11px] text-slate-600 truncate flex items-center gap-1">
                 <span class="truncate">${escapeHtml(quickSub)}</span>
-                <span class="text-xs font-extrabold text-[#141414] shrink-0">Chi tiết ↗</span>
+                <span class="text-xs font-extrabold text-indigo-700 dark:text-indigo-300 shrink-0">Chi tiết ↗</span>
               </div>
             </div>
           </td>
@@ -9447,7 +10115,7 @@ function renderAdminTransactions() {
             </div>
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
-            <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-amber-100/80 border border-amber-300 text-[11px] font-extrabold text-amber-900">
+            <div class="tc-method-pill tc-method-draft text-[11px] font-extrabold">
               QR Web / CK
             </div>
           </td>
@@ -9522,11 +10190,20 @@ function renderAdminTransactions() {
       const isExcludedTx = !isTestTx && isTransactionExcludedFromSystem(t);
       const txTagLabel = getTransactionTagLabel(t);
       const compact = buildCompactTransactionInfo(t, appState);
+      const rowAccentClass = isExcludedTx
+        ? 'tc-fin-row-excluded'
+        : isTestTx
+        ? 'tc-fin-row-pending'
+        : isIncome
+        ? 'tc-fin-row-income'
+        : 'tc-fin-row-expense';
+      const catColorClass = getCategoryColorClass(t.category, isTestTx);
+      const methodColorClass = getMethodBadgeColorClass(t.method, isTestTx, isDraftTx);
       return `
         <tr
           onclick="openTransactionDetailModal('${escapeAttr(t.id)}')"
           title="Bấm vào dòng để xem chi tiết giao dịch & chỉnh sửa"
-          class="hover:bg-slate-50/90 transition align-middle cursor-pointer ${
+          class="${rowAccentClass} hover:bg-slate-50/90 transition align-middle cursor-pointer ${
             isTestTx
               ? 'bg-amber-50/45'
               : isExcludedTx
@@ -9599,16 +10276,15 @@ function renderAdminTransactions() {
             }
           </td>
           <td class="py-2.5 px-2.5 text-center align-middle">
-            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-lg ${
-              isTestTx
-                ? 'bg-amber-100/80 text-amber-900 border border-amber-300'
-                : 'bg-slate-100 text-slate-700 border border-slate-200'
-            } font-bold text-xs leading-tight max-w-[120px] text-center">
+            <span class="tc-cat-badge ${catColorClass} max-w-[130px]">
               ${escapeHtml(isTestTx ? 'Test STK' : t.category)}
             </span>
           </td>
+          <td class="py-2.5 px-3 align-middle">
+            ${renderLinkedStudentBatchCellHtml(compact.batchInfo, isIncome, isTestTx)}
+          </td>
           <td class="py-2.5 px-3.5 align-middle">
-            <div class="space-y-0.5 max-w-[360px]">
+            <div class="space-y-0.5 max-w-[330px]">
               <div class="flex flex-wrap items-center gap-1.5">
                 ${
                   isTestTx
@@ -9631,22 +10307,15 @@ function renderAdminTransactions() {
                     ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200/90 text-amber-950 border border-amber-400 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>STK Nháp</span></span>`
                     : ''
                 }
-                ${
-                  compact.studentCode
-                    ? `<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 tabular-nums font-bold text-xs whitespace-nowrap">${escapeHtml(
-                        compact.studentCode
-                      )}</span>`
-                    : ''
-                }
                 <span class="text-slate-900 font-extrabold text-xs sm:text-sm leading-snug truncate ${
                   isExcludedTx ? 'line-through text-slate-500' : ''
-                }" title="${escapeAttr(compact.headline)}">
-                  ${escapeHtml(compact.headline)}
+                }" title="${escapeAttr(compact.rawDesc || compact.headline)}">
+                  ${escapeHtml(compact.tableDescLine || compact.headline)}
                 </span>
               </div>
               <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1.5">
                 <span class="truncate">${escapeHtml(compact.subline)}</span>
-                <span class="text-xs font-extrabold text-[#141414] shrink-0">Chi tiết ↗</span>
+                <span class="text-xs font-extrabold text-indigo-700 dark:text-indigo-300 shrink-0">Chi tiết ↗</span>
               </div>
             </div>
           </td>
@@ -9701,11 +10370,7 @@ function renderAdminTransactions() {
             }
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
-            <div class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg ${
-              isTestTx || isDraftTx
-                ? 'bg-amber-50 border border-amber-300'
-                : 'bg-slate-50 border border-slate-200'
-            }">
+            <div class="tc-method-pill ${methodColorClass}">
               ${formatCompactMethodHtml(t.method, isTestTx, isDraftTx)}
             </div>
           </td>
@@ -9895,6 +10560,7 @@ function recordEditedTransactionOverride(stateObj, oldTx, updatedTx) {
     amount: updatedTx.amount,
     description: updatedTx.description,
     studentCode: updatedTx.studentCode || '',
+    batchLabel: String(updatedTx.batchLabel || ''),
     method: updatedTx.method || 'Chuyển khoản',
     isExcluded: Boolean(updatedTx.isExcluded),
     customTag: String(updatedTx.customTag || ''),
@@ -9923,8 +10589,10 @@ function buildCompactTransactionInfo(tx, stateObj = appState) {
     return {
       shortId: '#GD',
       headline: 'Giao dịch',
+      tableDescLine: 'Giao dịch',
       subline: 'Bấm để xem chi tiết',
       studentCode: '',
+      batchInfo: resolveTransactionBatchInfo(null, stateObj),
       shortMethod: 'CK',
       rawNote: ''
     };
@@ -9944,24 +10612,58 @@ function buildCompactTransactionInfo(tx, stateObj = appState) {
     body = body.slice(0, ndIdx).trim();
   }
 
-  const stuCode = String(tx.studentCode || '').trim().toUpperCase();
-  const matchedStu = stuCode
-    ? (stateObj?.students || []).find(s => String(s?.studentCode || '').trim().toUpperCase() === stuCode)
-    : null;
+  const batchInfo = resolveTransactionBatchInfo(tx, stateObj);
+  const stuCode = batchInfo.studentCode;
+  const matchedStu = batchInfo.matchedStu;
+  const liveName = batchInfo.studentName || matchedStu?.fullName || '';
+  const liveClass = batchInfo.className || matchedStu?.className || '';
+  const editedMap = getEditedTxOverridesMap(stateObj);
 
   let headline = body || tx.category || (tx.type === 'Chi' ? 'Khoản chi' : 'Khoản thu');
+  let tableDescLine = headline;
   let subline = '';
 
-  if (matchedStu) {
-    headline = `${matchedStu.fullName}${matchedStu.className ? ` • Lớp ${matchedStu.className}` : ''}`;
-    subline = `${tx.category || 'Thu học phí'}${matchedStu.period ? ` (${matchedStu.period})` : ''}${
-      bankMemo ? ` • ND: ${bankMemo}` : ''
-    }`;
+  if (matchedStu || liveName) {
+    const resolvedPeriod = normalizePeriodValue(batchInfo.periodLabel || matchedStu?.period || '');
+    headline = [
+      liveName || stuCode || 'Học sinh',
+      liveClass ? `Lớp ${liveClass}` : '',
+      batchInfo.batchLabel || ''
+    ]
+      .filter(Boolean)
+      .join(' • ');
+
+    const isAutoTuitionBody = !editedMap[tx.id] && /^Thu học phí(?:\s|$)/i.test(body);
+    if (bankMemo) {
+      tableDescLine = `ND: ${bankMemo}`;
+    } else if (isAutoTuitionBody) {
+      const pPart = batchInfo.batchLabel
+        ? `${batchInfo.batchLabel}${resolvedPeriod ? ` (${resolvedPeriod})` : ''}`
+        : resolvedPeriod;
+      tableDescLine = `Thu học phí${pPart ? ` ${pPart}` : ''} - ${stuCode ? `${stuCode} ` : ''}${liveName}`.trim();
+    } else {
+      tableDescLine = body || `${tx.category || 'Thu học phí'}${resolvedPeriod ? ` (${resolvedPeriod})` : ''}`;
+    }
+
+    subline = [
+      batchInfo.batchLabel ? `Thuộc ${batchInfo.batchLabel}` : (tx.category || 'Thu học phí'),
+      resolvedPeriod || '',
+      tx.createdBy || ''
+    ]
+      .filter(Boolean)
+      .join(' • ');
   } else if (stuCode && body) {
     headline = body.replace(new RegExp(`^${stuCode}\\s*-\\s*`, 'i'), '').trim() || body;
-    subline = bankMemo ? `ND CK: ${bankMemo}` : `${tx.category || 'Thu học phí'} • ${tx.date || ''}`;
+    tableDescLine = bankMemo ? `ND: ${bankMemo}` : headline;
+    subline = [
+      batchInfo.batchLabel ? `Thuộc ${batchInfo.batchLabel}` : (tx.category || 'Thu học phí'),
+      batchInfo.periodLabel || tx.date || ''
+    ]
+      .filter(Boolean)
+      .join(' • ');
   } else {
     headline = body || tx.category || 'Giao dịch sổ quỹ';
+    tableDescLine = headline;
     subline = bankMemo
       ? `ND CK: ${bankMemo}`
       : `${tx.category || 'Sổ quỹ'} • ${tx.createdBy || tx.method || 'Ghi nhận trên hệ thống'}`;
@@ -9970,9 +10672,11 @@ function buildCompactTransactionInfo(tx, stateObj = appState) {
   return {
     shortId: formatCompactTxId(tx.id),
     headline,
+    tableDescLine,
     subline,
     studentCode: stuCode,
     matchedStu,
+    batchInfo,
     bankMemo,
     rawDesc,
     shortMethod: String(tx.method || '').includes('Tiền mặt') ? 'Tiền mặt' : 'Chuyển khoản'
@@ -10007,9 +10711,24 @@ function openTransactionDetailModal(itemKey) {
     );
     const amtVal = normalizeStoredVnd(req.amount) || (linkedStu ? normalizeStoredVnd(linkedStu.tuitionFee) : 600000);
 
+    const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
+    const reqBatchClass = getBatchBadgeColorClass(reqBatchInfo.batchLabel);
+    const dispReqStuName = reqBatchInfo.studentName || linkedStu?.fullName || req.studentName || 'Học sinh';
+    const dispReqStuCode = reqBatchInfo.studentCode || linkedStu?.studentCode || req.studentCode || 'HS';
+    const dispReqClass = reqBatchInfo.className || linkedStu?.className || req.className || '---';
+    const dispReqPeriod = normalizePeriodValue(reqBatchInfo.periodLabel || req.period || linkedStu?.period || '');
+
     if (headerEl) headerEl.className = 'tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3';
     if (badgeEl) badgeEl.textContent = 'THANH CHÍ EDU • YÊU CẦU CHỜ DUYỆT';
-    if (titleEl) titleEl.textContent = `${req.studentName || 'Học sinh'} (${req.studentCode || 'HS'})`;
+    if (titleEl) {
+      titleEl.textContent = [
+        `${dispReqStuName} (${dispReqStuCode})`,
+        dispReqClass !== '---' ? `Lớp ${dispReqClass}` : '',
+        reqBatchInfo.batchLabel || ''
+      ]
+        .filter(Boolean)
+        .join(' • ');
+    }
 
     bodyEl.innerHTML = `
       <div class="tc-detail-amount-card is-pending">
@@ -10031,13 +10750,22 @@ function openTransactionDetailModal(itemKey) {
           <span class="tc-detail-label">Thời gian gửi</span>
           <span class="font-bold text-slate-800">${escapeHtml(req.submittedAt || 'Vừa gửi')}</span>
         </div>
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="tc-detail-label">Học sinh / Lớp</span>
-          <span class="font-bold text-slate-900">${escapeHtml(req.studentName || '---')} (${escapeHtml(req.studentCode || '---')}) • Lớp ${escapeHtml(req.className || '---')}</span>
-        </div>
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="tc-detail-label">Kỳ thu / Người gửi</span>
-          <span class="font-bold text-slate-800">${escapeHtml(req.period || '---')} • ${escapeHtml(req.payerName || 'Phụ huynh')}</span>
+        <div class="col-span-2 tc-linked-stu-box ${reqBatchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} p-3">
+          <span class="tc-detail-label">Học sinh liên kết &amp; Đợt học phí</span>
+          <div class="flex flex-wrap items-center gap-2 mt-1">
+            <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white tabular-nums font-extrabold text-xs">${escapeHtml(dispReqStuCode)}</span>
+            <span class="font-extrabold text-slate-900 dark:text-slate-100 text-sm">${escapeHtml(dispReqStuName)}</span>
+            <span class="px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs">Lớp ${escapeHtml(dispReqClass)}</span>
+            ${
+              reqBatchInfo.batchLabel
+                ? `<span class="tc-batch-badge ${reqBatchClass}">${escapeHtml(reqBatchInfo.batchLabel)}</span>`
+                : ''
+            }
+            <span class="font-bold text-slate-600 dark:text-slate-300 text-xs">${escapeHtml(dispReqPeriod || '---')}</span>
+          </div>
+          <div class="text-xs font-bold text-indigo-700 dark:text-indigo-300 mt-1.5">
+            Số tiền <strong>+${formatCurrency(amtVal)}</strong> này là của <strong>${escapeHtml(reqBatchInfo.batchLabel || 'Kỳ hiện tại')}</strong>${dispReqPeriod ? ` (${escapeHtml(dispReqPeriod)})` : ''} • Người gửi: ${escapeHtml(req.payerName || 'Phụ huynh')}
+          </div>
         </div>
       </div>
       ${
@@ -10247,15 +10975,55 @@ function openTransactionDetailModal(itemKey) {
         <span class="font-bold text-slate-800">${escapeHtml(tx.date || '---')} • ${escapeHtml(tx.method || 'Chuyển khoản')}</span>
       </div>
       ${
-        compact.matchedStu || compact.studentCode
-          ? `<div class="sm:col-span-2 p-2.5 rounded-xl bg-slate-100 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-               <div>
-                 <span class="tc-detail-label">Học sinh liên kết</span>
-                 <span class="font-extrabold text-slate-900 text-xs sm:text-sm">
-                   ${escapeHtml(compact.matchedStu ? compact.matchedStu.fullName : 'Học sinh')} (${escapeHtml(compact.studentCode)})
-                   ${compact.matchedStu?.className ? ` • Lớp ${escapeHtml(compact.matchedStu.className)}` : ''}
-                   ${compact.matchedStu?.period ? ` • ${escapeHtml(compact.matchedStu.period)}` : ''}
-                 </span>
+        compact.matchedStu || compact.studentCode || compact.batchInfo?.studentName
+          ? (() => {
+              const bInfo = compact.batchInfo || resolveTransactionBatchInfo(tx, appState);
+              const bColor = getBatchBadgeColorClass(bInfo.batchLabel);
+              const dispAmt = formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount);
+              const dispCode = bInfo.studentCode || compact.studentCode || 'HS';
+              const dispName = bInfo.studentName || (compact.matchedStu ? compact.matchedStu.fullName : '') || 'Học sinh';
+              const dispPeriod = normalizePeriodValue(bInfo.periodLabel || '');
+              return `<div class="sm:col-span-2 tc-linked-stu-box ${
+                bInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'
+              } p-3 flex flex-wrap items-center justify-between gap-2.5">
+               <div class="space-y-1 min-w-0">
+                 <span class="tc-detail-label">Học sinh liên kết &amp; Đợt học phí</span>
+                 <div class="flex flex-wrap items-center gap-1.5">
+                   <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white tabular-nums font-extrabold text-xs">${escapeHtml(
+                     dispCode
+                   )}</span>
+                   <span class="font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                     ${escapeHtml(dispName)}
+                   </span>
+                   ${
+                     bInfo.className
+                       ? `<span class="px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs">Lớp ${escapeHtml(
+                           bInfo.className
+                         )}</span>`
+                       : ''
+                   }
+                   ${
+                     bInfo.batchLabel
+                       ? `<span class="tc-batch-badge ${bColor}">${escapeHtml(bInfo.batchLabel)}</span>`
+                       : ''
+                   }
+                   ${
+                     dispPeriod
+                       ? `<span class="text-xs font-bold text-slate-600 dark:text-slate-300">• ${escapeHtml(dispPeriod)}${
+                           bInfo.isHistorical ? ' (Đợt trước)' : ''
+                         }</span>`
+                       : ''
+                   }
+                 </div>
+                 <div class="text-xs font-bold ${
+                   bInfo.isHistorical ? 'text-amber-800 dark:text-amber-300' : 'text-indigo-700 dark:text-indigo-300'
+                 }">
+                   Số tiền <strong>${isIncome ? '+' : '-'}${dispAmt}</strong> thuộc <strong>${escapeHtml(
+                     bInfo.batchLabel || 'Kỳ học phí đang liên kết'
+                   )}</strong>${dispPeriod ? ` (${escapeHtml(dispPeriod)})` : ''}${
+                     bInfo.className ? ` • Lớp ${escapeHtml(bInfo.className)}` : ''
+                   }
+                 </div>
                </div>
                <div class="flex items-center gap-1.5 shrink-0">
                  ${
@@ -10278,7 +11046,8 @@ function openTransactionDetailModal(itemKey) {
                    Đổi HS
                  </button>
                </div>
-             </div>`
+             </div>`;
+            })()
           : isIncome
            ? `<div class="sm:col-span-2 p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-sm flex flex-col gap-2.5">
                 <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
@@ -10336,7 +11105,11 @@ function openTransactionDetailModal(itemKey) {
     <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
       <span class="tc-detail-label">Nội dung chi tiết & Nội dung chuyển khoản gốc</span>
       <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(
-        tx.description || tx.category || '---'
+        !compact.bankMemo &&
+          !getEditedTxOverridesMap(appState)[tx.id] &&
+          /^Thu học phí(?:\s|$)/i.test(String(tx.description || '').trim())
+          ? compact.tableDescLine
+          : tx.description || tx.category || '---'
       )}</p>
       ${
         tx.createdBy
@@ -10413,10 +11186,11 @@ async function handleRefreshFinanceTransactions(isAuto = false) {
   try {
     renderAdminTransactions();
     if (!isAuto) {
-      if (getGasUrl() && isAutoSyncEnabled()) {
-        await syncAllToGoogleSheet(false);
+      if (getGasUrl() && !isSandboxDraftMode) {
+        await pollSepayNewResults(true, true);
+      } else {
+        showToast('Đã làm mới danh sách Sổ Thu - Chi!', 'success');
       }
-      showToast('Đã làm mới sổ Thu - Chi & đẩy dữ liệu lên Google Sheet!', 'success');
     }
   } catch (e) {
     console.warn('Lỗi làm mới Thu Chi:', e);
@@ -10467,6 +11241,13 @@ function handleQuickAssignSearchInput(txId, typedVal) {
                 <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wide">${escapeHtml(s.studentCode || 'HS')}</span>
                 <span class="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700">${escapeHtml(s.fullName)}</span>
                 <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
+                ${
+                  getCurrentBatchLabelForClass(s.className, appState)
+                    ? `<span class="tc-batch-badge ${getBatchBadgeColorClass(getCurrentBatchLabelForClass(s.className, appState))}">${escapeHtml(
+                        getCurrentBatchLabelForClass(s.className, appState)
+                      )}</span>`
+                    : ''
+                }
               </div>
               <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee ?? 600000)} • Bấm để gán ngay</div>
             </div>
@@ -10517,6 +11298,13 @@ function handleQuickAssignSearchInput(txId, typedVal) {
             <span class="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[10px] uppercase">✓ Khớp mã: ${escapeHtml(exactCodeMatch.studentCode || 'HS')}</span>
             <span class="font-extrabold text-xs text-emerald-950">${escapeHtml(exactCodeMatch.fullName)}</span>
             <span class="text-[11px] text-emerald-700 font-semibold">(Lớp ${escapeHtml(exactCodeMatch.className || '---')})</span>
+            ${
+              getCurrentBatchLabelForClass(exactCodeMatch.className, appState)
+                ? `<span class="tc-batch-badge ${getBatchBadgeColorClass(
+                    getCurrentBatchLabelForClass(exactCodeMatch.className, appState)
+                  )}">${escapeHtml(getCurrentBatchLabelForClass(exactCodeMatch.className, appState))}</span>`
+                : ''
+            }
           </div>
           <div class="text-[11px] text-emerald-700 mt-0.5 font-medium">Học phí: ${formatCurrency(exactCodeMatch.tuitionFee ?? 600000)} • Bấm để gán ngay</div>
         </div>
@@ -10586,6 +11374,13 @@ function handleQuickAssignSearchInput(txId, typedVal) {
             <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wide">${escapeHtml(s.studentCode || 'HS')}</span>
             <span class="font-extrabold text-xs text-slate-900 group-hover:text-emerald-700">${escapeHtml(s.fullName)}</span>
             <span class="text-[11px] text-slate-500 font-medium">(Lớp ${escapeHtml(s.className || '---')})</span>
+            ${
+              getCurrentBatchLabelForClass(s.className, appState)
+                ? `<span class="tc-batch-badge ${getBatchBadgeColorClass(getCurrentBatchLabelForClass(s.className, appState))}">${escapeHtml(
+                    getCurrentBatchLabelForClass(s.className, appState)
+                  )}</span>`
+                : ''
+            }
           </div>
           <div class="text-[11px] text-slate-400 mt-0.5 font-medium">Học phí: ${formatCurrency(s.tuitionFee ?? 600000)} • Bấm để gán ngay</div>
         </div>
@@ -10706,8 +11501,12 @@ async function handleQuickAssignStudentToTx(txId, explicitStuId = '') {
 
   const oldTxCopy = { ...tx };
 
-  // 1. Cập nhật mã học sinh vào giao dịch
+  // 1. Cập nhật mã học sinh, họ tên, lớp & đợt học phí hiện tại của lớp vào giao dịch
+  tx.studentRecordId = student.id || '';
   tx.studentCode = student.studentCode || '';
+  tx.studentName = student.fullName || '';
+  tx.className = student.className || '';
+  tx.batchLabel = getCurrentBatchLabelForClass(student.className, appState);
   if (!tx.category || tx.category === 'Khác') {
     tx.category = 'Thu học phí';
   }
@@ -10749,7 +11548,11 @@ async function handleUnassignStudentFromTx(txId) {
   const tx = (appState.transactions || []).find(t => t.id === txId);
   if (!tx) return;
   const oldTxCopy = { ...tx };
+  tx.studentRecordId = '';
   tx.studentCode = '';
+  tx.studentName = '';
+  tx.className = '';
+  tx.batchLabel = '';
   recordEditedTransactionOverride(appState, oldTxCopy, tx);
   saveStateToLocal();
   renderAdminTransactions();
@@ -11458,6 +12261,21 @@ function editTransactionRecord(transId) {
   openTransactionModal(tx.type || 'Thu', tx.id);
 }
 
+function autoFillTransModalBatchByStudentCode(rawCode) {
+  const batchInput = document.getElementById('trans-form-batch');
+  if (!batchInput) return;
+  const code = String(rawCode || '').trim().toUpperCase();
+  if (!code) {
+    batchInput.value = '';
+    return;
+  }
+  const stu = (appState.students || []).find(s => String(s?.studentCode || '').trim().toUpperCase() === code);
+  if (stu) {
+    const clsBatch = getCurrentBatchLabelForClass(stu.className, appState);
+    if (clsBatch) batchInput.value = clsBatch;
+  }
+}
+
 function openTransactionModal(defaultType = 'Thu', editTransId = '') {
   const existingTx = editTransId ? (appState.transactions || []).find(t => t.id === editTransId) : null;
   const type = existingTx ? (existingTx.type || 'Thu') : defaultType;
@@ -11469,6 +12287,7 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
   const amountInput = document.getElementById('trans-form-amount');
   const descInput = document.getElementById('trans-form-desc');
   const studentCodeInput = document.getElementById('trans-form-student-code');
+  const batchInput = document.getElementById('trans-form-batch');
   const methodSelect = document.getElementById('trans-form-method');
   const excludedCb = document.getElementById('trans-form-excluded');
   const customTagInput = document.getElementById('trans-form-custom-tag');
@@ -11477,7 +12296,7 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
   if (existingTx) {
     if (idInput) idInput.value = existingTx.id;
     if (typeSelect) typeSelect.value = type;
-    if (dateInput) dateInput.value = existingTx.date || new Date().toISOString().slice(0, 10);
+    if (dateInput) dateInput.value = String(existingTx.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
     if (catSelect) {
       ensureSelectHasOption(catSelect, existingTx.category);
       catSelect.value = existingTx.category || (type === 'Thu' ? 'Thu học phí' : 'Khác');
@@ -11485,6 +12304,10 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
     if (amountInput) amountInput.value = toShortMoney(existingTx.amount || 0);
     if (descInput) descInput.value = existingTx.description || '';
     if (studentCodeInput) studentCodeInput.value = existingTx.studentCode || '';
+    if (batchInput) {
+      const bInfo = resolveTransactionBatchInfo(existingTx, appState);
+      batchInput.value = bInfo.batchLabel || '';
+    }
     if (methodSelect) {
       const mVal = existingTx.method || 'Chuyển khoản';
       ensureSelectHasOption(methodSelect, mVal);
@@ -11503,6 +12326,7 @@ function openTransactionModal(defaultType = 'Thu', editTransId = '') {
     if (amountInput) amountInput.value = '';
     if (descInput) descInput.value = '';
     if (studentCodeInput) studentCodeInput.value = '';
+    if (batchInput) batchInput.value = '';
     if (methodSelect) methodSelect.value = 'Chuyển khoản';
     if (excludedCb) excludedCb.checked = false;
     if (customTagInput) customTagInput.value = '';
@@ -11548,6 +12372,12 @@ function saveTransactionForm(event) {
   const amount = fromShortMoney(document.getElementById('trans-form-amount').value);
   const description = document.getElementById('trans-form-desc').value.trim() || category;
   const studentCode = document.getElementById('trans-form-student-code').value.trim().toUpperCase();
+  const typedBatch = formatBatchDisplayLabel((document.getElementById('trans-form-batch')?.value || '').trim());
+  const matchedStuForBatch = studentCode
+    ? (appState.students || []).find(s => String(s?.studentCode || '').trim().toUpperCase() === studentCode)
+    : null;
+  const batchLabel =
+    typedBatch || (studentCode && matchedStuForBatch ? getCurrentBatchLabelForClass(matchedStuForBatch.className, appState) : '');
   const method = document.getElementById('trans-form-method').value || 'Chuyển khoản';
   const isExcluded = Boolean(document.getElementById('trans-form-excluded')?.checked);
   const customTag = (document.getElementById('trans-form-custom-tag')?.value || '').trim();
@@ -11565,6 +12395,7 @@ function saveTransactionForm(event) {
         amount,
         description,
         studentCode,
+        batchLabel,
         method,
         isExcluded,
         customTag: isExcluded ? (customTag || 'Không ghi nhận hệ thống') : customTag
@@ -11593,6 +12424,7 @@ function saveTransactionForm(event) {
     amount,
     description,
     studentCode,
+    batchLabel,
     method,
     receiptUrl: '',
     createdBy: 'Quản lý',
@@ -11770,6 +12602,11 @@ function populateSettingsForm() {
     ? 'https://script.google.com/macros/s/DEMO_SANDBOX_MODE_ONLY/exec'
     : getGasUrl();
   document.getElementById('setting-auto-sync').checked = isAutoSyncEnabled();
+  const livePollEl = document.getElementById('setting-live-polling');
+  if (livePollEl) {
+    livePollEl.disabled = Boolean(isSandboxDraftMode);
+    livePollEl.checked = isLiveBankPollingEnabled();
+  }
 
   document.getElementById('setting-center-name').value =
     stg.centerName || (isSandboxDraftMode ? 'TRUNG TÂM GIÁO DỤC ALPHA (BẢN NHÁP)' : 'LỚP TOÁN ANH CHÍ');
@@ -12058,8 +12895,8 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0';
     if (text) {
       text.textContent = lastSyncTimeStr
-        ? `Đã đẩy lên Google Sheet (${lastSyncTimeStr})`
-        : 'Đã kết nối Google Sheet (Web → Sheet)';
+        ? `Tự động SePay • Đã lưu Sheet (${lastSyncTimeStr})`
+        : 'Tự động nhận SePay • Đẩy Web → Sheet';
     }
     if (quickBtn) {
       quickBtn.classList.remove('hidden');
@@ -12075,13 +12912,126 @@ function updateSyncStatusBanner(lastSyncTimeStr = '') {
   }
 }
 
-// Chế độ 1 chiều tuyệt đối (Web -> Google Sheet): Chỉ đẩy dữ liệu từ Web lên Google Sheet, tuyệt đối không kéo dữ liệu từ Google Sheet về Web
-async function syncSepayTransactionsToWeb(showUserToast = true) {
-  await syncAllToGoogleSheet(showUserToast);
+// Tự động lấy CHỈ giao dịch mới từ SePay trả về Web (tuyệt đối không kéo dữ liệu học sinh/lớp/đợt cũ từ Google Sheet về đè Web)
+let lastSepaySyncMs = 0;
+let _isPollingSepay = false;
+
+async function pollSepayNewResults(showUserToast = false, force = false) {
+  if (isSandboxDraftMode) {
+    if (showUserToast) {
+      showToast(
+        'Đang ở Tab Nháp (Dùng Thử): Đã lưu dữ liệu nháp trên trình duyệt! (Không kết nối Google Sheet)',
+        'info'
+      );
+    }
+    return { changed: false, newlyPaid: [], newTxs: [] };
+  }
+
+  const gasUrl = getGasUrl();
+  if (!gasUrl) {
+    if (showUserToast) {
+      showToast('Vui lòng nhập URL Google Apps Script trong mục Cài đặt trước!', 'warning');
+    }
+    return { changed: false, newlyPaid: [], newTxs: [] };
+  }
+
+  if (inFlightSheetPushCount > 0 || _isPollingSepay) {
+    return { changed: false, newlyPaid: [], newTxs: [] };
+  }
+
+  const now = Date.now();
+  if (!force && !showUserToast && now - lastSepaySyncMs < 12000) {
+    return { changed: false, newlyPaid: [], newTxs: [] };
+  }
+  lastSepaySyncMs = now;
+  _isPollingSepay = true;
+
+  const syncIcon = document.getElementById('icon-quick-sync');
+  if (syncIcon) syncIcon.classList.add('animate-spin');
+
+  try {
+    if (showUserToast) {
+      showToast('Đang kiểm tra giao dịch chuyển khoản mới từ SePay...', 'info');
+    }
+    const res = await fetch(`${gasUrl}?action=getAll&forceSepay=1&t=${Date.now()}`, {
+      method: 'GET',
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+    const json = await res.json();
+    let resMerge = { changed: false, newlyPaid: [], newTxs: [], newPendingReqs: [] };
+    if (json && json.data && inFlightSheetPushCount === 0) {
+      resMerge = ingestNewSepayOnlyFromServerData(json.data);
+      if (resMerge.changed) {
+        isSilentServerSync = true;
+        try {
+          saveStateToLocal();
+        } finally {
+          isSilentServerSync = false;
+        }
+        if (!isAnyAdminModalOpen()) {
+          refreshAllViews();
+        } else {
+          renderSepayBalanceBanner();
+          if (typeof renderHeaderNotificationState === 'function') renderHeaderNotificationState();
+        }
+
+        const notifiedSet = getNotifiedBankTxIds();
+        const unnotifiedTxs = (resMerge.newTxs || []).filter(tx => tx && tx.id && !notifiedSet.has(String(tx.id)));
+        const unnotifiedReqs = (resMerge.newPendingReqs || []).filter(rq => rq && rq.id && !notifiedSet.has(String(rq.id)));
+        if (unnotifiedTxs.length > 0 || unnotifiedReqs.length > 0) {
+          unnotifiedTxs.forEach(tx => markBankTxAsNotified(tx.id));
+          unnotifiedReqs.forEach(rq => markBankTxAsNotified(rq.id));
+          playTingSound();
+          if (resMerge.newlyPaid && resMerge.newlyPaid.length > 0) {
+            const names = resMerge.newlyPaid.map(s => `${s.studentCode} (${s.fullName})`).join(', ');
+            showToast(`💸 SePay nhận chuyển khoản mới! Đã tự động gạch nợ cho: ${names}`, 'success');
+          } else if (unnotifiedTxs.length > 0) {
+            const firstTx = unnotifiedTxs[0];
+            showToast(
+              `💸 SePay báo giao dịch mới: ${firstTx.type === 'Chi' ? '-' : '+'}${formatCurrency(firstTx.amount)} (${unnotifiedTxs.length} GD)`,
+              'success'
+            );
+          } else if (unnotifiedReqs.length > 0) {
+            showToast(`🔔 Có ${unnotifiedReqs.length} khoản chuyển khoản SePay mới đang chờ duyệt!`, 'info');
+          }
+        } else if (showUserToast) {
+          showToast('Đã cập nhật giao dịch SePay mới nhất về Web!', 'success');
+        }
+      } else if (showUserToast) {
+        showToast('Chưa có giao dịch SePay mới phát sinh. Dữ liệu Web đang mới nhất!', 'success');
+      }
+    }
+
+    const hasDirtySync = (() => {
+      try {
+        return localStorage.getItem(STORAGE_KEYS.DIRTY_SYNC) === '1';
+      } catch (e) {
+        return false;
+      }
+    })();
+    if ((resMerge.changed || showUserToast || hasDirtySync) && isAutoSyncEnabled()) {
+      await syncAllToGoogleSheet(false);
+    }
+    return resMerge;
+  } catch (err) {
+    console.warn('Lỗi kiểm tra giao dịch mới từ SePay:', err);
+    if (showUserToast) {
+      await syncAllToGoogleSheet(true);
+    }
+    return { changed: false, newlyPaid: [], newTxs: [] };
+  } finally {
+    _isPollingSepay = false;
+    if (syncIcon) syncIcon.classList.remove('animate-spin');
+  }
+}
+
+async function syncSepayTransactionsToWeb(showUserToast = true, force = true) {
+  return await pollSepayNewResults(showUserToast, force);
 }
 
 async function syncFromGoogleSheet(showUserToast = true) {
-  await syncAllToGoogleSheet(showUserToast);
+  return await pollSepayNewResults(showUserToast, true);
 }
 
 // Đẩy toàn bộ dữ liệu từ Web App lên Google Sheet (Push)
@@ -12125,6 +13075,19 @@ async function syncAllToGoogleSheet(showUserToast = true) {
       }
       const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       updateSyncStatusBanner(timeStr);
+      if (json.data && inFlightSheetPushCount === 1 && lastLocalMutationAtMs === pushStartedAtMs) {
+        const resMerge = ingestNewSepayOnlyFromServerData(json.data);
+        if (resMerge.changed) {
+          isSilentServerSync = true;
+          try {
+            saveStateToLocal();
+          } finally {
+            isSilentServerSync = false;
+          }
+          if (!isAnyAdminModalOpen()) refreshAllViews();
+          else renderSepayBalanceBanner();
+        }
+      }
       if (showUserToast) {
         showToast('Đã cập nhật toàn bộ dữ liệu lên Google Sheet thành công!', 'success');
       }
@@ -12338,9 +13301,11 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       GD_1792934741181: '2026-10-25 20:25:41',
       GD_1792934740649: '2026-10-25 20:25:40'
     };
+    const editedOverridesForDate = getEditedTxOverridesMap(state);
     for (const tx of state.transactions) {
       if (!tx) continue;
       const tid = String(tx.id || '');
+      if (editedOverridesForDate[tid] && editedOverridesForDate[tid].date !== undefined) continue;
       const cleanTid = tid.replace(/^GD_SEPAY_/, '').replace(/^GD_/, '');
       if (sepayRefDateMap[cleanTid] && String(tx.date || '') !== sepayRefDateMap[cleanTid]) {
         tx.date = sepayRefDateMap[cleanTid];
@@ -12400,14 +13365,16 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       ].filter(Boolean);
       if (candidateKeys.some(k => deletedTxSet.has(k))) continue;
 
-      const alreadyInPaymentReqs = (state.paymentRequests || []).some(req => {
-        const rid = String(req?.id || '').trim();
-        return rid === `YC_SEPAY_${cleanKey}` || rid === `YC_STK_${cleanKey}` || rid === `YC_STK_SEPAY_${cleanKey}`;
-      });
-      if (alreadyInPaymentReqs) continue;
-
       const accumVal = accumIdx !== -1 && String(r[accumIdx] || '').trim() !== '' ? parseSepayRawVnd(r[accumIdx]) : null;
-      const alertTime = rawDateCell || nowStr;
+      let alertTime = rawDateCell || nowStr;
+      if (!rawDateCell && state.settings.lastBankAlertJson) {
+        try {
+          const prevAlert = JSON.parse(state.settings.lastBankAlertJson);
+          if (prevAlert && prevAlert.id === sepayTxId && prevAlert.time) {
+            alertTime = prevAlert.time;
+          }
+        } catch (e) {}
+      }
 
       // Chỉ cập nhật thông báo biến động mới nhất nếu chưa bị người dùng xóa khỏi Trung tâm thông báo
       if (!dismissedNotifSet.has(sepayTxId) && !dismissedNotifSet.has(`ALERT::${sepayTxId}`)) {
@@ -12432,6 +13399,12 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
       ) {
         state.settings.sepayBalance = String(accumVal);
       }
+
+      const alreadyInPaymentReqs = (state.paymentRequests || []).some(req => {
+        const rid = String(req?.id || '').trim();
+        return rid === `YC_SEPAY_${cleanKey}` || rid === `YC_STK_${cleanKey}` || rid === `YC_STK_SEPAY_${cleanKey}`;
+      });
+      if (alreadyInPaymentReqs) continue;
 
       const editedOverrides = getEditedTxOverridesMap(state);
       const existingMatchedTx = state.transactions.find(t => {
@@ -12461,30 +13434,52 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         );
       });
       if (existingMatchedTx) {
-        pairedTxIds.add(String(existingMatchedTx.id || ''));
+        const existingTxIdStr = String(existingMatchedTx.id || '');
+        const existingOv = editedOverrides[existingTxIdStr];
+        pairedTxIds.add(existingTxIdStr);
         if (!processedSepaySet.has(sepayTxId) || !processedSepaySet.has(cleanKey)) {
           processedSepaySet.add(sepayTxId);
           processedSepaySet.add(cleanKey);
+          if (rawRefCell) processedSepaySet.add(rawRefCell);
           processedSetMutated = true;
         }
-        if (rawDateCell && rawDateCell.length > 10 && String(existingMatchedTx.date || '') !== rawDateCell) {
+        if (
+          (!existingOv || existingOv.date === undefined) &&
+          rawDateCell &&
+          rawDateCell.length > 10 &&
+          String(existingMatchedTx.date || '') !== rawDateCell
+        ) {
           existingMatchedTx.date = rawDateCell;
         }
         if (isDraftSepayAcc) {
           if (!isDraftBankTransaction(existingMatchedTx, state)) {
             markDraftBankTx(state, existingMatchedTx.id);
           }
-          if (existingMatchedTx.method !== 'Chuyển khoản STK Nháp') {
+          if ((!existingOv || existingOv.method === undefined) && existingMatchedTx.method !== 'Chuyển khoản STK Nháp') {
             existingMatchedTx.method = 'Chuyển khoản STK Nháp';
           }
-          if (!/STK\s*Nh[aá]p|5801434567|962478SJJ2/i.test(String(existingMatchedTx.description || ''))) {
+          if (
+            (!existingOv || existingOv.description === undefined) &&
+            !/STK\s*Nh[aá]p|5801434567|962478SJJ2/i.test(String(existingMatchedTx.description || ''))
+          ) {
             existingMatchedTx.description = `${draftDescPrefix}${existingMatchedTx.description || ''}`;
           }
-        } else if (!isDraftSepayAcc && existingMatchedTx.method !== 'Chuyển khoản STK (Tự động)') {
+        } else if (
+          (!existingOv || existingOv.method === undefined) &&
+          existingMatchedTx.method !== 'Chuyển khoản STK (Tự động)'
+        ) {
           existingMatchedTx.method = 'Chuyển khoản STK (Tự động)';
         }
         // Không tự động đổi lại trạng thái học sinh cho các giao dịch cũ đã có trong Sổ Thu Chi
         // để bảo toàn mọi thao tác chuyển sang đợt mới hoặc chỉnh sửa thủ công của Quản lý trên Web
+        continue;
+      }
+
+      const wasPreviouslyProcessed =
+        processedSepaySet.has(sepayTxId) ||
+        processedSepaySet.has(cleanKey) ||
+        (rawRefCell && processedSepaySet.has(rawRefCell));
+      if (wasPreviouslyProcessed) {
         continue;
       }
 
@@ -12495,15 +13490,12 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
         markDraftBankTx(state, sepayTxId);
       }
 
-      const wasPreviouslyProcessed =
-        processedSepaySet.has(sepayTxId) ||
-        processedSepaySet.has(cleanKey) ||
-        (rawRefCell && processedSepaySet.has(rawRefCell));
       processedSepaySet.add(sepayTxId);
       processedSepaySet.add(cleanKey);
+      if (rawRefCell) processedSepaySet.add(rawRefCell);
       processedSetMutated = true;
 
-      if (!isOut && !wasPreviouslyProcessed) {
+      if (!isOut) {
         const matchedStu = findStudentFromTransferContent(
           combinedContent,
           amount,
@@ -12522,6 +13514,7 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
           latestCutoff && isTxDateOlderThanAction(rawDateCell || txDateOnly, latestCutoff);
 
         if (matchedStu && !isOlderThanManualOrRollover) {
+          const matchedBatchLabel = formatBatchDisplayLabel(scheduleMapForCutoff[matchedStu.className]?.batchLabel || '');
           if (amount > 0 && amount < 20000) {
             recordExactSmallAmount(state, sepayTxId, matchedStu.studentCode, amount);
           }
@@ -12542,6 +13535,7 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
                 req.status = 'Đã duyệt';
                 req.bankVerified = true;
                 req.reviewedAt = alertTime;
+                if (matchedBatchLabel && !req.batchLabel) req.batchLabel = matchedBatchLabel;
                 req.note = `${req.note ? req.note + ' • ' : ''}${draftDescPrefix}SePay đã ghi nhận +${formatCurrency(amount)} & duyệt tự động`;
                 updatedPending = true;
               }
@@ -12557,6 +13551,7 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
                 studentName: matchedStu.fullName,
                 className: matchedStu.className,
                 period: matchedStu.period,
+                batchLabel: matchedBatchLabel,
                 amount,
                 parentPhone: matchedStu.parentPhone || '',
                 payerName: isDraftSepayAcc ? 'Chuyển khoản STK Nháp (SePay)' : 'Chuyển khoản SePay tự động',
@@ -12577,6 +13572,7 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
               amount,
               description: `${draftDescPrefix}Tự động lưu CK SePay: ${matchedStu.studentCode} - ${matchedStu.fullName} (${matchedStu.period}) | ND: ${rawContent}`,
               studentCode: matchedStu.studentCode,
+              batchLabel: matchedBatchLabel,
               method: txMethodLabel,
               receiptUrl: matchedStu.receiptUrl || '',
               createdBy: 'Tự động từ STK (SePay)'
@@ -12599,6 +13595,7 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
               ) {
                 req.bankVerified = true;
                 if (isDraftSepayAcc) req.isDraftBank = true;
+                if (matchedBatchLabel && !req.batchLabel) req.batchLabel = matchedBatchLabel;
                 if (!String(req.note || '').includes('SePay đã ghi nhận')) {
                   req.note = `${req.note ? req.note + ' • ' : ''}${draftDescPrefix}SePay đã ghi nhận +${formatCurrency(amount)} vào STK`;
                 }
@@ -12616,6 +13613,7 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
                 studentName: matchedStu.fullName,
                 className: matchedStu.className,
                 period: matchedStu.period,
+                batchLabel: matchedBatchLabel,
                 amount,
                 parentPhone: matchedStu.parentPhone || '',
                 payerName: isDraftSepayAcc ? 'Chuyển khoản STK Nháp (SePay)' : 'Chuyển khoản STK (SePay)',
@@ -12664,9 +13662,355 @@ function reconcileSepaySheetTransactions(state, rawClassSheets) {
   return state;
 }
 
-// Chế độ 1 chiều tuyệt đối (Web -> Google Sheet): Không gộp hay ghi đè bất kỳ dữ liệu nào từ Google Sheet vào Web
-function safeMergeServerData() {
-  return { changed: false, newlyPaid: [], newTxs: [] };
+// Chỉ nhận kết quả giao dịch MỚI từ SePay trả về Web; tuyệt đối giữ nguyên toàn bộ Học sinh, Lớp, Đợt, Lịch học, Chỉnh sửa & Xóa của Web
+function ingestNewSepayOnlyFromServerData(serverData) {
+  const emptyRes = { changed: false, newlyPaid: [], newTxs: [], newPendingReqs: [] };
+  if (!serverData || typeof serverData !== 'object' || !appState) return emptyRes;
+
+  if (!appState.settings) appState.settings = {};
+  if (!Array.isArray(appState.transactions)) appState.transactions = [];
+  if (!Array.isArray(appState.paymentRequests)) appState.paymentRequests = [];
+  if (!Array.isArray(appState.students)) appState.students = [];
+
+  const prevTxIds = new Set(appState.transactions.map(t => String(t?.id || '').trim()).filter(Boolean));
+  const prevPendingReqIds = new Set(
+    appState.paymentRequests
+      .filter(r => r && r.status === 'Chờ duyệt')
+      .map(r => String(r.id || '').trim())
+      .filter(Boolean)
+  );
+  const prevPaidStudentKeys = new Set(
+    appState.students
+      .filter(s => s && s.status === 'Đã hoàn thành')
+      .map(s => String(s.id || s.studentCode || ''))
+      .filter(Boolean)
+  );
+
+  let changed = false;
+  const rawBalanceBefore = appState.settings.sepayBalance;
+  const rawAlertBefore = appState.settings.lastBankAlertJson;
+
+  // 1. Đối soát trực tiếp từ tab tích hợp SePay_GiaoDich (nếu có trong rawClassSheets)
+  delete appState._sepayAutoReconciled;
+  if (Array.isArray(serverData.rawClassSheets) && serverData.rawClassSheets.length > 0) {
+    reconcileSepaySheetTransactions(appState, serverData.rawClassSheets);
+    if (appState._sepayAutoReconciled) {
+      changed = true;
+      delete appState._sepayAutoReconciled;
+    }
+    if (
+      appState.settings.sepayBalance !== rawBalanceBefore ||
+      appState.settings.lastBankAlertJson !== rawAlertBefore
+    ) {
+      changed = true;
+    }
+  }
+
+  let scheduleMap = {};
+  try {
+    if (appState.settings.classSchedulesJson) {
+      scheduleMap = JSON.parse(appState.settings.classSchedulesJson) || {};
+    }
+  } catch (e) {}
+
+  const autoApproveOn =
+    appState.settings.autoApproveBankTransfer === undefined ||
+    appState.settings.autoApproveBankTransfer === '' ||
+    String(appState.settings.autoApproveBankTransfer) !== 'false';
+  const deletedSet = getDeletedTxIdsSet(appState);
+  const dismissedNotifSet = getDismissedNotifIdsSet(appState);
+  const processedSepaySet = getProcessedSepayTxIdsSet(appState);
+  const editedOverrides = getEditedTxOverridesMap(appState);
+  const nowStr = getCurrentDateTimeString();
+
+  const existingTxIds = new Set();
+  const existingSigs = new Set();
+  appState.transactions.forEach(t => {
+    if (!t) return;
+    extractTxDedupKeys(t, appState).forEach(k => existingTxIds.add(k));
+    const ov = editedOverrides[String(t.id || '')];
+    const descToSig = ov && ov.origDesc ? ov.origDesc : t.description;
+    const amtToSig = ov && ov.origAmount !== undefined ? ov.origAmount : t.amount;
+    const sig = buildSepayTxSignature(t.date, amtToSig, descToSig, isDraftBankTransaction(t, appState));
+    if (sig) existingSigs.add(sig);
+  });
+  appState.paymentRequests.forEach(r => {
+    if (!r) return;
+    extractPaymentRequestSyncBlockKeys(r.id).forEach(k => existingTxIds.add(k));
+  });
+
+  // 2. Nhận giao dịch mới từ SePay REST API / Webhook trong serverData.transactions (bỏ qua hoàn toàn giao dịch thủ công/cũ trên Sheet)
+  if (Array.isArray(serverData.transactions)) {
+    for (const stx of serverData.transactions) {
+      if (!stx || isSimulatedBankTestItem(stx)) continue;
+      const tid = String(stx.id || '').trim();
+      if (!tid) continue;
+      const isSepayOriginTx =
+        /^(?:GD_SEPAY_|SEPAY_)/i.test(tid) || /sepay/i.test(String(stx.createdBy || ''));
+      if (!isSepayOriginTx) continue;
+
+      const rawSuffix = tid.replace(/^(?:GD_SEPAY_|GD_|SEPAY_)+/i, '').trim();
+      if (
+        existingTxIds.has(tid) ||
+        (rawSuffix && (existingTxIds.has(`GD_${rawSuffix}`) || existingTxIds.has(`GD_SEPAY_${rawSuffix}`))) ||
+        processedSepaySet.has(tid) ||
+        (rawSuffix && processedSepaySet.has(rawSuffix)) ||
+        isTransactionMarkedDeleted(stx, deletedSet, appState)
+      ) {
+        continue;
+      }
+
+      const amt =
+        typeof normalizeStoredVnd === 'function'
+          ? normalizeStoredVnd(stx.amount) || Number(stx.amount) || 0
+          : Number(stx.amount) || 0;
+      if (amt <= 0) continue;
+
+      const isDraftTx =
+        isDraftBankTransaction(stx, appState) ||
+        /5801434567|962478SJJ2|STK\s*Nh[aá]p/i.test(`${stx.description || ''} ${stx.method || ''}`);
+      const sig = buildSepayTxSignature(stx.date, amt, stx.description, isDraftTx);
+      if (sig && (existingSigs.has(sig) || deletedSet.has(sig))) continue;
+
+      existingTxIds.add(tid);
+      if (rawSuffix) {
+        existingTxIds.add(`GD_${rawSuffix}`);
+        existingTxIds.add(`GD_SEPAY_${rawSuffix}`);
+      }
+      if (sig) existingSigs.add(sig);
+      markSepayTxIdsProcessed(appState, [tid, rawSuffix].filter(Boolean));
+      if (isDraftTx) markDraftBankTx(appState, tid);
+      if (amt < 20000) recordExactSmallAmount(appState, tid, stx.studentCode || '', amt);
+
+      const isOut = String(stx.type || 'Thu').trim() === 'Chi';
+      const codeUpper = String(stx.studentCode || '').trim().toUpperCase();
+      let matchedStu = null;
+      if (!isOut) {
+        if (codeUpper) {
+          matchedStu =
+            appState.students.find(
+              s => s && String(s.studentCode || '').trim().toUpperCase() === codeUpper && s.status !== 'Đã hoàn thành'
+            ) ||
+            appState.students.find(s => s && String(s.studentCode || '').trim().toUpperCase() === codeUpper) ||
+            null;
+        }
+        if (!matchedStu) {
+          matchedStu = findStudentFromTransferContent(
+            stx.description || '',
+            amt,
+            appState.students,
+            appState.paymentRequests
+          );
+        }
+      }
+
+      const txDateStr = String(stx.date || '').trim() || new Date().toISOString().slice(0, 10);
+      const clsRolloverCutoff = matchedStu ? scheduleMap[matchedStu.className]?.rolledOverAt || '' : '';
+      const stuManualCutoff = matchedStu?.manualStatusUpdatedAt || '';
+      const latestCutoff =
+        clsRolloverCutoff && stuManualCutoff
+          ? clsRolloverCutoff > stuManualCutoff
+            ? clsRolloverCutoff
+            : stuManualCutoff
+          : clsRolloverCutoff || stuManualCutoff;
+      const isOlderThanCutoff = Boolean(latestCutoff && isTxDateOlderThanAction(txDateStr, latestCutoff));
+
+      let resolvedBatchLabel = formatBatchDisplayLabel(stx.batchLabel || '');
+      if (matchedStu && !isOlderThanCutoff && !isOut) {
+        const curBatchLabel = formatBatchDisplayLabel(scheduleMap[matchedStu.className]?.batchLabel || '');
+        if (!resolvedBatchLabel) resolvedBatchLabel = curBatchLabel;
+        if (amt < 20000) recordExactSmallAmount(appState, tid, matchedStu.studentCode, amt);
+
+        if (autoApproveOn) {
+          matchedStu.status = 'Đã hoàn thành';
+          matchedStu.updatedAt = txDateStr.length > 10 ? txDateStr : nowStr;
+          const draftPrefix = isDraftTx ? '[STK Nháp 5801434567] ' : '';
+          matchedStu.note = `${draftPrefix}Đã CK thành công vào STK (SePay): +${formatCurrency(amt)} (${matchedStu.updatedAt})`;
+
+          appState.paymentRequests.forEach(req => {
+            if (
+              req &&
+              req.status === 'Chờ duyệt' &&
+              !isSimulatedBankTestItem(req) &&
+              (req.studentRecordId === matchedStu.id ||
+                String(req.studentCode || '').toUpperCase() === String(matchedStu.studentCode || '').toUpperCase())
+            ) {
+              req.status = 'Đã duyệt';
+              req.bankVerified = true;
+              req.reviewedAt = matchedStu.updatedAt;
+              if (curBatchLabel && !req.batchLabel) req.batchLabel = curBatchLabel;
+            }
+          });
+        }
+      }
+
+      appState.transactions.unshift({
+        id: tid,
+        date: txDateStr,
+        type: isOut ? 'Chi' : 'Thu',
+        category: stx.category || (isOut ? 'Khác' : 'Thu học phí'),
+        amount: amt,
+        description: String(stx.description || '').trim(),
+        studentCode: matchedStu ? matchedStu.studentCode : String(stx.studentCode || '').trim(),
+        batchLabel: resolvedBatchLabel,
+        method:
+          stx.method ||
+          (isDraftTx ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (Tự động)'),
+        receiptUrl: stx.receiptUrl || '',
+        createdBy: stx.createdBy || 'Tự động từ STK (SePay)'
+      });
+      changed = true;
+    }
+  }
+
+  // 3. Nhận yêu cầu Chờ duyệt mới phát sinh từ SePay (khi tắt Duyệt tự động)
+  const existingReqIds = new Set(appState.paymentRequests.map(r => String(r?.id || '').trim()).filter(Boolean));
+  if (Array.isArray(serverData.paymentRequests)) {
+    for (const rq of serverData.paymentRequests) {
+      if (!rq || isSimulatedBankTestItem(rq)) continue;
+      const rid = String(rq.id || '').trim();
+      if (!rid || rq.status !== 'Chờ duyệt') continue;
+      const isSepayPendingReq =
+        /^YC_(?:SEPAY|STK_SEPAY)_/i.test(rid) ||
+        (/^YC_STK_/i.test(rid) && /sepay|ghi nhận.*stk/i.test(`${rq.payerName || ''} ${rq.note || ''}`));
+      if (!isSepayPendingReq) continue;
+
+      const reqSuffix = rid.replace(/^(?:YC_STK_SEPAY_|YC_SEPAY_|YC_STK_|YC_)+/i, '').trim();
+      if (
+        existingReqIds.has(rid) ||
+        isPaymentRequestMarkedDeleted(rq, deletedSet) ||
+        (reqSuffix && (processedSepaySet.has(reqSuffix) || existingTxIds.has(`GD_${reqSuffix}`) || existingTxIds.has(`GD_SEPAY_${reqSuffix}`)))
+      ) {
+        continue;
+      }
+
+      const amt =
+        typeof normalizeStoredVnd === 'function'
+          ? normalizeStoredVnd(rq.amount) || Number(rq.amount) || 0
+          : Number(rq.amount) || 0;
+      if (amt <= 0) continue;
+
+      const codeUpper = String(rq.studentCode || '').trim().toUpperCase();
+      const matchedStu =
+        (codeUpper &&
+          (appState.students.find(
+            s => s && String(s.studentCode || '').trim().toUpperCase() === codeUpper && s.status !== 'Đã hoàn thành'
+          ) ||
+            appState.students.find(s => s && String(s.studentCode || '').trim().toUpperCase() === codeUpper))) ||
+        findStudentFromTransferContent(rq.note || '', amt, appState.students, appState.paymentRequests);
+
+      const subTime = String(rq.submittedAt || '').trim() || nowStr;
+      const clsRolloverCutoff = matchedStu ? scheduleMap[matchedStu.className]?.rolledOverAt || '' : '';
+      const stuManualCutoff = matchedStu?.manualStatusUpdatedAt || '';
+      const latestCutoff =
+        clsRolloverCutoff && stuManualCutoff
+          ? clsRolloverCutoff > stuManualCutoff
+            ? clsRolloverCutoff
+            : stuManualCutoff
+          : clsRolloverCutoff || stuManualCutoff;
+      const isOlderThanCutoff = Boolean(latestCutoff && isTxDateOlderThanAction(subTime, latestCutoff));
+      if (isOlderThanCutoff) continue;
+
+      const curBatchLabel = matchedStu
+        ? formatBatchDisplayLabel(scheduleMap[matchedStu.className]?.batchLabel || '')
+        : formatBatchDisplayLabel(rq.batchLabel || '');
+      const isDraftReq = /5801434567|962478SJJ2|STK\s*Nh[aá]p/i.test(`${rq.payerName || ''} ${rq.note || ''}`);
+
+      if (matchedStu && matchedStu.status !== 'Đã hoàn thành') {
+        matchedStu.status = 'Chờ duyệt';
+        matchedStu.updatedAt = subTime;
+        matchedStu.note = `${isDraftReq ? '[STK Nháp 5801434567] ' : ''}SePay đã ghi nhận +${formatCurrency(amt)} vào STK - Chờ Quản lý duyệt`;
+      }
+      if (amt < 20000) {
+        recordExactSmallAmount(appState, rid, matchedStu ? matchedStu.studentCode : rq.studentCode || '', amt);
+      }
+
+      appState.paymentRequests.unshift({
+        id: rid,
+        submittedAt: subTime,
+        studentRecordId: matchedStu ? matchedStu.id : rq.studentRecordId || '',
+        studentCode: matchedStu ? matchedStu.studentCode : rq.studentCode || '',
+        studentName: matchedStu ? matchedStu.fullName : rq.studentName || '',
+        className: matchedStu ? matchedStu.className : rq.className || '',
+        period: matchedStu ? matchedStu.period : rq.period || '',
+        batchLabel: curBatchLabel,
+        amount: amt,
+        parentPhone: matchedStu ? matchedStu.parentPhone || '' : rq.parentPhone || '',
+        payerName: rq.payerName || 'Chuyển khoản STK (SePay)',
+        note: rq.note || '',
+        receiptUrl: rq.receiptUrl || '',
+        bankVerified: true,
+        isDraftBank: isDraftReq,
+        status: 'Chờ duyệt',
+        reviewedAt: ''
+      });
+      existingReqIds.add(rid);
+      if (reqSuffix) markSepayTxIdsProcessed(appState, [rid, reqSuffix]);
+      changed = true;
+    }
+  }
+
+  // 4. Cập nhật trạng thái kết nối / số dư thực tế từ SePay (không chạm tới bất kỳ cấu hình lớp/đợt/lịch học nào của Web)
+  const hasLiveSepaySheet = Boolean(appState.settings._sepaySheetConnected);
+  if (serverData.settings && typeof serverData.settings === 'object') {
+    const sStg = serverData.settings;
+    if (sStg.hasSepayApiToken === 'true' && appState.settings.hasSepayApiToken !== 'true') {
+      appState.settings.hasSepayApiToken = 'true';
+      changed = true;
+    }
+    if (!hasLiveSepaySheet && sStg.lastBankAlertJson && sStg.lastBankAlertJson !== appState.settings.lastBankAlertJson) {
+      try {
+        const alertObj = JSON.parse(sStg.lastBankAlertJson);
+        const aid = String(alertObj?.id || '').trim();
+        if (
+          alertObj &&
+          !alertObj.isTest &&
+          aid &&
+          !aid.includes('TEST_STK_') &&
+          !aid.includes('SEPAY_STK_') &&
+          !deletedSet.has(aid) &&
+          !deletedSet.has(`GD_${aid}`) &&
+          !dismissedNotifSet.has(aid) &&
+          !dismissedNotifSet.has(`ALERT::${aid}`)
+        ) {
+          appState.settings.lastBankAlertJson = sStg.lastBankAlertJson;
+          changed = true;
+        }
+      } catch (e) {}
+    }
+    if (
+      !hasLiveSepaySheet &&
+      sStg.sepayBalance !== undefined &&
+      String(sStg.sepayBalance).trim() !== '' &&
+      !appState.settings.sepayBalanceManualAt &&
+      appState.settings.sepayBalanceMode !== 'auto' &&
+      String(appState.settings.sepayBalance || '') !== String(sStg.sepayBalance).trim()
+    ) {
+      appState.settings.sepayBalance = String(sStg.sepayBalance).trim();
+      changed = true;
+    }
+  }
+
+  const newTxs = appState.transactions.filter(t => t && t.id && !prevTxIds.has(String(t.id).trim()));
+  const newPendingReqs = appState.paymentRequests.filter(
+    r => r && r.id && r.status === 'Chờ duyệt' && !prevPendingReqIds.has(String(r.id).trim())
+  );
+  const newlyPaid = appState.students.filter(
+    s => s && s.status === 'Đã hoàn thành' && !prevPaidStudentKeys.has(String(s.id || s.studentCode || ''))
+  );
+
+  if (newTxs.length > 0 || newPendingReqs.length > 0 || newlyPaid.length > 0) {
+    changed = true;
+  }
+  if (changed && Array.isArray(appState.transactions)) {
+    appState.transactions.sort(sortTransactionsNewestFirst);
+  }
+
+  return { changed, newlyPaid, newTxs, newPendingReqs };
+}
+
+function safeMergeServerData(serverData) {
+  return ingestNewSepayOnlyFromServerData(serverData);
 }
 
 // ============================================================================
@@ -12702,18 +14046,41 @@ function exportStudentsCSV() {
 }
 
 function exportTransactionsCSV() {
-  const headers = ['Mã GD', 'Ngày', 'Loại', 'Danh Mục', 'Số Tiền', 'Nội Dung', 'Mã HS', 'Phương Thức', 'Người Tạo'];
-  const rows = (appState.transactions || []).map(t => [
-    t.id,
-    t.date,
-    t.type,
-    t.category,
-    t.amount,
-    t.description,
-    t.studentCode,
-    t.method,
-    t.createdBy
-  ]);
+  const headers = [
+    'Mã GD',
+    'Ngày',
+    'Loại',
+    'Danh Mục',
+    'Đợt Học Phí',
+    'Học Sinh / Lớp',
+    'Mã HS',
+    'Số Tiền',
+    'Nội Dung',
+    'Phương Thức',
+    'Người Tạo'
+  ];
+  const rows = (appState.transactions || []).map(t => {
+    const bInfo = resolveTransactionBatchInfo(t, appState);
+    const stuClassText = bInfo.studentName
+      ? `${bInfo.studentName}${bInfo.className ? ` (${bInfo.className})` : ''}`
+      : bInfo.className || '';
+    const batchText = bInfo.batchLabel
+      ? `${bInfo.batchLabel}${bInfo.periodLabel ? ` - ${bInfo.periodLabel}` : ''}${bInfo.isHistorical ? ' (Đợt cũ)' : ''}`
+      : bInfo.periodLabel || '';
+    return [
+      t.id,
+      t.date,
+      t.type,
+      t.category,
+      batchText,
+      stuClassText,
+      bInfo.studentCode || t.studentCode || '',
+      t.amount,
+      t.description,
+      t.method,
+      t.createdBy
+    ];
+  });
   downloadCsvFile('So_Thu_Chi_Lop_Hoc.csv', headers, rows);
 }
 
@@ -16169,53 +17536,29 @@ function saveClassScheduleForm(event) {
     }
   });
   const nowStr = getCurrentDateTimeString();
+  const cleanPeriodLabel = normalizePeriodValue(periodLabel) || periodLabel;
+  const cleanBatchLabel = formatBatchDisplayLabel(batchLabel) || batchLabel;
   const batchOrPeriodChanged = Boolean(
-    prevCfg && (prevCfg.batchLabel !== batchLabel || prevCfg.periodLabel !== periodLabel)
+    prevCfg && (prevCfg.batchLabel !== cleanBatchLabel || prevCfg.periodLabel !== cleanPeriodLabel)
   );
-
-  // Nếu người dùng đổi sang Đợt mới trực tiếp trong Cài đặt Lịch học, tự động lưu Đợt cũ vào Lịch sử để không bị mất
-  if (!isNew && prevCfg && prevCfg.batchLabel && prevCfg.batchLabel !== batchLabel) {
-    const targetClsName = oldName || className;
-    const clsStudents = (appState.students || []).filter(s => s && (s.className === targetClsName || s.className === className));
-    const historyList = getClassHistoryList();
-    const alreadyArchived = historyList.some(
-      h => h && h.className === className && h.batchLabel === prevCfg.batchLabel && h.periodLabel === prevCfg.periodLabel
-    );
-    if (!alreadyArchived && clsStudents.length > 0) {
-      const paidSt = clsStudents.filter(item => item.status === 'Đã hoàn thành');
-      const totalExp = clsStudents.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
-      const totalCol = paidSt.reduce((s, item) => s + (Number(item.tuitionFee) || 0), 0);
-      historyList.unshift({
-        id: 'HIST_' + Date.now(),
-        archivedAt: nowStr,
-        className,
-        subject: prevCfg.subject || subject || 'Toán',
-        periodLabel: prevCfg.periodLabel || periodLabel,
-        batchLabel: prevCfg.batchLabel,
-        startDate: prevCfg.startDate,
-        endDate: prevCfg.endDate,
-        daysOfWeek: Array.isArray(prevCfg.daysOfWeek) ? [...prevCfg.daysOfWeek] : daysOfWeek,
-        sessionStates: { ...(prevCfg.sessionStates || {}) },
-        checkedSessions: countCheckedSessionsInConfig(prevCfg),
-        totalStudents: clsStudents.length,
-        paidCount: paidSt.length,
-        totalExpected: totalExp,
-        totalCollected: totalCol,
-        totalMissing: Math.max(0, totalExp - totalCol),
-        studentsSnapshot: clsStudents.map(st => ({ ...st }))
-      });
-      if (!appState.settings) appState.settings = {};
-      appState.settings.classHistoryJson = JSON.stringify(historyList);
-    }
-  }
 
   if (!isNew && oldName && oldName !== className) {
     delete map[oldName];
     markClassAsDeletedInState(oldName);
-    // Đổi tên lớp cho các học sinh thuộc lớp cũ
+    // Đổi tên lớp cho các học sinh, giao dịch & yêu cầu chờ duyệt thuộc lớp cũ
     (appState.students || []).forEach(s => {
-      if (s.className === oldName) {
+      if (s && s.className === oldName) {
         s.className = className;
+      }
+    });
+    (appState.transactions || []).forEach(t => {
+      if (t && t.className === oldName) {
+        t.className = className;
+      }
+    });
+    (appState.paymentRequests || []).forEach(r => {
+      if (r && r.className === oldName) {
+        r.className = className;
       }
     });
   }
@@ -16223,7 +17566,7 @@ function saveClassScheduleForm(event) {
   // Đồng bộ kỳ học mới cho toàn bộ học sinh của lớp này để không bị lệch kỳ cũ
   (appState.students || []).forEach(s => {
     if (s && s.className === className) {
-      s.period = periodLabel;
+      s.period = cleanPeriodLabel;
       if (batchOrPeriodChanged) {
         s.updatedAt = nowStr;
       }
@@ -16235,15 +17578,23 @@ function saveClassScheduleForm(event) {
     className,
     gradeKey: gradeKey !== 'AUTO' ? gradeKey : undefined,
     subject,
-    periodLabel,
-    batchLabel,
+    periodLabel: cleanPeriodLabel,
+    batchLabel: cleanBatchLabel,
     status,
     startDate,
     endDate,
     daysOfWeek,
     sessionStates: existingStates,
-    rolledOverAt: batchOrPeriodChanged ? nowStr : prevCfg?.rolledOverAt
+    rolledOverAt: prevCfg?.rolledOverAt
   };
+  syncClassCurrentBatchOnTransactions(
+    className,
+    prevCfg?.batchLabel || '',
+    cleanBatchLabel,
+    cleanPeriodLabel,
+    prevCfg?.rolledOverAt || '',
+    appState
+  );
   markSepayTxIdsProcessed(appState);
 
   selectedClassbookClass = className;
@@ -16569,11 +17920,16 @@ async function confirmRolloverClassBatch(event) {
   if (!appState.settings) appState.settings = {};
   appState.settings.classHistoryJson = JSON.stringify(historyList);
 
+  // Chốt cứng tên Đợt cũ trên các giao dịch đã thu trước khi chuyển sang Đợt mới
+  freezeCompletedBatchOnTransactions(targetClass, oldCfg.batchLabel, oldCfg.periodLabel, appState);
+
   // 2. Cập nhật cấu hình lớp sang Đợt / Tháng mới (xóa màu lịch cũ để bắt đầu tích chọn buổi mới)
+  const cleanNewPeriod = normalizePeriodValue(newPeriod) || newPeriod;
+  const cleanNewBatch = formatBatchDisplayLabel(newBatch) || newBatch;
   map[targetClass] = {
     ...oldCfg,
-    periodLabel: newPeriod,
-    batchLabel: newBatch,
+    periodLabel: cleanNewPeriod,
+    batchLabel: cleanNewBatch,
     startDate: newStart,
     endDate: newEnd,
     sessionStates: {},
@@ -16596,7 +17952,7 @@ async function confirmRolloverClassBatch(event) {
   // 3. Giữ nguyên toàn bộ Học sinh & Số tiền học phí của lớp, đặt lại trạng thái đóng học phí cho Đợt mới
   (appState.students || []).forEach(st => {
     if (st.className === targetClass) {
-      st.period = newPeriod;
+      st.period = cleanNewPeriod;
       st.status = 'Chưa đóng';
       st.note = '';
       st.receiptUrl = '';
@@ -16992,6 +18348,7 @@ async function toggleHistoryStudentPaid(histId, studentIdx, isChecked) {
       amount: Number(st.tuitionFee) || 0,
       description: `Thu học phí đợt cũ (${hist.periodLabel} - ${hist.batchLabel}) - ${st.studentCode} ${st.fullName}`,
       studentCode: st.studentCode,
+      batchLabel: formatBatchDisplayLabel(hist.batchLabel),
       method: 'Chuyển khoản',
       receiptUrl: '',
       createdBy: 'Quản lý (Lịch sử)'
@@ -17264,6 +18621,7 @@ async function toggleAutoApprovePayment(forceVal) {
             amount: Number(req.amount) || (stu ? stu.tuitionFee : 600000),
             description: `${isDraftReq ? '[STK Nháp 5801434567] ' : ''}Tự động duyệt học phí đã nhận vào STK - ${req.studentCode} ${req.studentName} (${req.period})`,
             studentCode: req.studentCode,
+            batchLabel: req.batchLabel || getCurrentBatchLabelForClass(req.className || stu?.className || '', appState),
             method: isDraftReq ? 'Chuyển khoản STK Nháp' : 'Chuyển khoản STK (Tự động)',
             receiptUrl: req.receiptUrl || '',
             createdBy: 'Duyệt tự động SePay'
@@ -17866,11 +19224,12 @@ async function autoConnectAndVerifySepay(showSuccessToast = true) {
 
   startLiveBankPolling();
 
-  // Chế độ 1 chiều (Web -> Sheet): Không lấy dữ liệu từ Google Sheet về ghi đè Web
+  // Đẩy cấu hình từ Web lên Sheet, sau đó kiểm tra giao dịch mới từ SePay trả về Web
   const gasUrl = getGasUrl() || DEFAULT_GAS_WEBAPP_URL;
   if (showSuccessToast && gasUrl && !isSandboxDraftMode) {
     try {
       await syncAllToGoogleSheet(false).catch(() => {});
+      await pollSepayNewResults(false, true).catch(() => {});
     } catch (e) {}
   }
 
@@ -18049,8 +19408,7 @@ function isAnyAdminModalOpen() {
   });
 }
 
-// Chế độ 1 chiều (Web -> Google Sheet): Tắt hoàn toàn việc tự động kéo dữ liệu từ Google Sheet về Web
-// Chế độ 1 chiều (Web -> Google Sheet): Tắt hoàn toàn việc tự động kéo dữ liệu từ Google Sheet về Web
+// Tự động kiểm tra giao dịch MỚI từ SePay định kỳ 15 giây/lần (tuyệt đối không kéo dữ liệu Học sinh/Lớp/Đợt cũ từ Sheet về đè Web)
 function startLiveBankPolling() {
   if (livePollingTimer) {
     clearInterval(livePollingTimer);
@@ -18061,14 +19419,40 @@ function startLiveBankPolling() {
   if (webhookDisplay && getGasUrl()) {
     webhookDisplay.textContent = getGasUrl();
   }
+  const livePollEl = document.getElementById('setting-live-polling');
+  if (livePollEl) {
+    livePollEl.disabled = Boolean(isSandboxDraftMode);
+    livePollEl.checked = isLiveBankPollingEnabled();
+  }
+  if (!isSandboxDraftMode && getGasUrl() && isLiveBankPollingEnabled()) {
+    livePollingTimer = setInterval(() => {
+      if (
+        !isSandboxDraftMode &&
+        document.visibilityState === 'visible' &&
+        getGasUrl() &&
+        isLiveBankPollingEnabled()
+      ) {
+        pollSepayNewResults(false, false).catch(() => {});
+      }
+    }, 15000);
+  }
 }
 
 function toggleLiveBankPolling(enabled) {
-  if (livePollingTimer) {
-    clearInterval(livePollingTimer);
-    livePollingTimer = null;
+  try {
+    localStorage.setItem('edupay_live_sepay_poll_enabled', enabled ? 'true' : 'false');
+  } catch (e) {}
+  if (enabled) {
+    startLiveBankPolling();
+    pollSepayNewResults(false, true).catch(() => {});
+    showToast('Đã bật tự động kiểm tra & nhận giao dịch SePay mới về Web (15 giây/lần)!', 'success');
+  } else {
+    if (livePollingTimer) {
+      clearInterval(livePollingTimer);
+      livePollingTimer = null;
+    }
+    showToast('Đã tạm tắt tự động kiểm tra ngầm SePay (bạn vẫn có thể bấm nút Lấy SePay thủ công).', 'info');
   }
-  showToast('Đang bật chế độ 1 chiều (Web → Google Sheet): Không lấy dữ liệu từ Google Sheet về Web.', 'info');
 }
 
 async function quickTestSepayAlert() {
