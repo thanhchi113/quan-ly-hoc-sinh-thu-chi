@@ -3558,7 +3558,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v64', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v65', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -17360,34 +17360,37 @@ function renderGradeManagerList() {
   listEl.innerHTML = gradeGroups
     .map(g => {
       return `
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2.5">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(g.label)}</span>
-              <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold whitespace-nowrap">
-                ${g.count} lớp • ${g.stuCount} HS
-              </span>
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2.5">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="font-extrabold text-sm sm:text-base text-slate-900 leading-snug break-words">
+                ${escapeHtml(g.label)}
+              </div>
+              <div class="text-xs text-slate-500 mt-0.5">
+                Mã nhận diện: <strong class="tabular-nums text-slate-800">${escapeHtml(g.key)}</strong>
+              </div>
             </div>
-            <div class="text-[11px] text-slate-500 mt-0.5 truncate">
-              Mã nhận diện: <strong class="tabular-nums text-slate-700">${escapeHtml(g.key)}</strong>
-            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold whitespace-nowrap shrink-0">
+              ${g.count} lớp • ${g.stuCount} HS
+            </span>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="pt-2.5 border-t border-slate-200/80 grid grid-cols-2 gap-2">
             <button
               type="button"
               onclick="closeGradeManagerModal(); openClassScheduleModalForGrade('${escapeAttr(g.key)}');"
               title="Tạo thêm lớp mới thuộc ${escapeAttr(g.label)}"
-              class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-xs font-extrabold transition cursor-pointer whitespace-nowrap"
+              class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 text-xs font-extrabold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap"
             >
-              + Thêm lớp
+              <i data-lucide="plus" class="w-3.5 h-3.5 shrink-0"></i>
+              <span>Thêm lớp</span>
             </button>
             <button
               type="button"
               onclick="deleteGradeByKey('${escapeAttr(g.key)}')"
               title="Xóa ${escapeAttr(g.label)}"
-              class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-extrabold transition cursor-pointer flex items-center gap-1 whitespace-nowrap"
+              class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 text-xs font-extrabold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap"
             >
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <i data-lucide="trash-2" class="w-3.5 h-3.5 shrink-0"></i>
               <span>Xóa Khối</span>
             </button>
           </div>
