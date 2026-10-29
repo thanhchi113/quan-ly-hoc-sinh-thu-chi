@@ -3528,7 +3528,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v61', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v62', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -10012,7 +10012,7 @@ function renderAdminTransactions() {
   if (pendingList.length === 0 && list.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" class="py-10 text-center text-slate-400 text-sm">
+        <td colspan="10" class="py-10 text-center text-slate-400 text-sm">
           Chưa có giao dịch hoặc yêu cầu chờ duyệt nào khớp với bộ lọc.
         </td>
       </tr>
@@ -10118,20 +10118,6 @@ function renderAdminTransactions() {
             <div class="tc-method-pill tc-method-draft text-[11px] font-extrabold">
               QR Web / CK
             </div>
-          </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
-            ${
-              req.receiptUrl
-                ? `<button
-                    type="button"
-                    onclick="openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(req.studentName)}')"
-                    class="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-600 hover:text-white text-xs font-extrabold cursor-pointer whitespace-nowrap transition"
-                  >
-                    <i data-lucide="image" class="w-3.5 h-3.5"></i>
-                    <span>Xem</span>
-                  </button>`
-                : `<span class="text-xs font-bold text-slate-400">---</span>`
-            }
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             <div class="tc-tx-action-col">
@@ -10373,20 +10359,6 @@ function renderAdminTransactions() {
             <div class="tc-method-pill ${methodColorClass}">
               ${formatCompactMethodHtml(t.method, isTestTx, isDraftTx)}
             </div>
-          </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
-            ${
-              t.receiptUrl
-                ? `<button
-                    type="button"
-                    onclick="openReceiptViewer('${escapeAttr(t.receiptUrl)}', 'Chứng từ ${escapeAttr(t.id)}')"
-                    class="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-600 hover:text-white text-xs font-extrabold cursor-pointer whitespace-nowrap transition"
-                  >
-                    <i data-lucide="image" class="w-3.5 h-3.5"></i>
-                    <span>Xem</span>
-                  </button>`
-                : `<span class="text-xs font-bold text-slate-400">---</span>`
-            }
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             <div class="tc-tx-action-col">
@@ -10780,6 +10752,26 @@ function openTransactionDetailModal(itemKey) {
         <span class="tc-detail-label">Ghi chú / Nội dung chuyển khoản đầy đủ</span>
         <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(req.note || 'Phụ huynh xác nhận chuyển khoản học phí')}</p>
       </div>
+      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+        <div>
+          <span class="tc-detail-label">Chứng từ / Ảnh biên lai đính kèm</span>
+          <span class="text-xs font-bold ${req.receiptUrl ? 'text-emerald-700' : 'text-slate-400'}">
+            ${req.receiptUrl ? 'Đã có ảnh chứng từ đính kèm' : 'Chưa có ảnh chứng từ'}
+          </span>
+        </div>
+        ${
+          req.receiptUrl
+            ? `<button
+                 type="button"
+                 onclick="openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(dispReqStuName)}')"
+                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer transition shrink-0"
+               >
+                 <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                 <span>Xem ảnh chứng từ</span>
+               </button>`
+            : ''
+        }
+      </div>
     `;
 
     footerEl.innerHTML = `
@@ -11114,6 +11106,27 @@ function openTransactionDetailModal(itemKey) {
       ${
         tx.createdBy
           ? `<p class="text-[11px] text-slate-400 pt-1">Nguồn tạo: <strong class="text-slate-800">${escapeHtml(tx.createdBy)}</strong></p>`
+          : ''
+      }
+    </div>
+
+    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+      <div>
+        <span class="tc-detail-label">Chứng từ / Ảnh biên lai đính kèm</span>
+        <span class="text-xs font-bold ${tx.receiptUrl ? 'text-emerald-700' : 'text-slate-400'}">
+          ${tx.receiptUrl ? 'Đã có ảnh chứng từ đính kèm' : 'Chưa có ảnh chứng từ'}
+        </span>
+      </div>
+      ${
+        tx.receiptUrl
+          ? `<button
+               type="button"
+               onclick="openReceiptViewer('${escapeAttr(tx.receiptUrl)}', 'Chứng từ ${escapeAttr(tx.id)}')"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer transition shrink-0"
+             >
+               <i data-lucide="image" class="w-3.5 h-3.5"></i>
+               <span>Xem ảnh chứng từ</span>
+             </button>`
           : ''
       }
     </div>
