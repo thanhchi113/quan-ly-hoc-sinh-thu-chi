@@ -3289,13 +3289,13 @@ function updateSandboxModeButtonsUI() {
 
   if (sideBtn && sideLabel) {
     if (isSandboxDraftMode) {
-      sideBtn.className = 'tc-nav-item is-active';
+      sideBtn.className = 'tc-nav-item tc-nav-orange is-active';
       sideLabel.textContent = 'Đang ở Tab Nháp';
       sideLabel.className = 'tc-sidebar-label truncate text-white font-extrabold';
     } else {
-      sideBtn.className = 'tc-nav-item border border-dashed border-[#FF4B16]/40 bg-[#FFF3EE]/60';
+      sideBtn.className = 'tc-nav-item tc-nav-orange border-dashed';
       sideLabel.textContent = 'Tab Nháp (Dùng thử)';
-      sideLabel.className = 'tc-sidebar-label truncate text-[#FF4B16] font-extrabold';
+      sideLabel.className = 'tc-sidebar-label truncate font-extrabold';
     }
   }
 
@@ -3558,7 +3558,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261029_v66', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261029_v67', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -3613,6 +3613,7 @@ function bootstrapApp() {
   initThemeSystem();
   enableSourceProtection();
   initStandaloneIosLifecycle();
+  initSidebarCollapsedState();
   lucide.createIcons();
 
   if (isSandboxDraftMode) {
@@ -4858,11 +4859,28 @@ function navigateSidebarSection(sectionKey) {
   }
 }
 
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'edupay_sidebar_collapsed_v1';
+
+function initSidebarCollapsedState() {
+  try {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+    if (saved === '1') {
+      const sidebar = document.getElementById('admin-left-sidebar');
+      const icon = document.getElementById('sidebar-collapse-icon');
+      if (sidebar) sidebar.classList.add('is-collapsed');
+      if (icon) icon.setAttribute('data-lucide', 'panel-left-open');
+    }
+  } catch (e) {}
+}
+
 function toggleAdminSidebar() {
   const sidebar = document.getElementById('admin-left-sidebar');
   const icon = document.getElementById('sidebar-collapse-icon');
   if (!sidebar) return;
   const collapsed = sidebar.classList.toggle('is-collapsed');
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0');
+  } catch (e) {}
   if (icon) {
     icon.setAttribute('data-lucide', collapsed ? 'panel-left-open' : 'panel-left-close');
   }

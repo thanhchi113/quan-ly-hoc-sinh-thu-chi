@@ -270,65 +270,213 @@ input, button, textarea, select {
 }
 
 /* ========================================================================== */
-/* THANH CHÍ EDU - LEFT SIDEBAR & ACHROMATIC LEDGER PANELS                    */
+/* THANH CHÍ EDU - COMPACT COLOR-CODED LEFT SIDEBAR                           */
 /* ========================================================================== */
 .tc-sidebar {
   background-color: #ffffff;
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border-radius: 12px;
   transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), padding 0.2s ease;
 }
 
+.tc-brand-title {
+  font-size: 11.5px !important;
+  line-height: 1.2 !important;
+}
+
+.tc-brand-sub {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+
 .tc-sidebar.is-collapsed {
-  width: 74px !important;
+  width: 56px !important;
+  padding: 0.5rem 0.35rem !important;
+}
+
+.tc-sidebar.is-collapsed .tc-sidebar-header {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .tc-sidebar.is-collapsed .tc-sidebar-label,
 .tc-sidebar.is-collapsed .tc-sidebar-badge,
-.tc-sidebar.is-collapsed .tc-sidebar-brand-text,
-.tc-sidebar.is-collapsed .tc-sidebar-footer-card {
+.tc-sidebar.is-collapsed .tc-sidebar-brand-text {
   display: none !important;
 }
 
 .tc-sidebar.is-collapsed .tc-nav-item {
   justify-content: center;
-  padding-left: 0.65rem;
-  padding-right: 0.65rem;
+  padding: 0.35rem !important;
+  border-left-width: 1px;
 }
 
 .tc-nav-item {
+  --nav-accent: #4f46e5;
+  --nav-bg: #f8fafc;
+  --nav-bg-hover: #f1f5f9;
+  --nav-border: #e2e8f0;
+  --nav-text: #1e293b;
+  --nav-icon-bg: #e2e8f0;
+  --nav-shadow: rgba(79, 70, 229, 0.28);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.45rem;
   width: 100%;
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid transparent;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  padding: 0.36rem 0.5rem;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--nav-text);
+  background-color: var(--nav-bg);
+  border: 1px solid var(--nav-border);
+  border-left: 3.5px solid var(--nav-accent);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
   cursor: pointer;
   white-space: nowrap;
 }
 
+.tc-nav-icon {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 6px;
+  background-color: var(--nav-icon-bg);
+  color: var(--nav-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tc-nav-item .tc-sidebar-badge:not([class*="bg-[#FF4B16]"]):not(.bg-indigo-600) {
+  background-color: var(--nav-icon-bg);
+  color: var(--nav-text);
+  border: 1px solid var(--nav-border);
+}
+
+/* 9 Bảng màu phân biệt cho từng nút điều hướng */
+.tc-nav-item.tc-nav-indigo {
+  --nav-accent: #4f46e5;
+  --nav-bg: #eef2ff;
+  --nav-bg-hover: #e0e7ff;
+  --nav-border: #c7d2fe;
+  --nav-text: #312e81;
+  --nav-icon-bg: #dbeafe;
+  --nav-shadow: rgba(79, 70, 229, 0.32);
+}
+
+.tc-nav-item.tc-nav-blue {
+  --nav-accent: #2563eb;
+  --nav-bg: #eff6ff;
+  --nav-bg-hover: #dbeafe;
+  --nav-border: #bfdbfe;
+  --nav-text: #1e40af;
+  --nav-icon-bg: #dbeafe;
+  --nav-shadow: rgba(37, 99, 235, 0.32);
+}
+
+.tc-nav-item.tc-nav-violet {
+  --nav-accent: #7c3aed;
+  --nav-bg: #f5f3ff;
+  --nav-bg-hover: #ede9fe;
+  --nav-border: #ddd6fe;
+  --nav-text: #5b21b6;
+  --nav-icon-bg: #ede9fe;
+  --nav-shadow: rgba(124, 58, 237, 0.32);
+}
+
+.tc-nav-item.tc-nav-emerald {
+  --nav-accent: #059669;
+  --nav-bg: #ecfdf5;
+  --nav-bg-hover: #d1fae5;
+  --nav-border: #a7f3d0;
+  --nav-text: #065f46;
+  --nav-icon-bg: #d1fae5;
+  --nav-shadow: rgba(5, 150, 105, 0.32);
+}
+
+.tc-nav-item.tc-nav-amber {
+  --nav-accent: #d97706;
+  --nav-bg: #fffbeb;
+  --nav-bg-hover: #fef3c7;
+  --nav-border: #fde68a;
+  --nav-text: #92400e;
+  --nav-icon-bg: #fef3c7;
+  --nav-shadow: rgba(217, 119, 6, 0.32);
+}
+
+.tc-nav-item.tc-nav-rose {
+  --nav-accent: #e11d48;
+  --nav-bg: #fff1f2;
+  --nav-bg-hover: #ffe4e6;
+  --nav-border: #fecdd3;
+  --nav-text: #9f1239;
+  --nav-icon-bg: #ffe4e6;
+  --nav-shadow: rgba(225, 29, 72, 0.32);
+}
+
+.tc-nav-item.tc-nav-cyan {
+  --nav-accent: #0891b2;
+  --nav-bg: #ecfeff;
+  --nav-bg-hover: #cffafe;
+  --nav-border: #a5f3fc;
+  --nav-text: #155e75;
+  --nav-icon-bg: #cffafe;
+  --nav-shadow: rgba(8, 145, 178, 0.32);
+}
+
+.tc-nav-item.tc-nav-orange {
+  --nav-accent: #ea580c;
+  --nav-bg: #fff7ed;
+  --nav-bg-hover: #ffedd5;
+  --nav-border: #fdba74;
+  --nav-text: #9a3412;
+  --nav-icon-bg: #ffedd5;
+  --nav-shadow: rgba(234, 88, 12, 0.32);
+}
+
+.tc-nav-item.tc-nav-teal {
+  --nav-accent: #0d9488;
+  --nav-bg: #f0fdfa;
+  --nav-bg-hover: #ccfbf1;
+  --nav-border: #99f6e4;
+  --nav-text: #115e59;
+  --nav-icon-bg: #ccfbf1;
+  --nav-shadow: rgba(13, 148, 136, 0.32);
+}
+
 .tc-nav-item:hover {
-  color: var(--text-primary);
-  background-color: #eeeeee;
+  background-color: var(--nav-bg-hover);
+  border-color: var(--nav-accent);
+  color: var(--nav-text);
 }
 
 .tc-nav-item.is-active {
-  color: var(--brand-on-primary) !important;
-  background-color: var(--brand-primary) !important;
-  border-color: var(--brand-primary) !important;
-  font-weight: 700;
+  color: #ffffff !important;
+  background-color: var(--nav-accent) !important;
+  border-color: var(--nav-accent) !important;
+  box-shadow: 0 4px 10px -2px var(--nav-shadow);
+  font-weight: 800;
 }
 
+.tc-nav-item.is-active .tc-nav-icon {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.tc-nav-item.is-active .tc-sidebar-label,
 .tc-nav-item.is-active i,
 .tc-nav-item.is-active svg {
-  color: var(--brand-on-primary) !important;
+  color: #ffffff !important;
+}
+
+.tc-nav-item.is-active .tc-sidebar-badge:not([class*="bg-[#FF4B16]"]) {
+  background-color: rgba(255, 255, 255, 0.24) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* Ledger Panel Containers (8px radius + 1px quiet border) */
@@ -883,18 +1031,12 @@ html.dark-mode .mode-pill-inactive:hover {
 }
 
 html.dark-mode .admin-tab-btn.bg-blue-600,
-html.dark-mode .tc-nav-item.is-active,
 html.dark-mode .theme-brand-icon,
 html.dark-mode .theme-navy-badge,
 html.dark-mode .bg-\[\#141414\] {
   background-color: var(--brand-primary-darkmode) !important;
   color: var(--brand-on-primary-darkmode) !important;
   border-color: var(--brand-primary-darkmode) !important;
-}
-
-html.dark-mode .tc-nav-item.is-active i,
-html.dark-mode .tc-nav-item.is-active svg {
-  color: var(--brand-on-primary-darkmode) !important;
 }
 
 /* Tầng 1: Khung Card chính (.bg-white, .bg-[#ffffff], .modern-sheet-card, .modern-kpi-card) */
@@ -1426,21 +1568,98 @@ html.dark-mode .bento-inner-tile {
   color: #f8fafc !important;
 }
 
-html.dark-mode .tc-nav-item {
-  color: #cbd5e1;
+html.dark-mode .tc-nav-item.tc-nav-indigo {
+  --nav-accent: #4f46e5;
+  --nav-bg: rgba(79, 70, 229, 0.16);
+  --nav-bg-hover: rgba(79, 70, 229, 0.28);
+  --nav-border: rgba(129, 140, 248, 0.35);
+  --nav-text: #c7d2fe;
+  --nav-icon-bg: rgba(79, 70, 229, 0.32);
 }
 
-html.dark-mode .tc-nav-item:hover {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #ffffff;
+html.dark-mode .tc-nav-item.tc-nav-blue {
+  --nav-accent: #2563eb;
+  --nav-bg: rgba(37, 99, 235, 0.16);
+  --nav-bg-hover: rgba(37, 99, 235, 0.28);
+  --nav-border: rgba(96, 165, 250, 0.35);
+  --nav-text: #bfdbfe;
+  --nav-icon-bg: rgba(37, 99, 235, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-violet {
+  --nav-accent: #7c3aed;
+  --nav-bg: rgba(124, 58, 237, 0.16);
+  --nav-bg-hover: rgba(124, 58, 237, 0.28);
+  --nav-border: rgba(167, 139, 250, 0.35);
+  --nav-text: #ddd6fe;
+  --nav-icon-bg: rgba(124, 58, 237, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-emerald {
+  --nav-accent: #059669;
+  --nav-bg: rgba(5, 150, 105, 0.16);
+  --nav-bg-hover: rgba(5, 150, 105, 0.28);
+  --nav-border: rgba(52, 211, 153, 0.35);
+  --nav-text: #a7f3d0;
+  --nav-icon-bg: rgba(5, 150, 105, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-amber {
+  --nav-accent: #d97706;
+  --nav-bg: rgba(217, 119, 6, 0.16);
+  --nav-bg-hover: rgba(217, 119, 6, 0.28);
+  --nav-border: rgba(251, 191, 36, 0.35);
+  --nav-text: #fde68a;
+  --nav-icon-bg: rgba(217, 119, 6, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-rose {
+  --nav-accent: #e11d48;
+  --nav-bg: rgba(225, 29, 72, 0.16);
+  --nav-bg-hover: rgba(225, 29, 72, 0.28);
+  --nav-border: rgba(251, 113, 133, 0.35);
+  --nav-text: #fecdd3;
+  --nav-icon-bg: rgba(225, 29, 72, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-cyan {
+  --nav-accent: #0891b2;
+  --nav-bg: rgba(8, 145, 178, 0.16);
+  --nav-bg-hover: rgba(8, 145, 178, 0.28);
+  --nav-border: rgba(34, 211, 238, 0.35);
+  --nav-text: #a5f3fc;
+  --nav-icon-bg: rgba(8, 145, 178, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-orange {
+  --nav-accent: #ea580c;
+  --nav-bg: rgba(234, 88, 12, 0.16);
+  --nav-bg-hover: rgba(234, 88, 12, 0.28);
+  --nav-border: rgba(251, 146, 60, 0.35);
+  --nav-text: #fed7aa;
+  --nav-icon-bg: rgba(234, 88, 12, 0.32);
+}
+
+html.dark-mode .tc-nav-item.tc-nav-teal {
+  --nav-accent: #0d9488;
+  --nav-bg: rgba(13, 148, 136, 0.16);
+  --nav-bg-hover: rgba(13, 148, 136, 0.28);
+  --nav-border: rgba(45, 212, 191, 0.35);
+  --nav-text: #99f6e4;
+  --nav-icon-bg: rgba(13, 148, 136, 0.32);
+}
+
+html.dark-mode .tc-nav-item.is-active {
+  background-color: var(--nav-accent) !important;
+  border-color: var(--nav-accent) !important;
+  color: #ffffff !important;
 }
 
 html.dark-mode .admin-tab-btn.bg-blue-600 span[class*="rounded-full"]:not([class*="bg-[#FF4B16]"]):not(.bg-rose-600),
 html.dark-mode .tc-nav-item.is-active .tc-sidebar-badge:not([class*="bg-[#FF4B16]"]) {
-  background-color: rgba(15, 23, 42, 0.55) !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 html.dark-mode .forecast-ring-inner {

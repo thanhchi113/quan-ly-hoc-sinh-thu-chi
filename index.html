@@ -40,7 +40,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261029_v66" />
+  <link rel="stylesheet" href="styles.css?v=20261029_v67" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -406,71 +406,75 @@
           <!-- ============================================================= -->
           <aside
             id="admin-left-sidebar"
-            class="tc-sidebar hidden lg:flex w-full lg:w-[218px] lg:sticky lg:top-20 shrink-0 p-3.5 flex-col justify-between gap-4"
+            class="tc-sidebar hidden lg:flex w-full lg:w-[192px] lg:sticky lg:top-20 shrink-0 p-2.5 flex-col justify-between gap-2.5"
           >
-            <div class="space-y-3">
+            <div class="space-y-2">
               <!-- Sidebar Brand Header + Collapse Toggle -->
-              <div class="flex items-center justify-between gap-2 px-1.5 pt-0.5 pb-2 border-b border-[#EBECF3]">
-                <div class="flex items-center gap-2.5 min-w-0 tc-sidebar-brand-text">
-                  <div class="w-8 h-8 rounded-xl bg-[#141414] from-[#141414] to-[#141414] text-white flex items-center justify-center  shrink-0">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <div class="tc-sidebar-header flex items-center justify-between gap-1.5 px-1 pt-0.5 pb-2 border-b border-[#EBECF3]">
+                <div class="flex items-center gap-2 min-w-0 tc-sidebar-brand-text">
+                  <div class="w-7 h-7 rounded-lg bg-[#141414] text-white flex items-center justify-center shrink-0">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                   </div>
-                  <div class="truncate">
-                    <div id="sidebar-brand-title" class="text-xs font-extrabold text-[#0a0a0a] tracking-tight leading-none">THANH CHÍ EDU</div>
-                    <div id="sidebar-brand-subtitle" class="text-xs font-semibold text-[#595c5f] mt-0.5">Hệ thống Quản trị</div>
+                  <div class="min-w-0">
+                    <div id="sidebar-brand-title" class="tc-brand-title font-extrabold text-[#0a0a0a] tracking-tight truncate">THANH CHÍ EDU</div>
+                    <div id="sidebar-brand-subtitle" class="tc-brand-sub font-semibold text-[#595c5f] truncate">Hệ thống Quản trị</div>
                   </div>
                 </div>
                 <button
                   type="button"
+                  id="sidebar-collapse-btn"
                   onclick="toggleAdminSidebar()"
                   title="Thu gọn / Mở rộng thanh điều hướng bên trái"
-                  class="hidden lg:inline-flex p-1.5 rounded-xl bg-[#FAFAFC] hover:bg-[#eeeeee] text-[#595c5f] hover:text-[#141414] border border-[#EBECF3] transition cursor-pointer shrink-0"
+                  class="hidden lg:inline-flex items-center justify-center w-6 h-6 rounded-lg bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#475569] hover:text-[#0F172A] border border-[#CBD5E1] transition cursor-pointer shrink-0"
                 >
-                  <i data-lucide="panel-left-close" class="w-4 h-4" id="sidebar-collapse-icon"></i>
+                  <i data-lucide="panel-left-close" class="w-3.5 h-3.5" id="sidebar-collapse-icon"></i>
                 </button>
               </div>
 
-              <!-- 9 Vietnamese Navigation Items (Exact Prompt Spec + Linked to Features) -->
-              <nav class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-1 gap-1.5" id="tc-sidebar-nav-list">
+              <!-- 8 Color-Coded Navigation Items -->
+              <nav class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-1 gap-1" id="tc-sidebar-nav-list">
                 <button
                   type="button"
                   id="side-nav-dashboard"
                   onclick="navigateSidebarSection('dashboard')"
-                  class="tc-nav-item"
+                  title="Tổng quan"
+                  class="tc-nav-item tc-nav-indigo"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="layout-grid" class="w-4 h-4 text-[#141414] shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Tổng quan</span>
                   </span>
-                  <span class="tc-sidebar-badge w-2 h-2 rounded-full bg-[#141414] shrink-0"></span>
+                  <span class="tc-sidebar-badge w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
                 </button>
 
                 <button
                   type="button"
                   id="side-nav-students"
                   onclick="navigateSidebarSection('students')"
-                  class="tc-nav-item"
+                  title="Học sinh"
+                  class="tc-nav-item tc-nav-blue"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="users" class="w-4 h-4 text-[#141414] shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="users" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Học sinh</span>
                   </span>
-                  <span id="sidebar-students-badge" class="tc-sidebar-badge px-1.5 py-0.2 rounded-full bg-[#eeeeee] text-[#141414] text-xs font-extrabold shrink-0">130</span>
+                  <span id="sidebar-students-badge" class="tc-sidebar-badge px-1.5 py-0.2 rounded-full text-[11px] font-extrabold shrink-0">130</span>
                 </button>
 
                 <button
                   type="button"
                   id="side-nav-classbook"
                   onclick="navigateSidebarSection('classbook')"
-                  class="tc-nav-item is-active"
+                  title="Lớp học"
+                  class="tc-nav-item tc-nav-violet is-active"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="school" class="w-4 h-4 text-[#141414] shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="school" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Lớp học</span>
                   </span>
                   <span class="flex items-center gap-1 shrink-0">
-                    <span id="sidebar-pending-badge" class="tc-sidebar-badge hidden px-1.5 py-0.2 rounded-full bg-[#FF4B16] text-white text-xs font-extrabold shrink-0" title="Số học sinh đang chờ duyệt học phí">0</span>
-                    <span id="sidebar-classes-badge" class="tc-sidebar-badge px-1.5 py-0.2 rounded-full bg-white/25 text-xs font-extrabold shrink-0">17</span>
+                    <span id="sidebar-pending-badge" class="tc-sidebar-badge hidden px-1.5 py-0.2 rounded-full bg-[#FF4B16] text-white text-[11px] font-extrabold shrink-0" title="Số học sinh đang chờ duyệt học phí">0</span>
+                    <span id="sidebar-classes-badge" class="tc-sidebar-badge px-1.5 py-0.2 rounded-full text-[11px] font-extrabold shrink-0">17</span>
                   </span>
                 </button>
 
@@ -478,10 +482,11 @@
                   type="button"
                   id="side-nav-attendance"
                   onclick="navigateSidebarSection('attendance')"
-                  class="tc-nav-item"
+                  title="Điểm danh"
+                  class="tc-nav-item tc-nav-emerald"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="calendar-check-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="calendar-check-2" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Điểm danh</span>
                   </span>
                 </button>
@@ -490,23 +495,25 @@
                   type="button"
                   id="side-nav-finance"
                   onclick="navigateSidebarSection('finance')"
-                  class="tc-nav-item"
+                  title="Thu chi &amp; Giao dịch"
+                  class="tc-nav-item tc-nav-amber"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="wallet" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="wallet" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Thu chi &amp; Giao dịch</span>
                   </span>
-                  <span id="sidebar-finance-pending-badge" class="tc-sidebar-badge hidden px-1.5 py-0.2 rounded-full bg-[#FF4B16] text-white text-xs font-extrabold shrink-0">0</span>
+                  <span id="sidebar-finance-pending-badge" class="tc-sidebar-badge hidden px-1.5 py-0.2 rounded-full bg-[#FF4B16] text-white text-[11px] font-extrabold shrink-0">0</span>
                 </button>
 
                 <button
                   type="button"
                   id="side-nav-history"
                   onclick="navigateSidebarSection('history')"
-                  class="tc-nav-item"
+                  title="Báo cáo"
+                  class="tc-nav-item tc-nav-rose"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-[#141414] shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="pie-chart" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Báo cáo</span>
                   </span>
                 </button>
@@ -515,10 +522,11 @@
                   type="button"
                   id="side-nav-settings"
                   onclick="navigateSidebarSection('settings')"
-                  class="tc-nav-item"
+                  title="Cài đặt"
+                  class="tc-nav-item tc-nav-cyan"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="settings" class="w-4 h-4 text-[#595c5f] shrink-0"></i>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="settings" class="w-3.5 h-3.5"></i></span>
                     <span class="tc-sidebar-label truncate">Cài đặt</span>
                   </span>
                 </button>
@@ -528,33 +536,33 @@
                   id="side-nav-sandbox"
                   onclick="toggleSandboxDraftMode()"
                   title="Chuyển sang Tab Nháp với dữ liệu mẫu riêng biệt để gửi cho bạn bè dùng thử"
-                  class="tc-nav-item border border-dashed border-[#FF4B16]/40 bg-[#FFF3EE]/60"
+                  class="tc-nav-item tc-nav-orange border-dashed"
                 >
-                  <span class="flex items-center gap-2.5 min-w-0">
-                    <i data-lucide="flask-conical" class="w-4 h-4 text-[#FF4B16] shrink-0"></i>
-                    <span id="side-nav-sandbox-label" class="tc-sidebar-label truncate text-[#FF4B16] font-extrabold">Tab Nháp (Dùng thử)</span>
+                  <span class="flex items-center gap-2 min-w-0">
+                    <span class="tc-nav-icon"><i data-lucide="flask-conical" class="w-3.5 h-3.5"></i></span>
+                    <span id="side-nav-sandbox-label" class="tc-sidebar-label truncate font-extrabold">Tab Nháp (Dùng thử)</span>
                   </span>
                 </button>
               </nav>
             </div>
 
-            <!-- Sidebar Footer Card -->
-            <div class="tc-sidebar-footer-card hidden lg:block p-3 rounded-2xl bg-[#141414] from-[#eeeeee] to-[#FFF4F0] border border-[#eeeeee] space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-normal text-[#141414]">Đồng bộ Đám mây</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <!-- Compact Sidebar Footer Card -->
+            <div class="tc-sidebar-footer-card hidden lg:flex flex-col gap-1.5 pt-2 border-t border-[#EBECF3]">
+              <div class="tc-sidebar-brand-text flex items-center justify-between px-1">
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-300">Đồng bộ Sheet 24/7</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Kết nối Google Sheet &amp; VietQR SePay 24/7"></span>
               </div>
-              <p class="text-[11px] font-bold text-[#0a0a0a] leading-snug">
-                Google Sheet &amp; VietQR SePay 24/7
-              </p>
               <button
                 type="button"
+                id="side-nav-cloud-sync"
                 onclick="syncAllToGoogleSheet(true)"
                 title="Đẩy dữ liệu từ Web lên Google Sheet"
-                class="w-full py-1.5 px-2.5 rounded-full bg-white hover:bg-[#141414] text-[#0a0a0a] hover:text-white border border-[#eeeeee] text-[11px] font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                class="tc-nav-item tc-nav-teal"
               >
-                <i data-lucide="cloud-upload" class="w-3 h-3"></i>
-                <span>Đẩy lên Google Sheet</span>
+                <span class="flex items-center gap-2 min-w-0">
+                  <span class="tc-nav-icon"><i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i></span>
+                  <span class="tc-sidebar-label truncate font-extrabold">Đẩy lên Google Sheet</span>
+                </span>
               </button>
             </div>
           </aside>
@@ -6097,6 +6105,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261029_v66"></script>
+  <script src="app.js?v=20261029_v67"></script>
 </body>
 </html>
