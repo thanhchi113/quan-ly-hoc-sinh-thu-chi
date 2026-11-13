@@ -1895,14 +1895,15 @@ label:has(> .cs-day-checkbox:checked) {
   border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
-/* Cột nút thao tác xếp thẳng hàng dọc trong bảng Giao dịch */
+/* Cột nút thao tác dạng lưới gọn gàng trong bảng Giao dịch (chống đè nút và tràn dòng) */
 .tc-tx-action-col {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
   justify-content: center;
-  gap: 0.32rem;
-  width: 116px;
+  gap: 0.25rem;
+  width: 148px;
+  min-width: 142px;
   margin: 0 auto;
 }
 
@@ -1911,15 +1912,19 @@ label:has(> .cs-day-checkbox:checked) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0.28rem 0.5rem;
-  border-radius: 9px;
-  font-size: 0.72rem;
+  gap: 0.25rem;
+  padding: 0.26rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: 800;
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.tc-tx-action-btn.col-span-2 {
+  grid-column: span 2 / span 2;
 }
 
 .tc-dp-nav-btn {

@@ -3177,6 +3177,7 @@ let isSilentServerSync = false;
 // shortcut: chỉ ghi nhớ tối đa 5 bước hoàn tác gần nhất để nhẹ bộ nhớ và tránh lùi về tận trạng thái ban đầu
 const MAX_UNDO_HISTORY = 5;
 appState = isOpenedViaFriendSandboxUrl ? loadSandboxDraftStateFromLocal() : loadStateFromLocal();
+syncAllTransactionsBatchWithClassbook(appState);
 if (isOpenedViaFriendSandboxUrl) {
   isSandboxDraftMode = true;
 } else {
@@ -3558,7 +3559,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261109_v68', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261113_v69', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -6593,33 +6594,41 @@ function renderAdminDashboard() {
               </span>`;
           const cleanNote = isTestReq ? stripRedundantTestPrefix(req.note) : req.note;
 
+          const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
+          const reqBatchClass = getBatchBadgeColorClass(reqBatchInfo.batchLabel);
+
           return `
         <div
           onclick="openTransactionDetailModal('REQ::${escapeAttr(req.id)}')"
           title="Bấm để xem chi tiết, sửa trực tiếp hoặc đổi học sinh"
-          class="bento-inner-tile p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 cursor-pointer ${isTestReq ? 'border-2 border-amber-300 bg-amber-50/40' : ''}"
+          class="bento-inner-tile p-3.5 flex flex-col gap-3 cursor-pointer ${isTestReq ? 'border-2 border-amber-300 bg-amber-50/40' : ''}"
         >
-          <div class="flex items-start gap-3.5">
+          <div class="flex items-start gap-3 min-w-0 w-full">
             ${
               req.receiptUrl
                 ? `<img
                     onclick="event.stopPropagation(); openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(req.studentName)}')"
                     src="${escapeAttr(req.receiptUrl)}"
                     alt="Biên lai"
-                    class="w-16 h-20 rounded-xl object-cover border border-[#eeeeee] cursor-pointer hover:opacity-90 shrink-0 bg-white"
+                    class="w-14 h-16 rounded-xl object-cover border border-[#eeeeee] cursor-pointer hover:opacity-90 shrink-0 bg-white"
                     title="Bấm để phóng to ảnh biên lai"
                   />`
-                : `<div class="w-16 h-20 rounded-xl bg-[#eeeeee] border border-[#eeeeee] flex flex-col items-center justify-center text-xs text-[#595c5f] shrink-0 text-center p-1">
-                    <i data-lucide="file-text" class="w-5 h-5 mb-1 text-[#141414]"></i>Không ảnh
+                : `<div class="w-14 h-16 rounded-xl bg-[#eeeeee] border border-[#eeeeee] flex flex-col items-center justify-center text-xs text-[#595c5f] shrink-0 text-center p-1">
+                    <i data-lucide="file-text" class="w-4 h-4 mb-0.5 text-[#141414]"></i>Không ảnh
                   </div>`
             }
-            <div class="space-y-1 text-xs">
-              <div class="flex flex-wrap items-center gap-2">
+            <div class="space-y-1 text-xs min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-1.5">
                 ${testBadgeHtml}
-                <span class="px-2.5 py-0.5 rounded-full bg-[#eeeeee] text-[#141414] tabular-nums font-extrabold">${escapeHtml(req.studentCode || 'Chưa gán HS')}</span>
-                <span class="font-extrabold text-[#0a0a0a] text-sm">${escapeHtml(req.studentName || 'Chưa gán học sinh')}</span>
-                <span class="text-[#595c5f]">• ${escapeHtml(req.className || '---')}</span>
-                <span class="px-2.5 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] font-bold">${escapeHtml(req.period || 'Kỳ hiện tại')}</span>
+                <span class="px-2 py-0.5 rounded-full bg-[#eeeeee] text-[#141414] tabular-nums font-extrabold">${escapeHtml(reqBatchInfo.studentCode || req.studentCode || 'Chưa gán HS')}</span>
+                <span class="font-extrabold text-[#0a0a0a] text-sm">${escapeHtml(reqBatchInfo.studentName || req.studentName || 'Chưa gán học sinh')}</span>
+                <span class="text-[#595c5f] font-semibold">• Lớp ${escapeHtml(reqBatchInfo.className || req.className || '---')}</span>
+                ${
+                  reqBatchInfo.batchLabel
+                    ? `<span class="tc-batch-badge ${reqBatchClass}">${escapeHtml(reqBatchInfo.batchLabel)}</span>`
+                    : ''
+                }
+                <span class="px-2 py-0.5 rounded-full bg-[#FFF3EE] text-[#FF4B16] font-bold">${escapeHtml(reqBatchInfo.periodLabel || req.period || 'Kỳ hiện tại')}</span>
                 ${bankStatusBadge}
               </div>
               <p class="text-[#0a0a0a]">
@@ -6630,19 +6639,18 @@ function renderAdminDashboard() {
                     : formatCurrency(req.amount)
                 }</strong>
               </p>
-              <p class="text-[#595c5f] italic">"${escapeHtml(cleanNote || 'Không có ghi chú')}"</p>
-              <p class="text-[11px] text-[#595c5f]">Gửi lúc: ${escapeHtml(req.submittedAt)}</p>
+              <p class="text-[#595c5f] italic break-words line-clamp-2">"${escapeHtml(cleanNote || 'Không có ghi chú')}" • <span class="not-italic text-[11px]">Gửi lúc: ${escapeHtml(req.submittedAt)}</span></p>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end shrink-0" onclick="event.stopPropagation()">
+          <div class="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-end gap-1.5 w-full" onclick="event.stopPropagation()">
             ${
               req.receiptUrl
                 ? `<button
                     onclick="openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(req.studentName)}')"
-                    class="px-3.5 py-2 rounded-full bg-white border border-[#EBECF3] text-[#0a0a0a] hover:bg-[#eeeeee] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    class="px-3 py-1.5 rounded-full bg-white border border-[#EBECF3] text-[#0a0a0a] hover:bg-[#eeeeee] text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
                   >
-                    <i data-lucide="eye" class="w-4 h-4 text-[#141414]"></i>
+                    <i data-lucide="eye" class="w-3.5 h-3.5 text-[#141414]"></i>
                     <span>Xem biên lai</span>
                   </button>`
                 : ''
@@ -6651,34 +6659,34 @@ function renderAdminDashboard() {
               type="button"
               onclick="editPaymentRequestRecord('${escapeAttr(req.id)}')"
               title="Sửa trực tiếp thông tin card chuyển khoản này hoặc đổi sang học sinh khác"
-              class="px-3.5 py-2 rounded-full bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition"
+              class="px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
-              <i data-lucide="pencil" class="w-4 h-4"></i>
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
               <span>Sửa / Đổi HS</span>
             </button>
             <button
               type="button"
               onclick="deletePaymentRequestDirectly('${escapeAttr(req.id)}')"
               title="Xóa trực tiếp yêu cầu này và chặn tự động tạo lại"
-              class="px-3.5 py-2 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
+              class="px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               <span>Xóa</span>
             </button>
             <button
               type="button"
               onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Từ chối')"
-              class="px-3.5 py-2 rounded-full bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
+              class="px-3 py-1.5 rounded-full bg-[#FFF3EE] hover:bg-[#FF4B16] text-[#FF4B16] hover:text-white border border-[#FFD9CC] text-xs font-bold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
-              <i data-lucide="x-circle" class="w-4 h-4"></i>
+              <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
               <span>Chưa nhận được</span>
             </button>
             <button
               type="button"
               onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Đã duyệt')"
-              class="px-4 py-2 rounded-full bg-[#141414] hover:bg-[#4842E8] text-white text-xs font-extrabold flex items-center gap-1.5  cursor-pointer transition"
+              class="px-3.5 py-1.5 rounded-full bg-[#141414] hover:bg-[#4842E8] text-white text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
-              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
               <span>Duyệt (Đã nhận tiền)</span>
             </button>
           </div>
@@ -9441,6 +9449,19 @@ function getCurrentBatchLabelForClass(className, stateObj = appState) {
   return cfg?.batchLabel ? formatBatchDisplayLabel(cfg.batchLabel) : '';
 }
 
+function extractCleanStudentCodeToken(rawVal = '') {
+  const str = String(rawVal || '').trim().toUpperCase();
+  if (!str) return '';
+  const hsMatch = str.match(/\b((?:HS|NV)\d{2,})\b/i);
+  if (hsMatch) return hsMatch[1].toUpperCase();
+  const stripped = str
+    .replace(/(?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+/gi, ' ')
+    .replace(/LỚP\s+[^\s•()[\]-]+/gi, ' ')
+    .trim();
+  const firstToken = stripped.split(/[\s•|()[\]-]+/).filter(Boolean)[0] || '';
+  return /^[A-Z]{1,4}\d{2,}$/i.test(firstToken) ? firstToken.toUpperCase() : '';
+}
+
 function syncClassCurrentBatchOnTransactions(
   className,
   oldBatchLabel,
@@ -9462,10 +9483,24 @@ function syncClassCurrentBatchOnTransactions(
     if (s.id) stuById.set(s.id, s);
   });
 
+  let historyList = [];
+  try {
+    if (stateObj?.settings?.classHistoryJson) {
+      historyList = JSON.parse(stateObj.settings.classHistoryJson) || [];
+    }
+  } catch (e) {}
+  const archivedBatchKeys = new Set(
+    (Array.isArray(historyList) ? historyList : [])
+      .filter(h => h && String(h.className || '').trim().toLowerCase() === cls.toLowerCase())
+      .map(h => normalizeBatchCompareKey(h.batchLabel))
+      .filter(Boolean)
+  );
+
   const oldKey = normalizeBatchCompareKey(oldBatchLabel);
   const cleanNewBatch = formatBatchDisplayLabel(newBatchLabel);
   const cleanNewPeriod = newPeriodLabel ? normalizePeriodValue(newPeriodLabel) : '';
   const editedMap = getEditedTxOverridesMap(stateObj);
+  let editedMapChanged = false;
   const extractIsoDate = s => {
     const str = String(s || '').trim();
     const iso = str.match(/^(\d{4}-\d{2}-\d{2})/);
@@ -9476,14 +9511,14 @@ function syncClassCurrentBatchOnTransactions(
   const rollDateOnly = extractIsoDate(rolledOverAt);
 
   (stateObj.transactions || []).forEach(t => {
-    if (!t || editedMap[t.id]?.batchLabel) return;
-    const tCode = String(t.studentCode || '').trim().toUpperCase();
+    if (!t || t.type === 'Chi') return;
+    const rawCode = extractCleanStudentCodeToken(t.studentCode) || String(t.studentCode || '').trim().toUpperCase();
     const matchedStu =
-      (t.studentRecordId && stuById.get(t.studentRecordId)) || (tCode && stuByCode.get(tCode)) || null;
+      (t.studentRecordId && stuById.get(t.studentRecordId)) || (rawCode && stuByCode.get(rawCode)) || null;
     const tCls = String(t.className || '').trim().toLowerCase();
     if (!matchedStu && (!tCls || tCls !== cls.toLowerCase())) return;
 
-    if (rolledOverAt && t.date) {
+    if (rolledOverAt && t.date && archivedBatchKeys.size > 0) {
       const tDateOnly = extractIsoDate(t.date);
       const hasExplicitTime = /\d{1,2}:\d{2}/.test(String(t.date));
       if (
@@ -9493,37 +9528,224 @@ function syncClassCurrentBatchOnTransactions(
         return;
       }
     }
-    const curKey = normalizeBatchCompareKey(t.batchLabel);
-    if (!curKey || (oldKey && curKey === oldKey)) {
-      if (cleanNewBatch) t.batchLabel = cleanNewBatch;
-      if (cleanNewPeriod) t.period = cleanNewPeriod;
-      if (matchedStu) {
-        t.className = cls;
-        t.studentName = matchedStu.fullName || t.studentName;
+    const curKey = normalizeBatchCompareKey(editedMap[t.id]?.batchLabel || t.batchLabel);
+    if (curKey && archivedBatchKeys.has(curKey) && curKey !== oldKey) {
+      return;
+    }
+
+    if (cleanNewBatch) {
+      t.batchLabel = cleanNewBatch;
+      if (editedMap[t.id] && editedMap[t.id].batchLabel) {
+        editedMap[t.id].batchLabel = cleanNewBatch;
+        editedMapChanged = true;
       }
-      if (!editedMap[t.id] && /^Thu học phí(?:\s|$)/i.test(String(t.description || '').trim()) && !String(t.description || '').includes('| ND:')) {
-        const stuName = matchedStu?.fullName || t.studentName || '';
-        const stuCode = matchedStu?.studentCode || tCode || '';
-        const pLabel = cleanNewPeriod || normalizePeriodValue(t.period || matchedStu?.period || '');
-        const pPart = cleanNewBatch ? `${cleanNewBatch}${pLabel ? ` (${pLabel})` : ''}` : pLabel;
-        if (pPart && (stuCode || stuName)) {
-          t.description = `Thu học phí ${pPart} - ${stuCode ? `${stuCode} ` : ''}${stuName}`.trim();
+    }
+    if (cleanNewPeriod) {
+      t.period = cleanNewPeriod;
+    }
+    if (matchedStu) {
+      t.studentRecordId = matchedStu.id || t.studentRecordId || '';
+      t.studentCode = matchedStu.studentCode || rawCode || t.studentCode;
+      t.className = matchedStu.className || cls;
+      t.studentName = matchedStu.fullName || t.studentName;
+      if (!t.period && matchedStu.period) {
+        t.period = normalizePeriodValue(matchedStu.period);
+      }
+    }
+    if (/^Thu học phí(?:\s|$)/i.test(String(t.description || '').trim()) && !String(t.description || '').includes('| ND:')) {
+      const stuName = matchedStu?.fullName || t.studentName || '';
+      const stuCode = matchedStu?.studentCode || rawCode || '';
+      const pLabel = cleanNewPeriod || normalizePeriodValue(t.period || matchedStu?.period || '');
+      const pPart = cleanNewBatch ? `${cleanNewBatch}${pLabel ? ` (${pLabel})` : ''}` : pLabel;
+      if (pPart && (stuCode || stuName)) {
+        t.description = `Thu học phí ${pPart} - ${stuCode ? `${stuCode} ` : ''}${stuName}`.trim();
+        if (editedMap[t.id] && editedMap[t.id].description) {
+          editedMap[t.id].description = t.description;
+          editedMapChanged = true;
         }
       }
     }
   });
 
+  if (editedMapChanged) {
+    saveEditedTxOverridesMap(editedMap, stateObj);
+  }
+
   (stateObj.paymentRequests || []).forEach(r => {
     if (!r || r.status !== 'Chờ duyệt') return;
-    const rCode = String(r.studentCode || '').trim().toUpperCase();
+    const rawCode = extractCleanStudentCodeToken(r.studentCode) || String(r.studentCode || '').trim().toUpperCase();
     const matchedStu =
-      (r.studentRecordId && stuById.get(r.studentRecordId)) || (rCode && stuByCode.get(rCode)) || null;
+      (r.studentRecordId && stuById.get(r.studentRecordId)) || (rawCode && stuByCode.get(rawCode)) || null;
     if (!matchedStu && String(r.className || '').trim().toLowerCase() !== cls.toLowerCase()) return;
-    r.className = cls;
-    if (matchedStu) r.studentName = matchedStu.fullName || r.studentName;
+    r.className = matchedStu?.className || cls;
+    if (matchedStu) {
+      r.studentRecordId = matchedStu.id || r.studentRecordId || '';
+      r.studentCode = matchedStu.studentCode || rawCode || r.studentCode;
+      r.studentName = matchedStu.fullName || r.studentName;
+    }
     if (cleanNewBatch) r.batchLabel = cleanNewBatch;
     if (cleanNewPeriod) r.period = cleanNewPeriod;
   });
+}
+
+function syncAllTransactionsBatchWithClassbook(stateObj = appState) {
+  if (!stateObj || !Array.isArray(stateObj.students)) return false;
+  let scheduleMap = {};
+  let historyList = [];
+  try {
+    if (stateObj?.settings?.classSchedulesJson) {
+      scheduleMap = JSON.parse(stateObj.settings.classSchedulesJson) || {};
+    }
+  } catch (e) {}
+  try {
+    if (stateObj?.settings?.classHistoryJson) {
+      historyList = JSON.parse(stateObj.settings.classHistoryJson) || [];
+    }
+  } catch (e) {}
+
+  const stuById = new Map();
+  const stuByCode = new Map();
+  (stateObj.students || []).forEach(s => {
+    if (!s) return;
+    if (s.id) stuById.set(s.id, s);
+    const code = String(s.studentCode || '').trim().toUpperCase();
+    if (code) stuByCode.set(code, s);
+  });
+
+  const editedMap = getEditedTxOverridesMap(stateObj);
+  let editedChanged = false;
+  let anyChanged = false;
+
+  const extractIsoDate = s => {
+    const str = String(s || '').trim();
+    const iso = str.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+    const vn = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    return vn ? `${vn[3]}-${vn[2]}-${vn[1]}` : '';
+  };
+
+  (stateObj.transactions || []).forEach(t => {
+    if (!t || t.type === 'Chi' || isSimulatedBankTestItem(t)) return;
+    const cleanCode = extractCleanStudentCodeToken(t.studentCode || t.description);
+    let stu =
+      (t.studentRecordId && stuById.get(t.studentRecordId)) ||
+      (cleanCode && stuByCode.get(cleanCode)) ||
+      null;
+    if (!stu && (t.studentCode || t.studentName)) {
+      stu = resolveStudentFromModalInput(t.studentCode || t.studentName, t.studentRecordId, stateObj);
+    }
+    if (!stu) return;
+
+    const cls = String(stu.className || t.className || '').trim();
+    const curCfg = findClassScheduleConfig(cls, scheduleMap, stateObj);
+    const classBatch = curCfg?.batchLabel ? formatBatchDisplayLabel(curCfg.batchLabel) : '';
+    const classPeriod = normalizePeriodValue(curCfg?.periodLabel || stu.period || t.period || '');
+
+    const classHistories = cls
+      ? (Array.isArray(historyList)
+          ? historyList.filter(h => h && String(h.className || '').trim().toLowerCase() === cls.toLowerCase())
+          : [])
+      : [];
+
+    let isHistorical = false;
+    if (curCfg?.rolledOverAt && classHistories.length > 0 && t.date) {
+      const tDateOnly = extractIsoDate(t.date);
+      const rollDateOnly = extractIsoDate(curCfg.rolledOverAt);
+      const hasExplicitTime = /\d{1,2}:\d{2}/.test(String(t.date));
+      if (
+        (tDateOnly && rollDateOnly && tDateOnly < rollDateOnly) ||
+        (hasExplicitTime && isTxDateOlderThanAction(t.date, curCfg.rolledOverAt))
+      ) {
+        isHistorical = true;
+      }
+    }
+    const existingBatchKey = normalizeBatchCompareKey(editedMap[t.id]?.batchLabel || t.batchLabel);
+    if (!isHistorical && existingBatchKey && classHistories.some(h => normalizeBatchCompareKey(h.batchLabel) === existingBatchKey)) {
+      const curKey = normalizeBatchCompareKey(classBatch);
+      if (curKey && existingBatchKey !== curKey) {
+        isHistorical = true;
+      }
+    }
+
+    if (t.studentRecordId !== stu.id) {
+      t.studentRecordId = stu.id;
+      anyChanged = true;
+    }
+    if (stu.studentCode && t.studentCode !== stu.studentCode) {
+      t.studentCode = stu.studentCode;
+      anyChanged = true;
+    }
+    if (stu.fullName && t.studentName !== stu.fullName) {
+      t.studentName = stu.fullName;
+      anyChanged = true;
+    }
+    if (cls && t.className !== cls) {
+      t.className = cls;
+      anyChanged = true;
+    }
+    if (!isHistorical) {
+      if (classBatch && t.batchLabel !== classBatch) {
+        t.batchLabel = classBatch;
+        anyChanged = true;
+      }
+      if (classBatch && editedMap[t.id]?.batchLabel && editedMap[t.id].batchLabel !== classBatch) {
+        editedMap[t.id].batchLabel = classBatch;
+        editedChanged = true;
+      }
+      if (classPeriod && t.period !== classPeriod) {
+        t.period = classPeriod;
+        anyChanged = true;
+      }
+    }
+  });
+
+  (stateObj.paymentRequests || []).forEach(r => {
+    if (!r || r.status !== 'Chờ duyệt' || isSimulatedBankTestItem(r)) return;
+    const cleanCode = extractCleanStudentCodeToken(r.studentCode || r.note);
+    let stu =
+      (r.studentRecordId && stuById.get(r.studentRecordId)) ||
+      (cleanCode && stuByCode.get(cleanCode)) ||
+      null;
+    if (!stu && (r.studentCode || r.studentName)) {
+      stu = resolveStudentFromModalInput(r.studentCode || r.studentName, r.studentRecordId, stateObj);
+    }
+    if (!stu) return;
+
+    const cls = String(stu.className || r.className || '').trim();
+    const curCfg = findClassScheduleConfig(cls, scheduleMap, stateObj);
+    const classBatch = curCfg?.batchLabel ? formatBatchDisplayLabel(curCfg.batchLabel) : '';
+    const classPeriod = normalizePeriodValue(curCfg?.periodLabel || stu.period || r.period || '');
+
+    if (r.studentRecordId !== stu.id) {
+      r.studentRecordId = stu.id;
+      anyChanged = true;
+    }
+    if (stu.studentCode && r.studentCode !== stu.studentCode) {
+      r.studentCode = stu.studentCode;
+      anyChanged = true;
+    }
+    if (stu.fullName && r.studentName !== stu.fullName) {
+      r.studentName = stu.fullName;
+      anyChanged = true;
+    }
+    if (cls && r.className !== cls) {
+      r.className = cls;
+      anyChanged = true;
+    }
+    if (classBatch && r.batchLabel !== classBatch) {
+      r.batchLabel = classBatch;
+      anyChanged = true;
+    }
+    if (classPeriod && r.period !== classPeriod) {
+      r.period = classPeriod;
+      anyChanged = true;
+    }
+  });
+
+  if (editedChanged) {
+    saveEditedTxOverridesMap(editedMap, stateObj);
+  }
+  return anyChanged;
 }
 
 function freezeCompletedBatchOnTransactions(className, completedBatchLabel, completedPeriodLabel = '', stateObj = appState) {
@@ -9607,19 +9829,30 @@ function resolveTransactionBatchInfo(item, stateObj = appState) {
   } catch (e) {}
 
   const rawText = `${item.description || ''} ${item.note || ''}`;
-  let stuCode = String(item.studentCode || '').trim().toUpperCase();
+  let stuCode = extractCleanStudentCodeToken(item.studentCode) || String(item.studentCode || '').trim().toUpperCase();
   const stuRecId = String(item.studentRecordId || '').trim();
   if (!stuCode && !stuRecId && item.type !== 'Chi') {
-    const codeInText = rawText.match(/\b(HS\d{2,})\b/i);
+    const codeInText = rawText.match(/\b((?:HS|NV)\d{2,})\b/i);
     if (codeInText) stuCode = codeInText[1].toUpperCase();
   }
 
-  const matchedStu =
+  let matchedStu =
     (stateObj?.students || []).find(s => {
       if (!s) return false;
       if (stuRecId && s.id === stuRecId) return true;
       return Boolean(stuCode && String(s.studentCode || '').trim().toUpperCase() === stuCode);
     }) || null;
+
+  if (!matchedStu && item.type !== 'Chi' && (item.studentCode || item.studentName)) {
+    matchedStu = resolveStudentFromModalInput(
+      item.studentCode || item.studentName,
+      stuRecId,
+      stateObj
+    );
+    if (matchedStu && matchedStu.studentCode) {
+      stuCode = String(matchedStu.studentCode).trim().toUpperCase();
+    }
+  }
 
   let histMatchedStu = null;
   if (!matchedStu && (stuCode || stuRecId) && Array.isArray(historyList)) {
@@ -9682,14 +9915,27 @@ function resolveTransactionBatchInfo(item, stateObj = appState) {
       };
     }
     const matchedHist = classHistories.find(h => normalizeBatchCompareKey(h.batchLabel) === overKey);
+    if (matchedHist) {
+      return {
+        batchLabel: formatBatchDisplayLabel(matchedHist.batchLabel),
+        periodLabel: cleanPeriod(matchedHist.periodLabel) || descPeriod || curPeriodClean,
+        className: matchedHist.className || className,
+        matchedStu,
+        studentCode: resolvedStuCode,
+        studentName,
+        isHistorical: true
+      };
+    }
     return {
-      batchLabel: matchedHist?.batchLabel ? formatBatchDisplayLabel(matchedHist.batchLabel) : formatBatchDisplayLabel(overrideBatch),
-      periodLabel: cleanPeriod(matchedHist?.periodLabel) || descPeriod || curPeriodClean,
-      className,
+      batchLabel: curCfg?.batchLabel
+        ? formatBatchDisplayLabel(curCfg.batchLabel)
+        : formatBatchDisplayLabel(overrideBatch),
+      periodLabel: curPeriodClean || descPeriod,
+      className: curCfg?.className || className,
       matchedStu,
       studentCode: resolvedStuCode,
       studentName,
-      isHistorical: Boolean(curKey ? overKey !== curKey : matchedHist)
+      isHistorical: false
     };
   }
 
@@ -9783,13 +10029,15 @@ function resolveTransactionBatchInfo(item, stateObj = appState) {
       };
     }
     return {
-      batchLabel: formatBatchDisplayLabel(storedOrTextBatch),
+      batchLabel: curCfg?.batchLabel
+        ? formatBatchDisplayLabel(curCfg.batchLabel)
+        : formatBatchDisplayLabel(storedOrTextBatch),
       periodLabel: curPeriodClean || descPeriod,
-      className,
+      className: curCfg?.className || className,
       matchedStu,
       studentCode: resolvedStuCode,
       studentName,
-      isHistorical: Boolean(curKey && bKey !== curKey)
+      isHistorical: false
     };
   }
 
@@ -10096,9 +10344,9 @@ function renderFinancePendingApprovalsCard() {
           title="Bấm để xem chi tiết, sửa trực tiếp hoặc đổi học sinh"
           class="p-3 rounded-xl bg-white border-2 cursor-pointer ${
           isTestReq ? 'border-amber-300 bg-amber-50/40' : 'border-amber-200 hover:border-amber-400'
-        }  flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 transition"
+        } flex flex-col gap-2.5 transition"
         >
-          <div class="flex items-start gap-3 min-w-0">
+          <div class="flex items-start gap-3 min-w-0 w-full">
             ${
               req.receiptUrl
                 ? `<img
@@ -10112,7 +10360,7 @@ function renderFinancePendingApprovalsCard() {
                     <i data-lucide="qr-code" class="w-4 h-4 mb-0.5 text-amber-600"></i>QR Web
                   </div>`
             }
-            <div class="space-y-0.5 text-xs min-w-0">
+            <div class="space-y-1 text-xs min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white tabular-nums font-extrabold text-[11px]">${escapeHtml(
                   reqBatchInfo.studentCode || req.studentCode || 'Chưa gán HS'
@@ -10144,7 +10392,7 @@ function renderFinancePendingApprovalsCard() {
       }
                 - Số tiền: <strong class="text-emerald-700 tabular-nums text-sm">${formatCurrency(amtVal)}</strong>
               </div>
-              <div class="text-[11px] text-slate-500 truncate max-w-2xl" title="${escapeAttr(cleanNote || '')}">
+              <div class="text-[11px] text-slate-500 break-words line-clamp-2" title="${escapeAttr(cleanNote || '')}">
                 ${escapeHtml(cleanNote || 'Phụ huynh mở QR chuyển khoản trên web')} • <span class="text-slate-400">${escapeHtml(
         req.submittedAt || ''
       )}</span>
@@ -10152,13 +10400,13 @@ function renderFinancePendingApprovalsCard() {
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end shrink-0" onclick="event.stopPropagation()">
+          <div class="pt-2 border-t border-amber-200/70 flex flex-wrap items-center justify-end gap-1.5 w-full" onclick="event.stopPropagation()">
             ${
               req.receiptUrl
                 ? `<button
                     type="button"
                     onclick="openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(req.studentName)}')"
-                    class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
                   >
                     <i data-lucide="image" class="w-3.5 h-3.5"></i>
                     <span>Ảnh</span>
@@ -10169,7 +10417,7 @@ function renderFinancePendingApprovalsCard() {
               type="button"
               onclick="editPaymentRequestRecord('${escapeAttr(req.id)}')"
               title="Sửa trực tiếp thông tin card chuyển khoản này hoặc đổi sang học sinh khác"
-              class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition"
+              class="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
               <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
               <span>Sửa / Đổi HS</span>
@@ -10178,7 +10426,7 @@ function renderFinancePendingApprovalsCard() {
               type="button"
               onclick="deletePaymentRequestDirectly('${escapeAttr(req.id)}')"
               title="Xóa trực tiếp yêu cầu này và chặn tự động tạo lại"
-              class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition"
+              class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               <span>Xóa</span>
@@ -10186,7 +10434,7 @@ function renderFinancePendingApprovalsCard() {
             <button
               type="button"
               onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Từ chối')"
-              class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition"
+              class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 text-xs font-extrabold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
               <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
               <span>Từ chối</span>
@@ -10194,7 +10442,7 @@ function renderFinancePendingApprovalsCard() {
             <button
               type="button"
               onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Đã duyệt')"
-              class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-1.5  cursor-pointer transition"
+              class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-1 cursor-pointer transition shrink-0 whitespace-nowrap"
             >
               <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
               <span>Duyệt (Đã nhận tiền)</span>
@@ -10210,6 +10458,7 @@ function renderAdminTransactions() {
   const tbody = document.getElementById('admin-transactions-tbody');
   if (!tbody) return;
 
+  syncAllTransactionsBatchWithClassbook(appState);
   renderFinancePendingApprovalsCard();
 
   const pendingList = getFilteredPendingRequestsForFinance();
@@ -10368,7 +10617,7 @@ function renderAdminTransactions() {
                 type="button"
                 onclick="handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Đã duyệt')"
                 title="Duyệt yêu cầu chuyển khoản này và ghi vào Sổ Thu - Chi"
-                class="tc-tx-action-btn bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 "
+                class="tc-tx-action-btn col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600"
               >
                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 <span>Duyệt</span>
@@ -10379,7 +10628,7 @@ function renderAdminTransactions() {
                 title="Sửa trực tiếp hoặc đổi học sinh khác cho card này"
                 class="tc-tx-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200"
               >
-                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                <i data-lucide="pencil" class="w-3 h-3"></i>
                 <span>Sửa</span>
               </button>
               <button
@@ -10388,8 +10637,8 @@ function renderAdminTransactions() {
                 title="Xem đầy đủ thông tin yêu cầu chuyển khoản"
                 class="tc-tx-action-btn bg-slate-100 hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200"
               >
-                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                <span>Chi tiết</span>
+                <i data-lucide="eye" class="w-3 h-3"></i>
+                <span>Xem</span>
               </button>
               <button
                 type="button"
@@ -10397,7 +10646,7 @@ function renderAdminTransactions() {
                 title="Từ chối / Đóng yêu cầu chờ duyệt này"
                 class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
               >
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                <i data-lucide="x" class="w-3 h-3"></i>
                 <span>Từ chối</span>
               </button>
               <button
@@ -10406,7 +10655,7 @@ function renderAdminTransactions() {
                 title="Xóa trực tiếp yêu cầu chờ duyệt này"
                 class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
               >
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
                 <span>Xóa</span>
               </button>
             </div>
@@ -10614,6 +10863,24 @@ function renderAdminTransactions() {
           </td>
           <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             <div class="tc-tx-action-col">
+              <button
+                type="button"
+                onclick="editTransactionRecord('${escapeAttr(t.id)}')"
+                title="Chỉnh sửa thông tin phiếu thu/chi này"
+                class="tc-tx-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200"
+              >
+                <i data-lucide="pencil" class="w-3 h-3"></i>
+                <span>Sửa</span>
+              </button>
+              <button
+                type="button"
+                onclick="deleteTransactionRecord('${escapeAttr(t.id)}')"
+                title="Xóa vĩnh viễn giao dịch này khỏi Sổ Thu - Chi"
+                class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
+              >
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                <span>Xóa</span>
+              </button>
               ${
                 !isTestTx
                   ? `<button
@@ -10624,13 +10891,13 @@ function renderAdminTransactions() {
                           ? 'Bấm để gỡ tag Không ghi nhận và tính lại giao dịch này vào hệ thống'
                           : 'Bấm để gắn tag Không ghi nhận vào hệ thống (bỏ qua khỏi Tổng Thu/Chi, Tồn quỹ, Học phí)'
                       }"
-                      class="tc-tx-action-btn border ${
+                      class="tc-tx-action-btn col-span-2 border ${
                         isExcludedTx
                           ? 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-300'
                           : 'bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white border-slate-300'
                       }"
                     >
-                      <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3.5 h-3.5"></i>
+                      <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3 h-3"></i>
                       <span>${isExcludedTx ? 'Ghi nhận lại' : 'Không ghi nhận'}</span>
                     </button>`
                   : ''
@@ -10645,35 +10912,17 @@ function renderAdminTransactions() {
                           ? 'Bấm để tắt, không cộng khoản STK Nháp này vào Tài khoản chính'
                           : 'Bấm để cộng khoản tiền từ STK Nháp này vào Tài khoản chính'
                       }"
-                      class="tc-tx-action-btn border ${
+                      class="tc-tx-action-btn col-span-2 border ${
                         isDraftIncluded
                           ? 'bg-amber-50 hover:bg-amber-500 text-amber-800 hover:text-white border-amber-300'
                           : 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-300'
                       }"
                     >
-                      <i data-lucide="${isDraftIncluded ? 'pause-circle' : 'plus-circle'}" class="w-3.5 h-3.5"></i>
+                      <i data-lucide="${isDraftIncluded ? 'pause-circle' : 'plus-circle'}" class="w-3 h-3"></i>
                       <span>${isDraftIncluded ? 'Tắt cộng' : 'Cộng TK chính'}</span>
                     </button>`
                   : ''
               }
-              <button
-                type="button"
-                onclick="editTransactionRecord('${escapeAttr(t.id)}')"
-                title="Chỉnh sửa thông tin phiếu thu/chi này"
-                class="tc-tx-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200"
-              >
-                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                <span>Sửa</span>
-              </button>
-              <button
-                type="button"
-                onclick="deleteTransactionRecord('${escapeAttr(t.id)}')"
-                title="Xóa vĩnh viễn giao dịch này khỏi Sổ Thu - Chi"
-                class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
-              >
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                <span>Xóa</span>
-              </button>
             </div>
           </td>
         </tr>
@@ -10909,6 +11158,73 @@ function buildCompactTransactionInfo(tx, stateObj = appState) {
 
 let _activeDetailTxKey = '';
 
+function adjustTransactionItemBatch(itemKey, delta = 1) {
+  const key = String(itemKey || '').trim();
+  if (!key) return;
+  const isReq = key.startsWith('REQ::');
+  const cleanId = key.replace(/^REQ::/i, '');
+  const item = isReq
+    ? (appState.paymentRequests || []).find(r => r && r.id === cleanId)
+    : (appState.transactions || []).find(t => t && t.id === cleanId);
+  if (!item) return;
+
+  const bInfo = resolveTransactionBatchInfo(item, appState);
+  const currentLabel = bInfo.batchLabel || item.batchLabel || 'ĐỢT 1';
+  const m = String(currentLabel).match(/(\d+)/);
+  const curNum = m ? Number(m[1]) : 1;
+  const nextNum = Math.max(1, curNum + Number(delta || 0));
+  const nextBatch = formatBatchDisplayLabel(`ĐỢT ${nextNum}`);
+
+  const stu =
+    bInfo.matchedStu ||
+    resolveStudentFromModalInput(
+      item.studentCode || item.studentName || bInfo.studentCode || bInfo.studentName,
+      item.studentRecordId,
+      appState
+    );
+  const cls = String(stu?.className || bInfo.className || item.className || '').trim();
+
+  item.batchLabel = nextBatch;
+  if (stu) {
+    item.studentRecordId = stu.id;
+    item.studentCode = stu.studentCode || item.studentCode;
+    item.studentName = stu.fullName || item.studentName;
+    item.className = stu.className || cls;
+  }
+
+  if (!isReq && item.id) {
+    const editedMap = getEditedTxOverridesMap(appState);
+    if (editedMap[item.id]) {
+      editedMap[item.id].batchLabel = nextBatch;
+      saveEditedTxOverridesMap(editedMap, appState);
+    }
+  }
+
+  if (cls) {
+    const map = getClassSchedulesMap();
+    const curCfg = findClassScheduleConfig(cls, map, appState) || getDefaultClassScheduleConfig(cls);
+    const oldBatch = curCfg.batchLabel || currentLabel;
+    curCfg.className = cls;
+    curCfg.batchLabel = nextBatch;
+    map[cls] = curCfg;
+    saveClassSchedulesMap(map);
+    syncClassCurrentBatchOnTransactions(cls, oldBatch, nextBatch, curCfg.periodLabel || '', curCfg.rolledOverAt || '', appState);
+  }
+
+  if (stu && (isReq || (item.type === 'Thu' && !isTransactionExcludedFromSystem(item)))) {
+    const amt = normalizeStoredVnd(item.amount) || normalizeStoredVnd(stu.tuitionFee) || 600000;
+    applyStudentAssignmentToClassbook(stu, amt, item.date || item.submittedAt || '', item.receiptUrl || '');
+  }
+
+  refreshAllViewsAfterStudentLinkChange();
+  if (_activeDetailTxKey === key) {
+    openTransactionDetailModal(key);
+  }
+  triggerAutoSyncIfNeeded(
+    `Đã cập nhật số đợt thành ${nextBatch}${cls ? ` (đồng bộ Lớp ${cls})` : ''}${stu ? ` • HS ${stu.fullName}` : ''}!`
+  );
+}
+
 function openTransactionDetailModal(itemKey) {
   const modal = document.getElementById('transaction-detail-modal');
   const headerEl = document.getElementById('tx-detail-header');
@@ -10930,12 +11246,14 @@ function openTransactionDetailModal(itemKey) {
       return;
     }
     const isDraftReq = isDraftPaymentRequest(req);
-    const linkedStu = (appState.students || []).find(
-      s => s.id === req.studentRecordId || (s.studentCode && s.studentCode === req.studentCode)
-    );
+    const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
+    const linkedStu =
+      reqBatchInfo.matchedStu ||
+      (appState.students || []).find(
+        s => s.id === req.studentRecordId || (s.studentCode && s.studentCode === req.studentCode)
+      );
     const amtVal = normalizeStoredVnd(req.amount) || (linkedStu ? normalizeStoredVnd(linkedStu.tuitionFee) : 600000);
 
-    const reqBatchInfo = resolveTransactionBatchInfo(req, appState);
     const reqBatchClass = getBatchBadgeColorClass(reqBatchInfo.batchLabel);
     const hasLinkedReqStu = Boolean(linkedStu || reqBatchInfo.studentCode || req.studentCode || reqBatchInfo.studentName || req.studentName);
     const dispReqStuName = reqBatchInfo.studentName || linkedStu?.fullName || req.studentName || 'Chưa gán học sinh';
@@ -10943,7 +11261,7 @@ function openTransactionDetailModal(itemKey) {
     const dispReqClass = reqBatchInfo.className || linkedStu?.className || req.className || '---';
     const dispReqPeriod = normalizePeriodValue(reqBatchInfo.periodLabel || req.period || linkedStu?.period || '');
 
-    if (headerEl) headerEl.className = 'tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3';
+    if (headerEl) headerEl.className = 'tc-dialog-header-indigo px-5 py-3 text-white flex items-center justify-between gap-3 shrink-0';
     if (badgeEl) badgeEl.textContent = 'THANH CHÍ EDU • YÊU CẦU CHỜ DUYỆT (CÓ THỂ SỬA TRỰC TIẾP)';
     if (titleEl) {
       titleEl.textContent = [
@@ -10956,149 +11274,166 @@ function openTransactionDetailModal(itemKey) {
     }
 
     bodyEl.innerHTML = `
-      <div class="tc-detail-amount-card is-pending">
-        <div>
-          <span class="tc-detail-label">Số tiền chờ duyệt</span>
-          <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value">+${formatCurrency(amtVal)}</span>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
+        <div class="md:col-span-5 space-y-2.5">
+          <div class="tc-detail-amount-card is-pending">
+            <div>
+              <span class="tc-detail-label">Số tiền chờ duyệt</span>
+              <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value">+${formatCurrency(amtVal)}</span>
+            </div>
+            <span class="tc-detail-badge-type">
+              <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+              <span>Đang chờ duyệt</span>
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="tc-detail-label">Mã yêu cầu</span>
+              <span class="tabular-nums font-bold text-slate-800 break-all">${escapeHtml(req.id)}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="tc-detail-label">Thời gian gửi</span>
+              <span class="font-bold text-slate-800">${escapeHtml(req.submittedAt || 'Vừa gửi')}</span>
+            </div>
+          </div>
+          ${
+            isDraftReq
+              ? `<div class="p-2.5 rounded-xl bg-amber-100/80 border border-amber-300 text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                   <i data-lucide="tag" class="w-4 h-4 shrink-0"></i>
+                   <span>Yêu cầu này thuộc <strong>STK Nháp (5801434567)</strong>.</span>
+                 </div>`
+              : ''
+          }
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="tc-detail-label">Chứng từ / Ảnh biên lai</span>
+              <span class="text-xs font-bold ${req.receiptUrl ? 'text-emerald-700' : 'text-slate-400'}">
+                ${req.receiptUrl ? 'Đã có ảnh chứng từ' : 'Chưa có ảnh chứng từ'}
+              </span>
+            </div>
+            ${
+              req.receiptUrl
+                ? `<button
+                     type="button"
+                     onclick="openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(dispReqStuName)}')"
+                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer transition shrink-0"
+                   >
+                     <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                     <span>Xem ảnh</span>
+                   </button>`
+                : ''
+            }
+          </div>
         </div>
-        <span class="tc-detail-badge-type">
-          <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-          <span>Đang chờ duyệt</span>
-        </span>
-      </div>
-      <div class="grid grid-cols-2 gap-2.5 text-xs">
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="tc-detail-label">Mã yêu cầu</span>
-          <span class="tabular-nums font-bold text-slate-800 break-all">${escapeHtml(req.id)}</span>
-        </div>
-        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-          <span class="tc-detail-label">Thời gian gửi</span>
-          <span class="font-bold text-slate-800">${escapeHtml(req.submittedAt || 'Vừa gửi')}</span>
-        </div>
-        ${
-          hasLinkedReqStu
-            ? `<div class="col-span-2 tc-linked-stu-box ${reqBatchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} p-3 flex flex-wrap items-center justify-between gap-2.5">
-                <div class="min-w-0">
-                  <span class="tc-detail-label">Học sinh liên kết &amp; Đợt học phí</span>
-                  <div class="flex flex-wrap items-center gap-2 mt-1">
+
+        <div class="md:col-span-7 space-y-2.5">
+          ${
+            hasLinkedReqStu
+              ? `<div class="tc-linked-stu-box ${reqBatchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} p-3 flex flex-col gap-2">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="tc-detail-label mb-0">Học sinh liên kết &amp; Đợt học phí (Theo Lớp học)</span>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      ${
+                        linkedStu
+                          ? `<button
+                              type="button"
+                              onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(linkedStu.id)}')"
+                              class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                            >
+                              Hồ sơ HS ↗
+                            </button>`
+                          : ''
+                      }
+                      <button
+                        type="button"
+                        onclick="handleUnassignStudentFromTx('${escapeAttr(key)}')"
+                        title="Bỏ gán hoặc đổi sang học sinh khác ngay tại đây"
+                        class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-500 text-amber-900 hover:text-white border border-amber-300 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                      >
+                        Đổi HS khác
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-1.5">
                     <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white tabular-nums font-extrabold text-xs">${escapeHtml(dispReqStuCode)}</span>
                     <span class="font-extrabold text-slate-900 dark:text-slate-100 text-sm">${escapeHtml(dispReqStuName)}</span>
                     <span class="px-2 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs">Lớp ${escapeHtml(dispReqClass)}</span>
-                    ${
-                      reqBatchInfo.batchLabel
-                        ? `<span class="tc-batch-badge ${reqBatchClass}">${escapeHtml(reqBatchInfo.batchLabel)}</span>`
-                        : ''
-                    }
+                    <div class="inline-flex items-center gap-1 bg-white/90 px-1.5 py-0.5 rounded-lg border border-slate-200">
+                      <button
+                        type="button"
+                        onclick="adjustTransactionItemBatch('${escapeAttr(key)}', -1)"
+                        title="Giảm số đợt học phí (đồng bộ với Lớp học)"
+                        class="w-5 h-5 rounded bg-slate-100 hover:bg-rose-100 text-rose-600 font-black text-xs flex items-center justify-center cursor-pointer"
+                      >−</button>
+                      <span class="tc-batch-badge ${reqBatchClass}">${escapeHtml(reqBatchInfo.batchLabel || 'ĐỢT 1')}</span>
+                      <button
+                        type="button"
+                        onclick="adjustTransactionItemBatch('${escapeAttr(key)}', 1)"
+                        title="Tăng số đợt học phí (đồng bộ với Lớp học)"
+                        class="w-5 h-5 rounded bg-slate-100 hover:bg-emerald-100 text-emerald-600 font-black text-xs flex items-center justify-center cursor-pointer"
+                      >+</button>
+                    </div>
                     <span class="font-bold text-slate-600 dark:text-slate-300 text-xs">${escapeHtml(dispReqPeriod || '---')}</span>
                   </div>
-                  <div class="text-xs font-bold text-indigo-700 dark:text-indigo-300 mt-1.5">
-                    Số tiền <strong>+${formatCurrency(amtVal)}</strong> này là của <strong>${escapeHtml(reqBatchInfo.batchLabel || 'Kỳ hiện tại')}</strong>${dispReqPeriod ? ` (${escapeHtml(dispReqPeriod)})` : ''} • Người gửi: ${escapeHtml(req.payerName || 'Phụ huynh')}
+                  <div class="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                    Số tiền <strong>+${formatCurrency(amtVal)}</strong> của <strong>${escapeHtml(reqBatchInfo.batchLabel || 'Kỳ hiện tại')}</strong>${dispReqPeriod ? ` (${escapeHtml(dispReqPeriod)})` : ''} • Người gửi: ${escapeHtml(req.payerName || 'Phụ huynh')}
                   </div>
-                </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  ${
-                    linkedStu
-                      ? `<button
+                </div>`
+              : `<div class="p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-sm flex flex-col gap-2">
+                  <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
+                    <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                    <span class="shrink-0 font-bold">Chọn / Đổi Học Sinh</span>
+                    <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã HS (kèm số đợt) để gán vào Lớp học</span>
+                  </div>
+                  <div class="flex items-center gap-2 w-full" onclick="event.stopPropagation()">
+                    <div class="relative flex-1 min-w-0">
+                      <input type="hidden" id="quick-assign-stu-id-${escapeAttr(key)}" value="" />
+                      <div class="relative flex items-center">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"></i>
+                        <input
+                          id="quick-assign-stu-input-${escapeAttr(key)}"
+                          type="text"
+                          placeholder="Điền tên hoặc mã HS..."
+                          autocomplete="off"
+                          class="w-full pl-8 pr-7 py-2 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
+                          oninput="handleQuickAssignSearchInput('${escapeAttr(key)}', this.value)"
+                          onfocus="handleQuickAssignSearchInput('${escapeAttr(key)}', this.value)"
+                          onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(key)}');if(b)b.classList.add('hidden');},260)"
+                          onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();handleQuickAssignStudentToTx('${escapeAttr(key)}');}"
+                        />
+                        <button
+                          id="quick-assign-clear-btn-${escapeAttr(key)}"
                           type="button"
-                          onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(linkedStu.id)}')"
-                          class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                          onclick="event.stopPropagation(); clearQuickAssignSelection('${escapeAttr(key)}')"
+                          title="Xóa lựa chọn"
+                          class="hidden absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
                         >
-                          Hồ sơ HS ↗
-                        </button>`
-                      : ''
-                  }
-                  <button
-                    type="button"
-                    onclick="handleUnassignStudentFromTx('${escapeAttr(key)}')"
-                    title="Bỏ gán hoặc đổi sang học sinh khác ngay tại đây"
-                    class="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-500 text-amber-900 hover:text-white border border-amber-300 text-[11px] font-extrabold transition cursor-pointer shrink-0"
-                  >
-                    Đổi HS khác
-                  </button>
-                </div>
-              </div>`
-            : `<div class="col-span-2 p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-sm flex flex-col gap-2.5">
-                <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
-                  <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                  <span class="shrink-0 font-bold">Chọn / Đổi Học Sinh</span>
-                  <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã HS để gán và tự động đánh dấu trong mục Lớp học</span>
-                </div>
-                <div class="flex items-center gap-2 w-full" onclick="event.stopPropagation()">
-                  <div class="relative flex-1 min-w-0">
-                    <input type="hidden" id="quick-assign-stu-id-${escapeAttr(key)}" value="" />
-                    <div class="relative flex items-center">
-                      <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"></i>
-                      <input
-                        id="quick-assign-stu-input-${escapeAttr(key)}"
-                        type="text"
-                        placeholder="Điền tên hoặc mã HS..."
-                        autocomplete="off"
-                        class="w-full pl-8 pr-7 py-2 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
-                        oninput="handleQuickAssignSearchInput('${escapeAttr(key)}', this.value)"
-                        onfocus="handleQuickAssignSearchInput('${escapeAttr(key)}', this.value)"
-                        onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(key)}');if(b)b.classList.add('hidden');},260)"
-                        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();handleQuickAssignStudentToTx('${escapeAttr(key)}');}"
-                      />
-                      <button
-                        id="quick-assign-clear-btn-${escapeAttr(key)}"
-                        type="button"
-                        onclick="event.stopPropagation(); clearQuickAssignSelection('${escapeAttr(key)}')"
-                        title="Xóa lựa chọn"
-                        class="hidden absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
-                      >
-                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                      </button>
+                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                      <div
+                        id="quick-assign-suggest-box-${escapeAttr(key)}"
+                        onclick="event.stopPropagation()"
+                        class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[100] divide-y divide-slate-100"
+                      ></div>
                     </div>
-                    <div
-                      id="quick-assign-suggest-box-${escapeAttr(key)}"
-                      onclick="event.stopPropagation()"
-                      class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[100] divide-y divide-slate-100"
-                    ></div>
+                    <button
+                      type="button"
+                      onclick="event.stopPropagation(); handleQuickAssignStudentToTx('${escapeAttr(key)}')"
+                      class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm whitespace-nowrap h-[36px]"
+                      title="Gán học sinh này vào card và tự động đánh dấu Đã đóng trong mục Lớp học"
+                    >
+                      <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                      <span>Gán HS</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onclick="event.stopPropagation(); handleQuickAssignStudentToTx('${escapeAttr(key)}')"
-                    class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm whitespace-nowrap h-[36px]"
-                    title="Gán học sinh này vào card và tự động đánh dấu Đã đóng trong mục Lớp học"
-                  >
-                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                    <span>Gán HS</span>
-                  </button>
-                </div>
-              </div>`
-        }
-      </div>
-      ${
-        isDraftReq
-          ? `<div class="p-2.5 rounded-xl bg-amber-100/80 border border-amber-300 text-xs font-bold text-amber-950 flex items-center gap-1.5">
-               <i data-lucide="tag" class="w-4 h-4 shrink-0"></i>
-               <span>Yêu cầu này thuộc <strong>STK Nháp (5801434567)</strong>.</span>
-             </div>`
-          : ''
-      }
-      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-        <span class="tc-detail-label">Ghi chú / Nội dung chuyển khoản đầy đủ</span>
-        <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(req.note || 'Phụ huynh xác nhận chuyển khoản học phí')}</p>
-      </div>
-      <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
-        <div>
-          <span class="tc-detail-label">Chứng từ / Ảnh biên lai đính kèm</span>
-          <span class="text-xs font-bold ${req.receiptUrl ? 'text-emerald-700' : 'text-slate-400'}">
-            ${req.receiptUrl ? 'Đã có ảnh chứng từ đính kèm' : 'Chưa có ảnh chứng từ'}
-          </span>
+                </div>`
+          }
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <span class="tc-detail-label">Ghi chú / Nội dung chuyển khoản đầy đủ</span>
+            <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(req.note || 'Phụ huynh xác nhận chuyển khoản học phí')}</p>
+          </div>
         </div>
-        ${
-          req.receiptUrl
-            ? `<button
-                 type="button"
-                 onclick="openReceiptViewer('${escapeAttr(req.receiptUrl)}', 'Biên lai ${escapeAttr(dispReqStuName)}')"
-                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer transition shrink-0"
-               >
-                 <i data-lucide="image" class="w-3.5 h-3.5"></i>
-                 <span>Xem ảnh chứng từ</span>
-               </button>`
-            : ''
-        }
       </div>
     `;
 
@@ -11138,7 +11473,7 @@ function openTransactionDetailModal(itemKey) {
         <button
           type="button"
           onclick="closeTransactionDetailModal(); handleReviewPaymentRequest('${escapeAttr(req.id)}', 'Đã duyệt')"
-          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold  transition cursor-pointer inline-flex items-center gap-1.5"
+          class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5"
         >
           <i data-lucide="check-circle-2" class="w-4 h-4"></i>
           <span>Duyệt & Ghi Sổ Thu</span>
@@ -11168,7 +11503,7 @@ function openTransactionDetailModal(itemKey) {
   if (headerEl) {
     headerEl.className = `${
       isExcludedTx ? 'tc-dialog-header-indigo' : isIncome ? 'tc-dialog-header-emerald' : 'tc-dialog-header-danger'
-    } px-5 py-4 text-white flex items-center justify-between gap-3`;
+    } px-5 py-3 text-white flex items-center justify-between gap-3 shrink-0`;
   }
   if (badgeEl) {
     badgeEl.textContent = `THANH CHÍ EDU • CHI TIẾT PHIẾU ${isIncome ? 'THU (+)' : 'CHI (-)'}${
@@ -11180,142 +11515,120 @@ function openTransactionDetailModal(itemKey) {
   }
 
   bodyEl.innerHTML = `
-    <div class="tc-detail-amount-card ${isIncome ? 'is-income' : 'is-expense'}">
-      <div>
-        <span class="tc-detail-label">
-          Số tiền giao dịch ${isExcludedTx ? '(Đã gắn tag không ghi nhận)' : ''}
-        </span>
-        <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value ${
-          isExcludedTx ? 'line-through opacity-75' : ''
-        }">
-          ${isIncome ? '+' : '-'}${formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount)}
-        </span>
-      </div>
-      <div class="flex flex-col items-end gap-1.5">
-        <span class="tc-detail-badge-type">
-          ${isIncome ? '+ Phiếu Thu' : '- Phiếu Chi'} • ${escapeHtml(tx.category || 'Sổ quỹ')}
-        </span>
-        ${
-          isExcludedTx
-            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-white text-xs font-extrabold">
-                <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
-                <span>${escapeHtml(txTagLabel || 'Không ghi nhận hệ thống')}</span>
-              </span>`
-            : txTagLabel
-            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold">
-                <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
-                <span>${escapeHtml(txTagLabel)}</span>
-              </span>`
-            : ''
-        }
-        ${
-          isDraftTx
-            ? `<span class="tc-detail-badge-draft">
-                <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
-                <span>STK Nháp (5801434567) • ${isDraftIncluded ? 'Đang cộng TK chính' : 'Chưa cộng TK chính'}</span>
-              </span>`
-            : `<span class="tc-detail-badge-account">
-                <i data-lucide="landmark" class="w-3 h-3 shrink-0"></i>
-                <span>Tài khoản Chính</span>
-              </span>`
-        }
-      </div>
-    </div>
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
+      <div class="md:col-span-5 space-y-2.5">
+        <div class="tc-detail-amount-card ${isIncome ? 'is-income' : 'is-expense'}">
+          <div>
+            <span class="tc-detail-label">
+              Số tiền giao dịch ${isExcludedTx ? '(Đã gắn tag không ghi nhận)' : ''}
+            </span>
+            <span class="text-xl sm:text-2xl font-black tabular-nums tc-detail-amount-value ${
+              isExcludedTx ? 'line-through opacity-75' : ''
+            }">
+              ${isIncome ? '+' : '-'}${formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount)}
+            </span>
+          </div>
+          <div class="flex flex-col items-end gap-1">
+            <span class="tc-detail-badge-type">
+              ${isIncome ? '+ Phiếu Thu' : '- Phiếu Chi'} • ${escapeHtml(tx.category || 'Sổ quỹ')}
+            </span>
+            ${
+              isExcludedTx
+                ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-white text-xs font-extrabold">
+                    <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
+                    <span>${escapeHtml(txTagLabel || 'Không ghi nhận hệ thống')}</span>
+                  </span>`
+                : txTagLabel
+                ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-300 text-xs font-extrabold">
+                    <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
+                    <span>${escapeHtml(txTagLabel)}</span>
+                  </span>`
+                : ''
+            }
+            ${
+              isDraftTx
+                ? `<span class="tc-detail-badge-draft">
+                    <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
+                    <span>STK Nháp (5801434567) • ${isDraftIncluded ? 'Đang cộng TK chính' : 'Chưa cộng TK chính'}</span>
+                  </span>`
+                : `<span class="tc-detail-badge-account">
+                    <i data-lucide="landmark" class="w-3 h-3 shrink-0"></i>
+                    <span>Tài khoản Chính</span>
+                  </span>`
+            }
+          </div>
+        </div>
 
-    ${
-      !isTestTx
-        ? `<div class="p-3 rounded-2xl border-2 ${
-            isExcludedTx
-              ? 'bg-slate-100 border-slate-400'
-              : 'bg-slate-50/90 border-slate-200'
-          } space-y-2">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <i data-lucide="${isExcludedTx ? 'eye-off' : 'tag'}" class="w-4 h-4 ${
-                  isExcludedTx ? 'text-slate-800' : 'text-indigo-600'
-                } shrink-0"></i>
-                <div>
-                  <div class="text-xs font-extrabold text-slate-900">
-                    ${
-                      isExcludedTx
-                        ? 'Đang gắn tag: KHÔNG GHI NHẬN VÀO HỆ THỐNG'
-                        : 'Gắn Tag & Trạng Thái Ghi Nhận Hệ Thống'
-                    }
-                  </div>
-                  <div class="text-[11px] text-slate-500">
-                    ${
-                      isExcludedTx
-                        ? 'Giao dịch này đang được bỏ qua khỏi Tổng Thu/Chi, Tồn quỹ, Số dư Web và Học phí học sinh.'
-                        : 'Bấm gắn tag nếu đây là khoản chuyển nhầm, giao dịch nội bộ hoặc bạn không muốn tính vào sổ quỹ hệ thống.'
-                    }
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onclick="toggleTransactionExcludedFromSystem('${escapeAttr(tx.id)}', document.getElementById('tx-detail-tag-input-${escapeAttr(tx.id)}')?.value)"
-                class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                  isExcludedTx
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'bg-slate-800 hover:bg-slate-950 text-white'
-                }"
-              >
-                <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3.5 h-3.5"></i>
-                <span>${isExcludedTx ? 'Ghi nhận lại vào hệ thống' : 'Không ghi nhận vào hệ thống'}</span>
-              </button>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5 pt-1">
-              <input
-                id="tx-detail-tag-input-${escapeAttr(tx.id)}"
-                type="text"
-                value="${escapeAttr(txTagLabel || (isExcludedTx ? 'Không ghi nhận hệ thống' : ''))}"
-                placeholder="Nhãn tag (VD: Không ghi nhận hệ thống, Chuyển nhầm, Nội bộ...)"
-                class="flex-1 min-w-[180px] px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <button
-                type="button"
-                onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true)"
-                class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-800 text-slate-800 hover:text-white text-xs font-extrabold transition cursor-pointer"
-                title="Lưu tên tag và đánh dấu Không ghi nhận vào hệ thống"
-              >
-                Lưu Tag &amp; Không ghi nhận
-              </button>
-            </div>
-            <div class="flex flex-wrap items-center gap-1 text-[11px]">
-              <span class="text-slate-400 font-semibold mr-1">Tag nhanh:</span>
-              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Không ghi nhận hệ thống')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Không ghi nhận hệ thống</button>
-              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Chuyển nhầm')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Chuyển nhầm</button>
-              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Giao dịch nội bộ')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Giao dịch nội bộ</button>
-              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Thu/Chi hộ')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Thu/Chi hộ</button>
-              <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Test / Nháp')" class="px-2 py-0.5 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Test / Nháp</button>
-            </div>
-          </div>`
-        : ''
-    }
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="tc-detail-label">Mã giao dịch</span>
+            <span class="tabular-nums font-bold text-slate-800 break-all">${escapeHtml(tx.id)}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="tc-detail-label">Ngày &amp; Phương thức</span>
+            <span class="font-bold text-slate-800">${escapeHtml(tx.date || '---')} • ${escapeHtml(tx.method || 'Chuyển khoản')}</span>
+          </div>
+        </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-      <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-        <span class="tc-detail-label">Mã giao dịch đầy đủ</span>
-        <span class="tabular-nums font-bold text-slate-800 break-all">${escapeHtml(tx.id)}</span>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="tc-detail-label">Chứng từ / Ảnh biên lai</span>
+            <span class="text-xs font-bold ${tx.receiptUrl ? 'text-emerald-700' : 'text-slate-400'}">
+              ${tx.receiptUrl ? 'Đã có ảnh chứng từ' : 'Chưa có ảnh chứng từ'}
+            </span>
+          </div>
+          ${
+            tx.receiptUrl
+              ? `<button
+                   type="button"
+                   onclick="openReceiptViewer('${escapeAttr(tx.receiptUrl)}', 'Chứng từ ${escapeAttr(tx.id)}')"
+                   class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer transition shrink-0"
+                 >
+                   <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                   <span>Xem ảnh</span>
+                 </button>`
+              : ''
+          }
+        </div>
       </div>
-      <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-        <span class="tc-detail-label">Ngày ghi nhận & Phương thức</span>
-        <span class="font-bold text-slate-800">${escapeHtml(tx.date || '---')} • ${escapeHtml(tx.method || 'Chuyển khoản')}</span>
-      </div>
-      ${
-        compact.matchedStu || compact.studentCode || compact.batchInfo?.studentName
-          ? (() => {
-              const bInfo = compact.batchInfo || resolveTransactionBatchInfo(tx, appState);
-              const bColor = getBatchBadgeColorClass(bInfo.batchLabel);
-              const dispAmt = formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount);
-              const dispCode = bInfo.studentCode || compact.studentCode || 'HS';
-              const dispName = bInfo.studentName || (compact.matchedStu ? compact.matchedStu.fullName : '') || 'Học sinh';
-              const dispPeriod = normalizePeriodValue(bInfo.periodLabel || '');
-              return `<div class="sm:col-span-2 tc-linked-stu-box ${
-                bInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'
-              } p-3 flex flex-wrap items-center justify-between gap-2.5">
-               <div class="space-y-1 min-w-0">
-                 <span class="tc-detail-label">Học sinh liên kết &amp; Đợt học phí</span>
+
+      <div class="md:col-span-7 space-y-2.5">
+        ${
+          compact.matchedStu || compact.studentCode || compact.batchInfo?.studentName
+            ? (() => {
+                const bInfo = compact.batchInfo || resolveTransactionBatchInfo(tx, appState);
+                const bColor = getBatchBadgeColorClass(bInfo.batchLabel);
+                const dispAmt = formatCurrency(isTestTx ? tx.testDisplayAmount || 600000 : tx.amount);
+                const dispCode = bInfo.studentCode || compact.studentCode || 'HS';
+                const dispName = bInfo.studentName || (compact.matchedStu ? compact.matchedStu.fullName : '') || 'Học sinh';
+                const dispPeriod = normalizePeriodValue(bInfo.periodLabel || '');
+                return `<div class="tc-linked-stu-box ${
+                  bInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'
+                } p-3 flex flex-col gap-2">
+                 <div class="flex flex-wrap items-center justify-between gap-2">
+                   <span class="tc-detail-label mb-0">Học sinh liên kết &amp; Đợt học phí (Theo Lớp học)</span>
+                   <div class="flex items-center gap-1.5 shrink-0">
+                     ${
+                       compact.matchedStu
+                         ? `<button
+                              type="button"
+                              onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(compact.matchedStu.id)}')"
+                              class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                            >
+                              Hồ sơ HS ↗
+                            </button>`
+                         : ''
+                     }
+                     <button
+                       type="button"
+                       onclick="handleUnassignStudentFromTx('${escapeAttr(tx.id)}')"
+                       title="Bỏ gán hoặc đổi học sinh khác cho giao dịch này"
+                       class="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold transition cursor-pointer shrink-0"
+                     >
+                       Đổi HS
+                     </button>
+                   </div>
+                 </div>
                  <div class="flex flex-wrap items-center gap-1.5">
                    <span class="px-2 py-0.5 rounded-md bg-blue-600 text-white tabular-nums font-extrabold text-xs">${escapeHtml(
                      dispCode
@@ -11330,11 +11643,21 @@ function openTransactionDetailModal(itemKey) {
                          )}</span>`
                        : ''
                    }
-                   ${
-                     bInfo.batchLabel
-                       ? `<span class="tc-batch-badge ${bColor}">${escapeHtml(bInfo.batchLabel)}</span>`
-                       : ''
-                   }
+                   <div class="inline-flex items-center gap-1 bg-white/90 px-1.5 py-0.5 rounded-lg border border-slate-200">
+                     <button
+                       type="button"
+                       onclick="adjustTransactionItemBatch('${escapeAttr(tx.id)}', -1)"
+                       title="Giảm số đợt học phí (đồng bộ với Lớp học)"
+                       class="w-5 h-5 rounded bg-slate-100 hover:bg-rose-100 text-rose-600 font-black text-xs flex items-center justify-center cursor-pointer"
+                     >−</button>
+                     <span class="tc-batch-badge ${bColor}">${escapeHtml(bInfo.batchLabel || 'ĐỢT 1')}</span>
+                     <button
+                       type="button"
+                       onclick="adjustTransactionItemBatch('${escapeAttr(tx.id)}', 1)"
+                       title="Tăng số đợt học phí (đồng bộ với Lớp học)"
+                       class="w-5 h-5 rounded bg-slate-100 hover:bg-emerald-100 text-emerald-600 font-black text-xs flex items-center justify-center cursor-pointer"
+                     >+</button>
+                   </div>
                    ${
                      dispPeriod
                        ? `<span class="text-xs font-bold text-slate-600 dark:text-slate-300">• ${escapeHtml(dispPeriod)}${
@@ -11352,119 +11675,139 @@ function openTransactionDetailModal(itemKey) {
                      bInfo.className ? ` • Lớp ${escapeHtml(bInfo.className)}` : ''
                    }
                  </div>
-               </div>
-               <div class="flex items-center gap-1.5 shrink-0">
-                 ${
-                   compact.matchedStu
-                     ? `<button
+               </div>`;
+              })()
+            : isIncome
+             ? `<div class="p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-sm flex flex-col gap-2">
+                  <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
+                    <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                    <span class="shrink-0 font-bold">Chưa gán học sinh</span>
+                    <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã HS bên dưới để gán và tự động ghi nhận học phí</span>
+                  </div>
+                  <div class="flex items-center gap-2 w-full" onclick="event.stopPropagation()">
+                    <div class="relative flex-1 min-w-0">
+                      <input type="hidden" id="quick-assign-stu-id-${escapeAttr(tx.id)}" value="" />
+                      <div class="relative flex items-center">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"></i>
+                        <input
+                          id="quick-assign-stu-input-${escapeAttr(tx.id)}"
+                          type="text"
+                          placeholder="Điền tên hoặc mã HS..."
+                          autocomplete="off"
+                          class="w-full pl-8 pr-7 py-2 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
+                          oninput="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
+                          onfocus="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
+                          onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(tx.id)}');if(b)b.classList.add('hidden');},260)"
+                          onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();handleQuickAssignStudentToTx('${escapeAttr(tx.id)}');}"
+                        />
+                        <button
+                          id="quick-assign-clear-btn-${escapeAttr(tx.id)}"
                           type="button"
-                          onclick="closeTransactionDetailModal(); openStudentDetailModal('${escapeAttr(compact.matchedStu.id)}')"
-                          class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-900 text-slate-900 hover:text-white border border-slate-200 text-[11px] font-extrabold transition cursor-pointer shrink-0"
+                          onclick="event.stopPropagation(); clearQuickAssignSelection('${escapeAttr(tx.id)}')"
+                          title="Xóa lựa chọn"
+                          class="hidden absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
                         >
-                          Hồ sơ HS ↗
-                        </button>`
-                     : ''
-                 }
-                 <button
-                   type="button"
-                   onclick="handleUnassignStudentFromTx('${escapeAttr(tx.id)}')"
-                   title="Bỏ gán hoặc đổi học sinh khác cho giao dịch này"
-                   class="px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-bold transition cursor-pointer shrink-0"
-                 >
-                   Đổi HS
-                 </button>
-               </div>
-             </div>`;
-            })()
-          : isIncome
-           ? `<div class="sm:col-span-2 p-3 rounded-2xl bg-amber-50/90 border-2 border-amber-300 shadow-sm flex flex-col gap-2.5">
-                <div class="flex items-center gap-2 text-xs font-extrabold text-amber-950 whitespace-nowrap overflow-hidden">
-                  <i data-lucide="user-plus" class="w-4 h-4 text-amber-600 shrink-0"></i>
-                  <span class="shrink-0 font-bold">Chưa gán học sinh</span>
-                  <span class="text-[11px] font-normal text-amber-800 truncate">— Điền tên hoặc mã HS bên dưới để gán và tự động ghi nhận học phí</span>
-                </div>
-                <div class="flex items-center gap-2 w-full" onclick="event.stopPropagation()">
-                  <div class="relative flex-1 min-w-0">
-                    <input type="hidden" id="quick-assign-stu-id-${escapeAttr(tx.id)}" value="" />
-                    <div class="relative flex items-center">
-                      <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none"></i>
-                      <input
-                        id="quick-assign-stu-input-${escapeAttr(tx.id)}"
-                        type="text"
-                        placeholder="Điền tên hoặc mã HS..."
-                        autocomplete="off"
-                        class="w-full pl-8 pr-7 py-2 rounded-xl border border-amber-400 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder:text-slate-400 transition"
-                        oninput="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
-                        onfocus="handleQuickAssignSearchInput('${escapeAttr(tx.id)}', this.value)"
-                        onblur="setTimeout(()=>{const b=document.getElementById('quick-assign-suggest-box-${escapeAttr(tx.id)}');if(b)b.classList.add('hidden');},260)"
-                        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();handleQuickAssignStudentToTx('${escapeAttr(tx.id)}');}"
-                      />
-                      <button
-                        id="quick-assign-clear-btn-${escapeAttr(tx.id)}"
-                        type="button"
-                        onclick="event.stopPropagation(); clearQuickAssignSelection('${escapeAttr(tx.id)}')"
-                        title="Xóa lựa chọn"
-                        class="hidden absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
-                      >
-                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                      </button>
+                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                      <div
+                        id="quick-assign-suggest-box-${escapeAttr(tx.id)}"
+                        onclick="event.stopPropagation()"
+                        class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[100] divide-y divide-slate-100"
+                      ></div>
                     </div>
-                    <div
-                      id="quick-assign-suggest-box-${escapeAttr(tx.id)}"
-                      onclick="event.stopPropagation()"
-                      class="hidden absolute left-0 right-0 top-full mt-1 max-h-56 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[100] divide-y divide-slate-100"
-                    ></div>
+                    <button
+                      type="button"
+                      onclick="event.stopPropagation(); handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
+                      class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm whitespace-nowrap h-[36px]"
+                      title="Gán khoản chuyển khoản này cho học sinh & đánh dấu Đã hoàn thành học phí"
+                    >
+                      <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                      <span>Gán &amp; Duyệt</span>
+                    </button>
+                  </div>
+                </div>`
+            : ''
+        }
+
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <span class="tc-detail-label">Nội dung chi tiết &amp; Nội dung chuyển khoản gốc</span>
+          <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(
+            !compact.bankMemo &&
+              !getEditedTxOverridesMap(appState)[tx.id] &&
+              /^Thu học phí(?:\s|$)/i.test(String(tx.description || '').trim())
+              ? compact.tableDescLine
+              : tx.description || tx.category || '---'
+          )}</p>
+          ${
+            tx.createdBy
+              ? `<p class="text-[11px] text-slate-400 pt-1">Nguồn tạo: <strong class="text-slate-800">${escapeHtml(tx.createdBy)}</strong></p>`
+              : ''
+          }
+        </div>
+
+        ${
+          !isTestTx
+            ? `<div class="p-2.5 rounded-2xl border ${
+                isExcludedTx
+                  ? 'bg-slate-100 border-slate-400'
+                  : 'bg-slate-50/90 border-slate-200'
+              } space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <i data-lucide="${isExcludedTx ? 'eye-off' : 'tag'}" class="w-4 h-4 ${
+                      isExcludedTx ? 'text-slate-800' : 'text-indigo-600'
+                    } shrink-0"></i>
+                    <div class="min-w-0">
+                      <div class="text-xs font-extrabold text-slate-900 truncate">
+                        ${
+                          isExcludedTx
+                            ? 'Đang gắn tag: KHÔNG GHI NHẬN VÀO HỆ THỐNG'
+                            : 'Gắn Tag & Trạng Thái Ghi Nhận Hệ Thống'
+                        }
+                      </div>
+                    </div>
                   </div>
                   <button
                     type="button"
-                    onclick="event.stopPropagation(); handleQuickAssignStudentToTx('${escapeAttr(tx.id)}')"
-                    class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition cursor-pointer shrink-0 flex items-center gap-1 shadow-sm whitespace-nowrap h-[36px]"
-                    title="Gán khoản chuyển khoản này cho học sinh & đánh dấu Đã hoàn thành học phí"
+                    onclick="toggleTransactionExcludedFromSystem('${escapeAttr(tx.id)}', document.getElementById('tx-detail-tag-input-${escapeAttr(tx.id)}')?.value)"
+                    class="px-2.5 py-1 rounded-xl text-[11px] font-extrabold transition cursor-pointer inline-flex items-center gap-1 shrink-0 ${
+                      isExcludedTx
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-slate-800 hover:bg-slate-950 text-white'
+                    }"
                   >
-                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                    <span>Gán &amp; Duyệt</span>
+                    <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3 h-3"></i>
+                    <span>${isExcludedTx ? 'Ghi nhận lại' : 'Không ghi nhận'}</span>
                   </button>
                 </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <input
+                    id="tx-detail-tag-input-${escapeAttr(tx.id)}"
+                    type="text"
+                    value="${escapeAttr(txTagLabel || (isExcludedTx ? 'Không ghi nhận hệ thống' : ''))}"
+                    placeholder="Nhãn tag (VD: Chuyển nhầm, Nội bộ...)"
+                    class="flex-1 min-w-[150px] px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true)"
+                    class="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-800 text-slate-800 hover:text-white text-xs font-extrabold transition cursor-pointer"
+                  >
+                    Lưu Tag
+                  </button>
+                </div>
+                <div class="flex flex-wrap items-center gap-1 text-[10px]">
+                  <span class="text-slate-400 font-semibold mr-0.5">Nhanh:</span>
+                  <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Không ghi nhận hệ thống')" class="px-1.5 py-0.5 rounded bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Không ghi nhận</button>
+                  <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Chuyển nhầm')" class="px-1.5 py-0.5 rounded bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Chuyển nhầm</button>
+                  <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Giao dịch nội bộ')" class="px-1.5 py-0.5 rounded bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Nội bộ</button>
+                  <button type="button" onclick="saveTransactionTagFromDetailModal('${escapeAttr(tx.id)}', true, 'Test / Nháp')" class="px-1.5 py-0.5 rounded bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 font-bold cursor-pointer transition">Test / Nháp</button>
+                </div>
               </div>`
-          : ''
-      }
-    </div>
-
-    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-      <span class="tc-detail-label">Nội dung chi tiết & Nội dung chuyển khoản gốc</span>
-      <p class="text-xs sm:text-sm font-semibold text-slate-800 break-words leading-relaxed">${escapeHtml(
-        !compact.bankMemo &&
-          !getEditedTxOverridesMap(appState)[tx.id] &&
-          /^Thu học phí(?:\s|$)/i.test(String(tx.description || '').trim())
-          ? compact.tableDescLine
-          : tx.description || tx.category || '---'
-      )}</p>
-      ${
-        tx.createdBy
-          ? `<p class="text-[11px] text-slate-400 pt-1">Nguồn tạo: <strong class="text-slate-800">${escapeHtml(tx.createdBy)}</strong></p>`
-          : ''
-      }
-    </div>
-
-    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
-      <div>
-        <span class="tc-detail-label">Chứng từ / Ảnh biên lai đính kèm</span>
-        <span class="text-xs font-bold ${tx.receiptUrl ? 'text-emerald-700' : 'text-slate-400'}">
-          ${tx.receiptUrl ? 'Đã có ảnh chứng từ đính kèm' : 'Chưa có ảnh chứng từ'}
-        </span>
+            : ''
+        }
       </div>
-      ${
-        tx.receiptUrl
-          ? `<button
-               type="button"
-               onclick="openReceiptViewer('${escapeAttr(tx.receiptUrl)}', 'Chứng từ ${escapeAttr(tx.id)}')"
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold cursor-pointer transition shrink-0"
-             >
-               <i data-lucide="image" class="w-3.5 h-3.5"></i>
-               <span>Xem ảnh chứng từ</span>
-             </button>`
-          : ''
-      }
     </div>
   `;
 
@@ -11624,12 +11967,22 @@ function handleQuickAssignSearchInput(txId, typedVal) {
 
   if (clearBtn) clearBtn.classList.remove('hidden');
 
-  // 1. Nếu người dùng điền MÃ HỌC SINH -> Tự động nhận đúng học sinh có mã số
-  const rawNorm = norm(raw);
-  const exactCodeMatch = (appState.students || []).find(s => {
-    const codeNorm = norm(s.studentCode);
-    return (codeNorm === rawNorm || (rawNorm.length >= 2 && codeNorm.endsWith(rawNorm))) && rawNorm.length >= 2;
-  });
+  const cleanedRaw = String(raw || '')
+    .replace(/(?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+/gi, ' ')
+    .replace(/\(\s*LỚP[^)]*\)/gi, ' ')
+    .replace(/\bLỚP\s+[^\s•()[\]-]+/gi, ' ')
+    .replace(/[\[\]()•|,-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 1. Nếu người dùng điền MÃ HỌC SINH (hoặc kèm số đợt) -> Tự động nhận đúng học sinh
+  const codeTok = extractCleanStudentCodeToken(raw) || norm(cleanedRaw || raw);
+  const exactCodeMatch =
+    resolveStudentFromModalInput(raw, '', appState) ||
+    (appState.students || []).find(s => {
+      const codeNorm = norm(s.studentCode);
+      return (codeNorm === codeTok || (codeTok.length >= 2 && codeNorm.endsWith(codeTok))) && codeTok.length >= 2;
+    });
 
   if (exactCodeMatch) {
     if (hiddenInput) hiddenInput.value = exactCodeMatch.id;
@@ -11644,7 +11997,7 @@ function handleQuickAssignSearchInput(txId, typedVal) {
       >
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[10px] uppercase">✓ Khớp mã: ${escapeHtml(exactCodeMatch.studentCode || 'HS')}</span>
+            <span class="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[10px] uppercase">✓ Khớp HS: ${escapeHtml(exactCodeMatch.studentCode || 'HS')}</span>
             <span class="font-extrabold text-xs text-emerald-950">${escapeHtml(exactCodeMatch.fullName)}</span>
             <span class="text-[11px] text-emerald-700 font-semibold">(Lớp ${escapeHtml(exactCodeMatch.className || '---')})</span>
             ${
@@ -11679,12 +12032,13 @@ function handleQuickAssignSearchInput(txId, typedVal) {
   textInput.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'ring-2', 'ring-emerald-300');
   textInput.classList.add('border-amber-400');
 
-  const q = removeVietnameseTones(raw.toLowerCase()).replace(/\s+/g, ' ').trim();
+  const q = removeVietnameseTones((cleanedRaw || raw).toLowerCase()).replace(/\s+/g, ' ').trim();
+  const rawNorm = norm(cleanedRaw || raw);
   const candidates = (appState.students || []).filter(s => {
     const sCode = norm(s.studentCode);
     const sName = removeVietnameseTones(String(s.fullName || '').toLowerCase()).trim();
     const sClass = removeVietnameseTones(String(s.className || '').toLowerCase()).trim();
-    return (rawNorm.length >= 2 && sCode.includes(rawNorm)) || sName.includes(q) || sClass.includes(q);
+    return (rawNorm.length >= 2 && sCode.includes(rawNorm)) || (q && sName.includes(q)) || (q && sClass.includes(q));
   });
 
   candidates.sort((a, b) => {
@@ -11890,33 +12244,17 @@ async function handleQuickAssignStudentToTx(txId, explicitStuId = '') {
   const textInput = document.getElementById(`quick-assign-stu-input-${domKey}`) || document.getElementById(`quick-assign-stu-input-${rawKey}`);
   let stuId = explicitStuId || (hiddenInput ? hiddenInput.value : '');
 
-  // Nếu chưa có stuId trong hiddenInput, tự động đối chiếu dựa trên nội dung đã gõ trong textInput
-  if (!stuId && textInput && textInput.value.trim()) {
+  // Nếu chưa có stuId trong hiddenInput, tự động đối chiếu dựa trên nội dung đã gõ trong textInput (hỗ trợ cả khi gõ kèm số đợt)
+  let typedBatchInQuickInput = '';
+  if (textInput && textInput.value.trim()) {
     const raw = textInput.value.trim();
-    const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const rawNorm = norm(raw);
-
-    // 1. Đối chiếu theo mã học sinh (ví dụ HS001 hoặc 001)
-    let found = (appState.students || []).find(s => {
-      const codeNorm = norm(s.studentCode);
-      return (codeNorm === rawNorm || (rawNorm.length >= 2 && codeNorm.endsWith(rawNorm))) && rawNorm.length >= 2;
-    });
-    // 2. Đối chiếu theo tên đầy đủ
-    if (!found) {
-      const q = removeVietnameseTones(raw.toLowerCase()).trim();
-      found = (appState.students || []).find(s => removeVietnameseTones(String(s.fullName || '').toLowerCase()).trim() === q);
-    }
-    // 3. Nếu danh sách tìm kiếm chỉ có đúng 1 học sinh thỏa mãn
-    if (!found) {
-      const q = removeVietnameseTones(raw.toLowerCase()).trim();
-      const matches = (appState.students || []).filter(s => {
-        const sName = removeVietnameseTones(String(s.fullName || '').toLowerCase()).trim();
-        return sName.includes(q);
-      });
-      if (matches.length === 1) found = matches[0];
-    }
-    if (found) {
-      stuId = found.id;
+    const bm = raw.match(/((?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+)(?!\d)/i);
+    if (bm) typedBatchInQuickInput = formatBatchDisplayLabel(bm[1]);
+    if (!stuId) {
+      const found = resolveStudentFromModalInput(raw, '', appState);
+      if (found) {
+        stuId = found.id;
+      }
     }
   }
 
@@ -11929,6 +12267,22 @@ async function handleQuickAssignStudentToTx(txId, explicitStuId = '') {
   if (!student) {
     showToast('Không tìm thấy thông tin học sinh được chọn!', 'error');
     return;
+  }
+
+  const targetBatch =
+    typedBatchInQuickInput || getCurrentBatchLabelForClass(student.className, appState);
+  if (typedBatchInQuickInput && student.className) {
+    const cls = String(student.className).trim();
+    const map = getClassSchedulesMap();
+    const curCfg = findClassScheduleConfig(cls, map, appState) || getDefaultClassScheduleConfig(cls);
+    const oldBatch = curCfg.batchLabel || '';
+    if (normalizeBatchCompareKey(oldBatch) !== normalizeBatchCompareKey(typedBatchInQuickInput)) {
+      curCfg.className = cls;
+      curCfg.batchLabel = typedBatchInQuickInput;
+      map[cls] = curCfg;
+      saveClassSchedulesMap(map);
+      syncClassCurrentBatchOnTransactions(cls, oldBatch, typedBatchInQuickInput, curCfg.periodLabel || '', curCfg.rolledOverAt || '', appState);
+    }
   }
 
   if (req) {
@@ -11944,7 +12298,7 @@ async function handleQuickAssignStudentToTx(txId, explicitStuId = '') {
     req.studentCode = student.studentCode || '';
     req.studentName = student.fullName || '';
     req.className = student.className || '';
-    req.batchLabel = getCurrentBatchLabelForClass(student.className, appState);
+    req.batchLabel = targetBatch;
     req.period = normalizePeriodValue(curClsCfg?.periodLabel || student.period || req.period || '');
 
     const reqDateStr = String(req.submittedAt || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
@@ -11974,7 +12328,7 @@ async function handleQuickAssignStudentToTx(txId, explicitStuId = '') {
   tx.studentCode = student.studentCode || '';
   tx.studentName = student.fullName || '';
   tx.className = student.className || '';
-  tx.batchLabel = getCurrentBatchLabelForClass(student.className, appState);
+  tx.batchLabel = targetBatch;
   if (!tx.category || tx.category === 'Khác') {
     tx.category = 'Thu học phí';
   }
@@ -12772,40 +13126,63 @@ function editTransactionRecord(transId) {
   showToast('Không tìm thấy giao dịch cần chỉnh sửa!', 'error');
 }
 
-function resolveStudentFromModalInput(rawCodeOrName = '', explicitStuId = '') {
+function resolveStudentFromModalInput(rawCodeOrName = '', explicitStuId = '', stateObj = appState) {
+  const students = Array.isArray(stateObj?.students) ? stateObj.students : appState.students || [];
   const cleanId = String(explicitStuId || '').trim();
   if (cleanId) {
-    const byId = (appState.students || []).find(s => s && s.id === cleanId);
+    const byId = students.find(s => s && s.id === cleanId);
     if (byId) return byId;
   }
   const raw = String(rawCodeOrName || '').trim();
   if (!raw) return null;
+
+  // 1. Tách mã HS nếu có trong chuỗi (kể cả khi đi kèm số đợt như "HS037 ĐỢT 4" hoặc "[HS037] Phương Thảo")
+  const extractedCode = extractCleanStudentCodeToken(raw);
+  if (extractedCode) {
+    const byExtractedCode = students.find(
+      s => s && String(s.studentCode || '').trim().toUpperCase() === extractedCode
+    );
+    if (byExtractedCode) return byExtractedCode;
+  }
+
+  // 2. Loại bỏ cụm "ĐỢT X", "ĐỢT SỐ X", "(Lớp ...)", "Lớp ...", dấu ngoặc trước khi đối chiếu tên/mã
+  const stripped = raw
+    .replace(/(?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+/gi, ' ')
+    .replace(/\(\s*LỚP[^)]*\)/gi, ' ')
+    .replace(/\bLỚP\s+[^\s•()[\]-]+/gi, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/[•|()-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const targetStr = stripped || raw;
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const rawNorm = norm(raw);
-  const byExactCode = (appState.students || []).find(
-    s => s && String(s.studentCode || '').trim().toUpperCase() === raw.toUpperCase()
+  const rawNorm = norm(targetStr);
+  const byExactCode = students.find(
+    s => s && String(s.studentCode || '').trim().toUpperCase() === targetStr.toUpperCase()
   );
   if (byExactCode) return byExactCode;
   if (rawNorm.length >= 2) {
-    const byCodeSuffix = (appState.students || []).find(s => {
+    const byCodeSuffix = students.find(s => {
       const c = norm(s?.studentCode);
       return c && (c === rawNorm || c.endsWith(rawNorm));
     });
     if (byCodeSuffix) return byCodeSuffix;
   }
-  const q = removeVietnameseTones(raw.toLowerCase()).replace(/\s+/g, ' ').trim();
-  const byExactName = (appState.students || []).find(
+  const q = removeVietnameseTones(targetStr.toLowerCase()).replace(/\s+/g, ' ').trim();
+  if (!q) return null;
+  const byExactName = students.find(
     s => s && removeVietnameseTones(String(s.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim() === q
   );
   if (byExactName) return byExactName;
-  const partialMatches = (appState.students || []).filter(s => {
-    const sName = removeVietnameseTones(String(s?.fullName || '').toLowerCase()).trim();
-    return sName && sName.includes(q);
+  const partialMatches = students.filter(s => {
+    const sName = removeVietnameseTones(String(s?.fullName || '').toLowerCase()).replace(/\s+/g, ' ').trim();
+    return sName && (sName.includes(q) || q.includes(sName));
   });
   return partialMatches.length === 1 ? partialMatches[0] : null;
 }
 
-function updateTransModalStudentPreviewUI(student) {
+function updateTransModalStudentPreviewUI(student, preserveBatchValue = false) {
   const idInput = document.getElementById('trans-form-student-id');
   const codeInput = document.getElementById('trans-form-student-code');
   const clearBtn = document.getElementById('trans-form-student-clear');
@@ -12814,15 +13191,18 @@ function updateTransModalStudentPreviewUI(student) {
 
   if (student) {
     if (idInput) idInput.value = student.id || '';
-    if (codeInput) codeInput.value = student.studentCode || student.fullName || '';
-    if (clearBtn) clearBtn.classList.remove('hidden');
-    if (previewEl) {
-      previewEl.textContent = `✓ ${student.fullName} (${student.studentCode || 'HS'}) • Lớp ${student.className || '---'}`;
-      previewEl.classList.remove('hidden');
+    if (codeInput && document.activeElement !== codeInput) {
+      codeInput.value = student.studentCode || student.fullName || '';
     }
-    if (batchInput) {
-      const clsBatch = getCurrentBatchLabelForClass(student.className, appState);
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    const clsBatch = getCurrentBatchLabelForClass(student.className, appState);
+    if (batchInput && (!preserveBatchValue || !batchInput.value.trim())) {
       if (clsBatch) batchInput.value = clsBatch;
+    }
+    const activeBatch = (batchInput && batchInput.value.trim()) ? formatBatchDisplayLabel(batchInput.value) : clsBatch;
+    if (previewEl) {
+      previewEl.textContent = `✓ ${student.fullName} (${student.studentCode || 'HS'}) • Lớp ${student.className || '---'}${activeBatch ? ` • ${activeBatch}` : ''}`;
+      previewEl.classList.remove('hidden');
     }
   } else {
     if (idInput) idInput.value = '';
@@ -12834,6 +13214,42 @@ function updateTransModalStudentPreviewUI(student) {
       previewEl.textContent = '';
       previewEl.classList.add('hidden');
     }
+  }
+}
+
+function adjustTransModalBatchNumber(delta = 1) {
+  const batchInput = document.getElementById('trans-form-batch');
+  const idInput = document.getElementById('trans-form-student-id');
+  const codeInput = document.getElementById('trans-form-student-code');
+  if (!batchInput) return;
+
+  const matchedStu = resolveStudentFromModalInput(
+    codeInput ? codeInput.value : '',
+    idInput ? idInput.value : '',
+    appState
+  );
+  const fallbackBatch = matchedStu ? getCurrentBatchLabelForClass(matchedStu.className, appState) : 'ĐỢT 1';
+  const rawCur = String(batchInput.value || fallbackBatch || 'ĐỢT 1').trim();
+  const m = rawCur.match(/(\d+)/);
+  const curNum = m ? Number(m[1]) : 1;
+  const nextNum = Math.max(1, curNum + Number(delta || 0));
+  batchInput.value = formatBatchDisplayLabel(`ĐỢT ${nextNum}`);
+
+  if (matchedStu) {
+    updateTransModalStudentPreviewUI(matchedStu, true);
+  }
+}
+
+function handleTransModalBatchInput(rawVal = '') {
+  const idInput = document.getElementById('trans-form-student-id');
+  const codeInput = document.getElementById('trans-form-student-code');
+  const matchedStu = resolveStudentFromModalInput(
+    codeInput ? codeInput.value : '',
+    idInput ? idInput.value : '',
+    appState
+  );
+  if (matchedStu) {
+    updateTransModalStudentPreviewUI(matchedStu, true);
   }
 }
 
@@ -12865,24 +13281,35 @@ function clearTransModalStudentSelection() {
 function handleTransModalStudentSearch(typedVal) {
   const raw = String(typedVal || '').trim();
   const idInput = document.getElementById('trans-form-student-id');
+  const batchInput = document.getElementById('trans-form-batch');
   const suggestBox = document.getElementById('trans-form-student-suggest');
-  if (idInput) idInput.value = '';
 
-  const matched = resolveStudentFromModalInput(raw, '');
+  const inlineBatchMatch = raw.match(/((?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+)(?!\d)/i);
+  if (inlineBatchMatch && batchInput) {
+    batchInput.value = formatBatchDisplayLabel(inlineBatchMatch[1]);
+  }
+
+  const matched = resolveStudentFromModalInput(raw, '', appState);
   if (matched) {
-    updateTransModalStudentPreviewUI(matched);
+    updateTransModalStudentPreviewUI(matched, Boolean(inlineBatchMatch));
   } else {
+    if (idInput) idInput.value = '';
     updateTransModalStudentPreviewUI(null);
-    if (!raw) {
-      const batchInput = document.getElementById('trans-form-batch');
-      if (batchInput) batchInput.value = '';
+    if (!raw && batchInput) {
+      batchInput.value = '';
     }
   }
 
   if (!suggestBox) return;
-  const q = removeVietnameseTones(raw.toLowerCase()).replace(/\s+/g, ' ').trim();
+  const cleanedRaw = raw
+    .replace(/(?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+/gi, ' ')
+    .replace(/\(\s*LỚP[^)]*\)/gi, ' ')
+    .replace(/\bLỚP\s+[^\s•()[\]-]+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const q = removeVietnameseTones((cleanedRaw || raw).toLowerCase()).replace(/\s+/g, ' ').trim();
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const rawNorm = norm(raw);
+  const rawNorm = norm(cleanedRaw || raw);
 
   const candidates = (appState.students || []).filter(s => {
     if (!s) return false;
@@ -13092,14 +13519,37 @@ function saveTransactionForm(event) {
   const description = document.getElementById('trans-form-desc').value.trim() || category;
   const rawStudentInput = (document.getElementById('trans-form-student-code')?.value || '').trim();
   const explicitStuId = (document.getElementById('trans-form-student-id')?.value || '').trim();
-  const matchedStu = resolveStudentFromModalInput(rawStudentInput, explicitStuId);
-  const studentCode = matchedStu ? String(matchedStu.studentCode || '').trim().toUpperCase() : rawStudentInput.toUpperCase();
-  const typedBatch = formatBatchDisplayLabel((document.getElementById('trans-form-batch')?.value || '').trim());
+  const matchedStu = resolveStudentFromModalInput(rawStudentInput, explicitStuId, appState);
+  const studentCode = matchedStu
+    ? String(matchedStu.studentCode || '').trim().toUpperCase()
+    : extractCleanStudentCodeToken(rawStudentInput) || rawStudentInput.toUpperCase();
+  const inlineBatchFromStudentField = (() => {
+    const m = rawStudentInput.match(/((?:ĐỢT|DOT)\s*(?:SỐ\s*|SO\s*)?\d+)(?!\d)/i);
+    return m ? formatBatchDisplayLabel(m[1]) : '';
+  })();
+  const typedBatch = formatBatchDisplayLabel(
+    (document.getElementById('trans-form-batch')?.value || '').trim() || inlineBatchFromStudentField
+  );
   const batchLabel =
     typedBatch || (matchedStu ? getCurrentBatchLabelForClass(matchedStu.className, appState) : '');
   const method = document.getElementById('trans-form-method').value || 'Chuyển khoản';
   const isExcluded = Boolean(document.getElementById('trans-form-excluded')?.checked);
   const customTag = (document.getElementById('trans-form-custom-tag')?.value || '').trim();
+
+  // Nếu có chọn Học sinh + Đợt học phí -> đồng bộ số đợt này với Lớp của học sinh trong Lớp học
+  if (matchedStu && matchedStu.className && batchLabel && type === 'Thu' && !isExcluded) {
+    const cls = String(matchedStu.className).trim();
+    const map = getClassSchedulesMap();
+    const curCfg = findClassScheduleConfig(cls, map, appState) || getDefaultClassScheduleConfig(cls);
+    const oldBatch = curCfg.batchLabel || '';
+    if (normalizeBatchCompareKey(oldBatch) !== normalizeBatchCompareKey(batchLabel)) {
+      curCfg.className = cls;
+      curCfg.batchLabel = batchLabel;
+      map[cls] = curCfg;
+      saveClassSchedulesMap(map);
+      syncClassCurrentBatchOnTransactions(cls, oldBatch, batchLabel, curCfg.periodLabel || '', curCfg.rolledOverAt || '', appState);
+    }
+  }
 
   // Trường hợp 1: Sửa trực tiếp Card chuyển khoản đang chờ duyệt (REQ::...)
   if (editId && (editId.startsWith('REQ::') || (appState.paymentRequests || []).some(r => r && r.id === editId))) {
@@ -20738,13 +21188,14 @@ function findStudentFromTransferContent(rawContent, txAmount = 0, studentsList =
 
   const contentForName = cleanContent
     .replace(/\b(HO KINH DOANH\s+|HKD\s+)?(TRUNG TAM\s+)?HUYNH THANH CHI\b/g, ' ')
+    .replace(/\bDOT\s*(?:SO\s*)?\d+\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   const paddedContent = ` ${contentForName} `;
   const students = Array.isArray(studentsList) ? studentsList : appState.students || [];
   const requests = Array.isArray(requestsList) ? requestsList : appState.paymentRequests || [];
   const stopwords = new Set([
-    'HP', 'HOC', 'PHI', 'THANG', 'LOP', 'CK', 'BIDV', 'MB', 'VCB', 'TCB', 'ACB', 'ICB',
+    'HP', 'HOC', 'PHI', 'THANG', 'LOP', 'DOT', 'SO', 'CK', 'BIDV', 'MB', 'VCB', 'TCB', 'ACB', 'ICB',
     'VPB', 'TPB', 'IBFT', 'MBVCB', 'CHUYEN', 'KHOAN', 'TIEN', 'EM', 'PH', 'CT', 'TU', 'DEN'
   ]);
 

@@ -40,7 +40,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261109_v68" />
+  <link rel="stylesheet" href="styles.css?v=20261113_v69" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -2726,7 +2726,7 @@
                 </label>
               </div>
             </div>
-            <div id="finance-pending-requests-list" class="p-3 grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto bg-amber-50/20">
+            <div id="finance-pending-requests-list" class="p-3 grid grid-cols-1 xl:grid-cols-2 gap-3 max-h-96 overflow-y-auto bg-amber-50/20">
               <!-- Rendered by JS -->
             </div>
           </div>
@@ -4191,11 +4191,11 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- MODAL 4: GHI PHIẾU THU / PHIẾU CHI (SỔ QUỸ)                          -->
+  <!-- MODAL 4: GHI PHIẾU THU / PHIẾU CHI (SỔ QUỸ) - LAYOUT NGANG 2 CỘT      -->
   <!-- ===================================================================== -->
-  <div id="transaction-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60  flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full  border border-slate-200 overflow-hidden animate-fade-in">
-      <div id="trans-modal-header" class="px-6 py-4 bg-emerald-600 text-white flex items-center justify-between">
+  <div id="transaction-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-center justify-center p-2.5 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden animate-fade-in">
+      <div id="trans-modal-header" class="px-5 py-3 bg-emerald-600 text-white flex items-center justify-between shrink-0">
         <div>
           <h3 id="trans-modal-title" class="font-bold text-base">Ghi Phiếu Thu Mới</h3>
           <p id="trans-modal-subtitle" class="text-[11px] text-white/85 mt-0.5">Nhập thông tin khoản thu/chi để cập nhật vào Sổ Quỹ &amp; Google Sheets</p>
@@ -4205,170 +4205,194 @@
         </button>
       </div>
 
-      <form onsubmit="saveTransactionForm(event)" class="p-6 space-y-4">
+      <form onsubmit="saveTransactionForm(event)" class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3.5">
         <input type="hidden" id="trans-form-id" />
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Loại giao dịch *</label>
-            <select
-              id="trans-form-type"
-              onchange="updateTransactionModalTheme(this.value)"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-white"
-            >
-              <option value="Thu">Phiếu Thu (+)</option>
-              <option value="Chi">Phiếu Chi (-)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch</label>
-            <input
-              id="trans-form-date"
-              type="date"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-            />
-          </div>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+          <!-- Cột Trái: Loại, Ngày, Danh mục, Phương thức, Số tiền -->
+          <div class="md:col-span-6 space-y-3">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Loại giao dịch *</label>
+                <select
+                  id="trans-form-type"
+                  onchange="updateTransactionModalTheme(this.value)"
+                  class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm font-bold bg-white"
+                >
+                  <option value="Thu">Phiếu Thu (+)</option>
+                  <option value="Chi">Phiếu Chi (-)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch</label>
+                <input
+                  id="trans-form-date"
+                  type="date"
+                  class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm"
+                />
+              </div>
+            </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục</label>
-            <select
-              id="trans-form-category"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
-            >
-              <option value="Thu học phí">Thu học phí</option>
-              <option value="Thu tiền tài liệu / giáo trình">Thu tiền tài liệu / giáo trình</option>
-              <option value="Chi thuê phòng / điện nước">Chi thuê phòng / điện nước</option>
-              <option value="Chi in ấn / tài liệu">Chi in ấn / tài liệu</option>
-              <option value="Chi lương / trợ giảng">Chi lương / trợ giảng</option>
-              <option value="Chi thưởng học sinh / liên hoan">Chi thưởng học sinh / liên hoan</option>
-              <option value="Khác">Khác</option>
-            </select>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục</label>
+                <select
+                  id="trans-form-category"
+                  class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm bg-white"
+                >
+                  <option value="Thu học phí">Thu học phí</option>
+                  <option value="Thu tiền tài liệu / giáo trình">Thu tiền tài liệu / giáo trình</option>
+                  <option value="Chi thuê phòng / điện nước">Chi thuê phòng / điện nước</option>
+                  <option value="Chi in ấn / tài liệu">Chi in ấn / tài liệu</option>
+                  <option value="Chi lương / trợ giảng">Chi lương / trợ giảng</option>
+                  <option value="Chi thưởng học sinh / liên hoan">Chi thưởng học sinh / liên hoan</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức thanh toán</label>
+                <select
+                  id="trans-form-method"
+                  class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm bg-white"
+                >
+                  <option value="Chuyển khoản">Chuyển khoản</option>
+                  <option value="Tiền mặt">Tiền mặt</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền (Rút gọn 000 - VD: 600 = 600.000₫) *</label>
+              <div class="relative flex items-center">
+                <input
+                  id="trans-form-amount"
+                  type="text"
+                  inputmode="numeric"
+                  required
+                  oninput="autoShortenMoneyInput(this)"
+                  onchange="autoShortenMoneyInput(this, true)"
+                  onblur="autoShortenMoneyInput(this, true)"
+                  placeholder="VD: 600"
+                  title="Nhập rút gọn 3 số 000 hoặc nhập đầy đủ đều được (VD: 600 hoặc 600000 = 600.000 ₫)"
+                  class="w-full pl-3 pr-12 py-1.5 rounded-xl border border-slate-300 text-sm font-bold"
+                />
+                <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
+              </div>
+              <div class="flex flex-wrap gap-1 mt-1.5 text-[11px]">
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=500" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">500</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=600" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">600</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=700" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">700</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=800" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">800</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=1000" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">1000</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=1200" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">1200</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=1500" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">1500</button>
+                <button type="button" onclick="document.getElementById('trans-form-amount').value=2000" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">2000</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền (Rút gọn 000 - VD: 600 = 600.000₫) *</label>
-            <div class="relative flex items-center">
+
+          <!-- Cột Phải: Học sinh liên kết, Đợt học phí, Nội dung, Tag không ghi nhận -->
+          <div class="md:col-span-6 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+              <div class="sm:col-span-8 relative">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Học sinh liên kết (Gõ Tên / Mã HS)</label>
+                <input type="hidden" id="trans-form-student-id" value="" />
+                <div class="relative flex items-center">
+                  <input
+                    id="trans-form-student-code"
+                    type="text"
+                    autocomplete="off"
+                    oninput="handleTransModalStudentSearch(this.value)"
+                    onfocus="handleTransModalStudentSearch(this.value)"
+                    onblur="setTimeout(()=>{const b=document.getElementById('trans-form-student-suggest');if(b)b.classList.add('hidden');},240)"
+                    placeholder="Gõ Tên hoặc Mã HS..."
+                    class="w-full pl-3 pr-7 py-1.5 rounded-xl border border-slate-300 text-sm font-bold"
+                  />
+                  <button
+                    type="button"
+                    id="trans-form-student-clear"
+                    onclick="clearTransModalStudentSelection()"
+                    title="Bỏ chọn / Đổi học sinh khác"
+                    class="hidden absolute right-2 text-slate-400 hover:text-rose-600 cursor-pointer p-0.5"
+                  >
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+                <div id="trans-form-student-preview" class="hidden mt-1 text-[11px] font-bold text-emerald-700 truncate"></div>
+                <div
+                  id="trans-form-student-suggest"
+                  onmousedown="event.stopPropagation()"
+                  onclick="event.stopPropagation()"
+                  class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[110] divide-y divide-slate-100"
+                ></div>
+              </div>
+              <div class="sm:col-span-4">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Thuộc Đợt học phí (Theo Lớp)</label>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onclick="adjustTransModalBatchNumber(-1)"
+                    title="Giảm số đợt"
+                    class="w-8 h-[34px] rounded-xl border border-slate-300 bg-slate-100 hover:bg-rose-50 hover:border-rose-300 text-rose-600 font-black text-sm flex items-center justify-center cursor-pointer shrink-0 transition"
+                  >−</button>
+                  <input
+                    id="trans-form-batch"
+                    type="text"
+                    placeholder="VD: ĐỢT 6"
+                    oninput="handleTransModalBatchInput(this.value)"
+                    class="w-full min-w-0 px-2.5 py-1.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-extrabold uppercase text-center"
+                  />
+                  <button
+                    type="button"
+                    onclick="adjustTransModalBatchNumber(1)"
+                    title="Tăng số đợt"
+                    class="w-8 h-[34px] rounded-xl border border-slate-300 bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 text-emerald-600 font-black text-sm flex items-center justify-center cursor-pointer shrink-0 transition"
+                  >+</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết (Không bắt buộc)</label>
               <input
-                id="trans-form-amount"
+                id="trans-form-desc"
                 type="text"
-                inputmode="numeric"
-                required
-                oninput="autoShortenMoneyInput(this)"
-                onchange="autoShortenMoneyInput(this, true)"
-                onblur="autoShortenMoneyInput(this, true)"
-                placeholder="VD: 600"
-                title="Nhập rút gọn 3 số 000 hoặc nhập đầy đủ đều được (VD: 600 hoặc 600000 = 600.000 ₫)"
-                class="w-full pl-3 pr-12 py-2 rounded-xl border border-slate-300 text-sm font-bold"
+                placeholder="VD: Thu học phí tháng 10 em Nguyễn Minh Anh / Chi tiền in đề thi..."
+                class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm"
               />
-              <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
             </div>
-            <div class="flex flex-wrap gap-1 mt-1.5 text-[11px]">
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=500" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">500</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=600" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">600</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=700" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">700</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=800" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">800</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=1000" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">1000</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=1200" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">1200</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=1500" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">1500</button>
-              <button type="button" onclick="document.getElementById('trans-form-amount').value=2000" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 font-bold transition cursor-pointer">2000</button>
+
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <label class="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  id="trans-form-excluded"
+                  type="checkbox"
+                  onchange="if(this.checked && !document.getElementById('trans-form-custom-tag').value.trim()){document.getElementById('trans-form-custom-tag').value='Không ghi nhận hệ thống';}"
+                  class="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-800 cursor-pointer"
+                />
+                <div class="text-xs">
+                  <div class="font-extrabold text-slate-900">Gắn tag: Không ghi nhận vào hệ thống</div>
+                  <div class="text-[11px] text-slate-500 leading-snug">Bỏ qua khoản này khỏi Tổng Thu/Chi, Tồn quỹ, Số dư Web và Học phí học sinh.</div>
+                </div>
+              </label>
+              <div class="flex flex-wrap items-center gap-1 pt-0.5">
+                <input
+                  id="trans-form-custom-tag"
+                  type="text"
+                  placeholder="Tên tag (VD: Không ghi nhận hệ thống, Chuyển nhầm...)"
+                  class="flex-1 min-w-[160px] px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800"
+                />
+                <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Không ghi nhận hệ thống';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Không ghi nhận HT</button>
+                <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Chuyển nhầm';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Chuyển nhầm</button>
+                <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Giao dịch nội bộ';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Nội bộ</button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết (Không bắt buộc)</label>
-          <input
-            id="trans-form-desc"
-            type="text"
-            placeholder="VD: Thu học phí tháng 10 em Nguyễn Minh Anh / Chi tiền in đề thi..."
-            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-          />
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="relative">
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Học sinh liên kết (Gõ Tên / Mã HS)</label>
-            <input type="hidden" id="trans-form-student-id" value="" />
-            <div class="relative flex items-center">
-              <input
-                id="trans-form-student-code"
-                type="text"
-                autocomplete="off"
-                oninput="handleTransModalStudentSearch(this.value)"
-                onfocus="handleTransModalStudentSearch(this.value)"
-                onblur="setTimeout(()=>{const b=document.getElementById('trans-form-student-suggest');if(b)b.classList.add('hidden');},240)"
-                placeholder="Gõ Tên hoặc Mã HS..."
-                class="w-full pl-3 pr-7 py-2 rounded-xl border border-slate-300 text-sm font-bold"
-              />
-              <button
-                type="button"
-                id="trans-form-student-clear"
-                onclick="clearTransModalStudentSelection()"
-                title="Bỏ chọn / Đổi học sinh khác"
-                class="hidden absolute right-2 text-slate-400 hover:text-rose-600 cursor-pointer p-0.5"
-              >
-                <i data-lucide="x" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-            <div id="trans-form-student-preview" class="hidden mt-1 text-[11px] font-bold text-emerald-700 truncate"></div>
-            <div
-              id="trans-form-student-suggest"
-              onmousedown="event.stopPropagation()"
-              onclick="event.stopPropagation()"
-              class="hidden absolute left-0 right-0 top-full mt-1 max-h-52 overflow-y-auto rounded-xl border border-amber-300 bg-white shadow-2xl z-[110] divide-y divide-slate-100"
-            ></div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Thuộc Đợt học phí</label>
-            <input
-              id="trans-form-batch"
-              type="text"
-              placeholder="Tự nhận (VD: ĐỢT 6)"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-bold uppercase"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức thanh toán</label>
-            <select
-              id="trans-form-method"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"
-            >
-              <option value="Chuyển khoản">Chuyển khoản</option>
-              <option value="Tiền mặt">Tiền mặt</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-          <label class="flex items-start gap-2.5 cursor-pointer select-none">
-            <input
-              id="trans-form-excluded"
-              type="checkbox"
-              onchange="if(this.checked && !document.getElementById('trans-form-custom-tag').value.trim()){document.getElementById('trans-form-custom-tag').value='Không ghi nhận hệ thống';}"
-              class="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-800 cursor-pointer"
-            />
-            <div class="text-xs">
-              <div class="font-extrabold text-slate-900">Gắn tag: Không ghi nhận vào hệ thống</div>
-              <div class="text-[11px] text-slate-500">Bỏ qua khoản này khỏi Tổng Thu/Chi, Tồn quỹ, Số dư thống kê Web và Học phí học sinh (vẫn hiển thị trong bảng để đối soát).</div>
-            </div>
-          </label>
-          <div class="flex flex-wrap items-center gap-1.5 pt-1">
-            <input
-              id="trans-form-custom-tag"
-              type="text"
-              placeholder="Tên tag (VD: Không ghi nhận hệ thống, Chuyển nhầm, Nội bộ...)"
-              class="flex-1 min-w-[200px] px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-800"
-            />
-            <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Không ghi nhận hệ thống';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Không ghi nhận HT</button>
-            <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Chuyển nhầm';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Chuyển nhầm</button>
-            <button type="button" onclick="document.getElementById('trans-form-excluded').checked=true; document.getElementById('trans-form-custom-tag').value='Giao dịch nội bộ';" class="px-2 py-1 rounded-md bg-white hover:bg-slate-800 text-slate-700 hover:text-white border border-slate-300 text-[11px] font-bold cursor-pointer transition">Nội bộ</button>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeTransactionModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
-          <button id="trans-modal-submit-btn" type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">Lưu Giao Dịch</button>
+        <div class="flex justify-end gap-2 pt-2.5 border-t border-slate-100">
+          <button type="button" onclick="closeTransactionModal()" class="px-4 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
+          <button id="trans-modal-submit-btn" type="submit" class="px-5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">Lưu Giao Dịch</button>
         </div>
       </form>
     </div>
@@ -4377,9 +4401,9 @@
   <!-- ===================================================================== -->
   <!-- MODAL 4B: CHỈNH SỬA HÀNG LOẠT GIAO DỊCH THU - CHI                     -->
   <!-- ===================================================================== -->
-  <div id="bulk-edit-transaction-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60  flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full  border border-slate-200 overflow-hidden animate-fade-in">
-      <div class="px-6 py-4 bg-blue-700 text-white flex items-center justify-between">
+  <div id="bulk-edit-transaction-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-center justify-center p-2.5 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-5 py-3 bg-blue-700 text-white flex items-center justify-between shrink-0">
         <div>
           <h3 class="font-bold text-base">Chỉnh Sửa Hàng Loạt Giao Dịch</h3>
           <p id="bulk-edit-trans-subtitle" class="text-[11px] text-blue-100 mt-0.5">Đang chọn 0 giao dịch (Chỉ cập nhật những trường bạn thay đổi)</p>
@@ -4388,91 +4412,97 @@
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <form onsubmit="saveBulkEditTransactionsForm(event)" class="p-6 space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Loại giao dịch</label>
-            <select id="bulk-trans-type" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white">
-              <option value="__KEEP__">-- Giữ nguyên --</option>
-              <option value="Thu">Phiếu Thu (+)</option>
-              <option value="Chi">Phiếu Chi (-)</option>
-            </select>
+      <form onsubmit="saveBulkEditTransactionsForm(event)" class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-3.5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Loại giao dịch</label>
+                <select id="bulk-trans-type" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm bg-white">
+                  <option value="__KEEP__">-- Giữ nguyên --</option>
+                  <option value="Thu">Phiếu Thu (+)</option>
+                  <option value="Chi">Phiếu Chi (-)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch mới</label>
+                <input id="bulk-trans-date" type="date" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục</label>
+                <select id="bulk-trans-category" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm bg-white">
+                  <option value="__KEEP__">-- Giữ nguyên --</option>
+                  <option value="Thu học phí">Thu học phí</option>
+                  <option value="Thu tiền tài liệu / giáo trình">Thu tiền tài liệu / giáo trình</option>
+                  <option value="Chi thuê phòng / điện nước">Chi thuê phòng / điện nước</option>
+                  <option value="Chi in ấn / tài liệu">Chi in ấn / tài liệu</option>
+                  <option value="Chi lương / trợ giảng">Chi lương / trợ giảng</option>
+                  <option value="Chi thưởng học sinh / liên hoan">Chi thưởng học sinh / liên hoan</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức</label>
+                <select id="bulk-trans-method" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm bg-white">
+                  <option value="__KEEP__">-- Giữ nguyên --</option>
+                  <option value="Chuyển khoản">Chuyển khoản</option>
+                  <option value="Tiền mặt">Tiền mặt</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền mới (Rút gọn 000 - Để trống nếu giữ nguyên)</label>
+              <div class="relative flex items-center">
+                <input
+                  id="bulk-trans-amount"
+                  type="text"
+                  inputmode="numeric"
+                  oninput="autoShortenMoneyInput(this)"
+                  onchange="autoShortenMoneyInput(this, true)"
+                  onblur="autoShortenMoneyInput(this, true)"
+                  placeholder="Để trống nếu không đổi số tiền..."
+                  class="w-full pl-3 pr-12 py-1.5 rounded-xl border border-slate-300 text-sm font-bold"
+                />
+                <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày giao dịch mới</label>
-            <input id="bulk-trans-date" type="date" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết mới (Để trống nếu giữ nguyên)</label>
+              <input
+                id="bulk-trans-desc"
+                type="text"
+                placeholder="Để trống nếu giữ nguyên nội dung cũ..."
+                class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-sm"
+              />
+            </div>
+            <div class="grid grid-cols-1 gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <div>
+                <label class="block text-xs font-extrabold text-slate-800 mb-1">Trạng thái ghi nhận hệ thống</label>
+                <select id="bulk-trans-excluded" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                  <option value="__KEEP__">-- Giữ nguyên --</option>
+                  <option value="EXCLUDE">Gắn tag: Không ghi nhận vào hệ thống</option>
+                  <option value="INCLUDE">Gỡ tag: Ghi nhận lại vào hệ thống</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-extrabold text-slate-800 mb-1">Nhãn Tag (Tuỳ chọn)</label>
+                <input
+                  id="bulk-trans-custom-tag"
+                  type="text"
+                  placeholder="VD: Không ghi nhận hệ thống, Chuyển nhầm..."
+                  class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                />
+              </div>
+            </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Danh mục</label>
-            <select id="bulk-trans-category" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white">
-              <option value="__KEEP__">-- Giữ nguyên --</option>
-              <option value="Thu học phí">Thu học phí</option>
-              <option value="Thu tiền tài liệu / giáo trình">Thu tiền tài liệu / giáo trình</option>
-              <option value="Chi thuê phòng / điện nước">Chi thuê phòng / điện nước</option>
-              <option value="Chi in ấn / tài liệu">Chi in ấn / tài liệu</option>
-              <option value="Chi lương / trợ giảng">Chi lương / trợ giảng</option>
-              <option value="Chi thưởng học sinh / liên hoan">Chi thưởng học sinh / liên hoan</option>
-              <option value="Khác">Khác</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức</label>
-            <select id="bulk-trans-method" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white">
-              <option value="__KEEP__">-- Giữ nguyên --</option>
-              <option value="Chuyển khoản">Chuyển khoản</option>
-              <option value="Tiền mặt">Tiền mặt</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Số tiền mới (Rút gọn 000 - Để trống nếu giữ nguyên)</label>
-          <div class="relative flex items-center">
-            <input
-              id="bulk-trans-amount"
-              type="text"
-              inputmode="numeric"
-              oninput="autoShortenMoneyInput(this)"
-              onchange="autoShortenMoneyInput(this, true)"
-              onblur="autoShortenMoneyInput(this, true)"
-              placeholder="Để trống nếu không đổi số tiền..."
-              class="w-full pl-3 pr-12 py-2 rounded-xl border border-slate-300 text-sm font-bold"
-            />
-            <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none select-none">.000₫</span>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết mới (Để trống nếu giữ nguyên)</label>
-          <input
-            id="bulk-trans-desc"
-            type="text"
-            placeholder="Để trống nếu giữ nguyên nội dung cũ..."
-            class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"
-          />
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <div>
-            <label class="block text-xs font-extrabold text-slate-800 mb-1">Trạng thái ghi nhận hệ thống</label>
-            <select id="bulk-trans-excluded" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
-              <option value="__KEEP__">-- Giữ nguyên --</option>
-              <option value="EXCLUDE">Gắn tag: Không ghi nhận vào hệ thống</option>
-              <option value="INCLUDE">Gỡ tag: Ghi nhận lại vào hệ thống</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-extrabold text-slate-800 mb-1">Nhãn Tag (Tuỳ chọn)</label>
-            <input
-              id="bulk-trans-custom-tag"
-              type="text"
-              placeholder="VD: Không ghi nhận hệ thống, Chuyển nhầm..."
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
-            />
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeBulkEditTransactionsModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold cursor-pointer">Cập Nhật Hàng Loạt</button>
+        <div class="flex justify-end gap-2 pt-2.5 border-t border-slate-100">
+          <button type="button" onclick="closeBulkEditTransactionsModal()" class="px-4 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold cursor-pointer">Hủy</button>
+          <button type="submit" class="px-5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold cursor-pointer">Cập Nhật Hàng Loạt</button>
         </div>
       </form>
     </div>
@@ -5552,23 +5582,23 @@
     </div>
   </div>
 
-  <!-- MODAL XEM CHI TIẾT GIAO DỊCH THU - CHI / YÊU CẦU CHỜ DUYỆT -->
+  <!-- MODAL XEM CHI TIẾT GIAO DỊCH THU - CHI / YÊU CẦU CHỜ DUYỆT (LAYOUT NGANG 2 CỘT KHÔNG TRÀN MÀN HÌNH) -->
   <div
     id="transaction-detail-modal"
     onclick="closeTransactionDetailModal()"
-    class="fixed inset-0 z-[90] hidden bg-[#0a0a0a]/60 flex items-center justify-center p-4"
+    class="fixed inset-0 z-[90] hidden bg-[#0a0a0a]/60 flex items-center justify-center p-2.5 sm:p-4"
   >
     <div
       onclick="event.stopPropagation(); handleTxModalCardClick(event);"
-      class="tc-dialog-card max-w-lg w-full overflow-hidden animate-fade-in"
+      class="tc-dialog-card max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-fade-in"
     >
-      <div id="tx-detail-header" class="tc-dialog-header-indigo px-5 py-4 text-white flex items-center justify-between gap-3">
+      <div id="tx-detail-header" class="tc-dialog-header-indigo px-5 py-3 text-white flex items-center justify-between gap-3 shrink-0">
         <div class="flex items-center gap-3 min-w-0">
-          <div id="tx-detail-icon-box" class="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-            <i data-lucide="receipt" class="w-5 h-5 text-amber-300"></i>
+          <div id="tx-detail-icon-box" class="w-9 h-9 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <i data-lucide="receipt" class="w-4 h-4 text-amber-300"></i>
           </div>
           <div class="min-w-0">
-            <span id="tx-detail-badge" class="text-xs font-extrabold uppercase tracking-normal text-white/80 block">
+            <span id="tx-detail-badge" class="text-[11px] font-extrabold uppercase tracking-normal text-white/80 block">
               THANH CHÍ EDU • CHI TIẾT GIAO DỊCH
             </span>
             <h3 id="tx-detail-title" class="font-extrabold text-sm sm:text-base leading-tight truncate">
@@ -5585,11 +5615,11 @@
         </button>
       </div>
 
-      <div id="tx-detail-body" class="p-5 space-y-3.5 text-xs sm:text-sm max-h-[78vh] overflow-y-auto">
+      <div id="tx-detail-body" class="p-4 sm:p-5 text-xs sm:text-sm flex-1 overflow-y-auto">
         <!-- Rendered dynamically by openTransactionDetailModal() -->
       </div>
 
-      <div id="tx-detail-footer" class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+      <div id="tx-detail-footer" class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <!-- Action buttons rendered dynamically -->
       </div>
     </div>
@@ -6127,6 +6157,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261109_v68"></script>
+  <script src="app.js?v=20261113_v69"></script>
 </body>
 </html>
