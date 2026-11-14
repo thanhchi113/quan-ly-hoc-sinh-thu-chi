@@ -40,7 +40,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261113_v69" />
+  <link rel="stylesheet" href="styles.css?v=20261114_v70" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
@@ -406,7 +406,7 @@
           <!-- ============================================================= -->
           <aside
             id="admin-left-sidebar"
-            class="tc-sidebar hidden lg:flex w-full lg:w-[192px] lg:sticky lg:top-20 shrink-0 p-2.5 flex-col justify-between gap-2.5"
+            class="tc-sidebar flex w-full lg:w-[192px] lg:sticky lg:top-20 shrink-0 p-2.5 flex-col justify-between gap-2.5"
           >
             <div class="space-y-2">
               <!-- Sidebar Brand Header + Collapse Toggle -->
@@ -424,10 +424,11 @@
                   type="button"
                   id="sidebar-collapse-btn"
                   onclick="toggleAdminSidebar()"
-                  title="Thu gọn / Mở rộng thanh điều hướng bên trái"
-                  class="hidden lg:inline-flex items-center justify-center w-6 h-6 rounded-lg bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#475569] hover:text-[#0F172A] border border-[#CBD5E1] transition cursor-pointer shrink-0"
+                  title="Thu gọn thanh menu thành 1 nút nhỏ trên đầu để mở rộng tối đa màn hình"
+                  class="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#475569] hover:text-[#0F172A] border border-[#CBD5E1] text-[10px] font-extrabold transition cursor-pointer shrink-0"
                 >
                   <i data-lucide="panel-left-close" class="w-3.5 h-3.5" id="sidebar-collapse-icon"></i>
+                  <span>Thu gọn</span>
                 </button>
               </div>
 
@@ -576,7 +577,17 @@
             <div class="bento-card p-3 sm:px-5 sm:py-3.5 flex flex-col gap-3">
               <!-- Row 1: Page Title & Subtitle (Left) + Global Undo / Sheet Sync Actions (Right) -->
               <div class="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-[#EBECF3]">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    id="btn-expand-sidebar-top"
+                    onclick="toggleAdminSidebar()"
+                    title="Bấm để mở rộng thanh Menu điều hướng bên trái"
+                    class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition cursor-pointer shrink-0"
+                  >
+                    <i data-lucide="panel-left-open" class="w-4 h-4"></i>
+                    <span>Mở Menu</span>
+                  </button>
                   <div class="w-9 h-9 rounded-2xl bg-[#eeeeee] border border-[#eeeeee] text-[#141414] flex items-center justify-center shrink-0">
                     <i data-lucide="sparkles" class="w-4 h-4"></i>
                   </div>
@@ -1330,29 +1341,29 @@
                     <table id="cb-students-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
                       <thead class="sticky-table-thead">
                         <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
-                          <th class="py-2.5 px-2 w-10">STT</th>
-                          <th class="py-2.5 px-3 text-left min-w-[190px]">Họ và tên</th>
-                          <th class="py-2.5 px-2.5 text-right w-28" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">Học phí (.000₫)</th>
-                          <th class="py-2.5 px-2 w-28">Đã thanh toán</th>
-                          <th class="py-2.5 px-2.5 w-36">Tình trạng</th>
-                          <th class="py-2.5 px-2.5 text-left min-w-[140px]">Ghi chú</th>
-                          <th class="py-2.5 px-2 w-20">Sửa</th>
+                          <th class="py-2 px-1 w-8">STT</th>
+                          <th class="py-2 px-2.5 text-left min-w-[145px]">Họ tên HS</th>
+                          <th class="py-2 px-1.5 text-right w-20" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">HP (.000)</th>
+                          <th class="py-2 px-1 w-12" title="Tích chọn đã đóng học phí">Đóng</th>
+                          <th class="py-2 px-1.5 w-24">Trạng thái</th>
+                          <th class="py-2 px-2 text-left min-w-[110px]">Ghi chú</th>
+                          <th class="py-2 px-1.5 w-20">Thao tác</th>
                         </tr>
                         <!-- Dòng TỔNG CỘNG giống hệt mẫu -->
                         <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
-                          <td colspan="2" class="py-2 px-3 text-center uppercase tracking-normal text-slate-900">
+                          <td colspan="2" class="py-1.5 px-2.5 text-center uppercase tracking-normal text-slate-900">
                             TỔNG CỘNG
                           </td>
-                          <td id="cb-sum-expected" class="py-2 px-2.5 text-right text-slate-900 whitespace-nowrap">
+                          <td id="cb-sum-expected" class="py-1.5 px-1.5 text-right text-slate-900 whitespace-nowrap">
                             0 ₫
                           </td>
-                          <td id="cb-sum-paid-count" class="py-2 px-2 text-center text-slate-900 whitespace-nowrap">
+                          <td id="cb-sum-paid-count" class="py-1.5 px-1 text-center text-slate-900 whitespace-nowrap">
                             0 em
                           </td>
-                          <td id="cb-sum-collected" class="py-2 px-2.5 text-right text-emerald-700 whitespace-nowrap">
+                          <td id="cb-sum-collected" class="py-1.5 px-1.5 text-right text-emerald-700 whitespace-nowrap">
                             0 ₫
                           </td>
-                          <td id="cb-sum-missing" colspan="2" class="py-2 px-2.5 text-right text-rose-600 whitespace-nowrap">
+                          <td id="cb-sum-missing" colspan="2" class="py-1.5 px-2 text-right text-rose-600 whitespace-nowrap">
                             0 ₫
                           </td>
                         </tr>
@@ -2632,42 +2643,42 @@
                 <table id="all-students-stat-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
                   <thead class="sticky-table-thead">
                     <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
-                      <th class="py-2.5 px-2 w-10">STT</th>
-                      <th class="py-2.5 px-2 w-16">Mã HS</th>
-                      <th class="py-2.5 px-3 text-left min-w-[175px]">Họ và tên Học sinh</th>
-                      <th class="py-2.5 px-2 w-28 text-center">Lớp đang học</th>
-                      <th class="py-2.5 px-2 w-28 text-center">Bắt đầu học</th>
-                      <th class="py-2.5 px-2 w-28 text-center">Số đợt đã đóng</th>
-                      <th class="py-2.5 px-2 w-32 text-center">Kỳ / Tháng</th>
-                      <th class="py-2.5 px-2 text-right w-24" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">Học phí (.000₫)</th>
-                      <th class="py-2.5 px-2 w-32 min-w-[132px] text-center">Tình trạng</th>
-                      <th class="py-2.5 px-2 w-28 min-w-[124px] text-center">Thao tác</th>
+                      <th class="py-2 px-1 w-8">STT</th>
+                      <th class="py-2 px-1.5 w-14">Mã</th>
+                      <th class="py-2 px-2.5 text-left min-w-[145px]">Họ tên HS</th>
+                      <th class="py-2 px-1.5 w-20 text-center">Lớp</th>
+                      <th class="py-2 px-1.5 w-20 text-center">Ngày học</th>
+                      <th class="py-2 px-1.5 w-20 text-center">Đợt đóng</th>
+                      <th class="py-2 px-1.5 w-20 text-center">Kỳ thu</th>
+                      <th class="py-2 px-1.5 text-right w-20" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">HP (.000)</th>
+                      <th class="py-2 px-1.5 w-24 text-center">Trạng thái</th>
+                      <th class="py-2 px-1.5 w-28 text-center">Thao tác</th>
                     </tr>
                     <!-- Dòng TỔNG CỘNG khớp chính xác 1:1 theo từng cột tiêu đề -->
                     <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
-                      <td colspan="3" class="py-2 px-3 text-center uppercase tracking-normal text-slate-900">
-                        TỔNG CỘNG (<span id="stu-sum-count" class="text-blue-700">0 HS</span>)
+                      <td colspan="3" class="py-1.5 px-2.5 text-center uppercase tracking-normal text-slate-900">
+                        TỔNG (<span id="stu-sum-count" class="text-blue-700">0 HS</span>)
                       </td>
-                      <td id="stu-sum-classes-cnt" class="py-2 px-2 text-center text-slate-700">
+                      <td id="stu-sum-classes-cnt" class="py-1.5 px-1.5 text-center text-slate-700">
                         0 lớp
                       </td>
-                      <td id="stu-sum-start-info" class="py-2 px-2 text-center text-slate-500 text-[11px] font-bold">
+                      <td id="stu-sum-start-info" class="py-1.5 px-1.5 text-center text-slate-500 text-[11px] font-bold">
                         Theo dõi
                       </td>
-                      <td id="stu-sum-batches" class="py-2 px-2 text-center text-emerald-700">
+                      <td id="stu-sum-batches" class="py-1.5 px-1.5 text-center text-emerald-700">
                         0 đợt
                       </td>
-                      <td id="stu-sum-paid-ratio" class="py-2 px-2 text-center text-slate-900">
+                      <td id="stu-sum-paid-ratio" class="py-1.5 px-1.5 text-center text-slate-900">
                         0/0 em
                       </td>
-                      <td id="stu-sum-expected" class="py-2 px-2 text-right text-slate-900">
+                      <td id="stu-sum-expected" class="py-1.5 px-1.5 text-right text-slate-900">
                         0 ₫
                       </td>
-                      <td id="stu-sum-collected" class="py-2 px-2 text-center text-emerald-700">
-                        Thu: 0 ₫
+                      <td id="stu-sum-collected" class="py-1.5 px-1.5 text-center text-emerald-700">
+                        Thu: 0k
                       </td>
-                      <td id="stu-sum-missing" class="py-2 px-2 text-center text-rose-600">
-                        Thiếu: 0 ₫
+                      <td id="stu-sum-missing" class="py-1.5 px-1.5 text-center text-rose-600">
+                        Thiếu: 0k
                       </td>
                     </tr>
                   </thead>
@@ -2948,7 +2959,7 @@
               <table id="finance-transactions-table" class="sheet-table js-sticky-header-table w-full text-left border-collapse">
                 <thead class="sticky-table-thead">
                   <tr class="sheet-navy-header text-xs font-extrabold uppercase tracking-normal whitespace-nowrap">
-                    <th class="py-3 px-2 w-[38px] text-center">
+                    <th class="py-2 px-1.5 w-8 text-center">
                       <input
                         id="finance-select-all-cb"
                         type="checkbox"
@@ -2957,15 +2968,15 @@
                         class="w-4 h-4 accent-blue-600 rounded cursor-pointer"
                       />
                     </th>
-                    <th class="py-3 px-2 w-[46px] text-center font-extrabold">STT</th>
-                    <th class="py-3 px-3 w-[150px] text-left">Mã GD / Ngày giờ</th>
-                    <th class="py-3 px-2.5 w-[90px] text-center">Loại</th>
-                    <th class="py-3 px-2.5 w-[130px] text-center">Danh mục</th>
-                    <th class="py-3 px-3 w-[225px] text-left">Học sinh liên kết &amp; Đợt</th>
-                    <th class="py-3 px-3.5 min-w-[220px] text-left">Thông tin nhanh (Bấm xem chi tiết)</th>
-                    <th class="py-3 px-3 w-[140px] text-right">Số tiền</th>
-                    <th class="py-3 px-2.5 w-[125px] text-center">Phương thức</th>
-                    <th class="py-3 px-2.5 w-[128px] text-center">Thao tác</th>
+                    <th class="py-2 px-1 w-9 text-center font-extrabold">STT</th>
+                    <th class="py-2 px-2 w-[108px] text-left">Mã / Ngày</th>
+                    <th class="py-2 px-1.5 w-[68px] text-center">Loại</th>
+                    <th class="py-2 px-1.5 w-[92px] text-center">Danh mục</th>
+                    <th class="py-2 px-2 w-[172px] text-left">Học sinh &amp; Đợt</th>
+                    <th class="py-2 px-2.5 min-w-[165px] text-left">Nội dung (Bấm xem)</th>
+                    <th class="py-2 px-2 w-[92px] text-right">Số tiền</th>
+                    <th class="py-2 px-1.5 w-[82px] text-center">P.Thức</th>
+                    <th class="py-2 px-1.5 w-[108px] text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody id="admin-transactions-tbody" class="divide-y divide-slate-200 text-xs sm:text-sm">
@@ -6157,6 +6168,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261113_v69"></script>
+  <script src="app.js?v=20261114_v70"></script>
 </body>
 </html>

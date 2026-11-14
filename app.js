@@ -3559,7 +3559,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261113_v69', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261114_v70', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -4860,35 +4860,114 @@ function navigateSidebarSection(sectionKey) {
   }
 }
 
-const SIDEBAR_COLLAPSED_STORAGE_KEY = 'edupay_sidebar_collapsed_v1';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'edupay_sidebar_collapsed_v2';
+
+function syncSidebarToggleUI(collapsed) {
+  const isCollapsed = Boolean(collapsed);
+  const sidebar = document.getElementById('admin-left-sidebar');
+  const icon = document.getElementById('sidebar-collapse-icon');
+  const topExpandBtn = document.getElementById('btn-expand-sidebar-top');
+  if (sidebar) {
+    sidebar.classList.toggle('is-collapsed', isCollapsed);
+  }
+  if (icon) {
+    icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+  }
+  if (topExpandBtn) {
+    if (isCollapsed) {
+      topExpandBtn.classList.remove('hidden');
+      topExpandBtn.classList.add('inline-flex');
+    } else {
+      topExpandBtn.classList.add('hidden');
+      topExpandBtn.classList.remove('inline-flex');
+    }
+  }
+}
 
 function initSidebarCollapsedState() {
   try {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
-    if (saved === '1') {
-      const sidebar = document.getElementById('admin-left-sidebar');
-      const icon = document.getElementById('sidebar-collapse-icon');
-      if (sidebar) sidebar.classList.add('is-collapsed');
-      if (icon) icon.setAttribute('data-lucide', 'panel-left-open');
-    }
-  } catch (e) {}
+    // Mặc định thu gọn thanh menu trái thành 1 nút nhỏ trên đầu để hiển thị tối đa màn hình
+    const shouldCollapse = saved === null ? true : saved === '1';
+    syncSidebarToggleUI(shouldCollapse);
+  } catch (e) {
+    syncSidebarToggleUI(true);
+  }
 }
 
-function toggleAdminSidebar() {
+function toggleAdminSidebar(forceCollapsed = undefined) {
   const sidebar = document.getElementById('admin-left-sidebar');
-  const icon = document.getElementById('sidebar-collapse-icon');
   if (!sidebar) return;
-  const collapsed = sidebar.classList.toggle('is-collapsed');
+  const nextCollapsed =
+    typeof forceCollapsed === 'boolean' ? forceCollapsed : !sidebar.classList.contains('is-collapsed');
+  syncSidebarToggleUI(nextCollapsed);
   try {
-    localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0');
+    localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, nextCollapsed ? '1' : '0');
   } catch (e) {}
-  if (icon) {
-    icon.setAttribute('data-lucide', collapsed ? 'panel-left-open' : 'panel-left-close');
-  }
   lucide.createIcons();
   if (typeof scheduleStickyHeaderSync === 'function') {
-    setTimeout(() => scheduleStickyHeaderSync(true), 250);
+    setTimeout(() => scheduleStickyHeaderSync(true), 180);
   }
+}
+
+function formatCompactVnd(amount) {
+  const num = Number(amount) || 0;
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs === 0) return '0k';
+  if (abs >= 1000000) {
+    if (abs % 1000000 === 0) {
+      return `${sign}${abs / 1000000}tr`;
+    }
+    if (abs % 10000 === 0) {
+      const trVal = (abs / 1000000).toFixed(abs % 100000 === 0 ? 1 : 2).replace('.', ',');
+      return `${sign}${trVal}tr`;
+    }
+    if (abs % 1000 === 0) {
+      return `${sign}${Math.round(abs / 1000).toLocaleString('vi-VN')}k`;
+    }
+  }
+  if (abs >= 1000 && abs % 1000 === 0) {
+    return `${sign}${Math.round(abs / 1000).toLocaleString('vi-VN')}k`;
+  }
+  return formatCurrency(num);
+}
+
+function formatShortPeriodLabel(period) {
+  const raw = String(period || '').trim();
+  if (!raw) return '---';
+  return raw
+    .replace(/Tháng\s*/gi, 'T')
+    .replace(/Năm\s*/gi, '')
+    .replace(/\/20(\d{2})\b/g, '/$1')
+    .replace(/\s*-\s*/g, '-');
+}
+
+function formatCompactDateVN(dateStr) {
+  const full = typeof formatShortDateVN === 'function' ? formatShortDateVN(dateStr) : String(dateStr || '').trim();
+  if (!full) return '';
+  return full.replace(/\/20(\d{2})$/, '/$1');
+}
+
+function formatShortClassLabel(className) {
+  const raw = String(className || '').trim();
+  if (!raw) return '---';
+  return raw.replace(/^Lớp\s+/i, '');
+}
+
+function formatShortCategoryLabel(category, isTest = false) {
+  if (isTest) return 'Test STK';
+  const raw = String(category || '').trim();
+  const c = removeVietnameseTones(raw.toLowerCase());
+  if (c === 'thu hoc phi') return 'Học phí';
+  if (c.includes('giao trinh') || (c.includes('thu') && c.includes('tai lieu'))) return 'Tài liệu';
+  if (c.includes('van hanh')) return 'Vận hành';
+  if (c.includes('luong') || c.includes('tro giang')) return 'Lương GV';
+  if (c.includes('thue phong') || c.includes('mat bang') || c.includes('dien nuoc')) return 'Mặt bằng';
+  if (c.includes('thuong') || c.includes('hoc bong')) return 'Học bổng';
+  if (c.includes('in an')) return 'In ấn';
+  if (c.includes('thiet bi')) return 'Thiết bị';
+  return raw || 'Khác';
 }
 
 let _searchDebounceTimer = null;
@@ -8350,30 +8429,30 @@ function renderAdminStudents() {
   if (sumCountEl) sumCountEl.textContent = `${list.length} HS`;
   if (sumClassesEl) sumClassesEl.textContent = `${activeClassesInList.size} lớp`;
   if (sumStartInfoEl) {
-    sumStartInfoEl.innerHTML = `<div class="leading-tight"><div class="text-xs uppercase tracking-normal text-slate-400">Lũy kế</div><div class="text-[11px] text-slate-600">${list.length} hồ sơ</div></div>`;
+    sumStartInfoEl.innerHTML = `<span class="text-[11px] font-bold text-slate-600">${list.length} HS</span>`;
   }
   if (sumBatchesEl) {
-    sumBatchesEl.innerHTML = `<div class="leading-tight"><div>${totalBatchesPaidCount} đợt</div><div class="text-[11px] font-bold">${formatCurrency(
+    sumBatchesEl.innerHTML = `<span title="Tổng lũy kế ${totalBatchesPaidCount} đợt: ${escapeAttr(formatCurrency(allTimePaidSum))}">${totalBatchesPaidCount}đ • ${formatCompactVnd(
       allTimePaidSum
-    )}</div></div>`;
+    )}</span>`;
   }
   if (sumPaidRatioEl) {
-    sumPaidRatioEl.innerHTML = `<div class="leading-tight"><div>${paidList.length}/${list.length} em</div><div class="text-[11px] text-slate-600">(${paidRateText})</div></div>`;
+    sumPaidRatioEl.innerHTML = `<span title="${paidList.length}/${list.length} em đã đóng (${paidRateText})">${paidList.length}/${list.length} (${paidRateText})</span>`;
   }
   if (sumExpectedEl) {
-    sumExpectedEl.innerHTML = `<div class="leading-tight"><div class="text-xs uppercase tracking-normal text-slate-500">Tổng học phí</div><div>${formatCurrency(
+    sumExpectedEl.innerHTML = `<span title="Tổng học phí: ${escapeAttr(formatCurrency(totalFeeSum))}">Tổng: ${formatCompactVnd(
       totalFeeSum
-    )}</div></div>`;
+    )}</span>`;
   }
   if (sumCollectedEl) {
-    sumCollectedEl.innerHTML = `<div class="leading-tight"><div class="text-xs uppercase tracking-normal text-emerald-600">Đã thu kỳ này</div><div>${formatCurrency(
+    sumCollectedEl.innerHTML = `<span title="Đã thu kỳ này: ${escapeAttr(formatCurrency(paidSum))}">Thu: ${formatCompactVnd(
       paidSum
-    )}</div></div>`;
+    )}</span>`;
   }
   if (sumMissingEl) {
-    sumMissingEl.innerHTML = `<div class="leading-tight"><div class="text-xs uppercase tracking-normal text-rose-500">Còn thiếu</div><div>${formatCurrency(
+    sumMissingEl.innerHTML = `<span title="Còn thiếu: ${escapeAttr(formatCurrency(unpaidSum))}">Thiếu: ${formatCompactVnd(
       unpaidSum
-    )}</div></div>`;
+    )}</span>`;
   }
 
   // 2. Render bộ lọc nhanh theo Khối lớp (Tầng 2 cân đối ngang hàng với nút + Tạo Khối / Xóa Khối bên phải)
@@ -8636,21 +8715,26 @@ function renderAdminStudents() {
         : isPending
         ? 'status-cell-pending'
         : 'status-cell-unpaid';
+      const rowStatusClass = isPaid
+        ? 'tr-status-paid'
+        : isPending
+        ? 'tr-status-pending'
+        : 'tr-status-unpaid';
 
       return `
-        <tr class="hover:bg-slate-50 transition">
-          <td class="py-2 px-1.5 text-center font-bold text-slate-600 text-xs whitespace-nowrap">
+        <tr class="${rowStatusClass} transition">
+          <td class="py-1.5 px-1 text-center font-bold text-slate-600 text-xs whitespace-nowrap">
             ${idx + 1}
           </td>
-          <td class="py-2 px-2 text-center tabular-nums font-bold text-xs text-blue-700 whitespace-nowrap">
+          <td class="py-1.5 px-1.5 text-center tabular-nums font-bold text-xs text-blue-700 whitespace-nowrap">
             ${escapeHtml(s.studentCode)}
           </td>
-          <td class="py-2 px-3 min-w-[175px] max-w-[240px]">
-            <div class="w-full flex items-center justify-between gap-2">
+          <td class="py-1.5 px-2.5 min-w-[145px] max-w-[205px]">
+            <div class="w-full flex items-center justify-between gap-1.5">
               <button
                 type="button"
                 onclick="openStudentDetailModal('${s.id}')"
-                class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer truncate"
+                class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer truncate text-xs sm:text-[13px]"
                 title="Bấm để xem Hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
               >
                 ${escapeHtml(s.fullName)}
@@ -8659,112 +8743,118 @@ function renderAdminStudents() {
                 type="button"
                 onclick="openStudentDetailModal('${s.id}')"
                 title="Xem hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
-                class="stu-detail-inline-btn shrink-0 ml-auto px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-xs font-extrabold border border-blue-200 transition cursor-pointer whitespace-nowrap"
+                class="stu-detail-inline-btn shrink-0 ml-auto px-1.5 py-0.2 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-extrabold border border-blue-200 transition cursor-pointer whitespace-nowrap"
               >
-                Chi tiết
+                Hồ sơ
               </button>
             </div>
             ${
               s.parentPhone && s.parentPhone !== '1234567890'
-                ? `<div class="text-[11px] text-slate-500 tabular-nums mt-0.5">SĐT: ${escapeHtml(s.parentPhone)}</div>`
+                ? `<div class="text-[10px] text-slate-500 tabular-nums mt-0.5">SĐT: ${escapeHtml(s.parentPhone)}</div>`
                 : ''
             }
             ${
               stats.previousClasses && stats.previousClasses.length > 0
-                ? `<div class="mt-0.5"><span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]" title="Lịch sử lớp học trước đây"><i data-lucide="arrow-right-left" class="w-2.5 h-2.5"></i><span>Đã học: Lớp ${escapeHtml(
+                ? `<div class="mt-0.5"><span class="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]" title="Lịch sử lớp học trước đây"><i data-lucide="arrow-right-left" class="w-2.5 h-2.5"></i><span>Lớp cũ: ${escapeHtml(
                     stats.previousClasses.join(', ')
                   )}</span></span></div>`
                 : ''
             }
-            ${s.note ? `<div class="text-[11px] text-slate-500 italic mt-0.5 line-clamp-2">${escapeHtml(s.note)}</div>` : ''}
+            ${s.note ? `<div class="text-[10px] text-slate-500 italic mt-0.5 line-clamp-1" title="${escapeAttr(s.note)}">${escapeHtml(s.note)}</div>` : ''}
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
             <button
               type="button"
               onclick="quickFilterByClassInAllStudents('${escapeAttr(s.className)}')"
-              class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-xs transition cursor-pointer whitespace-nowrap"
+              class="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-[11px] transition cursor-pointer whitespace-nowrap"
               title="Bấm để lọc riêng Lớp ${escapeAttr(s.className)}"
             >
-              Lớp ${escapeHtml(s.className)}
+              ${escapeHtml(formatShortClassLabel(s.className))}
             </button>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
             <button
               type="button"
               onclick="openStudentStartDatePicker('${s.id}', '${escapeAttr(stats.startDateIso)}', this)"
-              title="Bấm để chọn hoặc sửa ngày bắt đầu học của học sinh"
+              title="Bấm để chọn hoặc sửa ngày bắt đầu học (${escapeAttr(formatShortDateVN(stats.startDateIso))})"
               class="tc-date-pill-btn"
             >
-              <span>${escapeHtml(formatShortDateVN(stats.startDateIso) || 'Chọn ngày')}</span>
-              <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#141414] shrink-0"></i>
+              <span>${escapeHtml(formatCompactDateVN(stats.startDateIso) || 'Chọn')}</span>
+              <i data-lucide="calendar" class="w-3 h-3 text-[#141414] shrink-0"></i>
             </button>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap">
-            <div class="inline-flex flex-col items-center justify-center min-w-[98px] px-2 py-1 rounded-lg border leading-tight ${
-              stats.paidBatchesCount > 0
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-slate-100 border-slate-300 text-slate-600'
-            }">
-              <div class="inline-flex items-center gap-1">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
+            <div
+              title="Tổng lũy kế đã đóng: ${escapeAttr(formatCurrency(stats.totalPaidAmount))}"
+              class="inline-flex flex-col items-center justify-center min-w-[74px] px-1.5 py-0.5 rounded-md border leading-tight ${
+                stats.paidBatchesCount > 0
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-slate-100 border-slate-300 text-slate-600'
+              }"
+            >
+              <div class="inline-flex items-center gap-0.5">
                 <button
                   type="button"
                   onclick="adjustStudentPaidBatches('${s.id}', -1)"
                   title="Giảm 1 đợt đã đóng"
-                  class="w-5 h-5 rounded bg-white hover:bg-rose-100 text-rose-700 border border-slate-300 font-black text-xs leading-none flex items-center justify-center cursor-pointer transition"
+                  class="w-4 h-4 rounded bg-white hover:bg-rose-100 text-rose-700 border border-slate-300 font-black text-[11px] leading-none flex items-center justify-center cursor-pointer transition"
                 >−</button>
-                <span class="text-xs font-extrabold min-w-[42px] text-center">${stats.paidBatchesCount} đợt</span>
+                <span class="text-[11px] font-extrabold min-w-[30px] text-center">${stats.paidBatchesCount}đ</span>
                 <button
                   type="button"
                   onclick="adjustStudentPaidBatches('${s.id}', 1)"
                   title="Tăng 1 đợt đã đóng"
-                  class="w-5 h-5 rounded bg-white hover:bg-emerald-100 text-emerald-700 border border-slate-300 font-black text-xs leading-none flex items-center justify-center cursor-pointer transition"
+                  class="w-4 h-4 rounded bg-white hover:bg-emerald-100 text-emerald-700 border border-slate-300 font-black text-[11px] leading-none flex items-center justify-center cursor-pointer transition"
                 >+</button>
               </div>
-              <span class="text-[11px] font-bold mt-0.5">${formatCurrency(stats.totalPaidAmount)}</span>
+              <span class="text-[10px] font-extrabold mt-0.5">${formatCompactVnd(stats.totalPaidAmount)}</span>
             </div>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap">
-            <span class="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-900 border border-slate-200 font-bold text-xs whitespace-nowrap">
-              ${escapeHtml(s.period)}
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
+            <span
+              title="${escapeAttr(s.period || '')}"
+              class="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-900 border border-slate-200 font-bold text-[11px] whitespace-nowrap"
+            >
+              ${escapeHtml(formatShortPeriodLabel(s.period))}
             </span>
           </td>
-          <td class="py-2 px-2 text-right font-extrabold text-slate-900 whitespace-nowrap">
+          <td class="py-1.5 px-1.5 text-right font-extrabold text-slate-900 whitespace-nowrap">
             <select
               onchange="handleClassbookFeeSelect('${s.id}', this.value)"
-              title="Bấm để tùy chọn mức học phí hoặc tính theo số buổi cho học sinh"
+              title="Bấm để tùy chọn mức học phí (${escapeAttr(formatCurrency(s.tuitionFee))}) hoặc tính theo số buổi"
               class="tc-fee-select"
             >
               ${getPresetTuitionOptionsHtml(s.tuitionFee, s)}
-              <option value="PER_SESSION">⚡ Tính theo số buổi...</option>
-              <option value="CUSTOM">+ Số khác...</option>
+              <option value="PER_SESSION">⚡ Theo buổi...</option>
+              <option value="CUSTOM">+ Khác...</option>
             </select>
             ${
               stats.feeMode === 'PER_SESSION' && stats.perSessionRate > 0
-                ? `<button type="button" onclick="handleClassbookFeeSelect('${s.id}', 'PER_SESSION')" title="Đang tính học phí theo số buổi dạy (Bấm để đổi đơn giá/buổi)" class="block ml-auto mt-0.5 px-1.5 py-0.2 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold cursor-pointer whitespace-nowrap">${toShortMoney(
+                ? `<button type="button" onclick="handleClassbookFeeSelect('${s.id}', 'PER_SESSION')" title="Đang tính học phí theo số buổi dạy (Bấm để đổi đơn giá/buổi)" class="block ml-auto mt-0.5 px-1 py-0.2 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold cursor-pointer whitespace-nowrap">${toShortMoney(
                     stats.perSessionRate
-                  )}k/b × ${stats.lastSessionCount || getClassTotalSessionsCount(s.className)}b</button>`
+                  )}k×${stats.lastSessionCount || getClassTotalSessionsCount(s.className)}b</button>`
                 : ''
             }
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap min-w-[132px] ${statusCellClass}">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap w-24 ${statusCellClass}">
             <select
               onchange="quickChangeStudentStatus('${s.id}', this.value)"
-              class="status-select bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer"
+              class="status-select bg-transparent text-[11px] font-extrabold text-center focus:outline-none cursor-pointer w-full"
             >
-              <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã hoàn thành</option>
+              <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã đóng</option>
               <option value="Chờ duyệt" ${isPending ? 'selected' : ''}>Chờ duyệt</option>
               <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
             </select>
           </td>
-          <td class="py-2 px-2 text-center whitespace-nowrap min-w-[148px]">
-            <div class="inline-flex items-center justify-center gap-1">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap w-28">
+            <div class="inline-flex items-center justify-center gap-0.5">
               <button
                 type="button"
                 onclick="openStudentDetailModal('${s.id}')"
                 title="Xem hồ sơ chi tiết học sinh"
                 class="tc-row-action-btn bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border-blue-200"
               >
-                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <i data-lucide="eye" class="w-3 h-3"></i>
               </button>
               <button
                 type="button"
@@ -8772,7 +8862,7 @@ function renderAdminStudents() {
                 title="Chuyển học sinh sang lớp khác (đồng bộ lịch sử)"
                 class="tc-row-action-btn bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border-indigo-200"
               >
-                <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i>
+                <i data-lucide="arrow-right-left" class="w-3 h-3"></i>
               </button>
               <button
                 type="button"
@@ -8780,7 +8870,7 @@ function renderAdminStudents() {
                 title="Lấy mã VietQR của học sinh này"
                 class="tc-row-action-btn bg-slate-100 hover:bg-slate-900 text-slate-900 hover:text-white border-slate-200"
               >
-                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                <i data-lucide="qr-code" class="w-3 h-3"></i>
               </button>
               <button
                 type="button"
@@ -8788,7 +8878,7 @@ function renderAdminStudents() {
                 title="Chỉnh sửa thông tin học sinh"
                 class="tc-row-action-btn bg-slate-100 hover:bg-slate-700 text-slate-700 hover:text-white border-slate-200"
               >
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                <i data-lucide="edit-3" class="w-3 h-3"></i>
               </button>
               <button
                 type="button"
@@ -8796,7 +8886,7 @@ function renderAdminStudents() {
                 title="Xóa bản ghi học sinh"
                 class="tc-row-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border-rose-200"
               >
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <i data-lucide="trash-2" class="w-3 h-3"></i>
               </button>
             </div>
           </td>
@@ -10093,7 +10183,7 @@ function resolveTransactionBatchInfo(item, stateObj = appState) {
 
 function renderLinkedStudentBatchCellHtml(batchInfo, isIncome, isTestTx) {
   if (isTestTx && !batchInfo.studentCode && !batchInfo.matchedStu) {
-    return `<span class="tc-cat-badge tc-cat-test">Test kết nối STK</span>`;
+    return `<span class="tc-cat-badge tc-cat-test">Test STK</span>`;
   }
   if (batchInfo.matchedStu || batchInfo.studentCode || batchInfo.studentName) {
     const code = batchInfo.studentCode || batchInfo.matchedStu?.studentCode || 'HS';
@@ -10103,18 +10193,18 @@ function renderLinkedStudentBatchCellHtml(batchInfo, isIncome, isTestTx) {
     const period = batchInfo.periodLabel;
     const batchColor = getBatchBadgeColorClass(batch);
     return `
-      <div class="tc-linked-stu-box ${batchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} max-w-[265px]">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white tabular-nums font-extrabold text-[11px] leading-none shrink-0">${escapeHtml(code)}</span>
-          <span class="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[180px]" title="${escapeAttr(name)}">${escapeHtml(name)}</span>
+      <div class="tc-linked-stu-box ${batchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} max-w-[185px]">
+        <div class="flex items-center gap-1 flex-wrap">
+          <span class="px-1.5 py-0.2 rounded bg-blue-600 text-white tabular-nums font-extrabold text-[10px] leading-none shrink-0">${escapeHtml(code)}</span>
+          <span class="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[115px]" title="${escapeAttr(name)}">${escapeHtml(name)}</span>
           ${
             batch
               ? `<span class="tc-batch-badge ${batchColor}" title="Khoản thu này thuộc ${escapeAttr(batch)}${period ? ' (' + escapeAttr(period) + ')' : ''}">${escapeHtml(batch)}</span>`
               : ''
           }
         </div>
-        <div class="text-[11px] text-slate-600 dark:text-slate-300 font-semibold truncate mt-0.5">
-          ${cls ? `Lớp ${escapeHtml(cls)}` : 'Đã liên kết HS'}${period ? ` • ${escapeHtml(period)}` : ''}${batchInfo.isHistorical ? ' (Đợt trước)' : ''}
+        <div class="text-[10px] text-slate-600 dark:text-slate-300 font-semibold truncate mt-0.5" title="${escapeAttr((cls ? 'Lớp ' + cls : '') + (period ? ' • ' + period : ''))}">
+          ${cls ? `Lớp ${escapeHtml(formatShortClassLabel(cls))}` : 'Đã gán HS'}${period ? ` • ${escapeHtml(formatShortPeriodLabel(period))}` : ''}${batchInfo.isHistorical ? ' (Cũ)' : ''}
         </div>
       </div>
     `;
@@ -10122,15 +10212,15 @@ function renderLinkedStudentBatchCellHtml(batchInfo, isIncome, isTestTx) {
   if (isIncome) {
     return `
       <span class="tc-unlinked-stu-pill" title="Bấm vào dòng để gán học sinh cho khoản thu này">
-        <i data-lucide="user-plus" class="w-3.5 h-3.5 shrink-0"></i>
-        <span>Chưa gán HS • Bấm gán</span>
+        <i data-lucide="user-plus" class="w-3 h-3 shrink-0"></i>
+        <span>Gán HS</span>
       </span>
     `;
   }
   return `
     <span class="tc-expense-target-pill">
       <i data-lucide="receipt" class="w-3 h-3 shrink-0"></i>
-      <span>Khoản chi chung</span>
+      <span>Chi chung</span>
     </span>
   `;
 }
@@ -10538,9 +10628,9 @@ function renderAdminTransactions() {
         <tr
           onclick="openTransactionDetailModal('${escapeAttr(rowKey)}')"
           title="Bấm vào dòng để xem thông tin chi tiết yêu cầu chuyển khoản"
-          class="tc-fin-row-pending bg-amber-50/70 hover:bg-amber-100/60 transition align-middle cursor-pointer"
+          class="tc-fin-row-pending tr-status-pending bg-amber-50/70 hover:bg-amber-100/60 transition align-middle cursor-pointer"
         >
-          <td class="py-2.5 px-2 text-center align-middle" onclick="event.stopPropagation()">
+          <td class="py-1.5 px-1.5 text-center align-middle" onclick="event.stopPropagation()">
             <input
               type="checkbox"
               ${isSelected ? 'checked' : ''}
@@ -10549,69 +10639,66 @@ function renderAdminTransactions() {
               title="Chọn yêu cầu chờ duyệt này"
             />
           </td>
-          <td class="py-2.5 px-2 text-center align-middle font-bold text-xs text-amber-900 dark:text-amber-300 tabular-nums">
+          <td class="py-1.5 px-1 text-center align-middle font-bold text-xs text-amber-900 dark:text-amber-300 tabular-nums">
             ${stt}
           </td>
-          <td class="py-2.5 px-3 whitespace-nowrap align-middle">
+          <td class="py-1.5 px-2 whitespace-nowrap align-middle">
             <div class="tabular-nums font-extrabold text-xs text-amber-900 dark:text-amber-200" title="${escapeAttr(req.id)}">${escapeHtml(shortReqId)}</div>
             ${
               reqDt.time
-                ? `<div class="text-[11px] font-bold text-amber-700 dark:text-amber-400 mt-0.5 flex items-center gap-1">
-                    <i data-lucide="clock" class="w-3 h-3 shrink-0"></i>
-                    <span>${escapeHtml(reqDt.time)}</span>
+                ? `<div class="text-[10px] font-bold text-amber-700 dark:text-amber-400 mt-0.5 flex items-center gap-0.5">
+                    <span>${escapeHtml(reqDt.time.slice(0, 5))}</span>
                     <span class="text-slate-400 font-normal">•</span>
-                    <span class="font-semibold">${escapeHtml(reqDt.date)}</span>
+                    <span class="font-semibold">${escapeHtml(formatCompactDateVN(reqDt.date))}</span>
                   </div>`
-                : `<div class="text-[11px] font-semibold text-amber-700 dark:text-amber-400 mt-0.5">${escapeHtml(reqDt.date || req.submittedAt || 'Vừa gửi')}</div>`
+                : `<div class="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mt-0.5">${escapeHtml(formatCompactDateVN(reqDt.date) || req.submittedAt || 'Vừa gửi')}</div>`
             }
           </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
-            <span class="inline-flex items-center justify-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-amber-200/90 text-amber-950 border-amber-400">
-              <i data-lucide="clock" class="w-3 h-3 shrink-0"></i>
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap align-middle">
+            <span class="inline-flex items-center justify-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold whitespace-nowrap border bg-amber-200/90 text-amber-950 border-amber-400">
               <span>Chờ duyệt</span>
             </span>
           </td>
-          <td class="py-2.5 px-2.5 text-center align-middle">
-            <span class="tc-cat-badge ${isTestReq ? 'tc-cat-test' : 'tc-cat-tuition'} max-w-[125px]">
-              ${isTestReq ? 'Test STK' : 'Thu học phí'}
+          <td class="py-1.5 px-1.5 text-center align-middle">
+            <span class="tc-cat-badge ${isTestReq ? 'tc-cat-test' : 'tc-cat-tuition'} max-w-[92px]">
+              ${isTestReq ? 'Test STK' : 'Học phí'}
             </span>
           </td>
-          <td class="py-2.5 px-3 align-middle">
+          <td class="py-1.5 px-2 align-middle">
             ${renderLinkedStudentBatchCellHtml(reqBatchInfo, true, isTestReq)}
           </td>
-          <td class="py-2.5 px-3.5 align-middle">
-            <div class="space-y-0.5 max-w-[330px]">
-              <div class="flex flex-wrap items-center gap-1.5">
+          <td class="py-1.5 px-2.5 align-middle">
+            <div class="space-y-0.5 max-w-[270px]">
+              <div class="flex flex-wrap items-center gap-1">
                 ${
                   isDraftReq
-                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-xs whitespace-nowrap"><i data-lucide="tag" class="w-3 h-3"></i><span>STK Nháp</span></span>`
+                    ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-[10px] whitespace-nowrap"><span>Nháp</span></span>`
                     : ''
                 }
-                <span class="font-extrabold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(req.payerName || 'Phụ huynh chuyển khoản')}</span>
+                <span class="font-extrabold text-xs text-slate-900 truncate">${escapeHtml(req.payerName || 'Phụ huynh CK')}</span>
               </div>
-              <div class="text-[11px] text-slate-600 truncate flex items-center gap-1">
+              <div class="text-[10px] text-slate-600 truncate flex items-center gap-1">
                 <span class="truncate">${escapeHtml(quickSub)}</span>
-                <span class="text-xs font-extrabold text-indigo-700 dark:text-indigo-300 shrink-0">Chi tiết ↗</span>
+                <span class="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 shrink-0">Xem ↗</span>
               </div>
             </div>
           </td>
-          <td class="py-2.5 px-3 text-right tabular-nums font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle text-amber-700">
+          <td class="py-1.5 px-2 text-right tabular-nums font-extrabold text-xs whitespace-nowrap align-middle text-amber-700" title="${escapeAttr('+' + formatCurrency(amtVal))}">
             <div class="inline-flex flex-col items-end leading-tight">
-              <span class="inline-flex items-center gap-1 text-xs font-sans font-extrabold text-amber-900 bg-amber-200/80 px-1.5 py-0.5 rounded border border-amber-400">
-                <i data-lucide="clock" class="w-3 h-3 shrink-0"></i>
-                <span>Chờ duyệt</span>
+              <span class="text-[10px] font-sans font-extrabold text-amber-900 bg-amber-200/80 px-1 py-0.2 rounded border border-amber-400">
+                Chờ duyệt
               </span>
-              <span class="text-xs sm:text-sm font-black text-emerald-700 mt-0.5">
-                +${formatCurrency(amtVal)}
+              <span class="text-xs font-black text-emerald-700 mt-0.5">
+                +${formatCompactVnd(amtVal)}
               </span>
             </div>
           </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
-            <div class="tc-method-pill tc-method-draft text-[11px] font-extrabold">
-              QR Web / CK
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap align-middle">
+            <div class="tc-method-pill tc-method-draft text-[10px] font-extrabold">
+              QR / CK
             </div>
           </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             <div class="tc-tx-action-col">
               <button
                 type="button"
@@ -10619,7 +10706,7 @@ function renderAdminTransactions() {
                 title="Duyệt yêu cầu chuyển khoản này và ghi vào Sổ Thu - Chi"
                 class="tc-tx-action-btn col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600"
               >
-                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                <i data-lucide="check" class="w-3 h-3"></i>
                 <span>Duyệt</span>
               </button>
               <button
@@ -10647,7 +10734,7 @@ function renderAdminTransactions() {
                 class="tc-tx-action-btn bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200"
               >
                 <i data-lucide="x" class="w-3 h-3"></i>
-                <span>Từ chối</span>
+                <span>Hủy</span>
               </button>
               <button
                 type="button"
@@ -10690,7 +10777,7 @@ function renderAdminTransactions() {
         <tr
           onclick="openTransactionDetailModal('${escapeAttr(t.id)}')"
           title="Bấm vào dòng để xem chi tiết giao dịch & chỉnh sửa"
-          class="${rowAccentClass} hover:bg-slate-50/90 transition align-middle cursor-pointer ${
+          class="${rowAccentClass} transition align-middle cursor-pointer ${
             isTestTx
               ? 'bg-amber-50/45'
               : isExcludedTx
@@ -10702,7 +10789,7 @@ function renderAdminTransactions() {
               : ''
           } ${isSelected ? 'bg-blue-50/60' : ''}"
         >
-          <td class="py-2.5 px-2 text-center align-middle" onclick="event.stopPropagation()">
+          <td class="py-1.5 px-1.5 text-center align-middle" onclick="event.stopPropagation()">
             <input
               type="checkbox"
               ${isSelected ? 'checked' : ''}
@@ -10711,30 +10798,29 @@ function renderAdminTransactions() {
               title="Chọn giao dịch này để sửa/xóa hàng loạt"
             />
           </td>
-          <td class="py-2.5 px-2 text-center align-middle font-extrabold text-xs text-slate-700 dark:text-slate-300 tabular-nums">
+          <td class="py-1.5 px-1 text-center align-middle font-extrabold text-xs text-slate-700 dark:text-slate-300 tabular-nums">
             ${stt}
           </td>
-          <td class="py-2.5 px-3 whitespace-nowrap align-middle">
+          <td class="py-1.5 px-2 whitespace-nowrap align-middle">
             <div class="tabular-nums font-extrabold text-xs text-slate-800 dark:text-slate-100" title="Mã đầy đủ: ${escapeAttr(t.id)}">${escapeHtml(compact.shortId)}</div>
             ${
               dt.time
-                ? `<div class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 flex items-center gap-1">
-                    <i data-lucide="clock" class="w-3 h-3 shrink-0"></i>
-                    <span>${escapeHtml(dt.time)}</span>
+                ? `<div class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 flex items-center gap-0.5">
+                    <span>${escapeHtml(dt.time.slice(0, 5))}</span>
                     <span class="text-slate-400 font-normal">•</span>
-                    <span class="text-slate-500 dark:text-slate-400 font-semibold">${escapeHtml(dt.date)}</span>
+                    <span class="text-slate-500 dark:text-slate-400 font-semibold">${escapeHtml(formatCompactDateVN(dt.date))}</span>
                   </div>`
-                : `<div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(dt.date || t.date || '')}</div>`
+                : `<div class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">${escapeHtml(formatCompactDateVN(dt.date || t.date || ''))}</div>`
             }
           </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap align-middle">
             ${
               isTestTx
-                ? `<span class="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-950 border-amber-400">
+                ? `<span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-950 border-amber-400">
                     Test STK
                   </span>`
-                : `<div class="inline-flex flex-col items-center gap-1">
-                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-extrabold whitespace-nowrap border ${
+                : `<div class="inline-flex flex-col items-center gap-0.5">
+                    <span class="inline-flex items-center justify-center px-2 py-0.2 rounded-full text-[11px] font-extrabold whitespace-nowrap border ${
                       isExcludedTx
                         ? 'bg-slate-200 text-slate-700 border-slate-400'
                         : isIncome
@@ -10745,123 +10831,122 @@ function renderAdminTransactions() {
                     </span>
                     ${
                       isExcludedTx
-                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap border bg-slate-200 text-slate-800 border-slate-400" title="Giao dịch này không được ghi nhận vào thống kê hệ thống">
-                            <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
-                            <span>Không ghi nhận</span>
+                        ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold whitespace-nowrap border bg-slate-200 text-slate-800 border-slate-400" title="Giao dịch này không được ghi nhận vào thống kê hệ thống">
+                            <span>K.Ghi nhận</span>
                           </span>`
                         : ''
                     }
                     ${
                       isDraftTx
-                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-extrabold whitespace-nowrap border bg-amber-100 text-amber-900 border-amber-400">
-                            <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
-                            <span>STK Nháp</span>
+                        ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-extrabold whitespace-nowrap border bg-amber-100 text-amber-900 border-amber-400">
+                            <span>Nháp</span>
                           </span>`
                         : ''
                     }
                   </div>`
             }
           </td>
-          <td class="py-2.5 px-2.5 text-center align-middle">
-            <span class="tc-cat-badge ${catColorClass} max-w-[130px]">
-              ${escapeHtml(isTestTx ? 'Test STK' : t.category)}
+          <td class="py-1.5 px-1.5 text-center align-middle">
+            <span class="tc-cat-badge ${catColorClass} max-w-[92px]" title="${escapeAttr(t.category || '')}">
+              ${escapeHtml(formatShortCategoryLabel(t.category, isTestTx))}
             </span>
           </td>
-          <td class="py-2.5 px-3 align-middle">
+          <td class="py-1.5 px-2 align-middle">
             ${renderLinkedStudentBatchCellHtml(compact.batchInfo, isIncome, isTestTx)}
           </td>
-          <td class="py-2.5 px-3.5 align-middle">
-            <div class="space-y-0.5 max-w-[330px]">
-              <div class="flex flex-wrap items-center gap-1.5">
+          <td class="py-1.5 px-2.5 align-middle">
+            <div class="space-y-0.5 max-w-[270px]">
+              <div class="flex flex-wrap items-center gap-1">
                 ${
                   isTestTx
-                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-950 border border-amber-400 text-xs font-extrabold"><i data-lucide="flask-conical" class="w-3 h-3"></i><span>Test</span></span>`
+                    ? `<span class="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-amber-200/80 text-amber-950 border border-amber-400 text-[10px] font-extrabold"><span>Test</span></span>`
                     : ''
                 }
                 ${
                   isExcludedTx
-                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 border border-slate-400 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>${escapeHtml(
-                        txTagLabel || 'Không ghi nhận hệ thống'
+                    ? `<span class="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-slate-200 text-slate-800 border border-slate-400 text-[10px] font-extrabold"><span>${escapeHtml(
+                        txTagLabel === 'Không ghi nhận hệ thống' ? 'K.Ghi nhận' : txTagLabel || 'K.Ghi nhận'
                       )}</span></span>`
                     : txTagLabel
-                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>${escapeHtml(
+                    ? `<span class="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-extrabold"><span>${escapeHtml(
                         txTagLabel
                       )}</span></span>`
                     : ''
                 }
                 ${
                   isDraftTx
-                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-200/90 text-amber-950 border border-amber-400 text-xs font-extrabold"><i data-lucide="tag" class="w-3 h-3"></i><span>STK Nháp</span></span>`
+                    ? `<span class="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-amber-200/90 text-amber-950 border border-amber-400 text-[10px] font-extrabold"><span>Nháp</span></span>`
                     : ''
                 }
-                <span class="text-slate-900 font-extrabold text-xs sm:text-sm leading-snug truncate ${
+                <span class="text-slate-900 font-extrabold text-xs leading-snug truncate ${
                   isExcludedTx ? 'line-through text-slate-500' : ''
                 }" title="${escapeAttr(compact.rawDesc || compact.headline)}">
                   ${escapeHtml(compact.tableDescLine || compact.headline)}
                 </span>
               </div>
-              <div class="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1.5">
+              <div class="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
                 <span class="truncate">${escapeHtml(compact.subline)}</span>
-                <span class="text-xs font-extrabold text-indigo-700 dark:text-indigo-300 shrink-0">Chi tiết ↗</span>
+                <span class="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 shrink-0">Xem ↗</span>
               </div>
             </div>
           </td>
-          <td class="py-2.5 px-3 text-right tabular-nums font-extrabold text-xs sm:text-sm whitespace-nowrap align-middle ${
-            isTestTx
-              ? 'text-amber-700'
-              : isExcludedTx
-              ? 'text-slate-400'
-              : isDraftTx && !isDraftIncluded
-              ? 'text-slate-500'
-              : isIncome
-              ? 'text-emerald-600'
-              : 'text-rose-600'
-          }">
+          <td
+            title="${escapeAttr((isIncome ? '+' : '-') + formatCurrency(t.amount))}"
+            class="py-1.5 px-2 text-right tabular-nums font-extrabold text-xs whitespace-nowrap align-middle ${
+              isTestTx
+                ? 'text-amber-700'
+                : isExcludedTx
+                ? 'text-slate-400'
+                : isDraftTx && !isDraftIncluded
+                ? 'text-slate-500'
+                : isIncome
+                ? 'text-emerald-600'
+                : 'text-rose-600'
+            }"
+          >
             ${
               isTestTx
                 ? `<div class="inline-flex flex-col items-end leading-tight">
-                     <span class="text-xs font-sans font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                     <span class="text-[10px] font-sans font-extrabold text-amber-800 bg-amber-100 px-1 py-0.2 rounded border border-amber-300">
                        Test
                      </span>
-                     <span class="text-xs sm:text-sm font-black text-amber-700 mt-0.5">
-                       ${formatCurrency(t.testDisplayAmount || 600000)}
+                     <span class="text-xs font-black text-amber-700 mt-0.5">
+                       ${formatCompactVnd(t.testDisplayAmount || 600000)}
                      </span>
                    </div>`
                 : isExcludedTx
                 ? `<div class="inline-flex flex-col items-end leading-tight">
-                     <span class="inline-flex items-center gap-1 text-[11px] font-sans font-extrabold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded border border-slate-400">
-                       <i data-lucide="eye-off" class="w-3 h-3 shrink-0"></i>
-                       <span>Không ghi nhận HT</span>
+                     <span class="inline-flex items-center gap-0.5 text-[10px] font-sans font-extrabold text-slate-700 bg-slate-200 px-1 py-0.2 rounded border border-slate-400">
+                       <span>K.Ghi nhận</span>
                      </span>
-                     <span class="text-xs sm:text-sm font-black mt-0.5 line-through text-slate-400">
-                       ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+                     <span class="text-xs font-black mt-0.5 line-through text-slate-400">
+                       ${isIncome ? '+' : '-'}${formatCompactVnd(t.amount)}
                      </span>
                    </div>`
                 : isDraftTx
                 ? `<div class="inline-flex flex-col items-end leading-tight">
-                     <span class="inline-flex items-center gap-1 text-xs font-sans font-extrabold px-1.5 py-0.5 rounded border ${
+                     <span class="inline-flex items-center gap-0.5 text-[10px] font-sans font-extrabold px-1 py-0.2 rounded border ${
                        isDraftIncluded
                          ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
                          : 'text-slate-600 bg-slate-100 border-slate-300'
                      }">
-                       <i data-lucide="${isDraftIncluded ? 'check-circle-2' : 'pause-circle'}" class="w-3 h-3 shrink-0"></i>
-                       <span>${isDraftIncluded ? 'Đã cộng TK chính' : 'Chưa cộng TK chính'}</span>
+                       <span>${isDraftIncluded ? 'Đã cộng TK' : 'Chưa cộng'}</span>
                      </span>
-                     <span class="text-xs sm:text-sm font-black mt-0.5 ${
+                     <span class="text-xs font-black mt-0.5 ${
                        isDraftIncluded ? (isIncome ? 'text-emerald-600' : 'text-rose-600') : 'line-through text-slate-400'
                      }">
-                       ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+                       ${isIncome ? '+' : '-'}${formatCompactVnd(t.amount)}
                      </span>
                    </div>`
-                : `${isIncome ? '+' : '-'}${formatCurrency(t.amount)}`
+                : `${isIncome ? '+' : '-'}${formatCompactVnd(t.amount)}`
             }
           </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap align-middle">
             <div class="tc-method-pill ${methodColorClass}">
               ${formatCompactMethodHtml(t.method, isTestTx, isDraftTx)}
             </div>
           </td>
-          <td class="py-2.5 px-2.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
+          <td class="py-1.5 px-1.5 text-center whitespace-nowrap align-middle" onclick="event.stopPropagation()">
             <div class="tc-tx-action-col">
               <button
                 type="button"
@@ -10898,7 +10983,7 @@ function renderAdminTransactions() {
                       }"
                     >
                       <i data-lucide="${isExcludedTx ? 'check-circle-2' : 'eye-off'}" class="w-3 h-3"></i>
-                      <span>${isExcludedTx ? 'Ghi nhận lại' : 'Không ghi nhận'}</span>
+                      <span>${isExcludedTx ? 'Ghi nhận' : 'K.Ghi nhận'}</span>
                     </button>`
                   : ''
               }
@@ -10919,7 +11004,7 @@ function renderAdminTransactions() {
                       }"
                     >
                       <i data-lucide="${isDraftIncluded ? 'pause-circle' : 'plus-circle'}" class="w-3 h-3"></i>
-                      <span>${isDraftIncluded ? 'Tắt cộng' : 'Cộng TK chính'}</span>
+                      <span>${isDraftIncluded ? 'Tắt cộng' : 'Cộng TK'}</span>
                     </button>`
                   : ''
               }
@@ -16395,10 +16480,25 @@ function renderAdminClassbook() {
   document.getElementById('cb-kpi-missing').textContent = formatCurrency(totalMissing);
 
   // Cập nhật dòng TỔNG CỘNG của bảng học sinh bên trái
-  document.getElementById('cb-sum-expected').textContent = formatCurrency(totalExpected);
-  document.getElementById('cb-sum-paid-count').textContent = `${paidCount} em`;
-  document.getElementById('cb-sum-collected').textContent = formatCurrency(totalCollected);
-  document.getElementById('cb-sum-missing').textContent = formatCurrency(totalMissing);
+  const cbSumExpectedEl = document.getElementById('cb-sum-expected');
+  const cbSumPaidCntEl = document.getElementById('cb-sum-paid-count');
+  const cbSumCollectedEl = document.getElementById('cb-sum-collected');
+  const cbSumMissingEl = document.getElementById('cb-sum-missing');
+  if (cbSumExpectedEl) {
+    cbSumExpectedEl.textContent = `Tổng: ${formatCompactVnd(totalExpected)}`;
+    cbSumExpectedEl.title = `Tổng học phí dự kiến: ${formatCurrency(totalExpected)}`;
+  }
+  if (cbSumPaidCntEl) {
+    cbSumPaidCntEl.textContent = `${paidCount}/${totalCount}`;
+  }
+  if (cbSumCollectedEl) {
+    cbSumCollectedEl.textContent = `Thu: ${formatCompactVnd(totalCollected)}`;
+    cbSumCollectedEl.title = `Đã thu: ${formatCurrency(totalCollected)}`;
+  }
+  if (cbSumMissingEl) {
+    cbSumMissingEl.textContent = `Thiếu: ${formatCompactVnd(totalMissing)}`;
+    cbSumMissingEl.title = `Còn thiếu: ${formatCurrency(totalMissing)}`;
+  }
 
   // 4. Render Bảng Học sinh bên trái
   const stTbody = document.getElementById('cb-students-tbody');
@@ -16423,17 +16523,22 @@ function renderAdminClassbook() {
           : isPending
           ? 'status-cell-pending'
           : 'status-cell-unpaid';
+        const rowStatusClass = isPaid
+          ? 'tr-status-paid'
+          : isPending
+          ? 'tr-status-pending'
+          : 'tr-status-unpaid';
 
         return `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-2 px-2 text-center font-semibold text-slate-600">${idx + 1}</td>
-            <td class="py-2 px-3">
-              <div class="w-full flex items-center justify-between gap-2">
+          <tr class="${rowStatusClass} transition">
+            <td class="py-1.5 px-1 text-center font-semibold text-slate-600 text-xs">${idx + 1}</td>
+            <td class="py-1.5 px-2.5">
+              <div class="w-full flex items-center justify-between gap-1.5">
                 <button
                   type="button"
                   onclick="openStudentDetailModal('${s.id}')"
                   title="Bấm để xem thông tin chi tiết của học sinh ${escapeAttr(s.fullName)}"
-                  class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer truncate"
+                  class="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left cursor-pointer truncate text-xs sm:text-[13px]"
                 >
                   ${escapeHtml(s.fullName)}
                 </button>
@@ -16441,61 +16546,61 @@ function renderAdminClassbook() {
                   type="button"
                   onclick="openStudentDetailModal('${s.id}')"
                   title="Xem hồ sơ chi tiết của học sinh ${escapeAttr(s.fullName)}"
-                  class="stu-detail-inline-btn shrink-0 ml-auto px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-xs font-extrabold border border-blue-200 transition cursor-pointer whitespace-nowrap"
+                  class="stu-detail-inline-btn shrink-0 ml-auto px-1.5 py-0.2 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-extrabold border border-blue-200 transition cursor-pointer whitespace-nowrap"
                 >
-                  Chi tiết
+                  Hồ sơ
                 </button>
               </div>
-              <div class="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
-                <span class="tabular-nums text-slate-400">${escapeHtml(s.studentCode)}</span>
-                <span>• Học từ: <strong class="text-slate-700">${escapeHtml(stats.startDateVN)}</strong></span>
-                <div class="inline-flex items-center rounded-md border ${
+              <div class="text-[10px] text-slate-500 flex flex-wrap items-center gap-1 mt-0.5">
+                <span class="tabular-nums text-slate-400 font-semibold">${escapeHtml(s.studentCode)}</span>
+                <span>• Từ: <strong class="text-slate-700">${escapeHtml(formatCompactDateVN(stats.startDateIso))}</strong></span>
+                <div class="inline-flex items-center rounded border ${
                   stats.paidBatchesCount > 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-100 border-slate-200'
                 } overflow-hidden">
                   <button
                     type="button"
                     onclick="adjustStudentPaidBatches('${s.id}', -1)"
                     title="Giảm 1 đợt đã đóng"
-                    class="w-4 h-4 flex items-center justify-center font-black text-slate-600 hover:bg-rose-100 hover:text-rose-700 transition cursor-pointer select-none leading-none"
+                    class="w-3.5 h-3.5 flex items-center justify-center font-black text-slate-600 hover:bg-rose-100 hover:text-rose-700 transition cursor-pointer select-none leading-none"
                   >−</button>
-                  <span class="px-1.5 py-0.2 ${
+                  <span class="px-1 py-0.1 ${
                     stats.paidBatchesCount > 0 ? 'text-emerald-700 font-bold' : 'text-slate-500 font-semibold'
-                  }">Đã đóng: ${stats.paidBatchesCount} đợt</span>
+                  }">${stats.paidBatchesCount}đ</span>
                   <button
                     type="button"
                     onclick="adjustStudentPaidBatches('${s.id}', 1)"
                     title="Tăng 1 đợt đã đóng"
-                    class="w-4 h-4 flex items-center justify-center font-black text-slate-600 hover:bg-emerald-100 hover:text-emerald-700 transition cursor-pointer select-none leading-none"
+                    class="w-3.5 h-3.5 flex items-center justify-center font-black text-slate-600 hover:bg-emerald-100 hover:text-emerald-700 transition cursor-pointer select-none leading-none"
                   >+</button>
                 </div>
                 ${
                   stats.previousClasses && stats.previousClasses.length > 0
-                    ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]" title="Lịch sử lớp học trước đây"><i data-lucide="arrow-right-left" class="w-2.5 h-2.5"></i><span>Đã học: Lớp ${escapeHtml(
+                    ? `<span class="inline-flex items-center gap-0.5 px-1 py-0.1 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px]" title="Lịch sử lớp học trước đây"><i data-lucide="arrow-right-left" class="w-2.5 h-2.5"></i><span>Lớp cũ: ${escapeHtml(
                         stats.previousClasses.join(', ')
                       )}</span></span>`
                     : ''
                 }
               </div>
             </td>
-            <td class="py-1.5 px-2 text-right font-semibold text-slate-800">
+            <td class="py-1.5 px-1.5 text-right font-semibold text-slate-800">
               <select
                 onchange="handleClassbookFeeSelect('${s.id}', this.value)"
                 title="Bấm để tùy chọn mức học phí hoặc tính theo số buổi cho học sinh này"
                 class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
               >
                 ${getPresetTuitionOptionsHtml(s.tuitionFee, s, map)}
-                <option value="PER_SESSION">⚡ Tính theo số buổi...</option>
-                <option value="CUSTOM">+ Nhập số khác...</option>
+                <option value="PER_SESSION">⚡ Theo buổi...</option>
+                <option value="CUSTOM">+ Khác...</option>
               </select>
               ${
                 stats.feeMode === 'PER_SESSION' && stats.perSessionRate > 0
-                  ? `<button type="button" onclick="handleClassbookFeeSelect('${s.id}', 'PER_SESSION')" title="Đang tính học phí theo số buổi dạy của lớp (Bấm để đổi đơn giá/buổi)" class="block ml-auto mt-0.5 px-1.5 py-0.2 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold cursor-pointer whitespace-nowrap">${toShortMoney(
+                  ? `<button type="button" onclick="handleClassbookFeeSelect('${s.id}', 'PER_SESSION')" title="Đang tính học phí theo số buổi dạy của lớp (Bấm để đổi đơn giá/buổi)" class="block ml-auto mt-0.5 px-1 py-0.2 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-extrabold cursor-pointer whitespace-nowrap">${toShortMoney(
                       stats.perSessionRate
-                    )}k/b × ${stats.lastSessionCount || getClassTotalSessionsCount(s.className, map)}b</button>`
+                    )}k×${stats.lastSessionCount || getClassTotalSessionsCount(s.className, map)}b</button>`
                   : ''
               }
             </td>
-            <td class="py-2 px-2 text-center">
+            <td class="py-1.5 px-1 text-center">
               <input
                 type="checkbox"
                 ${isPaid ? 'checked' : ''}
@@ -16504,24 +16609,24 @@ function renderAdminClassbook() {
                 title="Tích chọn để xác nhận đã hoàn thành học phí"
               />
             </td>
-            <td class="py-2 px-2 text-center ${statusCellClass}">
+            <td class="py-1.5 px-1.5 text-center ${statusCellClass}">
               <select
                 onchange="quickChangeStudentStatus('${s.id}', this.value)"
-                class="status-select bg-transparent text-xs font-bold text-center focus:outline-none cursor-pointer w-full"
+                class="status-select bg-transparent text-[11px] font-extrabold text-center focus:outline-none cursor-pointer w-full"
               >
-                <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã hoàn thành</option>
+                <option value="Đã hoàn thành" ${isPaid ? 'selected' : ''}>Đã đóng</option>
                 <option value="Chờ duyệt" ${isPending ? 'selected' : ''}>Chờ duyệt</option>
                 <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
               </select>
             </td>
-            <td class="py-1.5 px-2">
+            <td class="py-1 px-1.5">
               <div class="flex items-center gap-1">
                 <input
                   type="text"
                   value="${escapeAttr(s.note || '')}"
-                  placeholder="Ghi chú (CK/Tiền mặt)..."
+                  placeholder="Ghi chú..."
                   onchange="updateClassbookStudentNote('${s.id}', this.value)"
-                  class="w-full px-1.5 py-1 text-xs border border-transparent hover:border-slate-300 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none"
+                  class="w-full px-1.5 py-0.5 text-xs border border-transparent hover:border-slate-300 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none"
                 />
                 ${
                   s.receiptUrl
@@ -16530,8 +16635,8 @@ function renderAdminClassbook() {
                 }
               </div>
             </td>
-            <td class="py-2 px-1.5 text-center">
-              <div class="inline-flex items-center gap-1">
+            <td class="py-1.5 px-1 text-center">
+              <div class="inline-flex items-center gap-0.5">
                 <button onclick="openStudentDetailModal('${s.id}')" title="Xem thông tin chi tiết học sinh" class="p-1 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                 </button>
