@@ -935,7 +935,9 @@ html.dark-mode #floating-sticky-thead-bar {
   transition: background-color 0.14s ease, box-shadow 0.14s ease;
 }
 
-.sheet-table tbody tr:not(:has(> .session-cell)):nth-child(even) {
+#cb-students-table tbody tr:nth-child(even),
+#all-students-stat-table tbody tr:nth-child(even),
+#finance-transactions-table tbody tr:nth-child(even) {
   background-color: #f8fafc;
 }
 
@@ -952,7 +954,9 @@ html.dark-mode #floating-sticky-thead-bar {
   border-left: 3.5px solid #f43f5e;
 }
 
-.sheet-table tbody tr:not(:has(> .session-cell)):hover {
+#cb-students-table tbody tr:hover,
+#all-students-stat-table tbody tr:hover,
+#finance-transactions-table tbody tr:hover {
   background-color: #eff6ff !important;
 }
 
@@ -961,11 +965,15 @@ html.dark-mode .sheet-table tbody tr {
   border-bottom-color: #334155;
 }
 
-html.dark-mode .sheet-table tbody tr:not(:has(> .session-cell)):nth-child(even) {
+html.dark-mode #cb-students-table tbody tr:nth-child(even),
+html.dark-mode #all-students-stat-table tbody tr:nth-child(even),
+html.dark-mode #finance-transactions-table tbody tr:nth-child(even) {
   background-color: #131c31;
 }
 
-html.dark-mode .sheet-table tbody tr:not(:has(> .session-cell)):hover {
+html.dark-mode #cb-students-table tbody tr:hover,
+html.dark-mode #all-students-stat-table tbody tr:hover,
+html.dark-mode #finance-transactions-table tbody tr:hover {
   background-color: #1e293b !important;
 }
 

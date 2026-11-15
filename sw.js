@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thanhchi-edu-shell-v71';
+const CACHE_NAME = 'thanhchi-edu-shell-v72';
 const SHELL_ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
@@ -16,7 +16,22 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Network-First cho các file tĩnh cùng domain (luôn nhận bản mới nhất khi có mạng, dùng cache khi mất mạng)
+function fetchWithTimeout(req, timeoutMs = 4000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('SW_FETCH_TIMEOUT')), timeoutMs);
+    fetch(req, { cache: 'no-store' })
+      .then(res => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+// Network-First có giới hạn thời gian chờ (tránh treo trang khi mạng chập chờn)
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -26,7 +41,7 @@ self.addEventListener('fetch', event => {
   const isDocRequest = req.mode === 'navigate' || req.destination === 'document';
 
   event.respondWith(
-    fetch(req, { cache: 'no-store' })
+    fetchWithTimeout(req, 4000)
       .then(res => {
         if (res && res.status === 200) {
           const clone = res.clone();

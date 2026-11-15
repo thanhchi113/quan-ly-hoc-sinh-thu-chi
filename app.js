@@ -104,6 +104,45 @@ const DRAFT_STUDENT_NAMES = new Set([
   'vũ phương thảo'
 ]);
 
+const _jsonSettingCache = new Map();
+
+function readCachedJsonSetting(stateObj, propKey, fallbackVal) {
+  const target = stateObj || appState;
+  const raw = target?.settings?.[propKey];
+  if (!raw || typeof raw !== 'string') return fallbackVal;
+  const hit = _jsonSettingCache.get(propKey);
+  if (hit && hit.raw === raw) return hit.val;
+  try {
+    const parsed = JSON.parse(raw);
+    const val = parsed !== null && typeof parsed === 'object' ? parsed : fallbackVal;
+    _jsonSettingCache.set(propKey, { raw, val });
+    return val;
+  } catch (e) {
+    return fallbackVal;
+  }
+}
+
+function readCachedSetSetting(stateObj, propKey) {
+  const target = stateObj || appState;
+  const raw = target?.settings?.[propKey];
+  if (!raw || typeof raw !== 'string') return new Set();
+  const cacheKey = `${propKey}__SET`;
+  const hit = _jsonSettingCache.get(cacheKey);
+  if (hit && hit.raw === raw) return new Set(hit.val);
+  const set = new Set();
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) {
+      arr.forEach(item => {
+        const clean = String(item || '').trim();
+        if (clean) set.add(clean);
+      });
+    }
+    _jsonSettingCache.set(cacheKey, { raw, val: Array.from(set) });
+  } catch (e) {}
+  return set;
+}
+
 function getExactAmountsMap(stateObj) {
   const defaultMap = {
     ST_1792759143949: 5000,
@@ -112,15 +151,10 @@ function getExactAmountsMap(stateObj) {
     HS101: 5000,
     YC_STK_1792759710531: 5000
   };
-  try {
-    const raw = (stateObj || appState)?.settings?.exactAmountsJson;
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        return { ...defaultMap, ...parsed };
-      }
-    }
-  } catch (e) {}
+  const parsed = readCachedJsonSetting(stateObj, 'exactAmountsJson', null);
+  if (parsed && !Array.isArray(parsed)) {
+    return { ...defaultMap, ...parsed };
+  }
   return defaultMap;
 }
 
@@ -158,20 +192,7 @@ function recordExactSmallAmount(stateObj, idKey, codeKey, vndAmount) {
 }
 
 function getDeletedClassesSet(stateObj) {
-  const set = new Set();
-  try {
-    const raw = stateObj?.settings?.deletedClassesJson;
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        arr.forEach(c => {
-          const clean = String(c || '').trim();
-          if (clean) set.add(clean);
-        });
-      }
-    }
-  } catch (e) {}
-  return set;
+  return readCachedSetSetting(stateObj, 'deletedClassesJson');
 }
 
 function markClassAsDeletedInState(className) {
@@ -217,16 +238,11 @@ function isDraftBankAccountNumber(accStr, stateObj = appState) {
   if (!clean) return false;
   if (clean === '8601774789' || clean === '96247E8DEZ') return false;
   if (clean === '5801434567' || clean === '962478SJJ2') return true;
-  try {
-    const raw = (stateObj || appState)?.settings?.receivingAccountsJson;
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        const hit = arr.find(a => a && String(a.bankAccountNo || '').trim().toUpperCase() === clean);
-        if (hit) return Boolean(hit.isTest);
-      }
-    }
-  } catch (e) {}
+  const arr = readCachedJsonSetting(stateObj, 'receivingAccountsJson', []);
+  if (Array.isArray(arr)) {
+    const hit = arr.find(a => a && String(a.bankAccountNo || '').trim().toUpperCase() === clean);
+    if (hit) return Boolean(hit.isTest);
+  }
   return false;
 }
 
@@ -237,13 +253,7 @@ function isActiveBankAccountDraft(stateObj = appState) {
 }
 
 function getDraftBankTxIdsSet(stateObj = appState) {
-  const set = new Set();
-  try {
-    const raw = (stateObj || appState)?.settings?.draftBankTxIdsJson;
-    const arr = raw ? JSON.parse(raw) : [];
-    if (Array.isArray(arr)) arr.forEach(id => id && set.add(String(id).trim()));
-  } catch (e) {}
-  return set;
+  return readCachedSetSetting(stateObj, 'draftBankTxIdsJson');
 }
 
 function markDraftBankTx(stateObj, txId) {
@@ -269,7 +279,7 @@ function unmarkDraftBankTx(stateObj, txId) {
     target.settings.draftBankTxIdsJson = JSON.stringify(Array.from(set));
     changed = true;
   }
-  const incMap = getDraftTxIncludeMap(target);
+  const incMap = { ...getDraftTxIncludeMap(target) };
   if (incMap[cleanId] !== undefined) {
     delete incMap[cleanId];
     target.settings.draftTxIncludeJson = JSON.stringify(incMap);
@@ -302,12 +312,8 @@ function isDraftPaymentRequest(req, stateObj = appState) {
 }
 
 function getDraftTxIncludeMap(stateObj = appState) {
-  try {
-    const raw = (stateObj || appState)?.settings?.draftTxIncludeJson;
-    const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && typeof parsed === 'object') return parsed;
-  } catch (e) {}
-  return {};
+  const parsed = readCachedJsonSetting(stateObj, 'draftTxIncludeJson', null);
+  return parsed && !Array.isArray(parsed) ? parsed : {};
 }
 
 function isDraftTxIncludedInMain(tx, stateObj = appState) {
@@ -316,22 +322,12 @@ function isDraftTxIncludedInMain(tx, stateObj = appState) {
 }
 
 function getExcludedTxIdsSet(stateObj = appState) {
-  const set = new Set();
-  try {
-    const raw = (stateObj || appState)?.settings?.excludedTxIdsJson;
-    const arr = raw ? JSON.parse(raw) : [];
-    if (Array.isArray(arr)) arr.forEach(id => id && set.add(String(id).trim()));
-  } catch (e) {}
-  return set;
+  return readCachedSetSetting(stateObj, 'excludedTxIdsJson');
 }
 
 function getTxCustomTagsMap(stateObj = appState) {
-  try {
-    const raw = (stateObj || appState)?.settings?.txCustomTagsJson;
-    const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && typeof parsed === 'object') return parsed;
-  } catch (e) {}
-  return {};
+  const parsed = readCachedJsonSetting(stateObj, 'txCustomTagsJson', null);
+  return parsed && !Array.isArray(parsed) ? parsed : {};
 }
 
 function isTransactionExcludedFromSystem(tx, stateObj = appState) {
@@ -412,13 +408,7 @@ function buildSepayTxSignature(dateStr, amount, textStr, isDraftFlag = false) {
 }
 
 function getDeletedTxIdsSet(stateObj = appState) {
-  const set = new Set();
-  try {
-    const raw = (stateObj || appState)?.settings?.deletedTxIdsJson;
-    const arr = raw ? JSON.parse(raw) : [];
-    if (Array.isArray(arr)) arr.forEach(k => k && set.add(String(k).trim()));
-  } catch (e) {}
-  return set;
+  return readCachedSetSetting(stateObj, 'deletedTxIdsJson');
 }
 
 function extractTxDedupKeys(tx, stateObj = appState) {
@@ -3164,7 +3154,11 @@ let isSilentServerSync = false;
 // shortcut: chỉ ghi nhớ tối đa 5 bước hoàn tác gần nhất để nhẹ bộ nhớ và tránh lùi về tận trạng thái ban đầu
 const MAX_UNDO_HISTORY = 5;
 appState = isOpenedViaFriendSandboxUrl ? loadSandboxDraftStateFromLocal() : loadStateFromLocal();
-syncAllTransactionsBatchWithClassbook(appState);
+try {
+  syncAllTransactionsBatchWithClassbook(appState);
+} catch (err) {
+  console.warn('Cảnh báo đồng bộ đợt giao dịch lúc khởi động:', err);
+}
 if (isOpenedViaFriendSandboxUrl) {
   isSandboxDraftMode = true;
 } else {
@@ -3546,7 +3540,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261115_v71', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261115_v72', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -3792,21 +3786,31 @@ function loadUndoRedoHistoryFromLocal() {
   try {
     const rawUndo = sessionStorage.getItem(STORAGE_KEYS.UNDO_STACK) || localStorage.getItem(STORAGE_KEYS.UNDO_STACK);
     const rawRedo = sessionStorage.getItem(STORAGE_KEYS.REDO_STACK) || localStorage.getItem(STORAGE_KEYS.REDO_STACK);
-    if (rawUndo) {
+    if (rawUndo && rawUndo.length <= 450000) {
       const parsedUndo = JSON.parse(rawUndo);
       if (Array.isArray(parsedUndo)) {
         actionUndoStack = parsedUndo
           .filter(item => item && typeof item.stateJson === 'string')
           .slice(-MAX_UNDO_HISTORY);
       }
+    } else if (rawUndo && rawUndo.length > 450000) {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.UNDO_STACK);
+        sessionStorage.removeItem(STORAGE_KEYS.UNDO_STACK);
+      } catch (e) {}
     }
-    if (rawRedo) {
+    if (rawRedo && rawRedo.length <= 450000) {
       const parsedRedo = JSON.parse(rawRedo);
       if (Array.isArray(parsedRedo)) {
         actionRedoStack = parsedRedo
           .filter(item => item && typeof item.stateJson === 'string')
           .slice(-MAX_UNDO_HISTORY);
       }
+    } else if (rawRedo && rawRedo.length > 450000) {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.REDO_STACK);
+        sessionStorage.removeItem(STORAGE_KEYS.REDO_STACK);
+      } catch (e) {}
     }
   } catch (err) {}
 }
@@ -7545,12 +7549,8 @@ function resetAllStudentStatFilters() {
 }
 
 function getStudentMetaMap() {
-  try {
-    if (appState.settings && appState.settings.studentMetaJson) {
-      return JSON.parse(appState.settings.studentMetaJson) || {};
-    }
-  } catch (e) {}
-  return {};
+  const parsed = readCachedJsonSetting(appState, 'studentMetaJson', null);
+  return parsed && !Array.isArray(parsed) ? parsed : {};
 }
 
 function saveStudentMetaMap(map, syncMsg = '') {
@@ -9536,11 +9536,7 @@ function findClassScheduleConfig(className, scheduleMap = {}, stateObj = appStat
 function getCurrentBatchLabelForClass(className, stateObj = appState) {
   const cls = String(className || '').trim();
   if (!cls) return '';
-  let map = {};
-  try {
-    const raw = stateObj?.settings?.classSchedulesJson;
-    if (raw) map = JSON.parse(raw) || {};
-  } catch (e) {}
+  const map = readCachedJsonSetting(stateObj, 'classSchedulesJson', {});
   const cfg = findClassScheduleConfig(cls, map, stateObj);
   return cfg?.batchLabel ? formatBatchDisplayLabel(cfg.batchLabel) : '';
 }
@@ -9686,18 +9682,8 @@ function syncClassCurrentBatchOnTransactions(
 
 function syncAllTransactionsBatchWithClassbook(stateObj = appState) {
   if (!stateObj || !Array.isArray(stateObj.students)) return false;
-  let scheduleMap = {};
-  let historyList = [];
-  try {
-    if (stateObj?.settings?.classSchedulesJson) {
-      scheduleMap = JSON.parse(stateObj.settings.classSchedulesJson) || {};
-    }
-  } catch (e) {}
-  try {
-    if (stateObj?.settings?.classHistoryJson) {
-      historyList = JSON.parse(stateObj.settings.classHistoryJson) || [];
-    }
-  } catch (e) {}
+  const scheduleMap = readCachedJsonSetting(stateObj, 'classSchedulesJson', {});
+  const historyList = readCachedJsonSetting(stateObj, 'classHistoryJson', []);
 
   const stuById = new Map();
   const stuByCode = new Map();
@@ -9911,18 +9897,8 @@ function resolveTransactionBatchInfo(item, stateObj = appState) {
   };
   if (!item) return empty;
 
-  let scheduleMap = {};
-  let historyList = [];
-  try {
-    if (stateObj?.settings?.classSchedulesJson) {
-      scheduleMap = JSON.parse(stateObj.settings.classSchedulesJson) || {};
-    }
-  } catch (e) {}
-  try {
-    if (stateObj?.settings?.classHistoryJson) {
-      historyList = JSON.parse(stateObj.settings.classHistoryJson) || [];
-    }
-  } catch (e) {}
+  const scheduleMap = readCachedJsonSetting(stateObj, 'classSchedulesJson', {});
+  const historyList = readCachedJsonSetting(stateObj, 'classHistoryJson', []);
 
   const rawText = `${item.description || ''} ${item.note || ''}`;
   let stuCode = extractCleanStudentCodeToken(item.studentCode) || String(item.studentCode || '').trim().toUpperCase();
@@ -11098,14 +11074,23 @@ function updateFinanceBulkActionBarUI() {
 }
 
 function getEditedTxOverridesMap(stateObj = appState) {
-  try {
-    const raw = stateObj?.settings?.editedTxOverridesJson;
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (e) {
-    return {};
-  }
+  const parsed = readCachedJsonSetting(stateObj, 'editedTxOverridesJson', null);
+  return parsed && !Array.isArray(parsed) ? parsed : {};
+}
+
+function saveEditedTxOverridesMap(map, stateObj = appState) {
+  const target = stateObj || appState;
+  if (!target || typeof target !== 'object') return;
+  if (!target.settings) target.settings = {};
+  target.settings.editedTxOverridesJson = JSON.stringify(map || {});
+}
+
+function saveAppState() {
+  if (typeof saveStateToLocal === 'function') return saveStateToLocal();
+}
+
+function normalizeClassNameKey(cls) {
+  return String(cls || '').trim().toUpperCase();
 }
 
 function recordEditedTransactionOverride(stateObj, oldTx, updatedTx) {
@@ -16001,15 +15986,9 @@ function getDefaultClassScheduleConfig(className) {
 }
 
 function getClassSchedulesMap() {
-  let map = {};
+  const cachedMap = readCachedJsonSetting(appState, 'classSchedulesJson', {});
+  const map = cachedMap && !Array.isArray(cachedMap) ? { ...cachedMap } : {};
   const userDeleted = getDeletedClassesSet(appState);
-  try {
-    if (appState.settings && appState.settings.classSchedulesJson) {
-      map = JSON.parse(appState.settings.classSchedulesJson) || {};
-    }
-  } catch (e) {
-    map = {};
-  }
 
   Object.keys(map).forEach(cls => {
     if (userDeleted.has(cls.trim())) {
@@ -16085,23 +16064,12 @@ const DEFAULT_BUILTIN_GRADES = [
 ];
 
 function getCustomGradesList() {
-  try {
-    if (appState.settings && appState.settings.customGradesJson) {
-      const parsed = JSON.parse(appState.settings.customGradesJson);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {}
-  return [];
+  const parsed = readCachedJsonSetting(appState, 'customGradesJson', []);
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 function getDeletedGradesSet() {
-  try {
-    if (appState.settings && appState.settings.deletedGradesJson) {
-      const parsed = JSON.parse(appState.settings.deletedGradesJson);
-      if (Array.isArray(parsed)) return new Set(parsed.map(k => String(k).trim()));
-    }
-  } catch (e) {}
-  return new Set();
+  return readCachedSetSetting(appState, 'deletedGradesJson');
 }
 
 function normalizeGradeKeyAndLabel(rawInput) {
@@ -16135,15 +16103,13 @@ function getGradeCategoryForClassName(cls) {
   if (!s) return 'OTHER';
 
   // 1. Kiểm tra nếu lớp đã được gán Khối cụ thể trong cấu hình lớp
-  try {
-    if (appState?.settings?.classSchedulesJson) {
-      const rawMap = JSON.parse(appState.settings.classSchedulesJson) || {};
-      const cfg = rawMap[s];
-      if (cfg && cfg.gradeKey && cfg.gradeKey !== 'AUTO') {
-        return String(cfg.gradeKey);
-      }
+  const rawMap = readCachedJsonSetting(appState, 'classSchedulesJson', null);
+  if (rawMap && !Array.isArray(rawMap)) {
+    const cfg = rawMap[s];
+    if (cfg && cfg.gradeKey && cfg.gradeKey !== 'AUTO') {
+      return String(cfg.gradeKey);
     }
-  } catch (e) {}
+  }
 
   // 2. Kiểm tra danh sách Khối do người dùng tạo (ưu tiên khớp số khối cụ thể như 8, 7, 6 hoặc tên khối)
   const customGrades = getCustomGradesList();
@@ -19581,13 +19547,8 @@ function formatShortDateVN(isoDate) {
 // LƯU LỊCH SỬ CÁC ĐỢT / THÁNG CŨ & CHUYỂN SANG ĐỢT TIẾP THEO (ROLLOVER & ARCHIVE)
 // ============================================================================
 function getClassHistoryList() {
-  try {
-    if (appState.settings && appState.settings.classHistoryJson) {
-      const parsed = JSON.parse(appState.settings.classHistoryJson);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {}
-  return [];
+  const parsed = readCachedJsonSetting(appState, 'classHistoryJson', []);
+  return Array.isArray(parsed) ? parsed : [];
 }
 
 function saveClassHistoryList(list, syncMsg = '') {
@@ -21045,14 +21006,8 @@ async function autoConnectAndVerifySepay(showSuccessToast = true) {
 
   renderSepayBalanceBanner();
   refreshSepayGuideModalDynamicText();
-  try {
-    if (!showSuccessToast) isSilentServerSync = true;
-    saveStateToLocal();
-  } finally {
-    isSilentServerSync = false;
-  }
-
   if (showSuccessToast) {
+    saveStateToLocal();
     const effectiveVa = getEffectiveQrAccountNo(acc, appState.settings);
     playTingSound();
     showToast(`Đã lưu cấu hình (${bin} • ${effectiveVa}) & đẩy dữ liệu từ Web lên Google Sheet!`, 'success');
