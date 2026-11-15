@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thanhchi-edu-shell-v70';
+const CACHE_NAME = 'thanhchi-edu-shell-v71';
 const SHELL_ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
@@ -23,15 +23,23 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  const isDocRequest = req.mode === 'navigate' || req.destination === 'document';
+
   event.respondWith(
     fetch(req, { cache: 'no-store' })
       .then(res => {
         if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(req, clone)).catch(() => {});
+          return res;
         }
-        return res;
+        return caches.match(req, { ignoreSearch: true }).then(hit => hit || res);
       })
-      .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
+      .catch(() =>
+        caches.match(req, { ignoreSearch: true }).then(hit => {
+          if (hit) return hit;
+          return isDocRequest ? caches.match('./index.html', { ignoreSearch: true }) : Response.error();
+        })
+      )
   );
 });

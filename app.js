@@ -538,39 +538,26 @@ function markTransactionsAsDeletedInState(txItems, stateObj = appState) {
 
 function formatCompactMethodHtml(methodStr, isTestTx = false, isDraftTx = false) {
   if (isTestTx) {
-    return `<div class="leading-tight text-center">
-      <div class="inline-flex items-center justify-center gap-1 text-[11px] font-extrabold text-amber-900">
-        <i data-lucide="flask-conical" class="w-3 h-3 shrink-0"></i>
-        <span>Test STK</span>
-      </div>
-      <div class="text-xs font-bold text-amber-700">(0 ₫)</div>
-    </div>`;
+    return `<span class="text-[10px] font-extrabold text-amber-900 whitespace-nowrap">Test STK</span>`;
   }
   if (isDraftTx) {
-    return `<div class="leading-tight text-center">
-      <div class="inline-flex items-center justify-center gap-1 text-[11px] font-extrabold text-amber-900">
-        <i data-lucide="tag" class="w-3 h-3 shrink-0"></i>
-        <span>STK Nháp</span>
-      </div>
-      <div class="text-xs font-bold text-amber-700">(5801434567)</div>
-    </div>`;
+    return `<span class="text-[10px] font-extrabold text-amber-900 whitespace-nowrap" title="STK Nháp (5801434567)">STK Nháp</span>`;
   }
   const raw = String(methodStr || 'Chuyển khoản').trim();
-  const parenMatch = raw.match(/^([^(]+)\(([^)]+)\)$/);
-  if (parenMatch) {
-    return `<div class="leading-tight text-center">
-      <div class="text-xs font-bold text-slate-700">${escapeHtml(parenMatch[1].trim())}</div>
-      <div class="text-xs font-semibold text-slate-500">(${escapeHtml(parenMatch[2].trim())})</div>
-    </div>`;
+  const lower = raw.toLowerCase();
+  if (lower.includes('tiền mặt')) {
+    return `<span class="text-[10px] font-extrabold text-emerald-800 whitespace-nowrap" title="${escapeAttr(raw)}">Tiền mặt</span>`;
   }
-  const slashParts = raw.split(/\s*\/\s*/);
-  if (slashParts.length === 2) {
-    return `<div class="leading-tight text-center">
-      <div class="text-xs font-bold text-slate-700">${escapeHtml(slashParts[0])}</div>
-      <div class="text-xs font-semibold text-slate-500">${escapeHtml(slashParts[1])}</div>
-    </div>`;
+  if (lower.includes('tự động') || lower.includes('sepay')) {
+    return `<span class="text-[10px] font-extrabold text-indigo-800 whitespace-nowrap" title="${escapeAttr(raw)}">CK Tự động</span>`;
   }
-  return `<span class="text-xs font-semibold text-slate-700">${escapeHtml(raw)}</span>`;
+  if (lower.includes('qr')) {
+    return `<span class="text-[10px] font-extrabold text-blue-800 whitespace-nowrap" title="${escapeAttr(raw)}">CK / QR</span>`;
+  }
+  if (lower.includes('chuyển khoản')) {
+    return `<span class="text-[10px] font-extrabold text-blue-800 whitespace-nowrap" title="${escapeAttr(raw)}">CK</span>`;
+  }
+  return `<span class="text-[10px] font-bold text-slate-700 whitespace-nowrap" title="${escapeAttr(raw)}">${escapeHtml(raw.slice(0, 10))}</span>`;
 }
 
 function purgeDraftDataFromState(state) {
@@ -3559,7 +3546,7 @@ function initStandaloneIosLifecycle() {
 
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && window.location?.protocol?.startsWith('http')) {
     navigator.serviceWorker
-      .register('./sw.js?v=20261114_v70', { updateViaCache: 'none' })
+      .register('./sw.js?v=20261115_v71', { updateViaCache: 'none' })
       .then(reg => {
         if (reg && typeof reg.update === 'function') reg.update().catch(() => {});
       })
@@ -4438,11 +4425,19 @@ function switchAppMode(mode) {
   const adminView = document.getElementById('admin-view');
   const btnParent = document.getElementById('btn-mode-parent');
   const btnAdmin = document.getElementById('btn-mode-admin');
+  const headerMenuBtn = document.getElementById('btn-header-admin-menu');
 
   if (mode === 'parent') {
     parentView.classList.remove('hidden');
     adminView.classList.add('hidden');
     document.getElementById('ios-bottom-tabbar')?.classList.add('hidden');
+    if (headerMenuBtn) {
+      headerMenuBtn.classList.add('hidden');
+      headerMenuBtn.classList.remove('inline-flex');
+    }
+    if (typeof toggleAdminSidebar === 'function') {
+      toggleAdminSidebar(true);
+    }
     btnParent.className = 'mode-pill-active flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap';
     btnAdmin.className = 'mode-pill-inactive relative flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs transition cursor-pointer whitespace-nowrap';
   } else {
@@ -4462,16 +4457,25 @@ function checkAdminAuthStatus() {
   const loginBox = document.getElementById('admin-login-box');
   const workspace = document.getElementById('admin-workspace');
   const iosTabBar = document.getElementById('ios-bottom-tabbar');
+  const headerMenuBtn = document.getElementById('btn-header-admin-menu');
 
   if (isAuth) {
     loginBox.classList.add('hidden');
     workspace.classList.remove('hidden');
     if (iosTabBar && currentMode === 'admin') iosTabBar.classList.remove('hidden');
+    if (headerMenuBtn && currentMode === 'admin') {
+      headerMenuBtn.classList.remove('hidden');
+      headerMenuBtn.classList.add('inline-flex');
+    }
     refreshAllViews();
   } else {
     loginBox.classList.remove('hidden');
     workspace.classList.add('hidden');
     if (iosTabBar) iosTabBar.classList.add('hidden');
+    if (headerMenuBtn) {
+      headerMenuBtn.classList.add('hidden');
+      headerMenuBtn.classList.remove('inline-flex');
+    }
   }
 }
 
@@ -4844,6 +4848,8 @@ function navigateSidebarSection(sectionKey) {
     settings: 'settings'
   };
   const targetTab = tabMap[sectionKey] || 'classbook';
+  // Tự động thu gọn menu sau khi chọn mục để màn hình luôn hiển thị tối đa
+  toggleAdminSidebar(true);
   switchAdminTab(targetTab, sectionKey);
 
   // Cuộn mượt tới đúng khu vực chức năng khi chọn Học phí / Giao dịch
@@ -4860,18 +4866,26 @@ function navigateSidebarSection(sectionKey) {
   }
 }
 
-const SIDEBAR_COLLAPSED_STORAGE_KEY = 'edupay_sidebar_collapsed_v2';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'edupay_sidebar_collapsed_v3';
 
 function syncSidebarToggleUI(collapsed) {
   const isCollapsed = Boolean(collapsed);
   const sidebar = document.getElementById('admin-left-sidebar');
   const icon = document.getElementById('sidebar-collapse-icon');
   const topExpandBtn = document.getElementById('btn-expand-sidebar-top');
+  const headerMenuIcon = document.getElementById('header-admin-menu-icon');
+  const headerMenuLabel = document.getElementById('header-admin-menu-label');
   if (sidebar) {
     sidebar.classList.toggle('is-collapsed', isCollapsed);
   }
   if (icon) {
     icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+  }
+  if (headerMenuIcon) {
+    headerMenuIcon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+  }
+  if (headerMenuLabel) {
+    headerMenuLabel.textContent = isCollapsed ? 'Menu' : 'Đóng Menu';
   }
   if (topExpandBtn) {
     if (isCollapsed) {
@@ -4885,14 +4899,8 @@ function syncSidebarToggleUI(collapsed) {
 }
 
 function initSidebarCollapsedState() {
-  try {
-    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
-    // Mặc định thu gọn thanh menu trái thành 1 nút nhỏ trên đầu để hiển thị tối đa màn hình
-    const shouldCollapse = saved === null ? true : saved === '1';
-    syncSidebarToggleUI(shouldCollapse);
-  } catch (e) {
-    syncSidebarToggleUI(true);
-  }
+  // Luôn khởi tạo ở trạng thái thu gọn thành 1 nút nhỏ trên đầu để màn hình hiển thị tối đa
+  syncSidebarToggleUI(true);
 }
 
 function toggleAdminSidebar(forceCollapsed = undefined) {
@@ -4906,7 +4914,7 @@ function toggleAdminSidebar(forceCollapsed = undefined) {
   } catch (e) {}
   lucide.createIcons();
   if (typeof scheduleStickyHeaderSync === 'function') {
-    setTimeout(() => scheduleStickyHeaderSync(true), 180);
+    setTimeout(() => scheduleStickyHeaderSync(true), 120);
   }
 }
 
@@ -4919,15 +4927,13 @@ function formatCompactVnd(amount) {
     if (abs % 1000000 === 0) {
       return `${sign}${abs / 1000000}tr`;
     }
-    if (abs % 10000 === 0) {
-      const trVal = (abs / 1000000).toFixed(abs % 100000 === 0 ? 1 : 2).replace('.', ',');
-      return `${sign}${trVal}tr`;
-    }
-    if (abs % 1000 === 0) {
-      return `${sign}${Math.round(abs / 1000).toLocaleString('vi-VN')}k`;
-    }
+    const decimals = abs % 100000 === 0 ? 1 : 2;
+    const trVal = parseFloat((abs / 1000000).toFixed(decimals))
+      .toString()
+      .replace('.', ',');
+    return `${sign}${trVal}tr`;
   }
-  if (abs >= 1000 && abs % 1000 === 0) {
+  if (abs >= 1000) {
     return `${sign}${Math.round(abs / 1000).toLocaleString('vi-VN')}k`;
   }
   return formatCurrency(num);
@@ -8432,15 +8438,15 @@ function renderAdminStudents() {
     sumStartInfoEl.innerHTML = `<span class="text-[11px] font-bold text-slate-600">${list.length} HS</span>`;
   }
   if (sumBatchesEl) {
-    sumBatchesEl.innerHTML = `<span title="Tổng lũy kế ${totalBatchesPaidCount} đợt: ${escapeAttr(formatCurrency(allTimePaidSum))}">${totalBatchesPaidCount}đ • ${formatCompactVnd(
+    sumBatchesEl.innerHTML = `<span title="Tổng lũy kế ${totalBatchesPaidCount} đợt: ${escapeAttr(formatCurrency(allTimePaidSum))}">${totalBatchesPaidCount}đ (${formatCompactVnd(
       allTimePaidSum
-    )}</span>`;
+    )})</span>`;
   }
   if (sumPaidRatioEl) {
-    sumPaidRatioEl.innerHTML = `<span title="${paidList.length}/${list.length} em đã đóng (${paidRateText})">${paidList.length}/${list.length} (${paidRateText})</span>`;
+    sumPaidRatioEl.innerHTML = `<span title="${paidList.length}/${list.length} em đã đóng (${paidRateText})">${paidList.length}/${list.length}</span>`;
   }
   if (sumExpectedEl) {
-    sumExpectedEl.innerHTML = `<span title="Tổng học phí: ${escapeAttr(formatCurrency(totalFeeSum))}">Tổng: ${formatCompactVnd(
+    sumExpectedEl.innerHTML = `<span title="Tổng học phí: ${escapeAttr(formatCurrency(totalFeeSum))}">${formatCompactVnd(
       totalFeeSum
     )}</span>`;
   }
@@ -8726,11 +8732,11 @@ function renderAdminStudents() {
           <td class="py-1.5 px-1 text-center font-bold text-slate-600 text-xs whitespace-nowrap">
             ${idx + 1}
           </td>
-          <td class="py-1.5 px-1.5 text-center tabular-nums font-bold text-xs text-blue-700 whitespace-nowrap">
+          <td class="py-1.5 px-1 text-center tabular-nums font-bold text-xs text-blue-700 whitespace-nowrap">
             ${escapeHtml(s.studentCode)}
           </td>
-          <td class="py-1.5 px-2.5 min-w-[145px] max-w-[205px]">
-            <div class="w-full flex items-center justify-between gap-1.5">
+          <td class="py-1.5 px-2 min-w-[135px] max-w-[195px]">
+            <div class="w-full flex items-center justify-between gap-1">
               <button
                 type="button"
                 onclick="openStudentDetailModal('${s.id}')"
@@ -8762,17 +8768,17 @@ function renderAdminStudents() {
             }
             ${s.note ? `<div class="text-[10px] text-slate-500 italic mt-0.5 line-clamp-1" title="${escapeAttr(s.note)}">${escapeHtml(s.note)}</div>` : ''}
           </td>
-          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
+          <td class="py-1.5 px-1 text-center whitespace-nowrap">
             <button
               type="button"
               onclick="quickFilterByClassInAllStudents('${escapeAttr(s.className)}')"
-              class="inline-flex items-center justify-center px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-[11px] transition cursor-pointer whitespace-nowrap"
+              class="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-extrabold text-[11px] transition cursor-pointer whitespace-nowrap"
               title="Bấm để lọc riêng Lớp ${escapeAttr(s.className)}"
             >
               ${escapeHtml(formatShortClassLabel(s.className))}
             </button>
           </td>
-          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
+          <td class="py-1.5 px-1 text-center whitespace-nowrap">
             <button
               type="button"
               onclick="openStudentStartDatePicker('${s.id}', '${escapeAttr(stats.startDateIso)}', this)"
@@ -8783,10 +8789,10 @@ function renderAdminStudents() {
               <i data-lucide="calendar" class="w-3 h-3 text-[#141414] shrink-0"></i>
             </button>
           </td>
-          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
+          <td class="py-1.5 px-1 text-center whitespace-nowrap">
             <div
               title="Tổng lũy kế đã đóng: ${escapeAttr(formatCurrency(stats.totalPaidAmount))}"
-              class="inline-flex flex-col items-center justify-center min-w-[74px] px-1.5 py-0.5 rounded-md border leading-tight ${
+              class="inline-flex flex-col items-center justify-center min-w-[68px] px-1 py-0.5 rounded-md border leading-tight ${
                 stats.paidBatchesCount > 0
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                   : 'bg-slate-100 border-slate-300 text-slate-600'
@@ -8797,28 +8803,28 @@ function renderAdminStudents() {
                   type="button"
                   onclick="adjustStudentPaidBatches('${s.id}', -1)"
                   title="Giảm 1 đợt đã đóng"
-                  class="w-4 h-4 rounded bg-white hover:bg-rose-100 text-rose-700 border border-slate-300 font-black text-[11px] leading-none flex items-center justify-center cursor-pointer transition"
+                  class="w-3.5 h-3.5 rounded bg-white hover:bg-rose-100 text-rose-700 border border-slate-300 font-black text-[10px] leading-none flex items-center justify-center cursor-pointer transition"
                 >−</button>
-                <span class="text-[11px] font-extrabold min-w-[30px] text-center">${stats.paidBatchesCount}đ</span>
+                <span class="text-[11px] font-extrabold min-w-[26px] text-center">${stats.paidBatchesCount}đ</span>
                 <button
                   type="button"
                   onclick="adjustStudentPaidBatches('${s.id}', 1)"
                   title="Tăng 1 đợt đã đóng"
-                  class="w-4 h-4 rounded bg-white hover:bg-emerald-100 text-emerald-700 border border-slate-300 font-black text-[11px] leading-none flex items-center justify-center cursor-pointer transition"
+                  class="w-3.5 h-3.5 rounded bg-white hover:bg-emerald-100 text-emerald-700 border border-slate-300 font-black text-[10px] leading-none flex items-center justify-center cursor-pointer transition"
                 >+</button>
               </div>
               <span class="text-[10px] font-extrabold mt-0.5">${formatCompactVnd(stats.totalPaidAmount)}</span>
             </div>
           </td>
-          <td class="py-1.5 px-1.5 text-center whitespace-nowrap">
+          <td class="py-1.5 px-1 text-center whitespace-nowrap">
             <span
               title="${escapeAttr(s.period || '')}"
-              class="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-900 border border-slate-200 font-bold text-[11px] whitespace-nowrap"
+              class="inline-block px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-900 border border-slate-200 font-bold text-[11px] whitespace-nowrap"
             >
               ${escapeHtml(formatShortPeriodLabel(s.period))}
             </span>
           </td>
-          <td class="py-1.5 px-1.5 text-right font-extrabold text-slate-900 whitespace-nowrap">
+          <td class="py-1.5 px-1 text-right font-extrabold text-slate-900 whitespace-nowrap">
             <select
               onchange="handleClassbookFeeSelect('${s.id}', this.value)"
               title="Bấm để tùy chọn mức học phí (${escapeAttr(formatCurrency(s.tuitionFee))}) hoặc tính theo số buổi"
@@ -8836,7 +8842,7 @@ function renderAdminStudents() {
                 : ''
             }
           </td>
-          <td class="py-1.5 px-1.5 text-center whitespace-nowrap w-24 ${statusCellClass}">
+          <td class="py-1.5 px-1 text-center whitespace-nowrap w-20 ${statusCellClass}">
             <select
               onchange="quickChangeStudentStatus('${s.id}', this.value)"
               class="status-select bg-transparent text-[11px] font-extrabold text-center focus:outline-none cursor-pointer w-full"
@@ -8846,7 +8852,7 @@ function renderAdminStudents() {
               <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
             </select>
           </td>
-          <td class="py-1.5 px-1.5 text-center whitespace-nowrap w-28">
+          <td class="py-1.5 px-1 text-center whitespace-nowrap w-[114px]">
             <div class="inline-flex items-center justify-center gap-0.5">
               <button
                 type="button"
@@ -10193,10 +10199,10 @@ function renderLinkedStudentBatchCellHtml(batchInfo, isIncome, isTestTx) {
     const period = batchInfo.periodLabel;
     const batchColor = getBatchBadgeColorClass(batch);
     return `
-      <div class="tc-linked-stu-box ${batchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} max-w-[185px]">
+      <div class="tc-linked-stu-box ${batchInfo.isHistorical ? 'is-old-batch' : 'is-current-batch'} max-w-[156px]">
         <div class="flex items-center gap-1 flex-wrap">
-          <span class="px-1.5 py-0.2 rounded bg-blue-600 text-white tabular-nums font-extrabold text-[10px] leading-none shrink-0">${escapeHtml(code)}</span>
-          <span class="font-extrabold text-xs text-slate-900 dark:text-slate-100 truncate max-w-[115px]" title="${escapeAttr(name)}">${escapeHtml(name)}</span>
+          <span class="px-1 py-0.2 rounded bg-blue-600 text-white tabular-nums font-extrabold text-[10px] leading-none shrink-0">${escapeHtml(code)}</span>
+          <span class="font-extrabold text-[11px] text-slate-900 dark:text-slate-100 truncate max-w-[96px]" title="${escapeAttr(name)}">${escapeHtml(name)}</span>
           ${
             batch
               ? `<span class="tc-batch-badge ${batchColor}" title="Khoản thu này thuộc ${escapeAttr(batch)}${period ? ' (' + escapeAttr(period) + ')' : ''}">${escapeHtml(batch)}</span>`
@@ -10664,11 +10670,11 @@ function renderAdminTransactions() {
               ${isTestReq ? 'Test STK' : 'Học phí'}
             </span>
           </td>
-          <td class="py-1.5 px-2 align-middle">
+          <td class="py-1.5 px-1.5 align-middle">
             ${renderLinkedStudentBatchCellHtml(reqBatchInfo, true, isTestReq)}
           </td>
-          <td class="py-1.5 px-2.5 align-middle">
-            <div class="space-y-0.5 max-w-[270px]">
+          <td class="py-1.5 px-2 align-middle">
+            <div class="space-y-0.5 max-w-[210px]">
               <div class="flex flex-wrap items-center gap-1">
                 ${
                   isDraftReq
@@ -10851,11 +10857,11 @@ function renderAdminTransactions() {
               ${escapeHtml(formatShortCategoryLabel(t.category, isTestTx))}
             </span>
           </td>
-          <td class="py-1.5 px-2 align-middle">
+          <td class="py-1.5 px-1.5 align-middle">
             ${renderLinkedStudentBatchCellHtml(compact.batchInfo, isIncome, isTestTx)}
           </td>
-          <td class="py-1.5 px-2.5 align-middle">
-            <div class="space-y-0.5 max-w-[270px]">
+          <td class="py-1.5 px-2 align-middle">
+            <div class="space-y-0.5 max-w-[210px]">
               <div class="flex flex-wrap items-center gap-1">
                 ${
                   isTestTx
@@ -11133,13 +11139,13 @@ function recordEditedTransactionOverride(stateObj, oldTx, updatedTx) {
 function formatCompactTxId(rawId) {
   const id = String(rawId || '').trim();
   if (!id) return '#GD';
-  if (id.startsWith('GD_SEPAY_')) return `#SP-${id.slice(9, 17)}`;
-  if (id.startsWith('GD_REAL_')) return `#GD-${id.slice(8)}`;
-  if (id.startsWith('YC_SEPAY_')) return `#YC-${id.slice(9, 17)}`;
-  if (id.startsWith('YC_')) return `#YC-${id.slice(3, 9).toUpperCase()}`;
-  if (/^GD_[0-9a-f]{8}-/i.test(id)) return `#GD-${id.slice(3, 9).toUpperCase()}`;
-  if (/^GD_\d{10,}/.test(id)) return `#GD-${id.slice(-6)}`;
-  return id.length > 12 ? `#${id.slice(0, 10)}` : id;
+  if (id.startsWith('GD_SEPAY_')) return `#SP-${id.slice(9, 15)}`;
+  if (id.startsWith('GD_REAL_')) return `#GD-${id.slice(8, 14)}`;
+  if (id.startsWith('YC_SEPAY_')) return `#YC-${id.slice(9, 15)}`;
+  if (id.startsWith('YC_')) return `#YC-${id.slice(3, 8).toUpperCase()}`;
+  if (/^GD_[0-9a-f]{8}-/i.test(id)) return `#GD-${id.slice(3, 8).toUpperCase()}`;
+  if (/^GD_\d{10,}/.test(id)) return `#GD-${id.slice(-5)}`;
+  return id.length > 10 ? `#${id.slice(0, 8)}` : id;
 }
 
 function buildCompactTransactionInfo(tx, stateObj = appState) {
@@ -16485,7 +16491,7 @@ function renderAdminClassbook() {
   const cbSumCollectedEl = document.getElementById('cb-sum-collected');
   const cbSumMissingEl = document.getElementById('cb-sum-missing');
   if (cbSumExpectedEl) {
-    cbSumExpectedEl.textContent = `Tổng: ${formatCompactVnd(totalExpected)}`;
+    cbSumExpectedEl.textContent = `${formatCompactVnd(totalExpected)}`;
     cbSumExpectedEl.title = `Tổng học phí dự kiến: ${formatCurrency(totalExpected)}`;
   }
   if (cbSumPaidCntEl) {
@@ -16532,8 +16538,8 @@ function renderAdminClassbook() {
         return `
           <tr class="${rowStatusClass} transition">
             <td class="py-1.5 px-1 text-center font-semibold text-slate-600 text-xs">${idx + 1}</td>
-            <td class="py-1.5 px-2.5">
-              <div class="w-full flex items-center justify-between gap-1.5">
+            <td class="py-1.5 px-2">
+              <div class="w-full flex items-center justify-between gap-1">
                 <button
                   type="button"
                   onclick="openStudentDetailModal('${s.id}')"
@@ -16582,11 +16588,11 @@ function renderAdminClassbook() {
                 }
               </div>
             </td>
-            <td class="py-1.5 px-1.5 text-right font-semibold text-slate-800">
+            <td class="py-1.5 px-1 text-right font-semibold text-slate-800 whitespace-nowrap">
               <select
                 onchange="handleClassbookFeeSelect('${s.id}', this.value)"
                 title="Bấm để tùy chọn mức học phí hoặc tính theo số buổi cho học sinh này"
-                class="bg-transparent hover:bg-blue-50/70 rounded px-1 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
+                class="bg-transparent hover:bg-blue-50/70 rounded px-0.5 py-0.5 text-xs font-extrabold text-right text-slate-900 focus:outline-none cursor-pointer w-full"
               >
                 ${getPresetTuitionOptionsHtml(s.tuitionFee, s, map)}
                 <option value="PER_SESSION">⚡ Theo buổi...</option>
@@ -16609,7 +16615,7 @@ function renderAdminClassbook() {
                 title="Tích chọn để xác nhận đã hoàn thành học phí"
               />
             </td>
-            <td class="py-1.5 px-1.5 text-center ${statusCellClass}">
+            <td class="py-1.5 px-1 text-center whitespace-nowrap ${statusCellClass}">
               <select
                 onchange="quickChangeStudentStatus('${s.id}', this.value)"
                 class="status-select bg-transparent text-[11px] font-extrabold text-center focus:outline-none cursor-pointer w-full"
@@ -16619,14 +16625,14 @@ function renderAdminClassbook() {
                 <option value="Chưa đóng" ${!isPaid && !isPending ? 'selected' : ''}>Chưa đóng</option>
               </select>
             </td>
-            <td class="py-1 px-1.5">
+            <td class="py-1 px-1">
               <div class="flex items-center gap-1">
                 <input
                   type="text"
                   value="${escapeAttr(s.note || '')}"
                   placeholder="Ghi chú..."
                   onchange="updateClassbookStudentNote('${s.id}', this.value)"
-                  class="w-full px-1.5 py-0.5 text-xs border border-transparent hover:border-slate-300 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none"
+                  class="w-full px-1 py-0.5 text-xs border border-transparent hover:border-slate-300 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none"
                 />
                 ${
                   s.receiptUrl
@@ -16635,18 +16641,18 @@ function renderAdminClassbook() {
                 }
               </div>
             </td>
-            <td class="py-1.5 px-1 text-center">
+            <td class="py-1.5 px-1 text-center whitespace-nowrap">
               <div class="inline-flex items-center gap-0.5">
-                <button onclick="openStudentDetailModal('${s.id}')" title="Xem thông tin chi tiết học sinh" class="p-1 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
+                <button onclick="openStudentDetailModal('${s.id}')" title="Xem thông tin chi tiết học sinh" class="p-0.5 text-blue-600 hover:bg-blue-50 rounded cursor-pointer">
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openTransferStudentModal('${s.id}')" title="Chuyển học sinh sang lớp khác (đồng bộ lịch sử)" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer">
+                <button onclick="openTransferStudentModal('${s.id}')" title="Chuyển học sinh sang lớp khác (đồng bộ lịch sử)" class="p-0.5 text-indigo-600 hover:bg-indigo-50 rounded cursor-pointer">
                   <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openStudentModal('${s.id}')" title="Sửa" class="p-1 text-slate-500 hover:text-blue-600 cursor-pointer">
+                <button onclick="openStudentModal('${s.id}')" title="Sửa" class="p-0.5 text-slate-500 hover:text-blue-600 cursor-pointer">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="deleteStudentRecord('${s.id}')" title="Xóa" class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer">
+                <button onclick="deleteStudentRecord('${s.id}')" title="Xóa" class="p-0.5 text-slate-400 hover:text-rose-600 cursor-pointer">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -22132,6 +22138,10 @@ function ensureFloatingStickyBar() {
 function syncFloatingStickyTableHeader(forceRebuild = false) {
   const bar = ensureFloatingStickyBar();
   if (currentMode !== 'admin') {
+    if (activeStickySourceTable) {
+      const prevThead = activeStickySourceTable.querySelector('thead');
+      if (prevThead) prevThead.style.visibility = '';
+    }
     bar.classList.add('hidden');
     activeStickySourceTable = null;
     return;
@@ -22166,9 +22176,18 @@ function syncFloatingStickyTableHeader(forceRebuild = false) {
   }
 
   if (!targetTable || !targetThead) {
+    if (activeStickySourceTable) {
+      const prevThead = activeStickySourceTable.querySelector('thead');
+      if (prevThead) prevThead.style.visibility = '';
+    }
     bar.classList.add('hidden');
     activeStickySourceTable = null;
     return;
+  }
+
+  if (activeStickySourceTable && activeStickySourceTable !== targetTable) {
+    const prevThead = activeStickySourceTable.querySelector('thead');
+    if (prevThead) prevThead.style.visibility = '';
   }
 
   const wrap = targetTable.closest('.js-sticky-table-wrap') || targetTable.parentElement;
@@ -22182,6 +22201,7 @@ function syncFloatingStickyTableHeader(forceRebuild = false) {
     measuredColWidths = Array.from(origFirstRowCells, cell => cell.getBoundingClientRect().width);
   }
 
+  targetThead.style.visibility = 'hidden';
   bar.classList.remove('hidden');
   const nextTop = `${stickyTopOffset}px`;
   const nextLeft = `${Math.round(wrapRect.left)}px`;
@@ -23012,6 +23032,15 @@ function initTcCustomDatePickerEngine() {
         const insideBtn = notifBtn && typeof notifBtn.contains === 'function' && notifBtn.contains(target);
         if (!insideNotif && !insideBtn) {
           closeTcNotificationPopover();
+        }
+      }
+
+      const sidebarEl = document.getElementById('admin-left-sidebar');
+      if (sidebarEl && !sidebarEl.classList.contains('is-collapsed')) {
+        const insideSidebar = typeof sidebarEl.contains === 'function' && sidebarEl.contains(target);
+        const insideTopExpand = Boolean(target.closest('#btn-expand-sidebar-top, #btn-header-admin-menu, #sidebar-collapse-btn'));
+        if (!insideSidebar && !insideTopExpand) {
+          toggleAdminSidebar(true);
         }
       }
 

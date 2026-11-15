@@ -40,36 +40,50 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css?v=20261114_v70" />
+  <link rel="stylesheet" href="styles.css?v=20261115_v71" />
 </head>
 <body class="min-h-screen flex flex-col mobile-safe-bottom">
 
   <!-- TOP NAVIGATION BAR (THANH CHÍ EDU - ACHROMATIC LEDGER HEADER) -->
   <header class="sticky top-0 z-40 glass-nav w-full">
     <div class="max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 min-h-14 py-2 flex items-center justify-between gap-3">
-      <!-- Brand (Bấm để quay lại trang đầu) -->
-      <div
-        onclick="handleGoToHomePage()"
-        title="Bấm để quay lại trang đầu - THANH CHÍ EDU"
-        class="flex items-center gap-2.5 min-w-0 cursor-pointer group"
-      >
-        <div class="w-8 h-8 rounded-md theme-brand-icon flex items-center justify-center text-white shrink-0">
-          <i data-lucide="graduation-cap" class="w-4 h-4"></i>
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2 min-w-0">
-            <span id="header-brand-badge" class="hidden sm:inline-block px-2 py-0.5 rounded bg-[#eeeeee] text-[#0a0a0a] text-[13px] font-semibold shrink-0">
-              Thanh Chí Edu
-            </span>
-            <div id="header-center-name" class="font-semibold text-[#0a0a0a] text-sm leading-tight truncate">
-              LỚP TOÁN ANH CHÍ
-            </div>
+      <!-- Left: Top Sidebar Menu Toggle Button (Admin) + Brand -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button
+          type="button"
+          id="btn-header-admin-menu"
+          onclick="toggleAdminSidebar()"
+          title="Mở / Thu gọn thanh Menu điều hướng bên trái (Hiển thị tối đa màn hình)"
+          class="hidden items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition cursor-pointer shrink-0 whitespace-nowrap"
+        >
+          <i data-lucide="panel-left-open" class="w-4 h-4 shrink-0" id="header-admin-menu-icon"></i>
+          <span id="header-admin-menu-label">Menu</span>
+        </button>
+
+        <!-- Brand (Bấm để quay lại trang đầu) -->
+        <div
+          onclick="handleGoToHomePage()"
+          title="Bấm để quay lại trang đầu - THANH CHÍ EDU"
+          class="flex items-center gap-2.5 min-w-0 cursor-pointer group"
+        >
+          <div class="w-8 h-8 rounded-md theme-brand-icon flex items-center justify-center text-white shrink-0">
+            <i data-lucide="graduation-cap" class="w-4 h-4"></i>
           </div>
-          <div class="hidden sm:flex items-center gap-1.5 text-[13px] text-[#595c5f] mt-0.5 min-w-0">
-            <span class="hidden 2xl:inline font-medium text-[#595c5f] shrink-0">Quản lý HS &amp; Tài chính</span>
-            <span class="hidden 2xl:inline text-slate-300 shrink-0">•</span>
-            <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-[#15803d] inline-block shrink-0"></span>
-            <span id="sync-status-text" class="truncate">Đã kết nối Google Sheet (Web → Sheet)</span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 min-w-0">
+              <span id="header-brand-badge" class="hidden sm:inline-block px-2 py-0.5 rounded bg-[#eeeeee] text-[#0a0a0a] text-[13px] font-semibold shrink-0">
+                Thanh Chí Edu
+              </span>
+              <div id="header-center-name" class="font-semibold text-[#0a0a0a] text-sm leading-tight truncate">
+                LỚP TOÁN ANH CHÍ
+              </div>
+            </div>
+            <div class="hidden sm:flex items-center gap-1.5 text-[13px] text-[#595c5f] mt-0.5 min-w-0">
+              <span class="hidden 2xl:inline font-medium text-[#595c5f] shrink-0">Quản lý HS &amp; Tài chính</span>
+              <span class="hidden 2xl:inline text-slate-300 shrink-0">•</span>
+              <span id="sync-status-dot" class="w-2 h-2 rounded-full bg-[#15803d] inline-block shrink-0"></span>
+              <span id="sync-status-text" class="truncate">Đã kết nối Google Sheet (Web → Sheet)</span>
+            </div>
           </div>
         </div>
       </div>
@@ -406,7 +420,7 @@
           <!-- ============================================================= -->
           <aside
             id="admin-left-sidebar"
-            class="tc-sidebar flex w-full lg:w-[192px] lg:sticky lg:top-20 shrink-0 p-2.5 flex-col justify-between gap-2.5"
+            class="tc-sidebar is-collapsed flex w-full sm:w-[224px] shrink-0 p-2.5 flex-col justify-between gap-2.5"
           >
             <div class="space-y-2">
               <!-- Sidebar Brand Header + Collapse Toggle -->
@@ -423,7 +437,7 @@
                 <button
                   type="button"
                   id="sidebar-collapse-btn"
-                  onclick="toggleAdminSidebar()"
+                  onclick="toggleAdminSidebar(true)"
                   title="Thu gọn thanh menu thành 1 nút nhỏ trên đầu để mở rộng tối đa màn hình"
                   class="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-[#F8FAFC] hover:bg-[#E2E8F0] text-[#475569] hover:text-[#0F172A] border border-[#CBD5E1] text-[10px] font-extrabold transition cursor-pointer shrink-0"
                 >
@@ -433,7 +447,7 @@
               </div>
 
               <!-- 8 Color-Coded Navigation Items -->
-              <nav class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-1 gap-1" id="tc-sidebar-nav-list">
+              <nav class="grid grid-cols-1 gap-1" id="tc-sidebar-nav-list">
                 <button
                   type="button"
                   id="side-nav-dashboard"
@@ -583,7 +597,7 @@
                     id="btn-expand-sidebar-top"
                     onclick="toggleAdminSidebar()"
                     title="Bấm để mở rộng thanh Menu điều hướng bên trái"
-                    class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition cursor-pointer shrink-0"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition cursor-pointer shrink-0"
                   >
                     <i data-lucide="panel-left-open" class="w-4 h-4"></i>
                     <span>Mở Menu</span>
@@ -1341,30 +1355,30 @@
                     <table id="cb-students-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
                       <thead class="sticky-table-thead">
                         <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
-                          <th class="py-2 px-1 w-8">STT</th>
-                          <th class="py-2 px-2.5 text-left min-w-[145px]">Họ tên HS</th>
-                          <th class="py-2 px-1.5 text-right w-20" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">HP (.000)</th>
-                          <th class="py-2 px-1 w-12" title="Tích chọn đã đóng học phí">Đóng</th>
-                          <th class="py-2 px-1.5 w-24">Trạng thái</th>
-                          <th class="py-2 px-2 text-left min-w-[110px]">Ghi chú</th>
-                          <th class="py-2 px-1.5 w-20">Thao tác</th>
+                          <th class="py-1.5 px-1 w-7">STT</th>
+                          <th class="py-1.5 px-2 text-left min-w-[125px]">Họ tên HS</th>
+                          <th class="py-1.5 px-1 text-right w-16" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">HP (.000)</th>
+                          <th class="py-1.5 px-1 w-10" title="Tích chọn đã đóng học phí">Đóng</th>
+                          <th class="py-1.5 px-1 w-20">Trạng thái</th>
+                          <th class="py-1.5 px-1.5 text-left min-w-[85px]">Ghi chú</th>
+                          <th class="py-1.5 px-1 w-[74px]">Thao tác</th>
                         </tr>
                         <!-- Dòng TỔNG CỘNG giống hệt mẫu -->
-                        <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
-                          <td colspan="2" class="py-1.5 px-2.5 text-center uppercase tracking-normal text-slate-900">
+                        <tr class="bg-slate-100 font-extrabold text-[11px] border-b-2 border-slate-400 whitespace-nowrap">
+                          <td colspan="2" class="py-1 px-2 text-center uppercase tracking-normal text-slate-900">
                             TỔNG CỘNG
                           </td>
-                          <td id="cb-sum-expected" class="py-1.5 px-1.5 text-right text-slate-900 whitespace-nowrap">
-                            0 ₫
+                          <td id="cb-sum-expected" class="py-1 px-1 text-right text-slate-900 whitespace-nowrap">
+                            0k
                           </td>
-                          <td id="cb-sum-paid-count" class="py-1.5 px-1 text-center text-slate-900 whitespace-nowrap">
-                            0 em
+                          <td id="cb-sum-paid-count" class="py-1 px-1 text-center text-slate-900 whitespace-nowrap">
+                            0/0
                           </td>
-                          <td id="cb-sum-collected" class="py-1.5 px-1.5 text-right text-emerald-700 whitespace-nowrap">
-                            0 ₫
+                          <td id="cb-sum-collected" class="py-1 px-1 text-right text-emerald-700 whitespace-nowrap">
+                            Thu: 0k
                           </td>
-                          <td id="cb-sum-missing" colspan="2" class="py-1.5 px-2 text-right text-rose-600 whitespace-nowrap">
-                            0 ₫
+                          <td id="cb-sum-missing" colspan="2" class="py-1 px-1.5 text-right text-rose-600 whitespace-nowrap">
+                            Thiếu: 0k
                           </td>
                         </tr>
                       </thead>
@@ -2643,41 +2657,41 @@
                 <table id="all-students-stat-table" class="sheet-table js-sticky-header-table text-xs sm:text-sm">
                   <thead class="sticky-table-thead">
                     <tr class="sheet-navy-header text-center font-bold text-xs whitespace-nowrap">
-                      <th class="py-2 px-1 w-8">STT</th>
-                      <th class="py-2 px-1.5 w-14">Mã</th>
-                      <th class="py-2 px-2.5 text-left min-w-[145px]">Họ tên HS</th>
-                      <th class="py-2 px-1.5 w-20 text-center">Lớp</th>
-                      <th class="py-2 px-1.5 w-20 text-center">Ngày học</th>
-                      <th class="py-2 px-1.5 w-20 text-center">Đợt đóng</th>
-                      <th class="py-2 px-1.5 w-20 text-center">Kỳ thu</th>
-                      <th class="py-2 px-1.5 text-right w-20" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">HP (.000)</th>
-                      <th class="py-2 px-1.5 w-24 text-center">Trạng thái</th>
-                      <th class="py-2 px-1.5 w-28 text-center">Thao tác</th>
+                      <th class="py-1.5 px-1 w-7">STT</th>
+                      <th class="py-1.5 px-1 w-12">Mã</th>
+                      <th class="py-1.5 px-2 text-left min-w-[135px]">Họ tên HS</th>
+                      <th class="py-1.5 px-1 w-16 text-center">Lớp</th>
+                      <th class="py-1.5 px-1 w-[82px] text-center">Ngày học</th>
+                      <th class="py-1.5 px-1 w-[76px] text-center">Đợt đóng</th>
+                      <th class="py-1.5 px-1 w-16 text-center">Kỳ thu</th>
+                      <th class="py-1.5 px-1 text-right w-16" title="Đã rút gọn 3 số 000 (VD: 600 = 600.000 ₫)">HP (.000)</th>
+                      <th class="py-1.5 px-1 w-20 text-center">Trạng thái</th>
+                      <th class="py-1.5 px-1 w-[114px] text-center">Thao tác</th>
                     </tr>
                     <!-- Dòng TỔNG CỘNG khớp chính xác 1:1 theo từng cột tiêu đề -->
-                    <tr class="bg-slate-100 font-extrabold text-xs border-b-2 border-slate-400 whitespace-nowrap">
-                      <td colspan="3" class="py-1.5 px-2.5 text-center uppercase tracking-normal text-slate-900">
+                    <tr class="bg-slate-100 font-extrabold text-[11px] border-b-2 border-slate-400 whitespace-nowrap">
+                      <td colspan="3" class="py-1 px-2 text-center uppercase tracking-normal text-slate-900">
                         TỔNG (<span id="stu-sum-count" class="text-blue-700">0 HS</span>)
                       </td>
-                      <td id="stu-sum-classes-cnt" class="py-1.5 px-1.5 text-center text-slate-700">
+                      <td id="stu-sum-classes-cnt" class="py-1 px-1 text-center text-slate-700">
                         0 lớp
                       </td>
-                      <td id="stu-sum-start-info" class="py-1.5 px-1.5 text-center text-slate-500 text-[11px] font-bold">
-                        Theo dõi
+                      <td id="stu-sum-start-info" class="py-1 px-1 text-center text-slate-500 text-[11px] font-bold">
+                        0 HS
                       </td>
-                      <td id="stu-sum-batches" class="py-1.5 px-1.5 text-center text-emerald-700">
-                        0 đợt
+                      <td id="stu-sum-batches" class="py-1 px-1 text-center text-emerald-700">
+                        0đ
                       </td>
-                      <td id="stu-sum-paid-ratio" class="py-1.5 px-1.5 text-center text-slate-900">
-                        0/0 em
+                      <td id="stu-sum-paid-ratio" class="py-1 px-1 text-center text-slate-900">
+                        0/0
                       </td>
-                      <td id="stu-sum-expected" class="py-1.5 px-1.5 text-right text-slate-900">
-                        0 ₫
+                      <td id="stu-sum-expected" class="py-1 px-1 text-right text-slate-900">
+                        0k
                       </td>
-                      <td id="stu-sum-collected" class="py-1.5 px-1.5 text-center text-emerald-700">
+                      <td id="stu-sum-collected" class="py-1 px-1 text-center text-emerald-700">
                         Thu: 0k
                       </td>
-                      <td id="stu-sum-missing" class="py-1.5 px-1.5 text-center text-rose-600">
+                      <td id="stu-sum-missing" class="py-1 px-1 text-center text-rose-600">
                         Thiếu: 0k
                       </td>
                     </tr>
@@ -2959,7 +2973,7 @@
               <table id="finance-transactions-table" class="sheet-table js-sticky-header-table w-full text-left border-collapse">
                 <thead class="sticky-table-thead">
                   <tr class="sheet-navy-header text-xs font-extrabold uppercase tracking-normal whitespace-nowrap">
-                    <th class="py-2 px-1.5 w-8 text-center">
+                    <th class="py-1.5 px-1 w-7 text-center">
                       <input
                         id="finance-select-all-cb"
                         type="checkbox"
@@ -2968,15 +2982,15 @@
                         class="w-4 h-4 accent-blue-600 rounded cursor-pointer"
                       />
                     </th>
-                    <th class="py-2 px-1 w-9 text-center font-extrabold">STT</th>
-                    <th class="py-2 px-2 w-[108px] text-left">Mã / Ngày</th>
-                    <th class="py-2 px-1.5 w-[68px] text-center">Loại</th>
-                    <th class="py-2 px-1.5 w-[92px] text-center">Danh mục</th>
-                    <th class="py-2 px-2 w-[172px] text-left">Học sinh &amp; Đợt</th>
-                    <th class="py-2 px-2.5 min-w-[165px] text-left">Nội dung (Bấm xem)</th>
-                    <th class="py-2 px-2 w-[92px] text-right">Số tiền</th>
-                    <th class="py-2 px-1.5 w-[82px] text-center">P.Thức</th>
-                    <th class="py-2 px-1.5 w-[108px] text-center">Thao tác</th>
+                    <th class="py-1.5 px-1 w-8 text-center font-extrabold">STT</th>
+                    <th class="py-1.5 px-1.5 w-[92px] text-left">Mã / Ngày</th>
+                    <th class="py-1.5 px-1 w-[62px] text-center">Loại</th>
+                    <th class="py-1.5 px-1 w-[82px] text-center">Danh mục</th>
+                    <th class="py-1.5 px-1.5 w-[150px] text-left">Học sinh &amp; Đợt</th>
+                    <th class="py-1.5 px-2 min-w-[140px] text-left">Nội dung (Bấm xem)</th>
+                    <th class="py-1.5 px-1.5 w-[80px] text-right">Số tiền</th>
+                    <th class="py-1.5 px-1 w-[68px] text-center">P.Thức</th>
+                    <th class="py-1.5 px-1 w-[96px] text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody id="admin-transactions-tbody" class="divide-y divide-slate-200 text-xs sm:text-sm">
@@ -5503,10 +5517,10 @@
     type="button"
     onclick="scrollToPageTop()"
     title="Cuộn nhanh lên đầu trang"
-    class="fixed bottom-6 right-6 z-40 hidden items-center gap-2 px-4 py-2.5 rounded-full bg-[#141414]   hover: hover: text-white text-xs sm:text-sm font-extrabold  hover: border border-white/25 transition-colors duration-200 cursor-pointer"
+    class="fixed bottom-4 right-4 z-30 hidden items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#141414]/90 hover:bg-[#141414] text-white text-xs font-extrabold border border-white/25 shadow-md transition-colors duration-200 cursor-pointer"
   >
-    <i data-lucide="arrow-up-circle" class="w-4 h-4 text-amber-300 shrink-0"></i>
-    <span>Lên đầu trang</span>
+    <i data-lucide="arrow-up-circle" class="w-3.5 h-3.5 text-amber-300 shrink-0"></i>
+    <span>Lên đầu</span>
   </button>
 
   <!-- TRUNG TÂM THÔNG BÁO NHANH (NOTIFICATION CENTER POPOVER) -->
@@ -6168,6 +6182,6 @@
   <div id="toast-container" class="fixed bottom-20 inset-x-0 sm:inset-x-auto sm:right-5 mx-auto sm:mx-0 z-50 space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
   <!-- Main Application Logic -->
-  <script src="app.js?v=20261114_v70"></script>
+  <script src="app.js?v=20261115_v71"></script>
 </body>
 </html>
